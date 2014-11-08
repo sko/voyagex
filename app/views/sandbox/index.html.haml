@@ -1,0 +1,24 @@
+:javascript
+  var mapWidth = $(window).width();
+  var mapHeight = $(window).height() - 100;
+  $("head").append("<style type='text/css'>#map {width:"+mapWidth+"px;height:"+mapHeight+"px;}</style>");
+
+.talk_message
+  %table{style: 'width:100%;'}
+    %tr
+      %td{valign: 'top', style: 'width:50px;'}
+        .talk_message_label
+          Message:
+      %td
+        .talk_message_data
+          = form_tag '#', method: :post, remote: true
+          = hidden_field_tag :client_id, ((0..6).map { (('a'..'z').to_a+(0..9).to_a)[rand(36)] }.join)
+          = text_area_tag :message, '', rows: 6, class: :talk_message_text, maxlength: 1500
+
+= map(:center => { latlng: [48.3633, 10.4677],
+                   zoom: 15 },
+      tile_layer: "http://{s}.tiles.mapbox.com/v4/stephankoeller.k5hhdli3/{z}/{x}/{y}.png?access_token=pk.eyJ1Ijoic3RlcGhhbmtvZWxsZXIiLCJhIjoiZEFHdnhwayJ9.AdtZiG5HGi5JAb64G1K-jA",
+      subdomains: ['a'],
+      access_token: 'pk.eyJ1Ijoic3RlcGhhbmtvZWxsZXIiLCJhIjoiZEFHdnhwayJ9.AdtZiG5HGi5JAb64G1K-jA',
+      max_zoom: 30)
+  

@@ -1,0 +1,13 @@
+module Comm
+  class Engine < ::Rails::Engine
+  #class Engine < ::Faye::RackAdapter
+    isolate_namespace Comm
+    #config.action_controller.allow_concurrency true
+    middleware.use FayeRails::Middleware, mount: '/', timeout: 25, engine: {type: Faye::Redis, host: 'localhost'} do
+      map '/**' => Comm::ChannelsController
+      map :default => :block
+    end
+  end
+  ##Faye::Logging.log_level = :debug
+  #Faye.logger = lambda { |m| puts m }
+end
