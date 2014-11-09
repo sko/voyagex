@@ -1,10 +1,17 @@
-talkClient = new Faye.Client(document.location.origin+'/comm')
-subscription = talkClient.subscribe '/talk', (message) ->
-  console.log 'got a talk - message: ' + message
-  if $('#client_id').val() != message.clientId
-    $('#message').val('\n-------------------------\n'+message.text+$('#message').val())
-    $('#message').selectRange(0); 
-subscription = talkClient.subscribe '/map_events', (mapEvent) ->
-  console.log 'got a map_events - message: ' + mapEvent.type
-  map.panTo([mapEvent.lat, mapEvent.lng])
-  L.marker([mapEvent.lat, mapEvent.lng]).addTo(map)
+class window.Comm
+  client = null
+  channelCallBacksJSON = null
+
+  constructor: (channelCallBacksList) ->
+    client = new Faye.Client(document.location.origin+'/comm')
+    channelCallBacksJSON = new Object()
+    for pair in channelCallBacksList
+      channelCallBacksJSON[pair[0].substr(1)] = pair[1]
+      Comm.register(pair[0], pair[1])
+
+  send: (channel, message) ->
+    client.publish(channel, message)
+
+  @register: (channel, callBack) ->
+    client.subscribe channel, (message) ->
+      callBack(message)

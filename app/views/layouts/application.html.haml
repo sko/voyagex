@@ -8,11 +8,20 @@
   %head
     %title VoyageX
     = stylesheet_link_tag "application", media: "all"
+    = stylesheet_link_tag params[:controller], media: "all"
     = csrf_meta_tags
     = javascript_include_tag "preload"
     = javascript_include_tag "/comm/faye-browser.js"
     = javascript_include_tag "/assets/comm/channels.js"
   %body
+    :javascript
+      var mapWidth = $(window).width() - 13;
+      var mapHeight = Math.round($(window).height() * 0.85);
+      $("head").append("<style type='text/css'>#map {width:"+mapWidth+"px;height:"+mapHeight+"px;}</style>");
     #content
       = yield
     = javascript_include_tag "application"
+    = javascript_include_tag params[:controller]
+    :javascript
+      var chatHeight = Math.round($(window).height() * 0.15) - 33;
+      $("head").append("<style type='text/css'>.talk_message_text {width:100%;height:"+chatHeight+"px !important;}</style>");

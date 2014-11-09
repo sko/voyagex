@@ -1,6 +1,2 @@
-class SandboxController < ApplicationController
-
-  def faye
-  end
-  
+class SandboxController < ApplicationController  
 end

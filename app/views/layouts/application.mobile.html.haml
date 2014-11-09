@@ -1,0 +1,43 @@
+!!!
+/[if lt IE 7] <html class="no-js lt-ie9 lt-ie8 lt-ie7">
+/[if IE 7] <html class="no-js lt-ie9 lt-ie8">
+/[if IE 8] <html class="no-js lt-ie9">
+/ [if gt IE 8]><!
+%html.ui-mobile
+  / <![endif]
+  %head
+    %title VoyageX
+    %meta{name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'}
+    = stylesheet_link_tag "application.mobile", media: "all"
+    = stylesheet_link_tag "#{params[:controller]}.mobile", media: "all"
+    = csrf_meta_tags
+    = javascript_include_tag "preload.mobile"
+    = javascript_include_tag "/comm/faye-browser.js"
+    = javascript_include_tag "/assets/comm/channels.js"
+  %body    
+    #header{'data-role' => 'header', 'data-position' => 'fixed'}
+      #navbar{'data-role' => 'navbar'}
+        %ul
+          %li
+            %a{id: 'nav_chat_popup_link', style: 'display:none;', href: '#nav_chat_popup', 'data-rel' => 'popup', 'data-position-to' => 'origin'}
+            %div{id: 'nav_chat_popup', 'data-role' => 'popup'}
+              %a{href: '#', 'data-rel' => 'back', class: 'nav_popup_close ui-btn ui-corner-all ui-shadow ui-btn-a ui-icon-delete ui-btn-icon-notext ui-btn-right'}
+                Close
+              %span
+                Message Received
+                %button{class: 'activate_chat', value: 'show'}
+            %button{class: 'activate_chat', value: 'chat', 'data-icon' => 'comment', 'data-iconpos' => 'top'}
+          %li
+            %button{class: 'activate_map', value: 'map', 'data-icon' => 'signal-diag', 'data-iconpos' => 'top'}
+    :javascript
+      var mapWidth = $(window).width();
+      var mapHeight = $(window).height() - $("#navbar").height();
+      $("head").append("<style type='text/css'>#map {width:"+mapWidth+"px;height:"+mapHeight+"px;}</style>");
+    #content
+      = yield
+    = javascript_include_tag 'application.mobile'
+    = javascript_include_tag "#{params[:controller]}"
+    = javascript_include_tag 'extensions.mobile'
+    :javascript
+      var chatHeight = $(window).height() - $("#navbar").height() - 10;
+      $("head").append("<style type='text/css'>.talk_message_text {width:100%;height:"+chatHeight+"px !important;}</style>");
