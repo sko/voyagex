@@ -1,20 +1,18 @@
 //= require jquery.mobile
 
 class window.MobileNavBar
-  toggleFootNavCurSrc = 'map'
 
   @i2FooterNavClick: (clickSrc) ->
     if (clickSrc == 'message')
-      window.document.getElementById('content_im').style.display = 'block'
-      window.document.getElementById('content_map').style.display = 'none'
+      $('#content_im').css('display', 'block')
+      $('#content_map').css('display', 'none')
     else if (clickSrc == 'map')
-      window.document.getElementById('content_im').style.display = 'none'
-      window.document.getElementById('content_map').style.display = 'block'
-    toggleFootNavCurSrc = clickSrc
+      $('#content_im').css('display', 'none')
+      $('#content_map').css('display', 'block')
     return false
 
-  window.document.getElementById('content_im').style.display = 'none'
-  window.document.getElementById('content_map').style.display = 'block'
+  $('#content_im').css('display', 'none')
+  $('#content_map').css('display', 'block')
 
 $(document).on 'click', '.activate_chat', (event) ->
   MobileNavBar.i2FooterNavClick('message')
