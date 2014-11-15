@@ -2,7 +2,7 @@ VoyageX::Application.configure do
   # Settings specified here will take precedence over those in config/application.rb
 
   # Code is not reloaded between requests
-  config.cache_classes = true
+  config.cache_classes = false
 
   # Full error reports are disabled and caching is turned on
   config.consider_all_requests_local       = false
@@ -19,6 +19,8 @@ VoyageX::Application.configure do
 
   # Generate digests for assets URLs
   config.assets.digest = true
+
+  default_url_options[:host] = 'voyagex.info.tm'
 
   # Defaults to nil and saved in location specified by config.assets.prefix
   # config.assets.manifest = YOUR_PATH
@@ -50,6 +52,17 @@ VoyageX::Application.configure do
 
   # Disable delivery errors, bad email addresses will be ignored
   # config.action_mailer.raise_delivery_errors = false
+  # sko: for devise
+  config.action_mailer.default_url_options = { host: 'voyagex.info.tm', port: 3000 }
+  config.action_mailer.smtp_settings = {
+    #:address              => "ctrl.info.tm",
+    #:port                 => 25,
+    :domain               => 'ctrl.info.tm',
+    #:user_name            => '<username>',
+    #:password             => '<password>',
+    #:authentication       => 'plain',
+    #:enable_starttls_auto => true
+  }
 
   # Enable threaded mode
   # config.threadsafe!

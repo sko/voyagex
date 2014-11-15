@@ -28,12 +28,17 @@
                 %button{class: 'activate_chat', value: 'show'}
             %button{class: 'activate_chat', value: 'chat', 'data-icon' => 'comment', 'data-iconpos' => 'top'}
           %li
-            %button{class: 'activate_map', value: 'map', 'data-icon' => 'signal-diag', 'data-iconpos' => 'top'}
+            %button{class: 'activate_map', value: 'map', 'data-icon' => 'location', 'data-iconpos' => 'top'}
+          %li
+            %button{class: 'activate_upload', value: 'upload', 'data-icon' => 'forward', 'data-iconpos' => 'top'}
     :javascript
       var mapWidth = $(window).width();
       var mapHeight = $(window).height() - $("#navbar").height();
       $("head").append("<style type='text/css'>#map {width:"+mapWidth+"px;height:"+mapHeight+"px;}</style>");
     #content
+      .auth{style: 'display:none;'}
+        = render partial: '/auth/sign_up', locals: {resource: User.new, resource_name: :user}
+        = render partial: '/auth/sign_in', locals: {resource: User.new, resource_name: :user}
       = yield
     = javascript_include_tag 'application.mobile'
     = javascript_include_tag "#{params[:controller]}"
@@ -41,3 +46,4 @@
     :javascript
       var chatHeight = $(window).height() - $("#navbar").height() - 10;
       $("head").append("<style type='text/css'>.talk_message_text {width:100%;height:"+chatHeight+"px !important;}</style>");
+      $('#fileupload').fileupload();

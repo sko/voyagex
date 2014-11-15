@@ -22,4 +22,14 @@
         subdomains: ['a'],
         access_token: 'pk.eyJ1Ijoic3RlcGhhbmtvZWxsZXIiLCJhIjoiZEFHdnhwayJ9.AdtZiG5HGi5JAb64G1K-jA',
         max_zoom: 30)
-    
+
+#content_upload{style: 'display:none;'}
+  .logout-link{style: "display: #{user_signed_in? ? 'block' : 'none'};"}
+    = link_to 'sign out', destroy_user_session_path, class: "btn", data: { remote: "true", format: :js, method: :delete }
+  .login-link{style: "display: #{user_signed_in? ? 'none' : 'block'};"}
+    = link_to 'sign in', new_user_session_path, class: "btn", data: { remote: "true", format: :js }
+  .reg-link{style: "display: #{user_signed_in? ? 'none' : 'block'};"}
+    = link_to 'registrieren', new_user_registration_path, class: "btn", data: { remote: "true", format: :js }
+  = file_field_tag 'snapshot', id: "fileupload",
+                               'data-url' => "/path/to/upload/handler.json",
+                               'data-form-data' => "{'script': 'true'}"

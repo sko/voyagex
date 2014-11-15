@@ -19,6 +19,14 @@
       var mapHeight = Math.round($(window).height() * 0.85);
       $("head").append("<style type='text/css'>#map {width:"+mapWidth+"px;height:"+mapHeight+"px;}</style>");
     #content
+      = render partial: '/auth/sign_up', locals: {resource: User.new, resource_name: :user}
+      = render partial: '/auth/sign_in', locals: {resource: User.new, resource_name: :user}
+      .logout-link{style: "display: #{user_signed_in? ? 'block' : 'none'};"}
+        = link_to 'sign out', destroy_user_session_path, class: "btn", data: { remote: "true", format: :js, method: :delete }
+      .login-link{style: "display: #{user_signed_in? ? 'none' : 'block'};"}
+        = link_to 'sign in', new_user_session_path, class: "btn", data: { remote: "true", format: :js }
+      .reg-link{style: "display: #{user_signed_in? ? 'none' : 'block'};"}
+        = link_to 'registrieren', new_user_registration_path, class: "btn", data: { remote: "true", format: :js }
       = yield
     = javascript_include_tag "application"
     = javascript_include_tag params[:controller]

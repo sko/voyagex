@@ -1,0 +1,12 @@
+#sign_in_modal.modal.fade
+  .modal-dialog
+    .modal-content
+      .modal-header
+        %button.close{"aria-hidden" => "true", "data-dismiss" => "modal", type: "button"}
+        %i.fa.fa-times-circle
+        %h4#SignInModal.modal-title Sign In
+        %p#sign_in_error
+      .modal-body
+        = form_for(resource, as: resource_name, url: session_path(resource_name), :remote => true, :format => :js, :html => {id: 'new_session', :class => "form-signin"}) do |f|
+          = f.email_field :email, id: 'auth_email', :autofocus => true, :label => false, :input_html => {:class => 'form-control'}, :placeholder => "Email"
+          = f.password_field :password, id: 'auth_password', :label => false, :input_html => {:class => 'form-control'}, :placeholder => "Password"

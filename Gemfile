@@ -4,18 +4,17 @@ ruby '2.1.3'
 
 gem 'rails', '4.1.6'
 
-# Bundle edge Rails instead:
-# gem 'rails', :git => 'git://github.com/rails/rails.git'
+group :production, :development do
+  gem 'comm', path: "comm"
+end
 
-gem 'sqlite3'
-gem 'comm', path: "comm"
+gem 'mysql2'
 gem 'haml'                                 
 gem 'haml-rails'                                       
 gem 'resque-scheduler' 
 gem 'leaflet-rails'
-
-# Faye
-gem 'thin'
+gem 'devise'
+gem "devise-async"
 
 #assets
 gem 'jquery-fileupload-rails'                          
@@ -33,12 +32,27 @@ group :assets do
   gem 'uglifier'
 end
 
+group :test do
+  gem 'capybara'
+  gem 'capybara-screenshot'
+  gem 'capybara-webkit'
+  gem 'database_cleaner'
+  gem 'factory_girl_rails'
+end
+
+group :development do
+  # Faye
+  gem 'thin'
+end
+
 group :test, :development do
   gem 'awesome_print'
+  gem 'email_spec'
   gem 'pry-nav'
   gem 'pry-rails', git: 'git://github.com/rweng/pry-rails.git'
   gem 'pry-rescue'
   gem 'pry-stack_explorer'
   gem 'rspec-rails'
   gem 'shoulda-matchers'  # Shoulda Matchers for RSpec
+  gem 'timecop'
 end

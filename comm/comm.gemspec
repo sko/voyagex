@@ -24,6 +24,4 @@ Gem::Specification.new do |s|
   s.add_dependency "faye-redis"
   s.add_dependency "haml"
   s.add_dependency "haml-rails"
-
-  s.add_development_dependency "sqlite3"
 end
