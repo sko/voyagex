@@ -4,7 +4,7 @@ ruby '2.1.3'
 
 gem 'rails', '4.1.6'
 
-group :production, :development do
+group :production, :staging, :development do
   gem 'comm', path: "comm"
 end
 
@@ -15,6 +15,8 @@ gem 'resque-scheduler'
 gem 'leaflet-rails'
 gem 'devise'
 gem "devise-async"
+gem 'paperclip'
+gem "geocoder"
 
 #assets
 gem 'jquery-fileupload-rails'                          
@@ -26,10 +28,14 @@ gem 'jquery_mobile_rails'
 # in production environments by default.
 group :assets do
   gem 'sass-rails'
-  gem 'coffee-rails'
-  # See https://github.com/sstephenson/execjs#readme for more supported runtimes
-  # gem 'therubyracer', :platforms => :ruby
+  #gem 'coffee-rails'
   gem 'uglifier'
+end
+gem 'coffee-rails'
+
+group :staging do
+  # See https://github.com/sstephenson/execjs#readme for more supported runtimes
+  gem 'therubyracer', :platforms => :ruby
 end
 
 group :test do
@@ -40,7 +46,7 @@ group :test do
   gem 'factory_girl_rails'
 end
 
-group :development do
+group :staging, :development do
   # Faye
   gem 'thin'
 end

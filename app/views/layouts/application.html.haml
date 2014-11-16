@@ -14,6 +14,7 @@
     = javascript_include_tag "/comm/faye-browser.js"
     = javascript_include_tag "/assets/comm/channels.js"
   %body
+    = hidden_field_tag :current_user_id, current_user.present? ? current_user.id : tmp_user.id, { id: :current_user_id }
     :javascript
       var mapWidth = $(window).width() - 13;
       var mapHeight = Math.round($(window).height() * 0.85);

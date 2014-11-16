@@ -11,7 +11,27 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20141114192400) do
+ActiveRecord::Schema.define(version: 20141116115014) do
+
+  create_table "locations", force: true do |t|
+    t.float    "latitude",   limit: 24, null: false
+    t.float    "longitude",  limit: 24, null: false
+    t.text     "address"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "locations", ["latitude", "longitude"], name: "index_locations_on_latitude_and_longitude", using: :btree
+
+  create_table "locations_users", force: true do |t|
+    t.integer  "location_id"
+    t.integer  "user_id"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "locations_users", ["location_id"], name: "index_locations_users_on_location_id", using: :btree
+  add_index "locations_users", ["user_id"], name: "index_locations_users_on_user_id", using: :btree
 
   create_table "roles", force: true do |t|
     t.string "name", null: false

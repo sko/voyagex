@@ -72,3 +72,5 @@ module VoyageX
 #    end
   end
 end
+
+ADMIN_EMAIL_ADDRESS = 'sko@ctrl.info.tm'

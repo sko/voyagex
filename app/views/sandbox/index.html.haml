@@ -1,6 +1,5 @@
 #content_im.talk_message
   = form_tag '#', method: :post, remote: true
-  = hidden_field_tag :client_id, ((0..6).map { (('a'..'z').to_a+(0..9).to_a)[rand(36)] }.join)
 
   - if is_mobile
     .talk_message_data
@@ -24,12 +23,18 @@
         max_zoom: 30)
 
 #content_upload{style: 'display:none;'}
+  - popup_params = { data: { rel: 'popup', 'position-to' => 'window', 'data-role' => 'button' } }
+  %br
   .logout-link{style: "display: #{user_signed_in? ? 'block' : 'none'};"}
     = link_to 'sign out', destroy_user_session_path, class: "btn", data: { remote: "true", format: :js, method: :delete }
+  %br
   .login-link{style: "display: #{user_signed_in? ? 'none' : 'block'};"}
-    = link_to 'sign in', new_user_session_path, class: "btn", data: { remote: "true", format: :js }
+    = link_to 'sign in', '#sign_in_modal', popup_params
+  %br
   .reg-link{style: "display: #{user_signed_in? ? 'none' : 'block'};"}
-    = link_to 'registrieren', new_user_registration_path, class: "btn", data: { remote: "true", format: :js }
+    = link_to 'registrieren', '#sign_up_modal', popup_params
+  %br
+  %br
   = file_field_tag 'snapshot', id: "fileupload",
                                'data-url' => "/path/to/upload/handler.json",
                                'data-form-data' => "{'script': 'true'}"

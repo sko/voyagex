@@ -25,6 +25,13 @@ module Comm
       end
       monitor :publish do
         puts "Client #{client_id} published #{data.inspect} to #{channel}."
+        case data['type']
+        when 'click'
+          user = User.where(id: data['userId']).first
+          location = Location.new(latitude: data['lat'], longitude: data['lng'])
+          # TODO maybe select existing location if exists instead of creating new - l.nearby(5)
+          ls_u = user.locations_users.create(location: location)
+        end
       end
     end
 

@@ -5,8 +5,8 @@ module Comm
   #class Engine < ::Faye::RackAdapter
     isolate_namespace Comm
     #config.action_controller.allow_concurrency true
-    middleware.use FayeRails::Middleware, mount: '/', timeout: 25, engine: {type: Faye::Redis, host: 'localhost'} do
-    #middleware.use FayeRails::Middleware, mount: '/', timeout: 25 do
+    engine_params = [:development].include?(Rails.env) ? { engine: { type: Faye::Redis, host: 'localhost' } } : {}
+    middleware.use FayeRails::Middleware, { mount: '/', timeout: 25 }.merge!(engine_params) do
       map '/**' => Comm::ChannelsController
       map :default => :block
     end

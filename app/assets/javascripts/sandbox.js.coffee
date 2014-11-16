@@ -11,7 +11,7 @@ jQuery ->
 
   talkCB = (message) ->
     console.log 'got a talk - message: ' + message
-    if $('#client_id').val() != message.clientId
+    if $('#current_user_id').val() != message.userId
       $('#message').val('\n-------------------------\n'+message.text+$('#message').val())
       $('#message').selectRange(0); 
       for listener in window.commListeners.talk
@@ -39,13 +39,14 @@ jQuery ->
       else
         publishText = $(this).val().substr(0, endIdx)
       comm.send('/talk', {type: 'message',\
-                          text: $('#client_id').val()+': '+publishText,\
-                          clientId: $('#client_id').val()})
+                          text: $('#current_user_id').val()+': '+publishText,\
+                          userId: $('#current_user_id').val()})
       $(this).val('\n-------------------------\n'+$(this).val())
       $(this).selectRange(0); 
   
   map.on 'click', (event) ->
     L.marker(event.latlng).addTo(map)
     comm.send('/map_events', {type: 'click',\
+                              userId: $('#current_user_id').val(),\
                               lat: event.latlng.lat,\
                               lng: event.latlng.lng})

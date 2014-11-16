@@ -14,7 +14,13 @@ module Auth
     end
 
     def new
-      render "devise/sessions/new", layout: false, formats: [:js], locals: { resource: User.new, resource_name: :user }
+      if request.xhr?
+        render "devise/sessions/new", layout: false, formats: [:js], locals: { resource: User.new, resource_name: :user }
+      else
+        #flash[:exec] = 'show_login_dialog'
+        #render "sandbox/index"
+        redirect_to root_path(exec: 'show_login_dialog')
+      end
     end
     
     def destroy

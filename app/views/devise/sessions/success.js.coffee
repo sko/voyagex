@@ -4,4 +4,4 @@ $('.reg-link').each () ->
   $(this).css('display', 'none')
 $('.logout-link').each () ->
   $(this).css('display', 'block')
-alert('me gusto bene')
+alert('me gusto mucho')
