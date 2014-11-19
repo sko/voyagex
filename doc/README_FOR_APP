@@ -2,6 +2,24 @@ Use this README file to introduce your application and point to useful places in
 Run "rake doc:app" to generate API documentation for your models, controllers, helpers, and libraries.
 
 ==========
+Concept
+==========
++) polymorphic wie bei whatsbetter, WhatsBetter::Comparable <=> Upload (also ändern), Content als entity von Upload.
+   aber: hilfsmethode file in upload: delegate!!!
++) bilder so wie werbung bei google auf map zuordnen: links liste (A,B,...), rechts karte mit Markern (uscan hat das auch)
+   TODO: wie läuft das bei googlemobile bzw. youtube
++) @thesis: i18n
++) internationalisierung
+
+==========
+Pragmatic Diary
+==========
+form wird unsichtbar wenn sie nach openmaps eingebunden wird. $('form') !!!
+die ursache kann man suchen - muss man aber auch nicht. gefahr wenn nicht: das es irgendwann mal unerwartet nicht geht.
+alternativ: tests schreiben die immer alle forms suchen.
+
+
+==========
 Devise
 ==========
 rails generate devise:install

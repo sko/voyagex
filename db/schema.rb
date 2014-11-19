@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20141116115014) do
+ActiveRecord::Schema.define(version: 20141116181610) do
 
   create_table "locations", force: true do |t|
     t.float    "latitude",   limit: 24, null: false
@@ -36,6 +36,20 @@ ActiveRecord::Schema.define(version: 20141116115014) do
   create_table "roles", force: true do |t|
     t.string "name", null: false
   end
+
+  create_table "uploads", force: true do |t|
+    t.integer  "user_id",           null: false
+    t.integer  "location_id"
+    t.string   "file_file_name"
+    t.string   "file_content_type"
+    t.integer  "file_file_size"
+    t.datetime "file_updated_at"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "uploads", ["location_id"], name: "index_uploads_on_location_id", using: :btree
+  add_index "uploads", ["user_id"], name: "index_uploads_on_user_id", using: :btree
 
   create_table "users", force: true do |t|
     t.string   "username"

@@ -315,7 +315,7 @@ DEPENDENCIES
   jquery_mobile_rails
   leaflet-rails
   mysql2
-  paperclip
+  paperclip (~> 4.2)
   pry-nav
   pry-rails!
   pry-rescue

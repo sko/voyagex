@@ -7,6 +7,7 @@ module Auth
       return invalid_login_attempt unless @user
       if @user.valid_password?(params[:user][:password])
         sign_in(@user)
+        session.delete(:tmp_user_id)
         render "devise/sessions/success", layout: false, formats: [:js], locals: {resource: @user, resource_name: :user}
       else
         render "devise/sessions/new", layout: false, formats: [:js], locals: { resource: @user, resource_name: :user }
@@ -19,7 +20,11 @@ module Auth
       else
         #flash[:exec] = 'show_login_dialog'
         #render "sandbox/index"
-        redirect_to root_path(exec: 'show_login_dialog')
+        if devise_mapping.confirmable? && tmp_user.confirmation_token.present?
+          redirect_to root_path(exec: 'show_login_dialog_confirm_email', email: tmp_user.email)
+        else
+          redirect_to root_path(exec: 'show_login_dialog')
+        end
       end
     end
     
@@ -37,7 +42,14 @@ module Auth
     end
  
     def invalid_login_attempt
-      redirect_to new_user_session_path, message: 'invalid login attempt'
+      if request.xhr?
+        unconfirmed_email_params = tmp_user.unconfirmed_email.present? ? {unconfirmed_email: tmp_user.unconfirmed_email} : {}
+        user = User.new(params[:user].merge!(unconfirmed_email_params).except(:password, :password_confirmation).permit!)
+        user.errors.add :email, t('auth.user_unknown') unless tmp_user.unconfirmed_email.present?
+        render "devise/sessions/new", layout: false, formats: [:js], locals: { resource: user, resource_name: :user }
+      else
+        redirect_to new_user_session_path, message: 'invalid login attempt'
+      end
     end
 
   end

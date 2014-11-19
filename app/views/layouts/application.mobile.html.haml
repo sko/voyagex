@@ -31,7 +31,7 @@
           %li
             %button{class: 'activate_map', value: 'map', 'data-icon' => 'location', 'data-iconpos' => 'top'}
           %li
-            %button{class: 'activate_upload', value: 'upload', 'data-icon' => 'forward', 'data-iconpos' => 'top'}
+            %button{class: 'activate_upload', value: 'upload', 'data-icon' => 'home', 'data-iconpos' => 'top'}
     :javascript
       var mapWidth = $(window).width();
       var mapHeight = $(window).height() - $("#navbar").height();
@@ -47,4 +47,8 @@
     :javascript
       var chatHeight = $(window).height() - $("#navbar").height() - 10;
       $("head").append("<style type='text/css'>.talk_message_text {width:100%;height:"+chatHeight+"px !important;}</style>");
-      $('#fileupload').fileupload();
+    - if params[:exec].present? && params[:exec].match(/^show_login_dialog/).present?
+      - email_arg = params[:exec].match(/^show_login_dialog_confirm_email/).present? ? "'#{tmp_user.unconfirmed_email}'" : 'null'
+      :javascript
+        showLoginDialog(#{email_arg}, true);
+

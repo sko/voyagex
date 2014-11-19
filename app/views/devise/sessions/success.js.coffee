@@ -4,4 +4,6 @@ $('.reg-link').each () ->
   $(this).css('display', 'none')
 $('.logout-link').each () ->
   $(this).css('display', 'block')
-alert('me gusto mucho')
+<% if is_mobile -%>
+$('#sign_in_cancel').click()
+<% end -%>

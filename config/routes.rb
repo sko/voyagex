@@ -5,5 +5,7 @@ VoyageX::Application.routes.draw do
   
   mount Comm::Engine => "/comm" unless Rails.env == 'test'
 
+  put 'upload_photo', to: 'uploads#create', as: :uploads
+
   root to: 'sandbox#index'
 end

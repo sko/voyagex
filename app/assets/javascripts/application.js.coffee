@@ -1,3 +1,5 @@
+//= require upload_helper
+
 allSignUpFields = $([]).add($("#auth_email")).add($("#auth_password")).add($("#auth_password_confirmation"))
 
 addUser = () ->

@@ -29,9 +29,21 @@ module Comm
         when 'click'
           user = User.where(id: data['userId']).first
           location = Location.new(latitude: data['lat'], longitude: data['lng'])
-          # TODO maybe select existing location if exists instead of creating new - l.nearby(5)
+          # TODO maybe select existing location if exists instead of creating new - l.nearbys(5)
           ls_u = user.locations_users.create(location: location)
         end
+      end
+    end
+
+    channel '/uploads' do
+      monitor :subscribe do
+        puts "Client #{client_id} subscribed to #{channel}."
+      end
+      monitor :unsubscribe do
+        puts "Client #{client_id} unsubscribed from #{channel}."
+      end
+      monitor :publish do
+        puts "Client #{client_id} published #{data.inspect} to #{channel}."
       end
     end
 

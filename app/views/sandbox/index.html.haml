@@ -1,3 +1,20 @@
+- if is_mobile
+  #content_home
+    #content_auth
+      - popup_params = { data: { rel: 'popup', 'position-to' => 'window', 'data-role' => 'button' } }
+      %br
+      .logout-link{style: "display: #{user_signed_in? ? 'block' : 'none'};"}
+        = link_to t('auth.sign_out'), destroy_user_session_path, class: "btn", data: { remote: "true", format: :js, method: :delete }
+      %br
+      .login-link{style: "display: #{user_signed_in? ? 'none' : 'block'};"}
+        = link_to t('auth.sign_in'), '#sign_in_modal', popup_params
+      %br
+      .reg-link{style: "display: #{user_signed_in? ? 'none' : 'block'};"}
+        = link_to t('auth.sign_up'), '#sign_up_modal', popup_params
+    %br
+    %br
+    = render partial: '/shared/uploads', locals: {resource: Upload.new, resource_name: :upload}
+
 #content_im.talk_message
   = form_tag '#', method: :post, remote: true
 
@@ -21,20 +38,3 @@
         subdomains: ['a'],
         access_token: 'pk.eyJ1Ijoic3RlcGhhbmtvZWxsZXIiLCJhIjoiZEFHdnhwayJ9.AdtZiG5HGi5JAb64G1K-jA',
         max_zoom: 30)
-
-#content_upload{style: 'display:none;'}
-  - popup_params = { data: { rel: 'popup', 'position-to' => 'window', 'data-role' => 'button' } }
-  %br
-  .logout-link{style: "display: #{user_signed_in? ? 'block' : 'none'};"}
-    = link_to 'sign out', destroy_user_session_path, class: "btn", data: { remote: "true", format: :js, method: :delete }
-  %br
-  .login-link{style: "display: #{user_signed_in? ? 'none' : 'block'};"}
-    = link_to 'sign in', '#sign_in_modal', popup_params
-  %br
-  .reg-link{style: "display: #{user_signed_in? ? 'none' : 'block'};"}
-    = link_to 'registrieren', '#sign_up_modal', popup_params
-  %br
-  %br
-  = file_field_tag 'snapshot', id: "fileupload",
-                               'data-url' => "/path/to/upload/handler.json",
-                               'data-form-data' => "{'script': 'true'}"

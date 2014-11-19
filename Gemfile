@@ -15,7 +15,7 @@ gem 'resque-scheduler'
 gem 'leaflet-rails'
 gem 'devise'
 gem "devise-async"
-gem 'paperclip'
+gem "paperclip", "~> 4.2"
 gem "geocoder"
 
 #assets
