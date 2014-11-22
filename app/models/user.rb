@@ -2,6 +2,8 @@ class User < ActiveRecord::Base
   has_many :locations_users, dependent: :destroy
   has_many :locations, through: :locations_users
   has_many :uploads
+  has_one :comm_setting, inverse_of: :user
+  has_many :comm_peers, foreign_key: :peer_id, dependent: :destroy
 
   # Include default devise modules. Others available are:
   # :confirmable, :lockable, :timeoutable and :omniauthable

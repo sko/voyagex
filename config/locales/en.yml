@@ -1,6 +1,7 @@
 en:
   cancel: Cancel
   auth:
+    whoami: I am %{username}
     sign_up: Sign Up
     sign_in: Sign In
     sign_out: Sign Out
@@ -8,3 +9,12 @@ en:
     email_confirm_required: "
       email-confirmation for %{email} required before sign in
       TODO: resend confirmation instructions"
+  uploads:
+    take_photo: Take a Photo
+    take_shot: Take Shot
+    upload_photo: Upload Photo
+    upload_file: Upload File
+    select_camera: Take a Photo
+    select_file: Select File
+    add_comment: Comment
+    add_comment_submit: Add

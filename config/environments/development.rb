@@ -38,5 +38,8 @@ VoyageX::Application.configure do
 
   # Expands the lines which load the assets
   config.assets.debug = true
+
+  # enabled locales
+  config.i18n.available_locales = [:en, :de]
 end
 #Faye.logger = lambda { |m| puts m }

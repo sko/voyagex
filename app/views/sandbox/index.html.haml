@@ -1,5 +1,7 @@
 - if is_mobile
   #content_home
+    %h4
+      #{t('auth.whoami', username: tmp_user().username)}
     #content_auth
       - popup_params = { data: { rel: 'popup', 'position-to' => 'window', 'data-role' => 'button' } }
       %br
@@ -13,7 +15,7 @@
         = link_to t('auth.sign_up'), '#sign_up_modal', popup_params
     %br
     %br
-    = render partial: '/shared/uploads', locals: {resource: Upload.new, resource_name: :upload}
+    = render partial: '/shared/uploads.mobile', locals: {resource: Upload.new, resource_name: :upload}
 
 #content_im.talk_message
   = form_tag '#', method: :post, remote: true
@@ -32,7 +34,7 @@
             = text_area_tag :message, '', class: :talk_message_text, maxlength: 1500
 
 #content_map
-  = map(:center => { latlng: [48.3633, 10.4677],
+  = map(:center => { latlng: [51.3767, 7.49389],
                      zoom: 15 },
         tile_layer: "http://{s}.tiles.mapbox.com/v4/stephankoeller.k5hhdli3/{z}/{x}/{y}.png?access_token=pk.eyJ1Ijoic3RlcGhhbmtvZWxsZXIiLCJhIjoiZEFHdnhwayJ9.AdtZiG5HGi5JAb64G1K-jA",
         subdomains: ['a'],

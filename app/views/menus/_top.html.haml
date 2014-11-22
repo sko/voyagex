@@ -1,0 +1,25 @@
+#menu_top.container
+  .navbar.navbar-inverse.navbar-fixed-top{role: 'navigation'}
+    .container
+      .navbar-header
+        %ul.nav.navbar-nav
+          %li
+            = active_link_to "Chat", "javascript:NavBar.menuNavClick('chat')"
+          %li
+            = active_link_to "Map", "javascript:NavBar.menuNavClick('map')"
+          %li
+            = active_link_to "Upload", "javascript:NavBar.menuNavClick('upload')"
+          %li{style: 'padding-top: 9px;'}
+            %span.whoami{style: 'float :left; color: #ffffff; padding: 7px 0px 0px 0px;'}
+              #{t('auth.whoami', username: tmp_user().username)}
+            .logout-link{style: "display: #{user_signed_in? ? 'block' : 'none'}; float: right; padding: 0px 0px 0px 0px;"}
+              = link_to t('auth.sign_out'), destroy_user_session_path, class: "btn", data: { remote: "true", format: :js, method: :delete }
+          %li{style: 'padding-top: 16px;'}
+            .login-link{style: "display: #{user_signed_in? ? 'none' : 'block'}; float :left; padding: 0px 5px 0px 5px;"}
+              = link_to t('auth.sign_in'), '#', onclick: 'javascript:$("#sign_in_modal").dialog("open")'
+              /%button{onclick: 'javascript:$("#sign_in_modal").dialog("open")'}
+              /  #{t('auth.sign_in')}
+            .reg-link{style: "display: #{user_signed_in? ? 'none' : 'block'}; float :left;"}
+              = link_to t('auth.sign_up'), '#', onclick: 'javascript:$("#sign_up_modal").dialog("open")'
+              /%button{onclick: 'javascript:$("#sign_up_modal").dialog("open")'}
+              /  #{t('auth.sign_up')}

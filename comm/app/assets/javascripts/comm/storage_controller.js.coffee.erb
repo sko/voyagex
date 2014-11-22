@@ -1,0 +1,45 @@
+class window.StorageController
+  
+  constructor: (userId, channelCallBacksList, systemCallBack) ->
+    unless Modernizr.localstorage
+      alert('This Browser Doesn\'t Support Local Storage.')
+
+  # reserved listKeys:
+  # push: creates/uses an array for entries stored with storeKey
+  # if an array is defined for a storeKey then there can't be any other objects defined aside (@see this.pop())
+  addToList: (storeKey, listKey, data) ->
+    stored = localStorage.getItem(storeKey)
+    if stored == null
+      listEntries = {}
+      if listKey == 'push'
+        listEntries[listKey] = [data]
+      else
+        listEntries[listKey] = data
+      localStorage.setItem(storeKey, JSON.stringify(listEntries));
+    else
+      if stored.trim().match(/^\{/) == null
+        alert('expected Object/List - change of EntryType not implemented')
+      else
+        storedJSON = eval("(" + stored + ")")
+        if listKey == 'push'
+         #storedJSON[listKey].push(data) # LIFO with push
+          storedJSON[listKey].splice(0, 0, data) # FIFO with push
+        else
+          storedJSON[listKey] = data
+        localStorage.setItem(storeKey, JSON.stringify(storedJSON));
+
+  # expects an array stored with 'push' as listKey in storeKey-entry
+  pop: (storeKey) ->
+    stored = localStorage.getItem(storeKey)
+    unless stored == null
+      storedJSON = eval("(" + stored + ")")
+      listEntries = storedJSON['push']
+      if listEntries?
+        listEntry = listEntries.pop()
+        if listEntries.length >= 1
+          localStorage.setItem(storeKey, JSON.stringify(listEntries));
+        else
+          localStorage.removeItem(storeKey)
+        listEntry
+    else
+      null

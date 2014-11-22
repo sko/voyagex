@@ -7,3 +7,5 @@ $('.logout-link').each () ->
 <% if is_mobile -%>
 $('#sign_in_cancel').click()
 <% end -%>
+$('.whoami').each () ->
+  $(this).html("<%= escape_javascript(t('auth.whoami', username: tmp_user().username)).html_safe -%>")

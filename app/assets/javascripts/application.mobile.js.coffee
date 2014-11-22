@@ -4,7 +4,7 @@
 class window.MobileNavBar
 #  home_partial_ids = ['content_auth', 'content_uploads']
   @i2FooterNavClick: (clickSrc) ->
-    if (clickSrc == 'message')
+    if (clickSrc == 'chat')
       $('#content_im').css('display', 'block')
       $('#content_map').css('display', 'none')
       $('#content_home').css('display', 'none')
@@ -31,7 +31,7 @@ class window.MobileNavBar
 #    $('#'+id).css('display', 'none')
 
 $(document).on 'click', '.activate_chat', (event) ->
-  MobileNavBar.i2FooterNavClick('message')
+  MobileNavBar.i2FooterNavClick('chat')
   if $('#nav_chat_popup-popup').hasClass('ui-popup-active')
     $('#nav_chat_popup-popup').removeClass('ui-popup-active').addClass('ui-popup-hidden')
 

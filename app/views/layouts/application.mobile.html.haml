@@ -8,9 +8,13 @@
   %head
     %title VoyageX
     %meta{name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'}
+    = javascript_tag do
+      window.VoyageX = { NavBar: {}, MarkerManager: {} };
+      window.VoyageX['PEER_CHANNEL_PREFIX'] = '#{PEER_CHANNEL_PREFIX}';
     = stylesheet_link_tag "application.mobile", media: "all"
     = stylesheet_link_tag "#{params[:controller]}.mobile", media: "all"
     = csrf_meta_tags
+    = javascript_include_tag "modernizr"
     = javascript_include_tag "preload.mobile"
     = javascript_include_tag "/comm/faye-browser.js"
     = javascript_include_tag "/assets/comm/channels.js"
@@ -50,5 +54,5 @@
     - if params[:exec].present? && params[:exec].match(/^show_login_dialog/).present?
       - email_arg = params[:exec].match(/^show_login_dialog_confirm_email/).present? ? "'#{tmp_user.unconfirmed_email}'" : 'null'
       :javascript
-        showLoginDialog(#{email_arg}, true);
+        showLoginDialog(#{email_arg});
 

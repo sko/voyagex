@@ -1,0 +1,127 @@
+<% environment.context_class.instance_eval { include Rails.application.routes.url_helpers } %>
+
+jQuery ->
+  window.toggleUploadType = (selected) ->
+    if selected.value == 'file'
+      $('#upload_cam_container').css('display', 'none')
+      $('#upload_file_controls').css('display', 'block')
+    else
+      $('#upload_cam_container').css('display', 'block')
+      $('#upload_file_controls').css('display', 'none')
+
+  window.uploadPhoto = () ->
+    selLatLng = getSelectedPositionLatLng()
+    $("#location_latitude").val(selLatLng[0])
+    $("#location_longitude").val(selLatLng[1])
+    $("#user_id").val($("#current_user_id").val())
+    $("#upload_form").submit()
+
+  window.uploadPhoto64 = () ->
+    selLatLng = getSelectedPositionLatLng()
+    fileContentType = $('#media_input_current').attr('src').match(/^data:([^;]+)/)[1]
+    fileContentType = 'application/octet-stream'
+    fileData = $('#media_input_current').attr('src').replace(/^data:image\/.+?base64,/,'')
+    $.ajax
+      type: 'POST'
+      dataType: 'script'
+      url: '<%= json_uploads_path %>'
+      data: { _method: 'put',\
+              user_id: $('#current_user_id').val(),\
+              location_lat: selLatLng[0],\
+              location_lng: selLatLng[1],\
+              file_comment: $('#upload_comment').val(),\
+              file_data: fileData,\
+              file_content_type: fileContentType }
+    
+  $(document).on 'click', '#upload_button', (event) ->
+    uploadPhoto()
+    
+  $(document).on 'click', '#media_input_upload_btn', (event) ->
+    uploadPhoto64()
+
+  if $.mobile
+    $(document).on 'click', '.show-page-loading-msg', () ->
+      $this = $( this )
+      theme = $this.jqmData( "theme" ) || $.mobile.loader.prototype.options.theme
+      msgText = $this.jqmData( "msgtext" ) || $.mobile.loader.prototype.options.text
+      textVisible = $this.jqmData( "textvisible" ) || $.mobile.loader.prototype.options.textVisible
+      textonly = !!$this.jqmData( "textonly" )
+      html = $this.jqmData( "html" ) || ""
+
+      $.mobile.loading( 'show', {
+        text: msgText,
+        textVisible: textVisible,
+        theme: theme,
+        textonly: textonly,
+        html: html
+        })
+
+    $(document).on 'click', '.hide-page-loading-msg', () ->
+      $.mobile.loading( "hide" )
+
+  # photo / video
+  localMediaStream = null;
+  mediaInputVideo = null;
+  mediaInputImage = null;
+  mediaInputCanvas = null;
+
+  $(document).on 'click', '#media_input_init', (event) ->
+    takePhoto()
+  
+  $(document).on 'click', '#media_input_capture_btn', (event) ->
+    snapshot()
+
+  $(document).on 'click', '#media_input_stop_btn', (event) ->
+    mediaInputVideo[0].pause()
+    localMediaStream.stop() # Doesn't do anything in Chrome.
+
+  snapshot = () ->
+    if (localMediaStream) 
+      sizeCanvas()
+      ctx = mediaInputCanvas[0].getContext('2d');
+      ctx.drawImage(mediaInputVideo[0], 0, 0);
+      # "image/webp" works in Chrome.
+      # Other browsers will fall back to image/png.
+      mediaInputImage[0].src = mediaInputCanvas[0].toDataURL('image/webp')
+      #mediaInputImage.attr('src', mediaInputCanvas[0].toDataURL('image/webp'))
+      $('#fileupload').attr('value', mediaInputImage[0].src)
+
+  takePhoto = () ->
+    if (Modernizr.getusermedia) 
+      $('#media_input_container').css('display', 'block')
+      
+      gUM = Modernizr.prefixed('getUserMedia', navigator)
+      gUM({video: true}, (stream) ->
+          mediaInputVideo = $('#media_input_capture')
+          mediaInputImage = $('#media_input_current')
+          mediaInputCanvas = $('#media_input_display')
+          mediaInputVideo.attr('src', window.URL.createObjectURL(stream))
+          #mediaInputVideo.attr('controls', true);
+          #mediaInputVideo.on 'click', () ->
+          #    snapshot()
+          #  , false
+          localMediaStream = stream
+          # video.onloadedmetadata not firing in Chrome so we have to hack.
+          # See crbug.com/110938.
+          setTimeout(() ->
+              sizeCanvas()
+          , 100)
+          # Note: onloadedmetadata doesn't fire in Chrome when using it with getUserMedia.
+          # See crbug.com/110938.
+          mediaInputVideo[0].onloadedmetadata = (e) ->
+            # Ready to go. Do some stuff.
+        , errorCallback)
+
+      #$(document).on 'click', '#media_input_capture', () ->
+      #video.addEventListener('click', snapshot, false)
+  
+  sizeCanvas = () ->
+    mediaInputCanvas.attr('width', mediaInputVideo[0].videoWidth)
+    mediaInputCanvas.attr('height', mediaInputVideo[0].videoHeight)
+    #mediaInputImage.attr('height', mediaInputVideo[0].videoHeight)
+    #mediaInputImage.attr('width', mediaInputVideo[0].videoWidth)
+  
+  errorCallback = (e) ->
+    console.log('Reeeejected!', e)
+    alert('Reeeejected!')
+

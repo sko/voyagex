@@ -7,6 +7,9 @@ module Comm
     #config.action_controller.allow_concurrency true
     engine_params = [:development].include?(Rails.env) ? { engine: { type: Faye::Redis, host: 'localhost' } } : {}
     middleware.use FayeRails::Middleware, { mount: '/', timeout: 25 }.merge!(engine_params) do
+      #map '/register**' => Comm::CommController
+      #map '/publish**' => Comm::CommController
+      #map '/subscribe**' => Comm::CommController
       map '/**' => Comm::ChannelsController
       map :default => :block
     end

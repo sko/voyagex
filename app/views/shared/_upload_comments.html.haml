@@ -1,0 +1,14 @@
+.container.upload_comment_container
+  - @upload.comments.each_with_index do |comment, i|
+    = render partial: '/shared/upload_comment', locals: { comment: comment, i: i }
+
+- bid = "upload_comment_btn_#{@upload.id}"
+- if is_mobile
+  - popup_params = { data: { rel: 'popup', 'position-to' => 'window', 'data-role' => 'button' } }
+  = link_to t('uploads.add_comment'), '#upload_comment_conrols', popup_params
+- else
+  .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: bid}
+    .ui-button-text
+      #{t('uploads.add_comment')}
+
+  

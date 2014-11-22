@@ -1,0 +1,7 @@
+%script
+  (function() {
+  - unless resource.errors.empty?
+    top.$("#upload_error").html("<ul><%= escape_javascript(resource.errors.full_messages.map { |msg| content_tag(:li, msg) }.join.html_safe) %></ul>");
+  - if is_mobile 
+    top.$.mobile.loading("hide");
+  }).call(this);

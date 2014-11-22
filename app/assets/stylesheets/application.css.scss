@@ -10,6 +10,14 @@
  *
  *= require_self
  *= require jquery-ui
- *= require jquery.fileupload-ui
  *= require leaflet
+ *= require swiper
  */
+
+// "bootstrap-sprockets" must be imported before "bootstrap" and "bootstrap/variables"
+@import "bootstrap-sprockets";
+@import "bootstrap";
+
+@import "jquery-ui";
+@import "leaflet";
+@import "swiper";

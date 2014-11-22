@@ -11,7 +11,26 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20141116181610) do
+ActiveRecord::Schema.define(version: 20141122194001) do
+
+  create_table "comm_peers", force: true do |t|
+    t.integer  "comm_setting_id", null: false
+    t.integer  "peer_id",         null: false
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "comm_peers", ["comm_setting_id"], name: "index_comm_peers_on_comm_setting_id", using: :btree
+
+  create_table "comm_settings", force: true do |t|
+    t.integer  "user_id",         null: false
+    t.string   "channel_enc_key", null: false
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "comm_settings", ["channel_enc_key"], name: "index_comm_settings_on_channel_enc_key", using: :btree
+  add_index "comm_settings", ["user_id"], name: "index_comm_settings_on_user_id", using: :btree
 
   create_table "locations", force: true do |t|
     t.float    "latitude",   limit: 24, null: false
@@ -36,6 +55,17 @@ ActiveRecord::Schema.define(version: 20141116181610) do
   create_table "roles", force: true do |t|
     t.string "name", null: false
   end
+
+  create_table "upload_comments", force: true do |t|
+    t.integer  "user_id",    null: false
+    t.integer  "upload_id"
+    t.text     "text"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "upload_comments", ["upload_id"], name: "index_upload_comments_on_upload_id", using: :btree
+  add_index "upload_comments", ["user_id"], name: "index_upload_comments_on_user_id", using: :btree
 
   create_table "uploads", force: true do |t|
     t.integer  "user_id",           null: false

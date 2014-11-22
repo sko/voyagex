@@ -17,17 +17,22 @@ gem 'devise'
 gem "devise-async"
 gem "paperclip", "~> 4.2"
 gem "geocoder"
+gem 'active_link_to'
+gem 'rails-i18n', github: 'svenfuchs/rails-i18n'
 
 #assets
-gem 'jquery-fileupload-rails'                          
 gem 'jquery-rails'
 gem 'jquery-ui-rails'
 gem 'jquery_mobile_rails'
+gem 'swiper-rails'
+gem 'modernizr-rails'
 
 # Gems used only for assets and not required
 # in production environments by default.
 group :assets do
   gem 'sass-rails'
+  gem 'bootstrap-sass'
+  gem 'autoprefixer-rails'
   #gem 'coffee-rails'
   gem 'uglifier'
 end

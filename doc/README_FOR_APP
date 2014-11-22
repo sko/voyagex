@@ -10,6 +10,10 @@ Concept
    TODO: wie läuft das bei googlemobile bzw. youtube
 +) @thesis: i18n
 +) internationalisierung
++) ab bestimmten zoom medialements einblenden - ja nach kartenbewegung die liste aktualisieren. (google-maps mit bilderanzeige)
++) bilder werden bewertet - die besten werden bei kleinerem zoom angezeigt.
++) jeder client baut nen eignenen channel auf mit seiner verschlüsselten id
+
 
 ==========
 Pragmatic Diary
@@ -23,3 +27,4 @@ alternativ: tests schreiben die immer alle forms suchen.
 Devise
 ==========
 rails generate devise:install
+

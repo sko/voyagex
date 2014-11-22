@@ -1,0 +1,171 @@
+<% environment.context_class.instance_eval { include Rails.application.routes.url_helpers } %>
+
+# feu: [51.3767, 7.49389]
+window.defaultLatLng = [51.3767, 7.49389]
+jQuery ->
+  comm = null
+  window.markerManager = null
+  window.commListeners = {
+                           system: [],
+                           talk: [],
+                           mapEvents: [],
+                           uploads: []
+                         }
+
+  selectedPositionLatLng = [-1, -1]
+
+  mySwiper = $('.swiper-container').swiper({
+    mode:'horizontal',
+    loop: false,
+    freeModeFluid: true
+  })
+
+  window.openUploadCommentControls = (upload_id) ->
+    #$("#upload_comment_conrols").css('display', 'block')
+    if window.isMobile()
+      MobileNavBar.i2FooterNavClick('map')
+    else
+      NavBar.menuNavClick('map')
+      $("#upload_comment_conrols").dialog("open")
+
+  $('#add_upload_comment_btn').on 'click', (event) ->
+    upload_id = $('#add_upload_comment_upload_id').val()
+    $.ajax
+      type: 'POST'
+      dataType: 'script'
+      url: '<%= create_upload_comment_path(upload_id: '') %>'+upload_id
+      data: { _method: 'put',\
+              user_id: $('#current_user_id').val(),\
+              text: $('#add_upload_comment_text').val() }
+    $('#add_upload_comment_text').val('')
+    #$("#upload_comment_conrols").css('display', 'none')
+    if window.isMobile()
+      #if $('#upload_comment_conrols').hasClass('ui-popup-active')
+      #  $('#upload_comment_conrols').removeClass('ui-popup-active').addClass('ui-popup-hidden')
+      $('#upload_comment_cancel').click()
+    else
+      uploadCommentDialog.dialog("close")
+
+  window.panUpload = (upload_id) ->
+    getUploadComments(upload_id)
+
+  window.panPosition = (lat, lng, address) ->
+    setSelectedPositionLatLng markerManager.get(), lat, lng, address
+    map.setView([lat, lng], 16)
+    if window.isMobile()
+      MobileNavBar.i2FooterNavClick('map')
+    else
+      NavBar.menuNavClick('map')
+
+  window.getSelectedPositionLatLng = () ->
+    return [selectedPositionLatLng[0], selectedPositionLatLng[1]]
+
+  getUploadComments = (upload_id) ->
+    $.ajax
+      type: 'GET'
+      dataType: 'script'
+      url: '<%= upload_comments_path(upload_id: '') %>'+upload_id
+
+  setSelectedPositionLatLng = (marker, lat, lng, address) ->
+    if marker == null
+      marker = markerManager.add lat, lng, markerEventsCB
+    else
+      marker = markerManager.sel marker, lat, lng, markerEventsCB
+    selectedPositionLatLng[0] = lat
+    selectedPositionLatLng[1] = lng
+    if address != null
+      $('#current_address').html(address) 
+
+  publishPosition = () ->
+    comm.send('/map_events', {type: 'click',\
+                              userId: $('#current_user_id').val(),\
+                              lat: selectedPositionLatLng[0],\
+                              lng: selectedPositionLatLng[1]})
+
+  initPositionCB = (position) ->
+    address = null
+    marker = markerManager.sel null, position.coords.latitude, position.coords.longitude, markerEventsCB
+    setSelectedPositionLatLng marker, position.coords.latitude, position.coords.longitude, address
+    map.setView [position.coords.latitude, position.coords.longitude], 16
+   #map.panTo([position.coords.latitude, position.coords.longitude])
+    publishPosition()
+
+  systemCB = (message) ->
+    console.log 'got a system - message: ' + message.type
+    #Object.keys(window.commListeners).every (channel) ->
+    for channel in ['talk', 'mapEvents', 'uploads']
+      for peer in message.peers
+        console.log 'subscribing: /'+channel+VoyageX.PEER_CHANNEL_PREFIX+peer.channel_enc_key + ' from user ' + peer.user.username
+        Comm.register '/'+channel+VoyageX.PEER_CHANNEL_PREFIX+peer.channel_enc_key, eval(channel+'CB')
+
+  talkCB = (message) ->
+    console.log 'got a talk - message: ' + message.type
+    if $('#current_user_id').val() != message.userId
+      $('#message').val('\n-------------------------\n'+message.text+$('#message').val())
+      $('#message').selectRange(0) 
+      for listener in window.commListeners.talk
+        listener(message)
+
+  mapEventsCB = (mapEvent) ->
+    console.log 'got a map_events - message: ' + mapEvent.type
+    if mapEvent.address?
+      setSelectedPositionLatLng markerManager.get(), mapEvent.lat, mapEvent.lng, mapEvent.address
+    else
+      setSelectedPositionLatLng markerManager.get(), mapEvent.lat, mapEvent.lng, null
+    map.setView [mapEvent.lat, mapEvent.lng], 16
+   #map.panTo([mapEvent.lat, mapEvent.lng])
+    for listener in window.commListeners.mapEvents
+      listener(mapEvent)
+
+  uploadsCB = (upload) ->
+    console.log 'got an uploads - message: ' + upload.type
+    maxHeight = 100
+    scale = maxHeight / upload.file.height
+    width = Math.round(upload.file.width * scale)
+    style = 'width:'+width+'px;'
+    if upload.file.type == 'image'
+     #tag = '<span class="swiper-slide" onclick="panPosition('+upload.location.lat+','+upload.location.lng+',\''+upload.location.address+'\','+upload.file.id+')">'+
+      tag = '<span class="swiper-slide" onclick="panUpload('+upload.id+')">'+
+            '<img src="'+upload.file.url+'" style="'+style+'">'+
+            '</span>'
+    $("#upload_preview").prepend(tag)
+    mySwiper.reInit()
+    #mySwiper.resizeFix() 
+    for listener in window.commListeners.uploads
+      listener(upload)
+
+  markerEventsCB = (event) ->
+    address = null
+    setSelectedPositionLatLng event.target, event.target._latlng.lat, event.target._latlng.lng, address
+
+  $('#message').on 'keyup', (event) ->
+    if (event.which == 13 || event.keyCode == 13)
+      event.preventDefault()
+      endIdx = $(this).val().indexOf('\n---')
+      if endIdx == -1
+        publishText = $(this).val()
+      else
+        publishText = $(this).val().substr(0, endIdx)
+      comm.send('/talk', {type: 'message',\
+                          text: $('#current_user_id').val()+': '+publishText,\
+                          userId: $('#current_user_id').val()})
+      $(this).val('\n-------------------------\n'+$(this).val())
+      $(this).selectRange(0) 
+  
+  map.on 'click', (event) ->
+    address = null
+    setSelectedPositionLatLng markerManager.get(), event.latlng.lat, event.latlng.lng, address
+    publishPosition()
+
+  $(document).ready () ->
+    if navigator.geolocation 
+      navigator.geolocation.getCurrentPosition(initPositionCB, (error) ->
+          alert('geolocation timed out - manual selection required.\nsetting default location...')
+          initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
+      , { enableHighAccuracy: true, timeout : 10000 })
+    comm = new Comm($('#current_user_id').val(),
+                    [['/talk', talkCB],
+                     ['/map_events', mapEventsCB],
+                     ['/uploads', uploadsCB]]
+                    systemCB)
+    window.markerManager = new VoyageX.MarkerManager(map)

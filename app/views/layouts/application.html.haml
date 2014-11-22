@@ -7,9 +7,13 @@
   / <![endif]
   %head
     %title VoyageX
+    = javascript_tag do
+      window.VoyageX = { NavBar: {}, MarkerManager: {} };
+      window.VoyageX['PEER_CHANNEL_PREFIX'] = '#{PEER_CHANNEL_PREFIX}';
     = stylesheet_link_tag "application", media: "all"
     = stylesheet_link_tag params[:controller], media: "all"
     = csrf_meta_tags
+    = javascript_include_tag "modernizr"
     = javascript_include_tag "preload"
     = javascript_include_tag "/comm/faye-browser.js"
     = javascript_include_tag "/assets/comm/channels.js"
@@ -19,26 +23,23 @@
       var mapWidth = $(window).width() - 13;
       var mapHeight = Math.round($(window).height() * 0.85);
       $("head").append("<style type='text/css'>#map {width:"+mapWidth+"px;height:"+mapHeight+"px;}</style>");
-    #content
-      = render partial: '/auth/sign_up', locals: {resource: User.new, resource_name: :user}
-      = render partial: '/auth/sign_in', locals: {resource: User.new, resource_name: :user}
-      .logout-link{style: "display: #{user_signed_in? ? 'block' : 'none'};"}
-        = link_to t('auth.sign_out'), destroy_user_session_path, class: "btn", data: { remote: "true", format: :js, method: :delete }
-      .login-link{style: "display: #{user_signed_in? ? 'none' : 'block'};"}
-        %button{onclick: 'javascript:$("#sign_in_modal").dialog("open")'}
-          #{t('auth.sign_in')}
-      .reg-link{style: "display: #{user_signed_in? ? 'none' : 'block'};"}
-        %button{onclick: 'javascript:$("#sign_up_modal").dialog("open")'}
-          #{t('auth.sign_up')}
-      = render partial: '/shared/uploads', locals: {resource: Upload.new, resource_name: :upload}
-      = yield
-    = javascript_include_tag "application"
-    = javascript_include_tag params[:controller]
-    :javascript
       var chatHeight = Math.round($(window).height() * 0.15) - 33;
       $("head").append("<style type='text/css'>.talk_message_text {width:100%;height:"+chatHeight+"px !important;}</style>");
+    
+    = render partial: '/menus/top'
+    #content{style: 'position: absolute; top: 50px;'}
+      / modal-templates 
+      = render partial: '/auth/sign_up', locals: {resource: User.new, resource_name: :user}
+      = render partial: '/auth/sign_in', locals: {resource: User.new, resource_name: :user}
+      #content_home
+        = render partial: '/shared/uploads', locals: {resource: Upload.new, resource_name: :upload}
+      = yield
+    
+    = javascript_include_tag "application"
+    = javascript_include_tag params[:controller]
+    
     - if params[:exec].present? && params[:exec].match(/^show_login_dialog/).present?
       - email_arg = params[:exec].match(/^show_login_dialog_confirm_email/).present? ? "'#{tmp_user.unconfirmed_email}'" : 'null'
       :javascript
-        showLoginDialog(#{email_arg}, false);
+        showLoginDialog(#{email_arg});
 
