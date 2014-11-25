@@ -5,26 +5,26 @@ class window.MobileNavBar
 #  home_partial_ids = ['content_auth', 'content_uploads']
   @i2FooterNavClick: (clickSrc) ->
     if (clickSrc == 'chat')
-      $('#content_im').css('display', 'block')
+      $('#content_chat').css('display', 'block')
       $('#content_map').css('display', 'none')
       $('#content_home').css('display', 'none')
 #      for id in home_partial_ids
 #        $('#'+id).css('display', 'none')
     else if (clickSrc == 'map')
-      $('#content_im').css('display', 'none')
+      $('#content_chat').css('display', 'none')
       $('#content_map').css('display', 'block')
       $('#content_home').css('display', 'none')
 #      for id in home_partial_ids
 #        $('#'+id).css('display', 'none')
     else if (clickSrc == 'upload')
-      $('#content_im').css('display', 'none')
+      $('#content_chat').css('display', 'none')
       $('#content_map').css('display', 'none')
       $('#content_home').css('display', 'block')
 #      for id in home_partial_ids
 #        $('#'+id).css('display', 'block')
     return false
 
-  $('#content_im').css('display', 'none')
+  $('#content_chat').css('display', 'none')
   $('#content_map').css('display', 'block')
   $('#content_home').css('display', 'none')
 #  for id in home_partial_ids

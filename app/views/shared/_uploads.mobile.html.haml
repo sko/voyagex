@@ -18,6 +18,8 @@
         .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: 'media_input_upload_btn'}
           .ui-button-text
             #{t('uploads.upload_photo').html_safe}
+        %span.btn{id: 'switch_camera'}
+          %img{src: '/assets/switch-camera.png'}
     .container
       = form_for resource, remote: true, method: :put, :html => { class: nil, :multipart => true, :id => "upload_form", target: "upload_target" } do |f|
         %span{style: 'float: left;'}

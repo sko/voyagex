@@ -17,7 +17,7 @@
     %br
     = render partial: '/shared/uploads.mobile', locals: {resource: Upload.new, resource_name: :upload}
 
-#content_im.talk_message
+#content_chat.talk_message
   = form_tag '#', method: :post, remote: true
 
   - if is_mobile

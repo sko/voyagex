@@ -18,6 +18,24 @@ module ApplicationHelper
   def devise_mapping
     Devise.mappings[:user]
   end
+  
+  #
+  #
+  #
+  def lang_change_links request
+    # I18n.locale
+    # "http://localhost:3000/search/show_checks_from_now?l=en&user_id=33"
+    request_uri = request.env['REQUEST_URI'].sub(/[&]?l=[^&]+([&]?)/, "\\1")
+    query_off_idx = request_uri.index('?')
+    if query_off_idx.nil?
+      lang_change_link_before = request_uri
+      lang_change_link_after = ''
+    else
+      lang_change_link_before = request_uri[0, query_off_idx]
+      lang_change_link_after = "#{request_uri[query_off_idx + 1, request_uri.length]}"
+    end
+    [lang_change_link_before, lang_change_link_after]
+  end
 
   #
   #

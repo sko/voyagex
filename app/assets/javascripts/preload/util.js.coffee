@@ -6,6 +6,12 @@ window.showLoginDialog = (confirmEmailAddress) ->
     $("#sign_in_flash").html("check email-account "+confirmEmailAddress+" first for confirmation-mail")
   $("#sign_in_modal").dialog('open')
 
+
+$(document).on 'keyup', '.edit_detail', (event) ->
+  if (event.which == 13 || event.keyCode == 13)
+    event.preventDefault()
+    $(this).closest('form').submit()
+
 jQuery ->
   $.fn.selectRange = (start, end) ->
     if !end

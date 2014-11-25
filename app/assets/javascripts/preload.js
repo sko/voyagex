@@ -6,3 +6,4 @@
 //= require leaflet
 //= require preload/util
 //= require marker_manager
+//= require media_manager

@@ -1,5 +1,9 @@
 en:
   cancel: Cancel
+  menu:
+    chat: Chat
+    map: Map
+    home: Home
   auth:
     whoami: I am %{username}
     sign_up: Sign Up

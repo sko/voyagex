@@ -9,17 +9,23 @@ jQuery ->
       $('#upload_cam_container').css('display', 'block')
       $('#upload_file_controls').css('display', 'none')
 
-  window.uploadPhoto = () ->
+  curSelVidSrcIdx = 0
+  switchCamera = () ->
+    if selectedCameraActive
+      stopCurrentVideo()
+    curSelVidSrcIdx = mediaManager.nextSelectedVideoSrcIdx()
+    takePhoto()
+
+  uploadPhoto = () ->
     selLatLng = getSelectedPositionLatLng()
     $("#location_latitude").val(selLatLng[0])
     $("#location_longitude").val(selLatLng[1])
     $("#user_id").val($("#current_user_id").val())
     $("#upload_form").submit()
 
-  window.uploadPhoto64 = () ->
+  uploadPhoto64 = () ->
     selLatLng = getSelectedPositionLatLng()
     fileContentType = $('#media_input_current').attr('src').match(/^data:([^;]+)/)[1]
-    fileContentType = 'application/octet-stream'
     fileData = $('#media_input_current').attr('src').replace(/^data:image\/.+?base64,/,'')
     $.ajax
       type: 'POST'
@@ -59,11 +65,17 @@ jQuery ->
     $(document).on 'click', '.hide-page-loading-msg', () ->
       $.mobile.loading( "hide" )
 
+  mediaManager = new VoyageX.MediaManager()
+
   # photo / video
-  localMediaStream = null;
-  mediaInputVideo = null;
-  mediaInputImage = null;
-  mediaInputCanvas = null;
+  localMediaStream = null
+  mediaInputVideo = null
+  mediaInputImage = null
+  mediaInputCanvas = null
+  selectedCameraActive = false
+
+  $(document).on 'click', '#switch_camera', (event) ->
+    switchCamera()
 
   $(document).on 'click', '#media_input_init', (event) ->
     takePhoto()
@@ -72,14 +84,17 @@ jQuery ->
     snapshot()
 
   $(document).on 'click', '#media_input_stop_btn', (event) ->
+    stopCurrentVideo()
+
+  stopCurrentVideo = () ->
     mediaInputVideo[0].pause()
     localMediaStream.stop() # Doesn't do anything in Chrome.
 
   snapshot = () ->
     if (localMediaStream) 
       sizeCanvas()
-      ctx = mediaInputCanvas[0].getContext('2d');
-      ctx.drawImage(mediaInputVideo[0], 0, 0);
+      ctx = mediaInputCanvas[0].getContext('2d')
+      ctx.drawImage(mediaInputVideo[0], 0, 0)
       # "image/webp" works in Chrome.
       # Other browsers will fall back to image/png.
       mediaInputImage[0].src = mediaInputCanvas[0].toDataURL('image/webp')
@@ -89,18 +104,23 @@ jQuery ->
   takePhoto = () ->
     if (Modernizr.getusermedia) 
       $('#media_input_container').css('display', 'block')
-      
       gUM = Modernizr.prefixed('getUserMedia', navigator)
-      gUM({video: true}, (stream) ->
+      if mediaManager.curSelectedVideoSrcIdx() >= 0
+        constraints = mediaManager.constraintsForMediaSource(-1, curSelVidSrcIdx)
+      else
+        constraints = {video: true}
+      gUM(constraints, (stream) ->
+          # this is the success-callback
           mediaInputVideo = $('#media_input_capture')
           mediaInputImage = $('#media_input_current')
           mediaInputCanvas = $('#media_input_display')
           mediaInputVideo.attr('src', window.URL.createObjectURL(stream))
-          #mediaInputVideo.attr('controls', true);
+          #mediaInputVideo.attr('controls', true)
           #mediaInputVideo.on 'click', () ->
           #    snapshot()
           #  , false
           localMediaStream = stream
+          selectedCameraActive = true
           # video.onloadedmetadata not firing in Chrome so we have to hack.
           # See crbug.com/110938.
           setTimeout(() ->

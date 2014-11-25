@@ -108,6 +108,8 @@ jQuery ->
 
   mapEventsCB = (mapEvent) ->
     console.log 'got a map_events - message: ' + mapEvent.type
+    if markerManager.get().getPopup()?
+      markerManager.get().unbindPopup()
     if mapEvent.address?
       setSelectedPositionLatLng markerManager.get(), mapEvent.lat, mapEvent.lng, mapEvent.address
     else

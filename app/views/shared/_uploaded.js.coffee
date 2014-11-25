@@ -12,5 +12,5 @@ $.mobile.loading("hide")
 #width = geometry.width.to_i
 #tag = image_tag(@upload.file.url, style: "width:#{(width*(max_width/width)).to_i}px;")
 %>
-$("#upload_preview").prepend("<%= tag.gsub(/"/, '\'').html_safe -%>");
+#$("#upload_preview").prepend("<%= tag.gsub(/"/, '\'').html_safe -%>");
 $('#media_input_container').css('display', 'none')

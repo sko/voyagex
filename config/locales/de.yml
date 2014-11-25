@@ -1,5 +1,9 @@
 de:
   cancel: Abbrechen
+  menu:
+    chat: Chat
+    map: Karte
+    home: Heim
   auth:
     whoami: Ich bin %{username}
     sign_up: Regristrieren

@@ -3,20 +3,32 @@
 class window.NavBar
   @menuNavClick: (clickSrc) ->
     if (clickSrc == 'chat')
-      $('#content_im').css('display', 'block')
-      $('#content_map').css('display', 'none')
-      $('#content_home').css('display', 'none')
+      for view in ['map', 'home']
+        if $('#menu_'+view).hasClass('active')
+          $('#menu_'+view).removeClass('active')
+        $('#content_'+view).css('display', 'none')
+      if !$('#menu_'+clickSrc).hasClass('active')
+        $('#menu_'+clickSrc).addClass('active')
+      $('#content_'+clickSrc).css('display', 'block')
     else if (clickSrc == 'map')
-      $('#content_im').css('display', 'none')
-      $('#content_map').css('display', 'block')
-      $('#content_home').css('display', 'none')
-    else if (clickSrc == 'upload')
-      $('#content_im').css('display', 'none')
-      $('#content_map').css('display', 'none')
-      $('#content_home').css('display', 'block')
+      for view in ['chat', 'home']
+        if $('#menu_'+view).hasClass('active')
+          $('#menu_'+view).removeClass('active')
+        $('#content_'+view).css('display', 'none')
+      if !$('#menu_'+clickSrc).hasClass('active')
+        $('#menu_'+clickSrc).addClass('active')
+      $('#content_'+clickSrc).css('display', 'block')
+    else if (clickSrc == 'home')
+      for view in ['chat', 'map']
+        if $('#menu_'+view).hasClass('active')
+          $('#menu_'+view).removeClass('active')
+        $('#content_'+view).css('display', 'none')
+      if !$('#menu_'+clickSrc).hasClass('active')
+        $('#menu_'+clickSrc).addClass('active')
+      $('#content_'+clickSrc).css('display', 'block')
     return false
 
-  $('#content_im').css('display', 'none')
+  $('#content_chat').css('display', 'none')
   $('#content_map').css('display', 'block')
   $('#content_home').css('display', 'none')
 #  for id in home_partial_ids

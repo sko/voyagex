@@ -56,7 +56,7 @@ module Comm
             # could calculate it via Location.new(latitude: data['lat'], longitude: data['lng']).address
             # but maybe this is less expensive since reverse-geocode-lookup already done
             user = User.where(id: publish_data['userId']).first
-            if user.present?
+            if user.present? && user.locations.present?
               location = user.locations.last
               Rails.logger.debug "###### providing reverse-geocoding-service: #{location.address}"
               publish_data['address'] = location.address

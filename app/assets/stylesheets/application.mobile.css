@@ -14,3 +14,7 @@
  *= require leaflet
  *= require swiper
  */
+
+.edit_detail {
+  color: black !important;
+}
