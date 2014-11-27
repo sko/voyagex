@@ -78,6 +78,7 @@ jQuery ->
     switchCamera()
 
   $(document).on 'click', '#media_input_init', (event) ->
+    $('#media_input_panel_show').click()
     takePhoto()
   
   $(document).on 'click', '#media_input_capture_btn', (event) ->
@@ -85,6 +86,7 @@ jQuery ->
 
   $(document).on 'click', '#media_input_stop_btn', (event) ->
     stopCurrentVideo()
+    $("#media_input_panel").panel("close")
 
   stopCurrentVideo = () ->
     mediaInputVideo[0].pause()
@@ -100,6 +102,7 @@ jQuery ->
       mediaInputImage[0].src = mediaInputCanvas[0].toDataURL('image/webp')
       #mediaInputImage.attr('src', mediaInputCanvas[0].toDataURL('image/webp'))
       $('#fileupload').attr('value', mediaInputImage[0].src)
+      $("#media_input_panel").panel("close")
 
   takePhoto = () ->
     if (Modernizr.getusermedia) 
@@ -134,7 +137,8 @@ jQuery ->
 
       #$(document).on 'click', '#media_input_capture', () ->
       #video.addEventListener('click', snapshot, false)
-  
+    #$('#media_input_init').hide()
+
   sizeCanvas = () ->
     mediaInputCanvas.attr('width', mediaInputVideo[0].videoWidth)
     mediaInputCanvas.attr('height', mediaInputVideo[0].videoHeight)

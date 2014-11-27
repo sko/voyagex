@@ -37,10 +37,11 @@ class UploadsController < ApplicationController
     location = Location.new(latitude: params[:location_lat], longitude: params[:location_lng])
     # TODO nearby location check
     @upload = Upload.new
-# FIXME: imagemagick complaine about image/webp and .webp
-    file_name = "#{user.username}.class"
+    # TODO: imagemagick complains about image/webp and .webp
+    attachment_mapping = Upload.get_attachment_mapping params[:file_content_type]
+    file_name = "#{user.username}.#{attachment_mapping[1]}" if attachment_mapping.size >= 1
    #@upload.set_base64_file params[:file_data], params[:file_content_type], file_name
-    @upload.set_base64_file params[:file_data], 'application/octet-stream', file_name
+    @upload.set_base64_file params[:file_data], attachment_mapping[0], file_name
     @upload.location = location
     @upload.user = user
     if @upload.save

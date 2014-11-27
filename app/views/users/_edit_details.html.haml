@@ -1,2 +1,2 @@
 = form_tag @_action, method: :post, remote: true do 
-  = t('auth.whoami', username: text_field_tag(:username, '', class: 'edit_detail')).html_safe
+  = t('auth.whoami', username: text_field_tag(:username, @_user_name, class: 'edit_detail')).html_safe

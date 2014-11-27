@@ -31,9 +31,9 @@
               /%button{onclick: 'javascript:$("#sign_up_modal").dialog("open")'}
               /  #{t('auth.sign_up')}
           %li{style: 'padding: 15px 0px 0px 20px;'}
-            - lcls = lang_change_links request
+            - lcls = lang_change_links request, ['c']
             %span{style: 'float:left;'}
-              = link_to image_tag("/assets/en.png", :style => "border-width:0px;width:10px;height:10px;"), "#{lcls[0]}?l=en#{lcls[1]}", :style => "color:#00dd;"
+              = link_to image_tag("/assets/en.png", style: "border-width:0px;width:10px;height:10px;"), '#', onclick: "javascript:document.location.href='#{lcls[0]}?l=en#{lcls[1]}&c='+NavBar.SELECTED_CONTENT", :style => "color:#00dd;"
             %span
               &nbsp;
-              = link_to image_tag("/assets/de.png", :style => "border-width:0px;width:10px;height:10px;"), "#{lcls[0]}?l=de#{lcls[1]}", :style => "color:#00dd;"
+              = link_to image_tag("/assets/de.png", style: "border-width:0px;width:10px;height:10px;"), '#', onclick: "javascript:document.location.href='#{lcls[0]}?l=de#{lcls[1]}&c='+NavBar.SELECTED_CONTENT", :style => "color:#00dd;"

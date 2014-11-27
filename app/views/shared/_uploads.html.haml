@@ -12,7 +12,7 @@
       .upload_data_container#upload_cam_container{style: 'float: left;'}
         %span
           %button{id: 'media_input_init'}
-            #{t('uploads.take_photo').html_safe}
+            #{t('uploads.start_camera').html_safe}
         %br
         #media_input_container{style: 'display: none;'}
           #video_viewer
@@ -45,12 +45,10 @@
           = hidden_field_tag 'location[longitude]'
           = hidden_field_tag 'user[id]'
   
-  .container{style: 'margin: 20px 0px 0px 0px;'}
+  .container#swipe_panel{style: 'text-align: center; margin: 20px 0px 0px 0px;'}
     %span#current_address
     - max_height = 100.0
-    %h2{style: 'float:left;'}
-      &lt;
-    .swiper-container{style: 'float:left;'}
+    .swiper-container
       .swiper-wrapper#upload_preview
         - scroll_width = 0
         - max_width = 0
@@ -70,9 +68,8 @@
         /  - max_width = '"+($(window).width() - 13)+"'
         - swiper_style = "width: #{max_width}px; height: #{max_height.to_i}px;"
         %script
-          $("head").append("<style type='text/css'>.swiper-container, .swiper-slide { #{swiper_style} }</style>");
-    %h2
-      &gt;
+          $("head").append("<style type='text/css'>#swipe_panel, .swiper-container, .swiper-slide { #{swiper_style} }</style>");
+    %img{src: '/assets/swipe.jpg', style: 'width: 35px; height: 35px;'}
 
 .modal
   .modal-dialog#upload_comment_conrols

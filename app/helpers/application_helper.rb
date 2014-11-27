@@ -22,7 +22,7 @@ module ApplicationHelper
   #
   #
   #
-  def lang_change_links request
+  def lang_change_links request, clear_params = []
     # I18n.locale
     # "http://localhost:3000/search/show_checks_from_now?l=en&user_id=33"
     request_uri = request.env['REQUEST_URI'].sub(/[&]?l=[^&]+([&]?)/, "\\1")
@@ -31,6 +31,9 @@ module ApplicationHelper
       lang_change_link_before = request_uri
       lang_change_link_after = ''
     else
+      clear_params.each do |c_p|
+        request_uri = request_uri.sub(/[?&]?#{c_p}=[^&]*/, '')
+      end
       lang_change_link_before = request_uri[0, query_off_idx]
       lang_change_link_after = "#{request_uri[query_off_idx + 1, request_uri.length]}"
     end

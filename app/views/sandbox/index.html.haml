@@ -1,21 +1,23 @@
 - if is_mobile
   #content_home
-    %h4
-      #{t('auth.whoami', username: tmp_user().username)}
-    #content_auth
+    %span.whoami{style: 'float :left; padding: 13px 0px 13px 0px;'}
+      - if user_signed_in?
+        = link_to t('auth.whoami', username: tmp_user().username), change_username_path, data: { remote: "true", format: :js }
+      - else
+        %span
+          #{t('auth.whoami', username: tmp_user().username).html_safe}
+    .logout-link{style: "display: #{user_signed_in? ? 'block' : 'none'}; padding: 13px 0px 0px 0px;"}
+      = link_to t('auth.sign_out'), destroy_user_session_path, style: 'margin-left: 20px;', data: { remote: "true", format: :js, method: :delete }
+    #content_auth{style: 'clear: both;'}
       - popup_params = { data: { rel: 'popup', 'position-to' => 'window', 'data-role' => 'button' } }
-      %br
-      .logout-link{style: "display: #{user_signed_in? ? 'block' : 'none'};"}
-        = link_to t('auth.sign_out'), destroy_user_session_path, class: "btn", data: { remote: "true", format: :js, method: :delete }
-      %br
-      .login-link{style: "display: #{user_signed_in? ? 'none' : 'block'};"}
+      .login-link{style: "display: #{user_signed_in? ? 'none' : 'block'}; float: left;"}
         = link_to t('auth.sign_in'), '#sign_in_modal', popup_params
-      %br
-      .reg-link{style: "display: #{user_signed_in? ? 'none' : 'block'};"}
-        = link_to t('auth.sign_up'), '#sign_up_modal', popup_params
-    %br
-    %br
+      .reg-link{style: "display: #{user_signed_in? ? 'none' : 'block'}; margin-left: 20px;"}
+        = link_to t('auth.sign_up'), '#sign_up_modal', popup_params.merge(style: 'margin-left: 20px;')
     = render partial: '/shared/uploads.mobile', locals: {resource: Upload.new, resource_name: :upload}
+- else
+  #content_home
+    = render partial: '/shared/uploads', locals: {resource: Upload.new, resource_name: :upload}
 
 #content_chat.talk_message
   = form_tag '#', method: :post, remote: true

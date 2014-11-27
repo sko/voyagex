@@ -6,8 +6,12 @@
   width: 100%;
 }
 
+#upload_file_container {
+  margin: 20px 0px 0px 0px;
+}
+
 #photo_nav_panel {
-  opacity: 0.8;
-  filter: alpha(opacity=80); /* For IE8 and earlier */
+  opacity: 0.9;
+  filter: alpha(opacity=90); /* For IE8 and earlier */
 }
 

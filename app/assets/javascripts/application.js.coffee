@@ -1,7 +1,11 @@
 //= require upload_helper
 
 class window.NavBar
+  @SELECTED_CONTENT: 'map'
+  
   @menuNavClick: (clickSrc) ->
+    if clickSrc == NavBar.SELECTED_CONTENT
+      return
     if (clickSrc == 'chat')
       for view in ['map', 'home']
         if $('#menu_'+view).hasClass('active')
@@ -26,7 +30,11 @@ class window.NavBar
       if !$('#menu_'+clickSrc).hasClass('active')
         $('#menu_'+clickSrc).addClass('active')
       $('#content_'+clickSrc).css('display', 'block')
+    NavBar.SELECTED_CONTENT = clickSrc
     return false
+
+  @linkFor: (path, lang, params) ->
+    path + '?l=' + lang + '&c=' + NavBar.SELECTED_CONTENT + (params == '' ? '' : '&'+params)
 
   $('#content_chat').css('display', 'none')
   $('#content_map').css('display', 'block')

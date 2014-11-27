@@ -18,4 +18,13 @@ class Upload < ActiveRecord::Base
     end
   end
 
+  def self.get_attachment_mapping content_type
+    case content_type
+    when 'image/webp'
+      return ['application/octet-stream', 'class']
+    else
+      return [content_type]
+    end
+  end
+
 end

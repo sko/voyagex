@@ -15,6 +15,7 @@ en:
       TODO: resend confirmation instructions"
   uploads:
     take_photo: Take a Photo
+    start_camera: Start Camera
     take_shot: Take Shot
     upload_photo: Upload Photo
     upload_file: Upload File

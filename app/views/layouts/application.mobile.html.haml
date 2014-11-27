@@ -50,6 +50,7 @@
         = link_to image_tag('/assets/arrow-up-right.png', style: 'width: 32px; height: 43px;'), '#photo_nav_panel', style: 'color: black;'
     / panels nust be beginning or end in data-role: page
     = render partial: '/sandbox/photo_nav_panel'
+    = render partial: '/sandbox/media_input_panel'
     = javascript_include_tag 'application.mobile'
     = javascript_include_tag "#{params[:controller]}"
     = javascript_include_tag 'extensions.mobile'

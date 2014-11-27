@@ -31,8 +31,6 @@
       / modal-templates 
       = render partial: '/auth/sign_up', locals: {resource: User.new, resource_name: :user}
       = render partial: '/auth/sign_in', locals: {resource: User.new, resource_name: :user}
-      #content_home
-        = render partial: '/shared/uploads', locals: {resource: Upload.new, resource_name: :upload}
       = yield
     
     = javascript_include_tag "application"
@@ -42,4 +40,6 @@
       - email_arg = params[:exec].match(/^show_login_dialog_confirm_email/).present? ? "'#{tmp_user.unconfirmed_email}'" : 'null'
       :javascript
         showLoginDialog(#{email_arg});
-
+    - if params[:c].present?
+      %script
+        NavBar.menuNavClick('#{params[:c]}');
