@@ -8,4 +8,4 @@ $('.logout-link').each () ->
 $('#sign_in_cancel').click()
 <% end -%>
 $('.whoami').each () ->
-  $(this).html("<%= escape_javascript(link_to t('auth.whoami', username: tmp_user().username), change_username_path, class: "btn", data: { remote: "true", format: :js }) -%>")
+  $(this).html("<%= escape_javascript(link_to t('auth.whoami', username: tmp_user().username), change_username_path, class: 'navbar-inverse navbar-brand', data: { remote: 'true', format: :js }) -%>")

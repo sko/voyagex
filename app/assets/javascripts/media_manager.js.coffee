@@ -5,7 +5,8 @@ class window.VoyageX.MediaManager
     @_curSelAudSrcIdx = -1
     @_videoSourceIds = null
     @_curSelVidSrcIdx = -1
-    unless typeof MediaStreamTrack == 'undefined'
+    # coffedscript would compile MediaStreamTrack.getSources? to "MediaStreamTrack.getSources != null" only
+    if MediaStreamTrack? && (`MediaStreamTrack.getSources !== undefined`)
       initMediaSources(this)
 
   initMediaSources = (mm) ->

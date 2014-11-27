@@ -1,0 +1,37 @@
+#photo_nav_panel{data: {role: 'panel', dismissible: 'false', position: 'bottom', animate: 'true', display: 'overlay'}}
+  %span#current_address
+  - max_height = 100.0
+  %h2{style: 'float:left;'}
+    &lt;
+  .swiper-container{style: 'float:left;'}
+    .swiper-wrapper#upload_preview
+      - scroll_width = 0
+      - max_width = 0
+      - Upload.all.order('location_id, id desc').each do |upload|
+        - geometry = Paperclip::Geometry.from_file(upload.file)
+        - scale = max_height.to_f / geometry.height
+        - width = (geometry.width * scale + 0.49).round
+        - max_width = width if width > max_width
+        - height = (geometry.height* scale + 0.49).round
+        - scroll_width += width
+        /%span.swiper-slide{onclick: "panPosition(#{upload.location.latitude},#{upload.location.longitude},'#{escape_javascript(upload.location.address).html_safe}')"}
+        %span.swiper-slide{onclick: "panUpload(#{upload.id})"}
+          = image_tag upload.file.url, style: "width:#{width}px;height:#{max_height.to_i}px;"
+      /- if is_mobile
+      /  - max_width = '"+$(window).width()+"'
+      /- else
+      /  - max_width = '"+($(window).width() - 13)+"'
+      - swiper_style = "width: #{max_width}px; height: #{max_height.to_i}px;"
+      %script
+        $("head").append("<style type='text/css'>.swiper-container, .swiper-slide { #{swiper_style} }</style>");
+  %h2
+    &gt;
+
+
+  %br
+  %br
+  %br
+  %br
+  .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{onclick: '$("#photo_nav_panel").panel("close")'}
+    .ui-button-text
+      Close Panel

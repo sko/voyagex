@@ -48,10 +48,13 @@ jQuery ->
 
   window.panUpload = (upload_id) ->
     getUploadComments(upload_id)
+    if window.isMobile()
+      $("#photo_nav_panel").panel("close");
 
   window.panPosition = (lat, lng, address) ->
     setSelectedPositionLatLng markerManager.get(), lat, lng, address
-    map.setView([lat, lng], 16)
+    map.panTo([lat, lng])
+    #map.setView([lat, lng], 16)
     if window.isMobile()
       MobileNavBar.i2FooterNavClick('map')
     else
@@ -86,8 +89,8 @@ jQuery ->
     address = null
     marker = markerManager.sel null, position.coords.latitude, position.coords.longitude, markerEventsCB
     setSelectedPositionLatLng marker, position.coords.latitude, position.coords.longitude, address
-    map.setView [position.coords.latitude, position.coords.longitude], 16
-   #map.panTo([position.coords.latitude, position.coords.longitude])
+    map.panTo([position.coords.latitude, position.coords.longitude])
+    #map.setView [position.coords.latitude, position.coords.longitude], 16
     publishPosition()
 
   systemCB = (message) ->
@@ -114,8 +117,8 @@ jQuery ->
       setSelectedPositionLatLng markerManager.get(), mapEvent.lat, mapEvent.lng, mapEvent.address
     else
       setSelectedPositionLatLng markerManager.get(), mapEvent.lat, mapEvent.lng, null
-    map.setView [mapEvent.lat, mapEvent.lng], 16
-   #map.panTo([mapEvent.lat, mapEvent.lng])
+    map.panTo([mapEvent.lat, mapEvent.lng])
+    #map.setView [mapEvent.lat, mapEvent.lng], 16
     for listener in window.commListeners.mapEvents
       listener(mapEvent)
 
@@ -171,3 +174,10 @@ jQuery ->
                      ['/uploads', uploadsCB]]
                     systemCB)
     window.markerManager = new VoyageX.MarkerManager(map)
+    if window.isMobile()
+      map.invalidateSize({
+          reset: true,
+          pan: false,
+          animate: false
+        })
+    # map.getPanes().tilePane

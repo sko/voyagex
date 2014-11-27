@@ -18,9 +18,13 @@ Concept
 ==========
 Pragmatic Diary
 ==========
-form wird unsichtbar wenn sie nach openmaps eingebunden wird. $('form') !!!
++) form wird unsichtbar wenn sie nach openmaps eingebunden wird. $('form') !!!
 die ursache kann man suchen - muss man aber auch nicht. gefahr wenn nicht: das es irgendwann mal unerwartet nicht geht.
 alternativ: tests schreiben die immer alle forms suchen.
+
++) coffeescript
+      if MediaStreamTrack.getSources is 'undefined'
+      if MediaStreamTrack? && `MediaStreamTrack.getSources !== undefined`
 
 
 ==========

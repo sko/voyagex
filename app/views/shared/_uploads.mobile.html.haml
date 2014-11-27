@@ -3,6 +3,8 @@
     %span{style: 'float: left;'}
       %button{id: 'media_input_init'}
         #{t('uploads.take_photo')}
+    %span.btn{id: 'switch_camera'}
+      %img{src: '/assets/switch-camera.png', style: 'margin: 12px 0px 0px 20px;'}
     #upload_form_ui{style: 'float:left;'}
       #media_input_container{style: 'display: none;'}
         %video{id: 'media_input_capture', style: 'width: 307px; height: 250px;', autoplay: true}
@@ -18,8 +20,6 @@
         .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: 'media_input_upload_btn'}
           .ui-button-text
             #{t('uploads.upload_photo').html_safe}
-        %span.btn{id: 'switch_camera'}
-          %img{src: '/assets/switch-camera.png'}
     .container
       = form_for resource, remote: true, method: :put, :html => { class: nil, :multipart => true, :id => "upload_form", target: "upload_target" } do |f|
         %span{style: 'float: left;'}
@@ -37,7 +37,7 @@
       #upload_error
       #upload_message
       #upload_progress
-  
+-# 
   .container
     %span#current_address
     - max_height = 100.0

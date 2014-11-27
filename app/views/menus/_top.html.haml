@@ -12,22 +12,22 @@
           %li{onclick: "NavBar.menuNavClick('home')"}
             %span.navbar-brand{id: 'menu_home'}
               #{t('menu.home').html_safe}
-          %li{style: 'padding-top: 9px;'}
+          %li{style: 'padding: 0px 0px 0px 20px;'}
             %span.whoami{style: 'float :left; color: #ffffff;'}
               - if user_signed_in?
-                = link_to t('auth.whoami', username: tmp_user().username), change_username_path, class: "btn", data: { remote: "true", format: :js }
+                = link_to t('auth.whoami', username: tmp_user().username), change_username_path, class: 'navbar-inverse navbar-brand', data: { remote: "true", format: :js }
               - else
-                %span{style: 'padding: 7px 0px 0px 0px;'}
+                %span{class: 'navbar-inverse navbar-brand'}
                   #{t('auth.whoami', username: tmp_user().username).html_safe}
-            .logout-link{style: "display: #{user_signed_in? ? 'block' : 'none'}; float: right; padding: 0px 0px 0px 0px;"}
-              = link_to t('auth.sign_out'), destroy_user_session_path, class: "btn", data: { remote: "true", format: :js, method: :delete }
-          %li{style: 'padding-top: 16px;'}
-            .login-link{style: "display: #{user_signed_in? ? 'none' : 'block'}; float :left; padding: 0px 5px 0px 5px;"}
-              = link_to t('auth.sign_in'), '#', onclick: 'javascript:$("#sign_in_modal").dialog("open")'
+            .logout-link{style: "display: #{user_signed_in? ? 'block' : 'none'}; float: right;"}
+              = link_to t('auth.sign_out'), destroy_user_session_path, class: 'navbar-inverse navbar-brand', data: { remote: "true", format: :js, method: :delete }
+          %li
+            .login-link{style: "display: #{user_signed_in? ? 'none' : 'block'}; float :left;"}
+              = link_to t('auth.sign_in'), '#', onclick: 'javascript:$("#sign_in_modal").dialog("open")', class: 'navbar-inverse navbar-brand'
               /%button{onclick: 'javascript:$("#sign_in_modal").dialog("open")'}
               /  #{t('auth.sign_in')}
             .reg-link{style: "display: #{user_signed_in? ? 'none' : 'block'}; float :left;"}
-              = link_to t('auth.sign_up'), '#', onclick: 'javascript:$("#sign_up_modal").dialog("open")'
+              = link_to t('auth.sign_up'), '#', onclick: 'javascript:$("#sign_up_modal").dialog("open")', class: 'navbar-inverse navbar-brand'
               /%button{onclick: 'javascript:$("#sign_up_modal").dialog("open")'}
               /  #{t('auth.sign_up')}
           %li{style: 'padding: 15px 0px 0px 20px;'}

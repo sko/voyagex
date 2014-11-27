@@ -21,7 +21,7 @@
     = hidden_field_tag :current_user_id, current_user.present? ? current_user.id : tmp_user.id, { id: :current_user_id }
     :javascript
       var mapWidth = $(window).width() - 13;
-      var mapHeight = Math.round($(window).height() * 0.85);
+      var mapHeight = Math.round($(window).height() - 51);
       $("head").append("<style type='text/css'>#map {width:"+mapWidth+"px;height:"+mapHeight+"px;}</style>");
       var chatHeight = Math.round($(window).height() * 0.15) - 33;
       $("head").append("<style type='text/css'>.talk_message_text {width:100%;height:"+chatHeight+"px !important;}</style>");
