@@ -4,6 +4,8 @@
 //= require bootstrap-sprockets
 //= require swiper
 //= require leaflet
+//= require leaflet.functionaltilelayer
 //= require preload/util
+//= require map_control
 //= require marker_manager
 //= require media_manager

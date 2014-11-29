@@ -9,8 +9,9 @@
     %title VoyageX
     %meta{name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'}
     = javascript_tag do
-      window.VoyageX = { NavBar: {}, MarkerManager: {} };
+      window.VoyageX = { NavBar: {}, MapControl: {}, MarkerManager: {}, MediaManager: {} };
       window.VoyageX['PEER_CHANNEL_PREFIX'] = '#{PEER_CHANNEL_PREFIX}';
+      window.VoyageX.TILE_URL_TEMPLATE = '#{Leaflet.tile_layer}';
     = stylesheet_link_tag "application.mobile", media: "all"
     = stylesheet_link_tag "#{params[:controller]}.mobile", media: "all"
     = csrf_meta_tags
@@ -40,6 +41,9 @@
       var mapWidth = $(window).width();
       var mapHeight = $(window).height() - $("#navbar").height() - 40;
       $("head").append("<style type='text/css'>#map {width:"+mapWidth+"px;height:"+mapHeight+"px !important;}</style>");
+      $("head").append("<style type='text/css'>.leaflet-bottom {width:"+($(window).width()-35)+"px !important;}</style>");
+      var panelCtrlTopOff = $(window).height() - 41;
+      $("head").append("<style type='text/css'>#panel_control {position: fixed; top: "+panelCtrlTopOff+"px; height: 20px; z-index: 1000 !important;}</style>");
     #content{'data-role' => 'content', style: 'padding: 0px !important;'}
       .auth{style: 'display:none;'}
         = render partial: '/auth/sign_in.mobile', locals: {resource: User.new, resource_name: :user}
@@ -55,12 +59,13 @@
     = javascript_include_tag "#{params[:controller]}"
     = javascript_include_tag 'extensions.mobile'
     :javascript
-      $("head").append("<style type='text/css'>.leaflet-bottom {width:"+($(window).width()-35)+"px !important;}</style>");
-      var panelCtrlTopOff = $(window).height() - 35;
-      $("head").append("<style type='text/css'>#panel_control {position: absolute; top: "+panelCtrlTopOff+"px; height: 20px; z-index: 1000 !important;}</style>");
       var chatHeight = $(window).height() - $("#navbar").height() - 10;
       $("head").append("<style type='text/css'>.talk_message_text {width:100%;height:"+chatHeight+"px !important;}</style>");
     - if params[:exec].present? && params[:exec].match(/^show_login_dialog/).present?
       - email_arg = params[:exec].match(/^show_login_dialog_confirm_email/).present? ? "'#{tmp_user.unconfirmed_email}'" : 'null'
       :javascript
         showLoginDialog(#{email_arg});
+    - if params[:c].present?
+      %script
+        VoyageX.NavBar.menuNavClick('#{params[:c]}');
+        /window.location.href.replace(/\??c=[^&]*/, '')

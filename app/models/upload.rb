@@ -18,6 +18,7 @@ class Upload < ActiveRecord::Base
     end
   end
 
+  # imagemagick complains about image/webp and .webp
   def self.get_attachment_mapping content_type
     case content_type
     when 'image/webp'

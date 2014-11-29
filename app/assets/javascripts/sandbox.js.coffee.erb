@@ -2,6 +2,7 @@
 
 # feu: [51.3767, 7.49389]
 window.defaultLatLng = [51.3767, 7.49389]
+#window.defaultLatLng = [0, 0]
 jQuery ->
   comm = null
   window.markerManager = null
@@ -22,10 +23,8 @@ jQuery ->
 
   window.openUploadCommentControls = (upload_id) ->
     #$("#upload_comment_conrols").css('display', 'block')
-    if window.isMobile()
-      MobileNavBar.i2FooterNavClick('map')
-    else
-      NavBar.menuNavClick('map')
+    VoyageX.NavBar.menuNavClick('map')
+    unless window.isMobile()
       $("#upload_comment_conrols").dialog("open")
 
   $('#add_upload_comment_btn').on 'click', (event) ->
@@ -49,16 +48,13 @@ jQuery ->
   window.panUpload = (upload_id) ->
     getUploadComments(upload_id)
     if window.isMobile()
-      $("#photo_nav_panel").panel("close");
+      $("#photo_nav_panel").panel("close")
 
   window.panPosition = (lat, lng, address) ->
     setSelectedPositionLatLng markerManager.get(), lat, lng, address
     map.panTo([lat, lng])
     #map.setView([lat, lng], 16)
-    if window.isMobile()
-      MobileNavBar.i2FooterNavClick('map')
-    else
-      NavBar.menuNavClick('map')
+    VoyageX.NavBar.menuNavClick('map')
 
   window.getSelectedPositionLatLng = () ->
     return [selectedPositionLatLng[0], selectedPositionLatLng[1]]
@@ -135,9 +131,10 @@ jQuery ->
             '</span>'
     $("#upload_preview").prepend(tag)
     mySwiper.reInit()
-    #mySwiper.resizeFix() 
+    #mySwiper.resizeFix()
     for listener in window.commListeners.uploads
       listener(upload)
+    $('a[href=#photo_nav_panel]').click()
 
   markerEventsCB = (event) ->
     address = null
@@ -159,7 +156,7 @@ jQuery ->
   
   map.on 'click', (event) ->
     address = null
-    setSelectedPositionLatLng markerManager.get(), event.latlng.lat, event.latlng.lng, address
+    setSelectedPositionLatLng markerManager.get()||markerManager.add(event.latlng.lat, event.latlng.lng, markerEventsCB), event.latlng.lat, event.latlng.lng, address
     publishPosition()
 
   $(document).ready () ->
@@ -168,6 +165,12 @@ jQuery ->
           alert('geolocation timed out - manual selection required.\nsetting default location...')
           initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
       , { enableHighAccuracy: true, timeout : 10000 })
+    #map.on('locationfound', (e) ->
+    #    alert('found location...')
+    #  )
+    #map.on('locationerror', (e) ->
+    #    alert('geolocation timed out - manual selection required.\nsetting default location...')
+    #  )
     comm = new Comm($('#current_user_id').val(),
                     [['/talk', talkCB],
                      ['/map_events', mapEventsCB],
@@ -181,3 +184,4 @@ jQuery ->
           animate: false
         })
     # map.getPanes().tilePane
+    $('button[value=camera]').focus()

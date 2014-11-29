@@ -1,4 +1,4 @@
-#photo_nav_panel{data: {role: 'panel', dismissible: 'false', position: 'bottom', animate: 'true', display: 'overlay'}}
+#photo_nav_panel{data: {role: 'panel', dismissible: 'false', animate: 'true', display: 'overlay'}}
   %span#current_address
   - max_height = 100.0
   #swipe_panel{style: 'text-align: center;'}
@@ -30,6 +30,6 @@
   %br
   %br
   %br
-  .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{onclick: '$("#photo_nav_panel").panel("close")'}
+  .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{onclick: '$("#photo_nav_panel").panel("close");'}
     .ui-button-text
       Close Panel

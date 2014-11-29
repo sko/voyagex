@@ -1,42 +1,32 @@
 //= require jquery.mobile
+//= require client_state
 //= require upload_helper
 
-class window.MobileNavBar
-#  home_partial_ids = ['content_auth', 'content_uploads']
-  @i2FooterNavClick: (clickSrc) ->
-    if (clickSrc == 'chat')
-      $('#content_chat').css('display', 'block')
-      $('#content_map').css('display', 'none')
-      $('#content_home').css('display', 'none')
-#      for id in home_partial_ids
-#        $('#'+id).css('display', 'none')
-    else if (clickSrc == 'map')
-      $('#content_chat').css('display', 'none')
-      $('#content_map').css('display', 'block')
-      $('#content_home').css('display', 'none')
-#      for id in home_partial_ids
-#        $('#'+id).css('display', 'none')
-    else if (clickSrc == 'upload')
-      $('#content_chat').css('display', 'none')
-      $('#content_map').css('display', 'none')
-      $('#content_home').css('display', 'block')
-#      for id in home_partial_ids
-#        $('#'+id).css('display', 'block')
+class window.VoyageX.NavBar
+  @menuNavClick: (clickSrc) ->
+    window.clientState.setView(window.clientState.getView(clickSrc))
     return false
 
-  $('#content_chat').css('display', 'none')
-  $('#content_map').css('display', 'block')
-  $('#content_home').css('display', 'none')
-#  for id in home_partial_ids
-#    $('#'+id).css('display', 'none')
+  @showView: (view) ->
+    $('#content_'+view.key).css('display', 'block')
+    if view.key == 'home'
+      switch view.uploadType
+        when 'camera'
+          $('button[value=camera]').focus()
+        when 'file'
+          $('button[value=file]').focus()    
+  @hideView: (view) ->
+    $('#content_'+view.key).css('display', 'none')
+
+window.clientState = new VoyageX.ClientState('map', 'camera', VoyageX.NavBar.showView, VoyageX.NavBar.hideView)
 
 $(document).on 'click', '.activate_chat', (event) ->
-  MobileNavBar.i2FooterNavClick('chat')
+  VoyageX.NavBar.menuNavClick('chat')
   if $('#nav_chat_popup-popup').hasClass('ui-popup-active')
     $('#nav_chat_popup-popup').removeClass('ui-popup-active').addClass('ui-popup-hidden')
 
 $(document).on 'click', '.activate_map', (event) ->
-  MobileNavBar.i2FooterNavClick('map')
+  VoyageX.NavBar.menuNavClick('map')
 
 $(document).on 'click', '.activate_upload', (event) ->
-  MobileNavBar.i2FooterNavClick('upload')
+  VoyageX.NavBar.menuNavClick('home')

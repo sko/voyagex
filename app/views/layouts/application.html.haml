@@ -8,8 +8,9 @@
   %head
     %title VoyageX
     = javascript_tag do
-      window.VoyageX = { NavBar: {}, MarkerManager: {} };
+      window.VoyageX = { NavBar: {}, MapControl: {}, MarkerManager: {}, MediaManager: {} };
       window.VoyageX['PEER_CHANNEL_PREFIX'] = '#{PEER_CHANNEL_PREFIX}';
+      window.VoyageX.TILE_URL_TEMPLATE = '#{Leaflet.tile_layer}';
     = stylesheet_link_tag "application", media: "all"
     = stylesheet_link_tag params[:controller], media: "all"
     = csrf_meta_tags
@@ -42,4 +43,5 @@
         showLoginDialog(#{email_arg});
     - if params[:c].present?
       %script
-        NavBar.menuNavClick('#{params[:c]}');
+        VoyageX.NavBar.menuNavClick('#{params[:c]}');
+        /window.location.href.replace(/\??c=[^&]*/, '')

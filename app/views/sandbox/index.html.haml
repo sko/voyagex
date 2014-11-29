@@ -36,9 +36,30 @@
             = text_area_tag :message, '', class: :talk_message_text, maxlength: 1500
 
 #content_map
-  = map(:center => { latlng: [51.3767, 7.49389],
-                     zoom: 16 },
+  -#
+    = map(:center => { latlng: [51.3767, 7.49389],
+        zoom: 16 },
         tile_layer: "http://{s}.tiles.mapbox.com/v4/stephankoeller.k5hhdli3/{z}/{x}/{y}.png?access_token=pk.eyJ1Ijoic3RlcGhhbmtvZWxsZXIiLCJhIjoiZEFHdnhwayJ9.AdtZiG5HGi5JAb64G1K-jA",
         subdomains: ['a'],
         access_token: 'pk.eyJ1Ijoic3RlcGhhbmtvZWxsZXIiLCJhIjoiZEFHdnhwayJ9.AdtZiG5HGi5JAb64G1K-jA',
-        max_zoom: 30)
+        max_zoom: 30,
+        layers: [window.VoyageX.MapControl.tileLayer])
+  %canvas{id: 'tile_canvas', style: 'display: none; width: 256px; height: 256px;'}
+  #map
+  %script
+    var map = new L.Map('map',
+    { center: new L.LatLng(#{51.3767}, #{7.49389}),
+    zoom: 16,
+    subdomains: ['a'],
+    access_token: 'pk.eyJ1Ijoic3RlcGhhbmtvZWxsZXIiLCJhIjoiZEFHdnhwayJ9.AdtZiG5HGi5JAb64G1K-jA',
+    max_zoom: 30,
+    layers: [VoyageX.MapControl.tileLayer()] });
+  
+  -#
+    :javascript
+      map.on('locationfound', function(e) {
+        alert('found location...')
+      });
+      map.on('locationerror', function(e) {
+        alert('geolocation timed out - manual selection required.\nsetting default location...')
+      });

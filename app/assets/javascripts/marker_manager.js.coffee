@@ -26,7 +26,7 @@ class window.VoyageX.MarkerManager
     @_selectedMarker.target()
 
   get: () ->
-    @_selectedMarker.target()
+    if @_selectedMarker != null then @_selectedMarker.target() else null
 
 
 class VoyageX.Marker

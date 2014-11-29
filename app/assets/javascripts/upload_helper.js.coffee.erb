@@ -87,6 +87,7 @@ jQuery ->
   $(document).on 'click', '#media_input_stop_btn', (event) ->
     stopCurrentVideo()
     $("#media_input_panel").panel("close")
+    $('button[value=camera]').focus()
 
   stopCurrentVideo = () ->
     mediaInputVideo[0].pause()
@@ -100,9 +101,11 @@ jQuery ->
       # "image/webp" works in Chrome.
       # Other browsers will fall back to image/png.
       mediaInputImage[0].src = mediaInputCanvas[0].toDataURL('image/webp')
+      #mediaInputImage[0].src = mediaInputCanvas[0].toDataURL('image/png')
       #mediaInputImage.attr('src', mediaInputCanvas[0].toDataURL('image/webp'))
       $('#fileupload').attr('value', mediaInputImage[0].src)
       $("#media_input_panel").panel("close")
+      $('button[value=camera]').focus()
 
   takePhoto = () ->
     if (Modernizr.getusermedia) 
@@ -148,4 +151,6 @@ jQuery ->
   errorCallback = (e) ->
     console.log('Reeeejected!', e)
     alert('Reeeejected!')
+    $("#media_input_panel").panel("close")
+    $('button[value=camera]').focus()
 

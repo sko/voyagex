@@ -1,12 +1,14 @@
 #media_input_panel{data: {role: 'panel', dismissible: 'false', animate: 'true', display: 'overlay'}}
-  %span.btn{id: 'switch_camera', style: 'float: left;'}
-    %img{src: '/assets/switch-camera.png', style: 'margin: 12px 0px 0px 20px;'}
-  .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: 'media_input_stop_btn', style: 'float: left;'}
-    .ui-button-text
-      Stop
+  .ctrls_bar
+    %span.btn{id: 'switch_camera', style: 'float: left;'}
+      %img{src: '/assets/switch-camera.png', style: 'margin: 12px 0px 0px 20px;'}
+    .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: 'media_input_stop_btn', style: 'float: right;'}
+      .ui-button-text
+        Stop
+
+  %video{id: 'media_input_capture', autoplay: true}
+  %canvas{id: 'media_input_display', style: 'display: none;'}
+
   .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: 'media_input_capture_btn'}
     .ui-button-text
       #{t('uploads.take_shot').html_safe}
-
-  %video{id: 'media_input_capture', style: 'width: 307px; height: 250px;', autoplay: true}
-  %canvas{id: 'media_input_display', style: 'display: none;'}

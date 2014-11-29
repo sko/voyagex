@@ -3,13 +3,13 @@
     .container
       .navbar-header
         %ul.nav.navbar-nav
-          %li{onclick: "NavBar.menuNavClick('chat')"}
+          %li{onclick: "VoyageX.NavBar.menuNavClick('chat')"}
             %span.navbar-brand{id: 'menu_chat'}
               #{t('menu.chat').html_safe}
-          %li{onclick: "NavBar.menuNavClick('map')"}
+          %li{onclick: "VoyageX.NavBar.menuNavClick('map')"}
             %span.navbar-brand.active{id: 'menu_map'}
               #{t('menu.map').html_safe}
-          %li{onclick: "NavBar.menuNavClick('home')"}
+          %li{onclick: "VoyageX.NavBar.menuNavClick('home')"}
             %span.navbar-brand{id: 'menu_home'}
               #{t('menu.home').html_safe}
           %li{style: 'padding: 0px 0px 0px 20px;'}
@@ -33,7 +33,7 @@
           %li{style: 'padding: 15px 0px 0px 20px;'}
             - lcls = lang_change_links request, ['c']
             %span{style: 'float:left;'}
-              = link_to image_tag("/assets/en.png", style: "border-width:0px;width:10px;height:10px;"), '#', onclick: "javascript:document.location.href='#{lcls[0]}?l=en#{lcls[1]}&c='+NavBar.SELECTED_CONTENT", :style => "color:#00dd;"
+              = link_to image_tag("/assets/en.png", style: "border-width:0px;width:10px;height:10px;"), '#', onclick: "javascript:document.location.href=window.clientState.linkForView('#{lcls[0]}', 'en', '#{lcls[1]}');", :style => "color:#00dd;"
             %span
               &nbsp;
-              = link_to image_tag("/assets/de.png", style: "border-width:0px;width:10px;height:10px;"), '#', onclick: "javascript:document.location.href='#{lcls[0]}?l=de#{lcls[1]}&c='+NavBar.SELECTED_CONTENT", :style => "color:#00dd;"
+              = link_to image_tag("/assets/de.png", style: "border-width:0px;width:10px;height:10px;"), '#', onclick: "javascript:document.location.href=window.clientState.linkForView('#{lcls[0]}', 'de', '#{lcls[1]}');", :style => "color:#00dd;"
