@@ -1,9 +1,11 @@
-class window.StorageController
-  
-  constructor: (userId, channelCallBacksList, systemCallBack) ->
+class window.Comm.StorageController
+
+  @_INSTANCE = new StorageController(null)
+
+  constructor: (TODO_storeKey) ->
     unless Modernizr.localstorage
       alert('This Browser Doesn\'t Support Local Storage.')
-
+  
   # reserved listKeys:
   # push: creates/uses an array for entries stored with storeKey
   # if an array is defined for a storeKey then there can't be any other objects defined aside (@see this.pop())
@@ -28,6 +30,9 @@ class window.StorageController
           storedJSON[listKey] = data
         localStorage.setItem(storeKey, JSON.stringify(storedJSON));
 
+  get: (storeKey) ->
+    eval("(" + localStorage.getItem(storeKey) + ")")
+
   # expects an array stored with 'push' as listKey in storeKey-entry
   pop: (storeKey) ->
     stored = localStorage.getItem(storeKey)
@@ -43,3 +48,6 @@ class window.StorageController
         listEntry
     else
       null
+
+  @instance: () ->
+    @_INSTANCE

@@ -171,10 +171,10 @@ jQuery ->
     #map.on('locationerror', (e) ->
     #    alert('geolocation timed out - manual selection required.\nsetting default location...')
     #  )
-    comm = new Comm($('#current_user_id').val(),
-                    [['/talk', talkCB],
-                     ['/map_events', mapEventsCB],
-                     ['/uploads', uploadsCB]]
+    comm = new Comm.Comm($('#current_user_id').val(),
+                         [['/talk', talkCB],
+                          ['/map_events', mapEventsCB],
+                          ['/uploads', uploadsCB]]
                     systemCB)
     window.markerManager = new VoyageX.MarkerManager(map)
     if window.isMobile()

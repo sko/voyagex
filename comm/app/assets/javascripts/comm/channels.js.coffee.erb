@@ -3,7 +3,7 @@
 <% environment.context_class.instance_eval { include Rails.application.routes.url_helpers } %>
 # Comm::Engine.routes.url_helpers
 
-class window.Comm
+class window.Comm.Comm
   client = null
   channelCallBacksJSON = null
   useGlobalSubscribe = true
@@ -18,7 +18,7 @@ class window.Comm
 #    @see fax-rails if railx can reduce listeners - even if possible - it's more complex
 # 3) everything over faye
   constructor: (userId, channelCallBacksList, systemCallBack) ->
-    @_storageController = new StorageController()
+    @_storageController = window.Comm.StorageController.instance()
 
     client = new Faye.Client(document.location.origin+'/comm')
     channelCallBacksJSON = new Object()

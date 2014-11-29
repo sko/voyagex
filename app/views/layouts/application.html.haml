@@ -7,10 +7,7 @@
   / <![endif]
   %head
     %title VoyageX
-    = javascript_tag do
-      window.VoyageX = { NavBar: {}, MapControl: {}, MarkerManager: {}, MediaManager: {} };
-      window.VoyageX['PEER_CHANNEL_PREFIX'] = '#{PEER_CHANNEL_PREFIX}';
-      window.VoyageX.TILE_URL_TEMPLATE = '#{Leaflet.tile_layer}';
+    = render partial: 'layouts/init_js'
     = stylesheet_link_tag "application", media: "all"
     = stylesheet_link_tag params[:controller], media: "all"
     = csrf_meta_tags
