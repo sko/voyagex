@@ -21,6 +21,12 @@ jQuery ->
     freeModeFluid: true
   })
 
+  window.toggleNetworkState = (selected) ->
+    if selected.value == 'online'
+      VoyageX.MapControl._instance().setOnline()
+    else
+      VoyageX.MapControl._instance().setOffline()
+
   window.openUploadCommentControls = (upload_id) ->
     #$("#upload_comment_conrols").css('display', 'block')
     VoyageX.NavBar.menuNavClick('map')
@@ -189,7 +195,7 @@ jQuery ->
           pan: false,
           animate: false
         })
-    # map.getPanes().tilePane
+    $("input[name=network_state]").buttonset();
     $('button[value=camera]').focus()
     zoomEnd(null)
     cacheStats({

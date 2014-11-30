@@ -2,10 +2,34 @@ class window.VoyageX.MapControl
 
   @_SINGLETON = null
 
-  constructor: (cacheStrategy) ->
+  constructor: (cacheStrategy, zooms, offlineZooms, online) ->
     @_cacheStrategy = cacheStrategy
     VoyageX.MapControl._SINGLETON = this
+    @_online = online
+    @_zooms = zooms
+    @_minZoom = zooms[0]
+    @_maxZoom = zooms[zooms.length - 1]
+    @_offlineZooms = offlineZooms
+
+  tileLayer: () ->
+    new L.TileLayer.Functional(VoyageX.MapControl.drawTile, {
+        subdomains: ['a']
+      })
+
+  setOnline: () ->
+    @_online = true
+    @_zooms.splice(0, @_zooms.length)
+    for n in [@_minZoom..@_maxZoom]
+      @_zooms.push n
+
+  setOffline: () ->
     @_online = false
+    @_zooms.splice(0, @_zooms.length)
+    for n in @_offlineZooms
+      @_zooms.push n
+
+  @_instance: () ->
+    @_SINGLETON
 
   # provides cached tiles
   # static becaus called in context of Leaflet.functionaltilelayer
@@ -20,7 +44,7 @@ class window.VoyageX.MapControl
               .replace('{s}', view.subdomain)
     #@_cacheStrategy.getTileUrl tileUrl
     storeKey = view.zoom+'/'+view.tile.column+'/'+view.tile.row
-    stored = Comm.StorageController.instance().get 'tiles'
+    stored = if view.zoom in VoyageX.MapControl._instance()._offlineZooms then Comm.StorageController.instance().get 'tiles' else null
     if stored == null || !(geoJSON = stored[storeKey])?
       if VoyageX.MapControl._instance()._online
         VoyageX.MapControl._instance()._loadReadyImage tileUrl, storeKey#, deferred
@@ -29,11 +53,6 @@ class window.VoyageX.MapControl
     else
       console.log 'using cached tile: '+storeKey
       geoJSON.properties.data
-
-  tileLayer: () ->
-    new L.TileLayer.Functional(VoyageX.MapControl.drawTile, {
-        subdomains: ['a']
-      })
 
   # has to be done sequentially becaus we're using one canvas for all
   _loadReadyImage: (imgUrl, storeKey) ->
@@ -84,6 +103,3 @@ class window.VoyageX.MapControl
           }
       }
     Comm.StorageController.instance().addToList 'tiles', storeKey, geoJSON
-
-  @_instance: () ->
-    @_SINGLETON

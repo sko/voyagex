@@ -47,9 +47,9 @@
   %canvas{id: 'tile_canvas', style: 'display: none; width: 256px; height: 256px;'}
   #map
   %script
-    //var zooms = [4,8,12,16];
+    var offlineZooms = [4,8,12,16];
     var zooms = [#{(1..16).collect{|n|",#{n}"}.join.sub(/^,/,'')}];
-    var mapControl = new VoyageX.MapControl(VoyageX.StorageStrategy.instance()) 
+    var mapControl = new VoyageX.MapControl(VoyageX.StorageStrategy.instance(), zooms, offlineZooms, true) 
     var map = new L.Map('map',
     { center: new L.LatLng(#{51.3767}, #{7.49389}),
     zooms: zooms,
