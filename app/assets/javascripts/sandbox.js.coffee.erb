@@ -66,10 +66,7 @@ jQuery ->
     return [selectedPositionLatLng[0], selectedPositionLatLng[1]]
 
   window.zoomEnd = (e) ->
-    $('#zoom_level').html('<b style="color:white;">zoom: '+map.getZoom()+'</b>')
-
-  window.cacheStats = (statsJSON) ->
-    $('#cache_stats').html('<b style="color:white;">tiles-size: '+statsJSON.tilesSize+' / #'+statsJSON.numTiles+'</b>')
+    $('#zoom_level').html('<span style="color:white;">zoom: '+map.getZoom()+'</span>')
 
   getUploadComments = (upload_id) ->
     $.ajax
@@ -203,7 +200,7 @@ jQuery ->
           pan: false,
           animate: false
         })
-    $("input[name=network_state]").buttonset();
+    $("#network_state").buttonset()
     $('button[value=camera]').focus()
     zoomEnd(null)
     if localStorage.tiles?

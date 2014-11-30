@@ -43,7 +43,7 @@
         %span#cache_ctrls{style: 'margin-left: 20px;'}
           %button{id: 'clear_cache'}
             Clear Cache
-        #network_state{style: 'float:right;'}
+        #network_state{style: 'float:right; color: white;'}
           = radio_button_tag 'network_state', 'online', true, onclick: 'toggleNetworkState(this)'
           = label_tag 'network_state_online', 'online'
           = radio_button_tag 'network_state', 'offline', false, onclick: 'toggleNetworkState(this)'

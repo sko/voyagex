@@ -53,20 +53,7 @@ class window.VoyageX.MapControl
         readyImage = mC._loadReadyImage tileUrl, storeKey
         # store all tiles in <= zoom-levels
         # 4 small tiles become one bigger tile
-        curXYZ = [view.tile.column, view.tile.row, view.zoom]
-        for n in [(view.zoom-1)..mC._minZoom]
-          curXYZ = [Math.round((curXYZ[0]-0.1)/2),
-                    Math.round((curXYZ[1]-0.1)/2),
-                    n]
-          if n in mC._offlineZooms
-            parentTileUrl = VoyageX.TILE_URL_TEMPLATE
-                            .replace('{z}', curXYZ[2])
-                            .replace('{y}', curXYZ[1])
-                            .replace('{x}', curXYZ[0])
-                            .replace('{s}', view.subdomain)
-            parentStoreKey = curXYZ[2]+'/'+curXYZ[0]+'/'+curXYZ[1]
-            console.log 'caching lower-zoom tile: '+parentStoreKey
-            mC._loadReadyImage parentTileUrl, parentStoreKey
+        mC._preloadLowerZoomLevels view
         readyImage
       else
         mC._notInCacheImage $('#tile_canvas')[0], view.tile.column, view.tile.row, view.zoom
@@ -74,14 +61,33 @@ class window.VoyageX.MapControl
       console.log 'using cached tile: '+storeKey
       geoJSON.properties.data
 
+  _preloadLowerZoomLevels: (view) ->
+    curXYZ = [view.tile.column, view.tile.row, view.zoom]
+    for n in [(view.zoom-1)..@_minZoom]
+      curXYZ = [Math.round((curXYZ[0]-0.1)/2),
+                Math.round((curXYZ[1]-0.1)/2),
+                n]
+      if n in @_offlineZooms
+        parentStoreKey = curXYZ[2]+'/'+curXYZ[0]+'/'+curXYZ[1]
+        geoJSON = Comm.StorageController.instance().get 'tiles'
+        unless geoJSON? && geoJSON[parentStoreKey]?
+          parentTileUrl = VoyageX.TILE_URL_TEMPLATE
+                          .replace('{z}', curXYZ[2])
+                          .replace('{y}', curXYZ[1])
+                          .replace('{x}', curXYZ[0])
+                          .replace('{s}', view.subdomain)
+          console.log 'caching lower-zoom tile: '+parentStoreKey
+          this._loadReadyImage parentTileUrl, parentStoreKey
+
   # has to be done sequentially becaus we're using one canvas for all
   _loadReadyImage: (imgUrl, storeKey) ->
     deferred = $.Deferred()
     img = new Image
     img.crossOrigin = ''
+    mC = this
     img.onload = (event) ->
-      base64ImgDataUrl = VoyageX.MapControl._instance()._toBase64 $('#tile_canvas')[0], this # event.target
-      VoyageX.MapControl._instance()._storeImage(storeKey, base64ImgDataUrl)
+      base64ImgDataUrl = mC._toBase64 $('#tile_canvas')[0], this # event.target
+      mC._storeImage(storeKey, base64ImgDataUrl)
       cacheStats({
           tilesSize: Math.round(localStorage.tiles.length/1024)+' kB',
           numTiles: localStorage.tiles.match(/("id":)/g).length

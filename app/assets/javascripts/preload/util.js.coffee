@@ -12,6 +12,9 @@ $(document).on 'keyup', '.edit_detail', (event) ->
     event.preventDefault()
     $(this).closest('form').submit()
 
+window.cacheStats = (statsJSON) ->
+  $('#cache_stats').html('<span style="color:white;">cache-size: '+statsJSON.tilesSize+' / #'+statsJSON.numTiles+' tiles</span>')
+
 jQuery ->
   $.fn.selectRange = (start, end) ->
     if !end
