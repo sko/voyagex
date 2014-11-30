@@ -1,6 +1,6 @@
 class window.Comm.StorageController
 
-  @_INSTANCE = new StorageController(null)
+  @_SINGLETON = new StorageController(null)
 
   constructor: (TODO_storeKey) ->
     unless Modernizr.localstorage
@@ -50,4 +50,4 @@ class window.Comm.StorageController
       null
 
   @instance: () ->
-    @_INSTANCE
+    @_SINGLETON

@@ -59,6 +59,12 @@ jQuery ->
   window.getSelectedPositionLatLng = () ->
     return [selectedPositionLatLng[0], selectedPositionLatLng[1]]
 
+  window.zoomEnd = (e) ->
+    $('#zoom_level').html('<b style="color:white;">zoom: '+map.getZoom()+'</b>')
+
+  window.cacheStats = (statsJSON) ->
+    $('#cache_stats').html('<b style="color:white;">tiles-size: '+statsJSON.tilesSize+' / #'+statsJSON.numTiles+'</b>')
+
   getUploadComments = (upload_id) ->
     $.ajax
       type: 'GET'
@@ -185,3 +191,9 @@ jQuery ->
         })
     # map.getPanes().tilePane
     $('button[value=camera]').focus()
+    zoomEnd(null)
+    cacheStats({
+        tilesSize: Math.round(localStorage.tiles.length/1024)+' kB',
+        numTiles: localStorage.tiles.match(/("id":)/g).length
+      })
+    
