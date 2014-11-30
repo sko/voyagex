@@ -40,6 +40,9 @@
       .info{style: 'margin: 15px 0px 0px 0px;'}
         %span#zoom_level{style: 'margin-left: 40px;'}
         %span#cache_stats{style: 'margin-left: 20px;'}
+        %span#cache_ctrls{style: 'margin-left: 20px;'}
+          %button{id: 'clear_cache'}
+            Clear Cache
         #network_state{style: 'float:right;'}
           = radio_button_tag 'network_state', 'online', true, onclick: 'toggleNetworkState(this)'
           = label_tag 'network_state_online', 'online'

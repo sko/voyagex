@@ -2,6 +2,7 @@ class window.VoyageX.MapControl
 
   @_SINGLETON = null
 
+  # zooms msut be sorted from lowest (f.ex. 1) to highest (f.ex. 16)
   constructor: (cacheStrategy, zooms, offlineZooms, online) ->
     @_cacheStrategy = cacheStrategy
     VoyageX.MapControl._SINGLETON = this
@@ -42,14 +43,33 @@ class window.VoyageX.MapControl
               .replace('{y}', view.tile.row)
               .replace('{x}', view.tile.column)
               .replace('{s}', view.subdomain)
+    mC = VoyageX.MapControl._instance()
     #@_cacheStrategy.getTileUrl tileUrl
     storeKey = view.zoom+'/'+view.tile.column+'/'+view.tile.row
-    stored = if view.zoom in VoyageX.MapControl._instance()._offlineZooms then Comm.StorageController.instance().get 'tiles' else null
+    stored = if view.zoom in mC._offlineZooms then Comm.StorageController.instance().get 'tiles' else null
     if stored == null || !(geoJSON = stored[storeKey])?
-      if VoyageX.MapControl._instance()._online
-        VoyageX.MapControl._instance()._loadReadyImage tileUrl, storeKey#, deferred
+      if mC._online
+        console.log 'caching tile: '+storeKey
+        readyImage = mC._loadReadyImage tileUrl, storeKey
+        # store all tiles in <= zoom-levels
+        # 4 small tiles become one bigger tile
+        curXYZ = [view.tile.column, view.tile.row, view.zoom]
+        for n in [(view.zoom-1)..mC._minZoom]
+          curXYZ = [Math.round((curXYZ[0]-0.1)/2),
+                    Math.round((curXYZ[1]-0.1)/2),
+                    n]
+          if n in mC._offlineZooms
+            parentTileUrl = VoyageX.TILE_URL_TEMPLATE
+                            .replace('{z}', curXYZ[2])
+                            .replace('{y}', curXYZ[1])
+                            .replace('{x}', curXYZ[0])
+                            .replace('{s}', view.subdomain)
+            parentStoreKey = curXYZ[2]+'/'+curXYZ[0]+'/'+curXYZ[1]
+            console.log 'caching lower-zoom tile: '+parentStoreKey
+            mC._loadReadyImage parentTileUrl, parentStoreKey
+        readyImage
       else
-        VoyageX.MapControl._instance()._notInCacheImage $('#tile_canvas')[0], view.tile.column, view.tile.row, view.zoom
+        mC._notInCacheImage $('#tile_canvas')[0], view.tile.column, view.tile.row, view.zoom
     else
       console.log 'using cached tile: '+storeKey
       geoJSON.properties.data

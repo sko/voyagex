@@ -165,6 +165,14 @@ jQuery ->
                           userId: $('#current_user_id').val()})
       $(this).val('\n-------------------------\n'+$(this).val())
       $(this).selectRange(0) 
+    
+  $(document).on 'click', '#clear_cache', (event) ->
+    localStorage.removeItem('tiles')
+    cacheStats({
+        tilesSize: 0+' kB',
+        numTiles: 0
+      })
+    
   
   map.on 'click', (event) ->
     address = null
@@ -198,8 +206,14 @@ jQuery ->
     $("input[name=network_state]").buttonset();
     $('button[value=camera]').focus()
     zoomEnd(null)
+    if localStorage.tiles?
+      sizeOfTiles = Math.round(localStorage.tiles.length/1024)
+      numTiles =  localStorage.tiles.match(/("id":)/g).length
+    else
+      sizeOfTiles = 0
+      numTiles = 0
     cacheStats({
-        tilesSize: Math.round(localStorage.tiles.length/1024)+' kB',
-        numTiles: localStorage.tiles.match(/("id":)/g).length
+        tilesSize: sizeOfTiles+' kB',
+        numTiles: numTiles
       })
     

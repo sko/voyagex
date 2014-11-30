@@ -5,6 +5,7 @@ class window.Comm.StorageController
   constructor: (TODO_storeKey) ->
     unless Modernizr.localstorage
       alert('This Browser Doesn\'t Support Local Storage.')
+    @_jsonObjects = {}
   
   # reserved listKeys:
   # push: creates/uses an array for entries stored with storeKey
@@ -16,13 +17,17 @@ class window.Comm.StorageController
       if listKey == 'push'
         listEntries[listKey] = [data]
       else
+        @_jsonObjects[storeKey] = listEntries
         listEntries[listKey] = data
       localStorage.setItem(storeKey, JSON.stringify(listEntries));
     else
       if stored.trim().match(/^\{/) == null
         alert('expected Object/List - change of EntryType not implemented')
       else
-        storedJSON = eval("(" + stored + ")")
+        storedJSON = @_jsonObjects[storeKey]
+        unless storedJSON?
+          storedJSON = eval("(" + stored + ")")
+          @_jsonObjects[storeKey] = storedJSON
         if listKey == 'push'
          #storedJSON[listKey].push(data) # LIFO with push
           storedJSON[listKey].splice(0, 0, data) # FIFO with push
@@ -31,9 +36,14 @@ class window.Comm.StorageController
         localStorage.setItem(storeKey, JSON.stringify(storedJSON));
 
   get: (storeKey) ->
-    eval("(" + localStorage.getItem(storeKey) + ")")
+    @_jsonObjects[storeKey] || eval("(" + localStorage.getItem(storeKey) + ")")
+
+  getSize: (storeKey) ->
+    stored = localStorage.getItem(storeKey)
+    (if stored != null then Math.round(localStorage[storeKey].length/1024) else 0)+' kB'
 
   # expects an array stored with 'push' as listKey in storeKey-entry
+  # TODO cache list-object as well like @_jsonObjects
   pop: (storeKey) ->
     stored = localStorage.getItem(storeKey)
     unless stored == null
