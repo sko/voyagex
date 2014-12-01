@@ -6,6 +6,28 @@ class window.Comm.StorageController
     unless Modernizr.localstorage
       alert('This Browser Doesn\'t Support Local Storage.')
     @_jsonObjects = {}
+#    @_grantedBytes = 0
+#    requestedBytes = Math.pow(2, 24) # 16MB
+#    navigator.webkitPersistentStorage.requestQuota(requestedBytes, (grantedBytes) ->
+#        window.webkitRequestFileSystem(PERSISTENT, grantedBytes, Comm.StorageController.instance().onInitFs, Comm.StorageController.instance().onFsError)
+#      , (e) ->
+#        console.log('Error', e)
+#      )
+
+  onInitFs: (fs) ->
+    console.log('filesystem zugang')
+    #fs.root.getFile('log.txt', {create: true, exclusive: true}, (fileEntry) ->
+    #    # fileEntry.isFile === true
+    #    # fileEntry.name == 'log.txt'
+    #    # fileEntry.fullPath == '/log.txt'
+    #    alert(fileEntry.toURL())
+    #  , Comm.StorageController.instance().onFileError);
+
+  onFsError: (e) ->
+    console.log('kein filesystem zugang')
+
+  onFileError: (e) ->
+    console.log('kein file zugang')
   
   # reserved listKeys:
   # push: creates/uses an array for entries stored with storeKey
@@ -35,12 +57,31 @@ class window.Comm.StorageController
           storedJSON[listKey] = data
         localStorage.setItem(storeKey, JSON.stringify(storedJSON));
 
-  get: (storeKey) ->
+  get: (storeKey, listKey) ->
+    # FIXME @_jsonObjects is an internal cache-object and should not be exposed to concurrent access
+    #       readonly but 'live' copy -> wrapper object! with methods getItem() for [] and real object 
     @_jsonObjects[storeKey] || eval("(" + localStorage.getItem(storeKey) + ")")
 
-  getSize: (storeKey) ->
+  getNumElements: (storeKey, listKey = null) ->
+    # TODO listKey != null, id might not be available
+    if @_jsonObjects[storeKey]?
+      Object.keys(@_jsonObjects[storeKey]).length
+    else
+      stored = localStorage.getItem(storeKey)
+      if stored != null then (stored.match(/("id":)/g)||[]).length else 0
+    #stored = localStorage.getItem(storeKey)
+    #(if stored != null then Math.round(localStorage[storeKey].length/1024) else 0)+' kB'
+
+  getByteSize: (storeKey, listKey = null) ->
+    # TODO listKey != null
     stored = localStorage.getItem(storeKey)
-    (if stored != null then Math.round(localStorage[storeKey].length/1024) else 0)+' kB'
+    if stored != null then stored.length else 0
+
+  delete: (storeKey, listKey = null) ->
+    # TODO listKey != null
+    localStorage.removeItem('tiles')
+    if @_jsonObjects[storeKey]?
+      @_jsonObjects[storeKey] = null
 
   # expects an array stored with 'push' as listKey in storeKey-entry
   # TODO cache list-object as well like @_jsonObjects
@@ -61,3 +102,14 @@ class window.Comm.StorageController
 
   @instance: () ->
     @_SINGLETON
+
+#
+# provides readonly-'live'-access to storage-entry
+#
+class Comm.StorageEntryWrapper
+  
+  constructor: (jsonObject) ->
+    @_jsonObject = jsonObject
+
+  getItem: (key) ->
+    @_jsonObject[key]

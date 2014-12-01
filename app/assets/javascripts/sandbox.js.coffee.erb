@@ -15,10 +15,19 @@ jQuery ->
 
   selectedPositionLatLng = [-1, -1]
 
-  mySwiper = $('.swiper-container').swiper({
+  window.photoClicked = (swiper) ->
+    $('#current_address').html($(swiper.clickedSlide).attr('data-address'))
+    panUpload($(swiper.clickedSlide).attr('data-id'))
+
+  window.photoChanged = (swiper) ->
+    $('#current_address').html($(swiper.activeSlide()).attr('data-address'))
+
+  #  onSlideClick: window.photoClicked,
+  window.mySwiper = $('.swiper-container').swiper({
     mode:'horizontal',
     loop: false,
-    freeModeFluid: true
+    freeModeFluid: true,
+    onSlideChangeEnd: window.photoChanged
   })
 
   window.toggleNetworkState = (selected) ->
@@ -101,10 +110,13 @@ jQuery ->
   systemCB = (message) ->
     console.log 'got a system - message: ' + message.type
     #Object.keys(window.commListeners).every (channel) ->
-    for channel in ['talk', 'mapEvents', 'uploads']
-      for peer in message.peers
-        console.log 'subscribing: /'+channel+VoyageX.PEER_CHANNEL_PREFIX+peer.channel_enc_key + ' from user ' + peer.user.username
-        Comm.register '/'+channel+VoyageX.PEER_CHANNEL_PREFIX+peer.channel_enc_key, eval(channel+'CB')
+    if message.type == 'handshake'
+      alert('handshake')
+    else if message.type == 'subscription_notification'
+      for channel in ['talk', 'mapEvents', 'uploads']
+        for peer in message.peers
+          console.log 'subscribing: /'+channel+VoyageX.PEER_CHANNEL_PREFIX+peer.channel_enc_key + ' from user ' + peer.user.username
+          Comm.register '/'+channel+VoyageX.PEER_CHANNEL_PREFIX+peer.channel_enc_key, eval(channel+'CB')
 
   talkCB = (message) ->
     console.log 'got a talk - message: ' + message.type
@@ -164,11 +176,8 @@ jQuery ->
       $(this).selectRange(0) 
     
   $(document).on 'click', '#clear_cache', (event) ->
-    localStorage.removeItem('tiles')
-    cacheStats({
-        tilesSize: 0+' kB',
-        numTiles: 0
-      })
+    Comm.StorageController.instance().delete('tiles')
+    cacheStats()
     
   
   map.on 'click', (event) ->
@@ -204,14 +213,5 @@ jQuery ->
     $("#network_state").buttonset()
     $('button[value=camera]').focus()
     zoomEnd(null)
-    if localStorage.tiles?
-      sizeOfTiles = Math.round(localStorage.tiles.length/1024)
-      numTiles =  localStorage.tiles.match(/("id":)/g).length
-    else
-      sizeOfTiles = 0
-      numTiles = 0
-    cacheStats({
-        tilesSize: sizeOfTiles+' kB',
-        numTiles: numTiles
-      })
+    cacheStats()
     

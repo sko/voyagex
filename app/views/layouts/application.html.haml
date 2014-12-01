@@ -23,6 +23,8 @@
       $("head").append("<style type='text/css'>#map {width:"+mapWidth+"px;height:"+mapHeight+"px;}</style>");
       var chatHeight = Math.round($(window).height() * 0.15) - 33;
       $("head").append("<style type='text/css'>.talk_message_text {width:100%;height:"+chatHeight+"px !important;}</style>");
+      var panelCtrlTopOff = $(window).height() - 41;
+      $("head").append("<style type='text/css'>#panel_control {position: fixed; top: "+panelCtrlTopOff+"px; height: 20px; z-index: 1000 !important;}</style>");
     
     = render partial: '/menus/top'
     #content{style: 'position: absolute; top: 50px;'}
@@ -30,7 +32,10 @@
       = render partial: '/auth/sign_up', locals: {resource: User.new, resource_name: :user}
       = render partial: '/auth/sign_in', locals: {resource: User.new, resource_name: :user}
       = yield
-    
+    #panel_control
+      %span{style: 'text-align: left; z-index: 11 !important;'}
+      = link_to image_tag('/assets/arrow-up-right.png', style: 'width: 32px; height: 43px;'), photo_nav_path, data: { remote: "true", format: :js }
+    = render partial: '/sandbox/photo_nav_panel'
     = javascript_include_tag "application"
     = javascript_include_tag params[:controller]
     

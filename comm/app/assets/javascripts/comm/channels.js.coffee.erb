@@ -3,6 +3,7 @@
 <% environment.context_class.instance_eval { include Rails.application.routes.url_helpers } %>
 # Comm::Engine.routes.url_helpers
 
+# curl -X POST http://192.168.1.4:3005/comm -H 'Content-Type: application/json' -d '{"channel":"/system@0rg94cpmy","data":{"type":"handshake", "hello":"world"}}'
 class window.Comm.Comm
   client = null
   channelCallBacksJSON = null
@@ -23,23 +24,26 @@ class window.Comm.Comm
     client = new Faye.Client(document.location.origin+'/comm')
     channelCallBacksJSON = new Object()
     channelCallBacksJSON['system'] = { callback: systemCallBack, channel_enc_key: null }
-    #this.register('/system', systemCallBack)
     for pair in channelCallBacksList
       channelCallBacksJSON[pair[0].substr(1)] = { callback: pair[1], channel_enc_key: null }
-      #this.register(pair[0], pair[1])
+    
+    data = { _method: 'put',\
+             user_id: userId }
     if useGlobalSubscribe
-      Comm.initUserContext { channel_enc_key: '' }, channelCallBacksJSON
+      #Comm.initUserContext { channel_enc_key: '' }, channelCallBacksJSON
+      data['subscribe_to_peers'] = false
     else
-      $.ajax
-        type: 'POST'
-        dataType: 'json'
-        url: '<%= comm_register_path %>'
-        data: { _method: 'put',\
-                user_id: userId }
-      .done (msg) ->
-          Comm.initUserContext msg, channelCallBacksJSON
-      .fail (jqXHR, textStatus) ->
-          alert('failed')
+      data['subscribe_to_peers'] = true
+
+    $.ajax
+      type: 'POST'
+      dataType: 'json'
+      url: '<%= comm_register_path %>'
+      data: data
+    .done (msg) ->
+        Comm.initUserContext msg, channelCallBacksJSON
+    .fail (jqXHR, textStatus) ->
+        alert('failed')
 
   send: (channel, message) ->
     # 1) client wants to publish before register-ajax-response set the enc_key
@@ -62,14 +66,15 @@ class window.Comm.Comm
     Object.keys(channelCallBacks).every (channel) ->
       channelCallBacks[channel].channel_enc_key = initParams.channel_enc_key
       channelPath = '/'+channel
-      unless useGlobalSubscribe
-        channelPath += VoyageX.PEER_CHANNEL_PREFIX+initParams.channel_enc_key
+      unless useGlobalSubscribe && channel != 'system' 
+        enc_key = if channel == 'system' then initParams.sys_channel_enc_key else initParams.channel_enc_key
+        channelPath += VoyageX.PEER_CHANNEL_PREFIX+enc_key
       Comm.register(channelPath, channelCallBacks[channel].callback)
 
   @register: (channel, callBack) ->
     # https://github.com/faye/faye/blob/master/javascript/protocol/client.js
-    #unless client._channels.hasSubscription(channel)
+    unless client._channels.hasSubscription(channel)
       client.subscribe channel, (message) ->
         callBack(message)
-    #else
-    #  alert('client already subscribed to channel '+channel)
+    else
+      console.log('client already subscribed to channel '+channel)

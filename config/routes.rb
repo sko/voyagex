@@ -5,6 +5,11 @@ VoyageX::Application.routes.draw do
   
   mount Comm::Engine => "/comm" unless Rails.env == 'test'
 
+  resources :users, only: [:update] do
+  end
+
+  get '/photo_nav', to: 'sandbox#photo_nav', as: :photo_nav
+
   match '/change_username', to: 'users#change_details', as: :change_username, via: [:get, :post]
 
   get '/upload_comments/:upload_id', to: 'uploads#comments', as: :upload_comments

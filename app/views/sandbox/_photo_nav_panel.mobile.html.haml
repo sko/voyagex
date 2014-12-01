@@ -1,13 +1,11 @@
-.modal
-  .modal-dialog#photo_nav_panel
-    .modal-body
-      %span#current_address
-      #swipe_panel{style: 'text-align: center;'}
-        .swiper-container
-          .swiper-wrapper#upload_preview
-            = render partial: 'swipe_panel'
+#photo_nav_panel{data: {role: 'panel', dismissible: 'false', animate: 'true', display: 'overlay'}}
+  %span#current_address
+  #swipe_panel{style: 'text-align: center;'}
+    .swiper-container
+      .swiper-wrapper#upload_preview
+        = render partial: 'swipe_panel'
     
-        %img{src: '/assets/swipe.jpg', style: 'width: 35px; height: 35px;'}
+    %img{src: '/assets/swipe.jpg', style: 'width: 35px; height: 35px;'}
 
   - max_height = 100.0
   - max_width = 300

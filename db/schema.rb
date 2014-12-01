@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20141122194001) do
+ActiveRecord::Schema.define(version: 20141201194126) do
 
   create_table "comm_peers", force: true do |t|
     t.integer  "comm_setting_id", null: false
@@ -23,10 +23,11 @@ ActiveRecord::Schema.define(version: 20141122194001) do
   add_index "comm_peers", ["comm_setting_id"], name: "index_comm_peers_on_comm_setting_id", using: :btree
 
   create_table "comm_settings", force: true do |t|
-    t.integer  "user_id",         null: false
-    t.string   "channel_enc_key", null: false
+    t.integer  "user_id",             null: false
+    t.string   "channel_enc_key",     null: false
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.string   "sys_channel_enc_key"
   end
 
   add_index "comm_settings", ["channel_enc_key"], name: "index_comm_settings_on_channel_enc_key", using: :btree
@@ -99,6 +100,8 @@ ActiveRecord::Schema.define(version: 20141122194001) do
     t.string   "unconfirmed_email"
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.integer  "home_base_id"
+    t.integer  "search_radius_meters"
   end
 
   add_index "users", ["email"], name: "index_users_on_email", unique: true, using: :btree

@@ -11,6 +11,9 @@ class window.VoyageX.MapControl
     @_minZoom = zooms[0]
     @_maxZoom = zooms[zooms.length - 1]
     @_offlineZooms = offlineZooms
+    @_numTilesCached = 0
+    @_tileImageContentType = 'image/webp'
+    #@_tileImageContentType = 'image/png'
 
   tileLayer: () ->
     new L.TileLayer.Functional(VoyageX.MapControl.drawTile, {
@@ -37,6 +40,7 @@ class window.VoyageX.MapControl
   # converts tiles to data-url: data:image/png;base64,...
   # and stores them in localStorage
   # plugged in via https://github.com/ismyrnow/Leaflet.functionaltilelayer
+  # cat ../tmp/chrome.log | sed "s/.\\+\\?: //" | sort
   @drawTile: (view) ->
     tileUrl = VoyageX.TILE_URL_TEMPLATE
               .replace('{z}', view.zoom)
@@ -49,8 +53,14 @@ class window.VoyageX.MapControl
     stored = if view.zoom in mC._offlineZooms then Comm.StorageController.instance().get 'tiles' else null
     if stored == null || !(geoJSON = stored[storeKey])?
       if mC._online
-        console.log 'caching tile: '+storeKey
+        #console.log 'caching tile: '+storeKey
         readyImage = mC._loadReadyImage tileUrl, storeKey
+        # store 1 higher zoomlevel if current zoomlevel is not in @_offlineZooms
+        for z in mC._offlineZooms
+          if z > view.zoom
+            console.log 'prefetch-base: '+storeKey
+            mC._prefetchHigherZoomLevel [view.tile.column, view.tile.row, view.zoom], (z-view.zoom-1)
+            break
         # store all tiles in <= zoom-levels
         # 4 small tiles become one bigger tile
         mC._prefetchLowerZoomLevels view
@@ -61,8 +71,20 @@ class window.VoyageX.MapControl
       console.log 'using cached tile: '+storeKey
       geoJSON.properties.data
 
+  _prefetchHigherZoomLevel: (XYZ, left) ->
+    for n2 in [0,1]
+      for n3 in [0,1]
+        curXYZ = [XYZ[0]*2+n3,
+                  XYZ[1]*2+n3,
+                  XYZ[2]+1]
+        if left >= 1
+          this._prefetchHigherZoomLevel curXYZ, (left-1)
+        curStoreKey = curXYZ[2]+'/'+curXYZ[0]+'/'+curXYZ[1]
+        console.log 'prefetch higher zoom tile: '+curStoreKey
+
   _prefetchLowerZoomLevels: (view) ->
     curXYZ = [view.tile.column, view.tile.row, view.zoom]
+    # TODO @see read-only in StorageController: geoJSON = Comm.StorageController.instance().get 'tiles'
     for n in [(view.zoom-1)..@_minZoom]
       curXYZ = [Math.round((curXYZ[0]-0.1)/2),
                 Math.round((curXYZ[1]-0.1)/2),
@@ -76,14 +98,17 @@ class window.VoyageX.MapControl
           # returns soon
           #
           # hack 1: store image here - it's going to be overwritten when image is ready
-          this._storeImage(parentStoreKey, null)
+          #this._storeImage(parentStoreKey, null)
+          Comm.StorageController.instance().addToList 'tiles', parentStoreKey, {}
           parentTileUrl = VoyageX.TILE_URL_TEMPLATE
                           .replace('{z}', curXYZ[2])
                           .replace('{y}', curXYZ[1])
                           .replace('{x}', curXYZ[0])
                           .replace('{s}', view.subdomain)
-          console.log 'prefetching and caching lower-zoom tile: '+parentStoreKey
-          this._loadReadyImage parentTileUrl, parentStoreKey
+          #console.log 'prefetching and caching lower-zoom tile: '+parentStoreKey
+          console.log 'fetch readyImage '+parentStoreKey
+          readyImage = this._loadReadyImage parentTileUrl, parentStoreKey
+          console.log 'got readyImage '+parentStoreKey
 
   # has to be done sequentially becaus we're using one canvas for all
   _loadReadyImage: (imgUrl, storeKey) ->
@@ -94,10 +119,6 @@ class window.VoyageX.MapControl
     img.onload = (event) ->
       base64ImgDataUrl = mC._toBase64 $('#tile_canvas')[0], this # event.target
       mC._storeImage(storeKey, base64ImgDataUrl)
-      cacheStats({
-          tilesSize: Math.round(localStorage.tiles.length/1024)+' kB',
-          numTiles: localStorage.tiles.match(/("id":)/g).length
-        })
       deferred.resolve(base64ImgDataUrl)
     img.src = imgUrl
     deferred.promise()
@@ -107,7 +128,7 @@ class window.VoyageX.MapControl
     canvas.height = 256
     context = canvas.getContext('2d')
     context.drawImage(image, 0, 0)
-    canvas.toDataURL('image/webp')
+    canvas.toDataURL(@_tileImageContentType)
 
   _notInCacheImage: (canvas, x, y, z) ->
     canvas.width = 256
@@ -121,7 +142,7 @@ class window.VoyageX.MapControl
     context.font = "bold 16px Arial";
     context.fillText("Not Cached", 100, 80);
     context.fillText(z+' / '+x+' / '+y, 40, 110);
-    canvas.toDataURL('image/webp')
+    canvas.toDataURL(@_tileImageContentType)
 
   _storeImage: (storeKey, tileDataUrl) ->
     geoJSON = {
@@ -135,3 +156,6 @@ class window.VoyageX.MapControl
           }
       }
     Comm.StorageController.instance().addToList 'tiles', storeKey, geoJSON
+    @_numTilesCached += 1
+    console.log 'cached tile(#'+@_numTilesCached+'): '+storeKey
+    cacheStats()

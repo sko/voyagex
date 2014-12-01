@@ -19,12 +19,10 @@ class window.VoyageX.NavBar
 window.clientState = new VoyageX.ClientState('map', 'camera', VoyageX.NavBar.showView, VoyageX.NavBar.hideView)
 
 allSignUpFields = $([]).add($("#auth_email")).add($("#auth_password")).add($("#auth_password_confirmation"))
-
 addUser = () ->
   $("#new_user").submit()
   signUpDialog.dialog("close")
   return true
-
 signUpDialog = $("#sign_up_modal").dialog({
       autoOpen: false,
       height: Math.abs($(window).height() * 0.7),
@@ -40,15 +38,13 @@ signUpDialog = $("#sign_up_modal").dialog({
         allSignUpFields.removeClass("ui-state-error")
         $("#sign_up_error").html('')
     })
-$("head").append("<style type='text/css'>#sign_up_modal {width:"+Math.abs($(window).width() * 0.3)+"px;}</style>");
+#$("head").append("<style type='text/css'>#sign_up_modal {width:"+Math.abs($(window).width() * 0.3)+"px;}</style>");
 
 allSignInFields = $([]).add($("#auth_email")).add($("#auth_password")).add($("#auth_password_confirmation"))
-
 signInUser = () ->
   $("#new_session").submit()
   signInDialog.dialog("close")
   return true
-
 signInDialog = $("#sign_in_modal").dialog({
       autoOpen: false,
       height: Math.abs($(window).height() * 0.7),
@@ -64,7 +60,7 @@ signInDialog = $("#sign_in_modal").dialog({
         allSignInFields.removeClass("ui-state-error")
         $("#sign_in_error").html('')
     })
-$("head").append("<style type='text/css'>#sign_in_modal {width:"+Math.abs($(window).width() * 0.3)+"px;}</style>");
+#$("head").append("<style type='text/css'>#sign_in_modal {width:"+Math.abs($(window).width() * 0.3)+"px;}</style>");
 
 window.uploadCommentDialog = $("#upload_comment_conrols").dialog({
       autoOpen: false,
@@ -72,4 +68,15 @@ window.uploadCommentDialog = $("#upload_comment_conrols").dialog({
       width: Math.abs($(window).width() * 0.5),
       modal: true
     })
-$("head").append("<style type='text/css'>#sign_in_modal {width:"+Math.abs($(window).width() * 0.3)+"px;}</style>");
+#$("head").append("<style type='text/css'>#sign_in_modal {width:"+Math.abs($(window).width() * 0.3)+"px;}</style>");
+photoNavPanel = $("#photo_nav_panel").dialog({
+      autoOpen: false,
+      height: Math.abs($(window).height() * 0.8),
+      width: Math.abs($(window).width() * 0.5),
+      top: ($(window).height()-Math.abs($(window).height() * 0.8))+'px',
+      left: '0px',
+      show: { effect: "drop", duration: 800 },
+      hide: { effect: "explode", duration: 1000 },
+      modal: true
+    })
+#$("head").append("<style type='text/css'>#photo_nav_panel {positon: fixed; top:"+($(window).height()-Math.abs($(window).height() * 0.8))+"px;}</style>");

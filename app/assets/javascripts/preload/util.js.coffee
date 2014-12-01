@@ -12,8 +12,10 @@ $(document).on 'keyup', '.edit_detail', (event) ->
     event.preventDefault()
     $(this).closest('form').submit()
 
-window.cacheStats = (statsJSON) ->
-  $('#cache_stats').html('<span style="color:white;">cache-size: '+statsJSON.tilesSize+' / #'+statsJSON.numTiles+' tiles</span>')
+window.cacheStats = () ->
+  tilesSize = Math.round(Comm.StorageController.instance().getByteSize('tiles')/1024)+' kB'
+  numTiles = Comm.StorageController.instance().getNumElements('tiles')
+  $('#cache_stats').html('<span style="color:white;">cache-size: '+tilesSize+' / #'+numTiles+' tiles</span>')
 
 jQuery ->
   $.fn.selectRange = (start, end) ->
