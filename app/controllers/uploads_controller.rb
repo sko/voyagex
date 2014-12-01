@@ -41,13 +41,19 @@ class UploadsController < ApplicationController
     if attachment_mapping.size >= 2
       file_name = "#{user.username}.#{attachment_mapping[1]}" 
     else
-      suffix = params[:file_content_type].match(/^[^\/]+\/([^\s;,]+)/)[1] rescue "#{user.username}"
-      file_name = "#{user.username}.#{suffix}" 
+      suffix = ".#{params[:file_content_type].match(/^[^\/]+\/([^\s;,]+)/)[1]}" rescue ''
+      file_name = "#{user.username}#{suffix}" 
     end
     @upload.set_base64_file params[:file_data], attachment_mapping[0], file_name
     @upload.location = location
     @upload.user = user
     if @upload.save
+      if attachment_mapping.size >= 2
+        # restore original content-type after imagemagick did it's job
+        suffix = ".#{params[:file_content_type].match(/^[^\/]+\/([^\s;,]+)/)[1]}" rescue ''
+        File.rename(@upload.file.path, @upload.file.path.sub(/\.[^.]+$/, suffix))
+        @upload.update_attributes(file_file_name: @upload.file_file_name.sub(/\.[^.]+$/, suffix), file_content_type: params[:file_content_type])
+      end
       @upload.comments.create(user: user, text: params[:file_comment])
      #render "shared/_uploaded", layout: false, formats: [:js], locals: { resource: @upload, resource_name: :upload }
       render "shared/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }

@@ -53,7 +53,7 @@ class window.VoyageX.MapControl
         readyImage = mC._loadReadyImage tileUrl, storeKey
         # store all tiles in <= zoom-levels
         # 4 small tiles become one bigger tile
-        mC._preloadLowerZoomLevels view
+        mC._prefetchLowerZoomLevels view
         readyImage
       else
         mC._notInCacheImage $('#tile_canvas')[0], view.tile.column, view.tile.row, view.zoom
@@ -61,7 +61,7 @@ class window.VoyageX.MapControl
       console.log 'using cached tile: '+storeKey
       geoJSON.properties.data
 
-  _preloadLowerZoomLevels: (view) ->
+  _prefetchLowerZoomLevels: (view) ->
     curXYZ = [view.tile.column, view.tile.row, view.zoom]
     for n in [(view.zoom-1)..@_minZoom]
       curXYZ = [Math.round((curXYZ[0]-0.1)/2),
@@ -71,12 +71,18 @@ class window.VoyageX.MapControl
         parentStoreKey = curXYZ[2]+'/'+curXYZ[0]+'/'+curXYZ[1]
         geoJSON = Comm.StorageController.instance().get 'tiles'
         unless geoJSON? && geoJSON[parentStoreKey]?
+          #
+          # FIXME - doesn't seem to work - stores same key more than once because _loadReadyImage
+          # returns soon
+          #
+          # hack 1: store image here - it's going to be overwritten when image is ready
+          this._storeImage(parentStoreKey, null)
           parentTileUrl = VoyageX.TILE_URL_TEMPLATE
                           .replace('{z}', curXYZ[2])
                           .replace('{y}', curXYZ[1])
                           .replace('{x}', curXYZ[0])
                           .replace('{s}', view.subdomain)
-          console.log 'caching lower-zoom tile: '+parentStoreKey
+          console.log 'prefetching and caching lower-zoom tile: '+parentStoreKey
           this._loadReadyImage parentTileUrl, parentStoreKey
 
   # has to be done sequentially becaus we're using one canvas for all

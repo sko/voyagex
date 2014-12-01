@@ -26,6 +26,8 @@ alternativ: tests schreiben die immer alle forms suchen.
 +) coffeescript
       if MediaStreamTrack.getSources is 'undefined'
       if MediaStreamTrack? && `MediaStreamTrack.getSources !== undefined`
++) # next statement removes value from inputs!!
+  $("#network_state").buttonset()
 
 
 ==========

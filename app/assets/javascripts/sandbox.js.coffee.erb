@@ -22,7 +22,7 @@ jQuery ->
   })
 
   window.toggleNetworkState = (selected) ->
-    if selected.value == 'online'
+    if selected.id == 'network_state_online'
       VoyageX.MapControl._instance().setOnline()
     else
       VoyageX.MapControl._instance().setOffline()
@@ -200,6 +200,7 @@ jQuery ->
           pan: false,
           animate: false
         })
+    # next statement removes value from inputs!!
     $("#network_state").buttonset()
     $('button[value=camera]').focus()
     zoomEnd(null)
