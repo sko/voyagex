@@ -67,13 +67,16 @@ class window.VoyageX.MapControl
               .replace('{x}', view.tile.column)
               .replace('{s}', view.subdomain)
     mC = VoyageX.MapControl._instance()
-    #@_cacheStrategy.getTileUrl tileUrl
     storeKey = VoyageX.MapControl.storeKey([view.tile.column, view.tile.row, view.zoom])
-    stored = if view.zoom in mC._offlineZooms then Comm.StorageController.instance().get 'tiles' else null
+   #stored = if view.zoom in mC._offlineZooms then Comm.StorageController.instance().get 'tiles' else null
+    stored = if view.zoom in mC._offlineZooms then Comm.StorageController.instance().getTile [view.tile.column, view.tile.row, view.zoom] else null
     if stored == null || !(geoJSON = stored[storeKey])?
       if mC._online
-        #console.log 'caching tile: '+storeKey
-        readyImage = mC._loadReadyImage tileUrl, [view.tile.column, view.tile.row, view.zoom]
+        # if current zoom-level is not offline-zoom-level then load from web
+        if view.zoom in mC._offlineZooms
+          readyImage = mC._loadReadyImage tileUrl, [view.tile.column, view.tile.row, view.zoom]
+        else
+          readyImage = tileUrl
         # store 1 higher zoomlevel if current zoomlevel is not in @_offlineZooms
         for z in mC._offlineZooms
           if z > view.zoom
@@ -94,15 +97,16 @@ class window.VoyageX.MapControl
     xYZ[2]+'/'+xYZ[0]+'/'+xYZ[1]
 
   _prefetchHigherZoomLevel: (XYZ, left) ->
-    for n2 in [0,1]
-      for n3 in [0,1]
-        curXYZ = [XYZ[0]*2+n3,
-                  XYZ[1]*2+n3,
+    for index in [0,1]
+      for count in [1,2]
+        curXYZ = [XYZ[0]*2+index,
+                  XYZ[1]*2+index,
                   XYZ[2]+1]
         if left >= 1
           this._prefetchHigherZoomLevel curXYZ, (left-1)
-        curStoreKey = curXYZ[2]+'/'+curXYZ[0]+'/'+curXYZ[1]
-        console.log 'prefetch higher zoom tile: '+curStoreKey
+        if curXYZ[2] in @_offlineZooms
+          curStoreKey = curXYZ[2]+'/'+curXYZ[0]+'/'+curXYZ[1]
+          console.log 'prefetch higher zoom tile: '+curStoreKey
 
   _prefetchLowerZoomLevels: (view) ->
     curXYZ = [view.tile.column, view.tile.row, view.zoom]
@@ -113,7 +117,8 @@ class window.VoyageX.MapControl
                 n]
       if n in @_offlineZooms
         parentStoreKey = curXYZ[2]+'/'+curXYZ[0]+'/'+curXYZ[1]
-        geoJSON = Comm.StorageController.instance().get 'tiles'
+        #geoJSON = Comm.StorageController.instance().get 'tiles'
+        geoJSON = Comm.StorageController.instance().getTile curXYZ
         unless geoJSON? && geoJSON[parentStoreKey]?
           #
           # FIXME - doesn't seem to work - stores same key more than once because _loadReadyImage
@@ -121,16 +126,15 @@ class window.VoyageX.MapControl
           #
           # hack 1: store image here - it's going to be overwritten when image is ready
           #this._storeImage(curXYZ, null)
-          Comm.StorageController.instance().addToList 'tiles', parentStoreKey, {}
+          #Comm.StorageController.instance().addToList 'tiles', parentStoreKey, {}
+          Comm.StorageController.instance().storeTile curXYZ, null
           parentTileUrl = VoyageX.TILE_URL_TEMPLATE
                           .replace('{z}', curXYZ[2])
                           .replace('{y}', curXYZ[1])
                           .replace('{x}', curXYZ[0])
                           .replace('{s}', view.subdomain)
-          #console.log 'prefetching and caching lower-zoom tile: '+parentStoreKey
-          console.log 'fetch readyImage '+parentStoreKey
+          console.log 'prefetching lower-zoom tile: '+parentStoreKey
           readyImage = this._loadReadyImage parentTileUrl, curXYZ
-          console.log 'got readyImage '+parentStoreKey
 
   # has to be done sequentially becaus we're using one canvas for all
   _loadReadyImage: (imgUrl, xYZ) ->
@@ -167,8 +171,8 @@ class window.VoyageX.MapControl
     canvas.toDataURL(@_tileImageContentType)
 
   _storeImage: (xYZ, tileDataUrl) ->
-    if VoyageX.MapControl._FS?
-      fileEntry = this._getFileEntry xYZ
+#    if VoyageX.MapControl._FS?
+#      fileEntry = this._getFileEntry xYZ
     storeKey = VoyageX.MapControl.storeKey xYZ
     geoJSON = {
         properties: {
@@ -180,7 +184,8 @@ class window.VoyageX.MapControl
             coordinates: [-1.0, -1.0] # TODO
           }
       }
-    Comm.StorageController.instance().addToList 'tiles', storeKey, geoJSON
+    #Comm.StorageController.instance().addToList 'tiles', storeKey, geoJSON
+    Comm.StorageController.instance().storeTile xYZ, geoJSON
     @_numTilesCached += 1
     console.log 'cached tile(#'+@_numTilesCached+'): '+storeKey
     cacheStats()

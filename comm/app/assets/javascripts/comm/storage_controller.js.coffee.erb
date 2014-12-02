@@ -6,7 +6,64 @@ class window.Comm.StorageController
     unless Modernizr.localstorage
       alert('This Browser Doesn\'t Support Local Storage.')
     @_jsonObjects = {}
+    @_tileDB = {}
+    @_tileMeta = null
+
+  @storeKey: (xYZ) ->
+    xYZ[2]+'/'+xYZ[0]+'/'+xYZ[1]
   
+  storeTile: (xYZ, data) ->
+    tileMeta = localStorage.getItem 'comm.tiles.tileMeta'
+    if tileMeta == null
+      @_tileMeta = { tilesByteSize: 0, numTiles: 0 }
+    else
+      @_tileMeta = eval("(" + tileMeta + ")")
+
+    #stored = localStorage.getItem('comm.tiles.'+xYZ[2])
+    if data == null
+      storeKey = 'comm.tiles.'+StorageController.storeKey(xYZ)
+      data = { properties: { id: 'comm.tiles.-'+storeKey, data: '' } }
+    else
+      storeKey = 'comm.tiles.'+data.properties.id
+    stored = localStorage.getItem storeKey
+    if stored == null || stored == ''
+#      tileStoreZ = {}
+#      yEntry = {}
+#      yEntry[xYZ[1]] = data
+#      tileStoreZ[xYZ[0]] = [yEntry]
+#      localStorage.setItem 'comm.tiles.'+xYZ[2], JSON.stringify(listEntries)
+      localStorage.setItem storeKey, data.properties.data
+      @_tileDB[storeKey] = data.properties.data
+      if stored != ''
+        @_tileMeta.numTiles = @_tileMeta.numTiles+1
+        @_tileMeta.tilesByteSize = @_tileMeta.tilesByteSize+data.properties.data.length
+    else
+      # for backward-compatibility
+      stored = localStorage.getItem 'comm.tiles.-'+data.properties.id
+      if stored == ''
+        localStorage.setItem storeKey, data.properties.data
+        @_tileDB[storeKey] = data.properties.data
+        localStorage.removeItem 'comm.tiles.-'+data.properties.id
+
+        @_tileMeta.numTiles = @_tileMeta.numTiles+1
+        @_tileMeta.tilesByteSize = @_tileMeta.tilesByteSize+data.properties.data.length
+
+    localStorage.setItem 'comm.tiles.tileMeta', JSON.stringify(@_tileMeta)
+  
+  getTile: (xYZ) ->
+    storeKey = StorageController.storeKey(xYZ)
+    stored = @_tileDB['comm.tiles.'+storeKey]
+    unless stored?
+      stored = localStorage.getItem 'comm.tiles.'+storeKey
+      @_tileDB['comm.tiles.'+storeKey] = stored
+    # for backward-compatibility
+    if stored?
+      result = {}
+      result[storeKey] = { properties: { id: storeKey, data: stored } }
+      result
+    else
+      null
+
   # reserved listKeys:
   # push: creates/uses an array for entries stored with storeKey
   # if an array is defined for a storeKey then there can't be any other objects defined aside (@see this.pop())
@@ -19,7 +76,7 @@ class window.Comm.StorageController
       else
         @_jsonObjects[storeKey] = listEntries
         listEntries[listKey] = data
-      localStorage.setItem(storeKey, JSON.stringify(listEntries));
+      localStorage.setItem(storeKey, JSON.stringify(listEntries))
     else
       if stored.trim().match(/^\{/) == null
         alert('expected Object/List - change of EntryType not implemented')
@@ -41,22 +98,38 @@ class window.Comm.StorageController
     @_jsonObjects[storeKey] || eval("(" + localStorage.getItem(storeKey) + ")")
 
   getNumElements: (storeKey, listKey = null) ->
-    # TODO listKey != null, id might not be available
-    if @_jsonObjects[storeKey]?
-      Object.keys(@_jsonObjects[storeKey]).length
+#    # TODO listKey != null, id might not be available
+#    if @_jsonObjects[storeKey]?
+#      Object.keys(@_jsonObjects[storeKey]).length
+#    else
+#      stored = localStorage.getItem(storeKey)
+#      if stored != null then (stored.match(/("id":)/g)||[]).length else 0
+#    #stored = localStorage.getItem(storeKey)
+#    #(if stored != null then Math.round(localStorage[storeKey].length/1024) else 0)+' kB'
+    tileMeta = localStorage.getItem 'comm.tiles.tileMeta'
+    if tileMeta == null
+      0
     else
-      stored = localStorage.getItem(storeKey)
-      if stored != null then (stored.match(/("id":)/g)||[]).length else 0
-    #stored = localStorage.getItem(storeKey)
-    #(if stored != null then Math.round(localStorage[storeKey].length/1024) else 0)+' kB'
+      @_tileMeta = eval("(" + tileMeta + ")").numTiles
 
   getByteSize: (storeKey, listKey = null) ->
     # TODO listKey != null
-    stored = localStorage.getItem(storeKey)
-    if stored != null then stored.length else 0
+#    stored = localStorage.getItem(storeKey)
+#    if stored != null then stored.length else 0
+    tileMeta = localStorage.getItem 'comm.tiles.tileMeta'
+    if tileMeta == null
+      0
+    else
+      @_tileMeta = eval("(" + tileMeta + ")").tilesByteSize
 
   delete: (storeKey, listKey = null) ->
     # TODO listKey != null
+    window.localStorage.clear()
+    @_tileDB = null
+    @_tileDB = {}
+    @_tileMeta = { tilesByteSize: 0, numTiles: 0 }
+    localStorage.removeItem 'comm.tiles.tileMeta'
+
     localStorage.removeItem('tiles')
     if @_jsonObjects[storeKey]?
       @_jsonObjects[storeKey] = null
