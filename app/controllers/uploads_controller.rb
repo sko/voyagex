@@ -1,5 +1,7 @@
 class UploadsController < ApplicationController 
 
+  skip_before_filter :verify_authenticity_token, only: [:create]
+
   def create
     #user = current_user || User.where(id: params[:user][:id]).first || tmp_user
     user = current_user || tmp_user
@@ -72,6 +74,10 @@ class UploadsController < ApplicationController
     render "shared/upload_comments", layout: false, formats: [:js]
   end
 
+  def csrf
+    render "shared/csrf", layout: 'uploads'
+  end
+
   private
 
   def after_save
@@ -79,6 +85,8 @@ class UploadsController < ApplicationController
     file_data = { type: 'image', url: @upload.file.url, width: geometry.width.to_i, height: geometry.height.to_i }
     location_data = { lat: @upload.location.latitude, lng: @upload.location.longitude, address: @upload.location.address }
     upload_msg = { id: @upload.id, file: file_data, location: location_data }
-    Comm::ChannelsController.publish('/uploads', upload_msg)
+    channel_path = '/uploads'
+    channel_path += "#{PEER_CHANNEL_PREFIX}#{@upload.user.comm_setting.channel_enc_key}" unless USE_GLOBAL_SUBSCRIBE
+    Comm::ChannelsController.publish(channel_path, upload_msg)
   end
 end

@@ -18,6 +18,12 @@ window.cacheStats = () ->
   $('#cache_stats').html('<span style="color:white;">cache-size: '+tilesSize+' / #'+numTiles+' tiles</span>')
 
 jQuery ->
+#  $.ajaxSetup({
+#    headers: {
+#      'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
+#    }
+#  })
+
   $.fn.selectRange = (start, end) ->
     if !end
       end = start

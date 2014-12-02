@@ -1,6 +1,7 @@
 class window.VoyageX.MapControl
 
   @_SINGLETON = null
+  @_FS = null
 
   # zooms msut be sorted from lowest (f.ex. 1) to highest (f.ex. 16)
   constructor: (cacheStrategy, zooms, offlineZooms, online) ->
@@ -14,6 +15,24 @@ class window.VoyageX.MapControl
     @_numTilesCached = 0
     @_tileImageContentType = 'image/webp'
     #@_tileImageContentType = 'image/png'
+    @_fs = null
+    @_grantedBytes = 0
+    requestedBytes = Math.pow(2, 24) # 16MB
+    navigator.webkitPersistentStorage.requestQuota(requestedBytes, (grantedBytes) ->
+        window.webkitRequestFileSystem(PERSISTENT, grantedBytes, VoyageX.MapControl.onInitFs, VoyageX.MapControl.onFsError)
+      , (e) ->
+        console.log('Error', e)
+      )
+
+  @onInitFs: (fs) ->
+    console.log('filesystem zugang')
+    VoyageX.MapControl._FS = fs
+
+  @onFsError: (e) ->
+    console.log('kein filesystem zugang')
+
+  @onFileError: (e) ->
+    console.log('kein file zugang')
 
   tileLayer: () ->
     new L.TileLayer.Functional(VoyageX.MapControl.drawTile, {
@@ -49,12 +68,12 @@ class window.VoyageX.MapControl
               .replace('{s}', view.subdomain)
     mC = VoyageX.MapControl._instance()
     #@_cacheStrategy.getTileUrl tileUrl
-    storeKey = view.zoom+'/'+view.tile.column+'/'+view.tile.row
+    storeKey = VoyageX.MapControl.storeKey([view.tile.column, view.tile.row, view.zoom])
     stored = if view.zoom in mC._offlineZooms then Comm.StorageController.instance().get 'tiles' else null
     if stored == null || !(geoJSON = stored[storeKey])?
       if mC._online
         #console.log 'caching tile: '+storeKey
-        readyImage = mC._loadReadyImage tileUrl, storeKey
+        readyImage = mC._loadReadyImage tileUrl, [view.tile.column, view.tile.row, view.zoom]
         # store 1 higher zoomlevel if current zoomlevel is not in @_offlineZooms
         for z in mC._offlineZooms
           if z > view.zoom
@@ -70,6 +89,9 @@ class window.VoyageX.MapControl
     else
       console.log 'using cached tile: '+storeKey
       geoJSON.properties.data
+
+  @storeKey: (xYZ) ->
+    xYZ[2]+'/'+xYZ[0]+'/'+xYZ[1]
 
   _prefetchHigherZoomLevel: (XYZ, left) ->
     for n2 in [0,1]
@@ -98,7 +120,7 @@ class window.VoyageX.MapControl
           # returns soon
           #
           # hack 1: store image here - it's going to be overwritten when image is ready
-          #this._storeImage(parentStoreKey, null)
+          #this._storeImage(curXYZ, null)
           Comm.StorageController.instance().addToList 'tiles', parentStoreKey, {}
           parentTileUrl = VoyageX.TILE_URL_TEMPLATE
                           .replace('{z}', curXYZ[2])
@@ -107,18 +129,18 @@ class window.VoyageX.MapControl
                           .replace('{s}', view.subdomain)
           #console.log 'prefetching and caching lower-zoom tile: '+parentStoreKey
           console.log 'fetch readyImage '+parentStoreKey
-          readyImage = this._loadReadyImage parentTileUrl, parentStoreKey
+          readyImage = this._loadReadyImage parentTileUrl, curXYZ
           console.log 'got readyImage '+parentStoreKey
 
   # has to be done sequentially becaus we're using one canvas for all
-  _loadReadyImage: (imgUrl, storeKey) ->
+  _loadReadyImage: (imgUrl, xYZ) ->
     deferred = $.Deferred()
     img = new Image
     img.crossOrigin = ''
     mC = this
     img.onload = (event) ->
       base64ImgDataUrl = mC._toBase64 $('#tile_canvas')[0], this # event.target
-      mC._storeImage(storeKey, base64ImgDataUrl)
+      mC._storeImage(xYZ, base64ImgDataUrl)
       deferred.resolve(base64ImgDataUrl)
     img.src = imgUrl
     deferred.promise()
@@ -144,7 +166,10 @@ class window.VoyageX.MapControl
     context.fillText(z+' / '+x+' / '+y, 40, 110);
     canvas.toDataURL(@_tileImageContentType)
 
-  _storeImage: (storeKey, tileDataUrl) ->
+  _storeImage: (xYZ, tileDataUrl) ->
+    if VoyageX.MapControl._FS?
+      fileEntry = this._getFileEntry xYZ
+    storeKey = VoyageX.MapControl.storeKey xYZ
     geoJSON = {
         properties: {
             id: storeKey,
@@ -159,3 +184,12 @@ class window.VoyageX.MapControl
     @_numTilesCached += 1
     console.log 'cached tile(#'+@_numTilesCached+'): '+storeKey
     cacheStats()
+
+  _getFileEntry: (xYZ) ->
+    deferred = $.Deferred()
+    VoyageX.MapControl._FS.root.getFile(xYZ[2], {}, (fileEntry) ->
+        console.log('fileEntry = '+fileEntry.fullPath)
+        #alert(fileEntry.fullPath)
+        deferred.resolveWith(fileEntry)
+      , VoyageX.MapControl.onFileError)
+    deferred.promise()

@@ -1,12 +1,11 @@
 .container
-  = form_for tmp_user, remote: true, method: :post, :html => { :id => "settings_form" } do |f|
-    .user_settings
+  = form_for tmp_user, remote: true, method: :patch, :html => { :id => "settings_form" } do |f|
+    .user_settings{style: 'padding: 0px 0px 20px 0px;'}
       %span{style: 'float: left; padding: 0px 10px 0px 0px;'}
         Suchradius (meter):
       = f.text_field :search_radius_meters, size: 7, max_length: 7
-      .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: 'settings_form_btn'}
-        .ui-button-text
-          Sichern
+      = render partial: '/shared/peers', locals: {user: tmp_user}
+      = f.submit 'Sichern', :class => "btn btn-sm"
     .peers
 
 .container
@@ -67,6 +66,6 @@
         .ui-button-text
           #{t('uploads.add_comment_submit').html_safe}
       
-%iframe{id: "upload_target", name: "upload_target", style: "display:none;"}
+%iframe{id: "upload_target", src: csrf_path, name: "upload_target", style: "display:none;"}
 
 

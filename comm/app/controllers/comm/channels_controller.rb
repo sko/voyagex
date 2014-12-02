@@ -12,7 +12,19 @@ module Comm
 
     channel '/system**' do
       monitor :subscribe do
+        ###### Client igt3vtbefo1rfmo5afi7wig5y7x3vx7 subscribed to /system@8jruy0aws.
         Rails.logger.debug "###### Client #{client_id} subscribed to #{channel}."
+        subscription_enc_key = channel.match(/^\/system#{PEER_CHANNEL_PREFIX}([^\/]+)/)
+        if subscription_enc_key.present?
+          comm_setting = CommSetting.where(sys_channel_enc_key: subscription_enc_key[1]).first
+          Rails.logger.debug "###### Found User #{comm_setting.user.id} for Client #{client_id}."
+          comm_setting.update_attribute(:current_faye_client_id, client_id)
+
+          # now that current_faye_client_id is set, the client can start to communicate
+          # first it should register to it's own channels
+          msg = { type: :ready_notification, channel_enc_key: comm_setting.channel_enc_key }
+          Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{subscription_enc_key[1]}", msg)
+        end
       end
       monitor :unsubscribe do
         Rails.logger.debug "###### Client #{client_id} unsubscribed from #{channel}."
@@ -43,12 +55,45 @@ module Comm
     end
 
     channel '/map_events**' do
+      filter :in do
+#[1] pry(#<FayeRails::Filter::DSL>)> message
+#=> {"channel"=>"/meta/subscribe", "clientId"=>"dv2njyqmg7yvsy4q63143faf7m4iyby", "subscription"=>"/map_events", "id"=>"b"}
+#[2] pry(#<FayeRails::Filter::DSL>)> 
+###### Inbound message {"channel"=>"/meta/subscribe", "clientId"=>"adv6zxtpglnbcovod8ecbu4wwb2ykkm", "subscription"=>"/map_events@rxbcin9nc", "id"=>"4"}.
+        block_msg = nil
+        Rails.logger.debug "###### Inbound message #{message}."
+        if message['channel'].match(/^\/meta\/subscribe/).present?
+          subscription_enc_key = message['subscription'].match(/^.+?#{PEER_CHANNEL_PREFIX}([^\/]+)/)
+          if subscription_enc_key.present?
+            Rails.logger.debug "###### Inbound message: found subscription_enc_key '#{subscription_enc_key[1]}'"
+            user_comm_setting = CommSetting.where(current_faye_client_id: message['clientId']).first
+            if user_comm_setting.present?
+              target = CommSetting.where(channel_enc_key: subscription_enc_key[1]).first
+              granted = target.present? && target.comm_peers.where(peer_id: user_comm_setting.user.id, granted_by_peer: true).present?
+              if granted
+                Rails.logger.debug "###### Inbound message: allow subscription on channel #{message['subscription']} for user #{user_comm_setting.user.id}"
+              else
+                Rails.logger.debug "###### Inbound message: deny subscription on channel #{message['subscription']} for user #{user_comm_setting.user.id} because grant missing"
+                block_msg = 'grant required for subscription'
+              end
+            else
+              Rails.logger.debug "###### Inbound message: deny subscription on channel #{message['subscription']} because user not signed in"
+              block_msg = 'only subscribable for signed in users...'
+            end
+          end
+        end
+        if block_msg.nil?
+          pass
+        else
+          block block_msg
+        end
+      end
       filter :out do
 #[1] pry(#<FayeRails::Filter::DSL>)> message
 #=> {"channel"=>"/map_events", "data"=>{"type"=>"click", "userId"=>"129", "lat"=>51.377941781653284, "lng"=>7.493147850036621}, "clientId"=>"l80967ybiset8aevchha4z6bmkqnced", "id"=>"r"}
 #[2] pry(#<FayeRails::Filter::DSL>)> message.class
 #=> Hash
-        Rails.logger.debug "###### Inbound message #{message}."
+        Rails.logger.debug "###### Outbound message #{message}."
         publish_data = message['data']
         if publish_data.present?
           case publish_data['type']
@@ -100,5 +145,13 @@ module Comm
       end
     end
 
+    private
+
+    def check_read_permission channel
+      channel_enc_key_match = channel.match(/_\$(.+)/)
+      if channel_enc_key_match.present?
+        channel_enc_key = channel_enc_key_match[1]
+      end
+    end
   end
 end

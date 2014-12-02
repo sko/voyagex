@@ -12,6 +12,7 @@ VoyageX::Application.routes.draw do
 
   match '/change_username', to: 'users#change_details', as: :change_username, via: [:get, :post]
 
+  get '/csrf', to: 'uploads#csrf', as: :csrf
   get '/upload_comments/:upload_id', to: 'uploads#comments', as: :upload_comments
   put '/upload_comments/:upload_id', to: 'uploads#comments', as: :create_upload_comment
   put '/upload_file', to: 'uploads#create', as: :uploads

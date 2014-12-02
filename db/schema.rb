@@ -18,16 +18,18 @@ ActiveRecord::Schema.define(version: 20141201194126) do
     t.integer  "peer_id",         null: false
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.boolean  "granted_by_peer"
   end
 
   add_index "comm_peers", ["comm_setting_id"], name: "index_comm_peers_on_comm_setting_id", using: :btree
 
   create_table "comm_settings", force: true do |t|
-    t.integer  "user_id",             null: false
-    t.string   "channel_enc_key",     null: false
+    t.integer  "user_id",                null: false
+    t.string   "channel_enc_key",        null: false
     t.datetime "created_at"
     t.datetime "updated_at"
     t.string   "sys_channel_enc_key"
+    t.string   "current_faye_client_id"
   end
 
   add_index "comm_settings", ["channel_enc_key"], name: "index_comm_settings_on_channel_enc_key", using: :btree

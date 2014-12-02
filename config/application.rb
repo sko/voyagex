@@ -75,3 +75,4 @@ end
 
 ADMIN_EMAIL_ADDRESS = 'sko@ctrl.info.tm'
 PEER_CHANNEL_PREFIX = '@'
+USE_GLOBAL_SUBSCRIBE = false

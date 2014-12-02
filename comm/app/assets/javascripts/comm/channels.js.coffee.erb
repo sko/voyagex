@@ -7,9 +7,13 @@
 class window.Comm.Comm
   client = null
   channelCallBacksJSON = null
-  useGlobalSubscribe = true
+  useGlobalSubscribe = window.VoyageX.USE_GLOBAL_SUBSCRIBE
 
-# 1) before faye get channel-key from app, f.ex: talk213enfn23r2n3
+#
+# 1) on starting up the faye-client requests a channel-key from system, f.ex: talk213enfn23r2n3
+#    this is also a check for online state
+# 2) TODO credentials
+#
 #    then everything goes over faye and server pubishes to all users associeated with 32432jnrrf43
 #    *) server generates key and listens to that channel
 #       - when client publishes server publishes to all external listeners
@@ -22,37 +26,32 @@ class window.Comm.Comm
     @_storageController = window.Comm.StorageController.instance()
 
     client = new Faye.Client(document.location.origin+'/comm')
-    channelCallBacksJSON = new Object()
-    channelCallBacksJSON['system'] = { callback: systemCallBack, channel_enc_key: null }
+    # map callbacks to channels
+    Comm.channelCallBacksJSON = new Object()
+    Comm.channelCallBacksJSON['system'] = { callback: systemCallBack, channel_enc_key: null }
     for pair in channelCallBacksList
-      channelCallBacksJSON[pair[0].substr(1)] = { callback: pair[1], channel_enc_key: null }
+      Comm.channelCallBacksJSON[pair[0].substr(1)] = { callback: pair[1], channel_enc_key: null }
     
     data = { _method: 'put',\
              user_id: userId }
-    if useGlobalSubscribe
-      #Comm.initUserContext { channel_enc_key: '' }, channelCallBacksJSON
-      data['subscribe_to_peers'] = false
-    else
-      data['subscribe_to_peers'] = true
-
     $.ajax
       type: 'POST'
       dataType: 'json'
       url: '<%= comm_register_path %>'
       data: data
     .done (msg) ->
-        Comm.initUserContext msg, channelCallBacksJSON
+        Comm.initSystemContext msg, Comm.channelCallBacksJSON['system']
     .fail (jqXHR, textStatus) ->
-        alert('failed')
+        alert('TODO: handle registration failure...')
 
   send: (channel, message) ->
     # 1) client wants to publish before register-ajax-response set the enc_key
     #    1.1: store request and send after register (local storage)
     # 2) the same goes for requests when client is offline
-    unless channelCallBacksJSON[channel.substr(1)] == null
+    unless Comm.channelCallBacksJSON[channel.substr(1)] == null
       channelPath = channel
       unless useGlobalSubscribe
-        channelPath += VoyageX.PEER_CHANNEL_PREFIX+channelCallBacksJSON[channel.substr(1)].channel_enc_key
+        channelPath += VoyageX.PEER_CHANNEL_PREFIX+Comm.channelCallBacksJSON[channel.substr(1)].channel_enc_key
       client.publish(channelPath, message)
     else
       if (Modernizr.localstorage)
@@ -62,19 +61,32 @@ class window.Comm.Comm
       else
         alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
 
-  @initUserContext: (initParams, channelCallBacks) ->
-    Object.keys(channelCallBacks).every (channel) ->
+  @initSystemContext: (response, systemCallBack) ->
+    channelPath = '/system'+VoyageX.PEER_CHANNEL_PREFIX+response.sys_channel_enc_key
+    Comm.register channelPath, Comm.channelCallBacksJSON['system'].callback
+    # this is done via serverside publishing to systemchannel 
+    # @see ChannelsController - system:monitor
+    # @see Comm.register - subscribe-callback
+    # Comm.initChannelContexts response, Comm.channelCallBacksJSON
+
+  @initChannelContexts: (initParams, channelCallBacks) ->
+    for channel in Object.keys(channelCallBacks)
+      if channel == 'system'
+        continue
       channelCallBacks[channel].channel_enc_key = initParams.channel_enc_key
       channelPath = '/'+channel
-      unless useGlobalSubscribe && channel != 'system' 
-        enc_key = if channel == 'system' then initParams.sys_channel_enc_key else initParams.channel_enc_key
-        channelPath += VoyageX.PEER_CHANNEL_PREFIX+enc_key
+      unless useGlobalSubscribe 
+        channelPath += VoyageX.PEER_CHANNEL_PREFIX+initParams.channel_enc_key
+      # register to my own events - fails because of race-conditions
       Comm.register(channelPath, channelCallBacks[channel].callback)
 
   @register: (channel, callBack) ->
     # https://github.com/faye/faye/blob/master/javascript/protocol/client.js
     unless client._channels.hasSubscription(channel)
       client.subscribe channel, (message) ->
-        callBack(message)
+        if channel.match(/^\/system/) && message.type == 'ready_notification'
+          Comm.initChannelContexts message, Comm.channelCallBacksJSON
+        else
+          callBack(message)
     else
       console.log('client already subscribed to channel '+channel)

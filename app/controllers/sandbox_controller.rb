@@ -1,10 +1,10 @@
 class SandboxController < ApplicationController
 
   def index
-    nearby_km = 20
+    nearby_km = (tmp_user.search_radius_meters||20000)/1000
     location = tmp_user.last_location
-    @uploads = location.nearbys((nearby_km.to_f/1.609344).round).inject([]){|res,l|l.uploads.where('uploads.location_id is not null')}
-    #@uploads = Upload.all.order('location_id, id desc')
+    #@uploads = location.nearbys((nearby_km.to_f/1.609344).round).inject([]){|res,l|l.uploads.where('uploads.location_id is not null')}
+    @uploads = Upload.all.order('location_id, id desc')
     # https://github.com/alexreisner/geocoder#request-geocoding-by-ip-address
 #[1] pry(#<SandboxController>)> request.location
 #=> #<Geocoder::Result::Freegeoip:0xf7a3c08
@@ -24,10 +24,10 @@ class SandboxController < ApplicationController
   end
 
   def photo_nav
-    nearby_km = 20
+    nearby_km = (tmp_user.search_radius_meters||20000)/1000
     location = tmp_user.last_location
-    @uploads = location.nearbys((nearby_km.to_f/1.609344).round).inject([]){|res,l|l.uploads.where('uploads.location_id is not null')}
-    #@uploads = Upload.all.order('location_id, id desc')
+    #@uploads = location.nearbys((nearby_km.to_f/1.609344).round).inject([]){|res,l|l.uploads.where('uploads.location_id is not null')}
+    @uploads = Upload.all.order('location_id, id desc')
     render "sandbox/photo_nav", layout: false, formats: [:js]
   end
 

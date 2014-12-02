@@ -1,5 +1,51 @@
 class UsersController < ApplicationController 
 
+  def update
+    @user = User.find(params[:id])
+    if params[:follow].present?
+      # "follow"=>{"comm_peer_settings"=>{"3"=>"false", "2"=>"true", "4"=>"false"}}
+      peer_setting_ids = params[:follow][:comm_peer_settings].inject([[],[]]){|res,kv|kv[1]=='true'?res[0]<<kv[0]:res[1]<<kv[0];res}
+      peer_setting_ids[0].each do |peer_setting_id|
+        peer_setting = CommSetting.find peer_setting_id
+        peer_setting.comm_peers.create(peer_id: @user.id) unless peer_setting.comm_peers.find{|c_p|c_p.peer_id==@user.id}
+      end
+      peer_setting_ids[1].each do |peer_setting_id|
+        peer_setting = CommSetting.find peer_setting_id
+        comm_peer = peer_setting.comm_peers.find{|c_p|c_p.peer_id==@user.id}
+        comm_peer.destroy if comm_peer.present?
+      end
+    end
+    if params[:grant].present?
+      peer_ids = params[:grant][:comm_peers].inject([[],[]]){|res,kv|kv[1]=='true'?res[0]<<kv[0]:res[1]<<kv[0];res}
+      peer_ids[0].each do |peer_id|
+        # comm_peer expected
+        comm_peer = @user.comm_setting.comm_peers.find{|c_p|c_p.peer_id==peer_id.to_i}
+        comm_peer.update_attribute(:granted_by_peer, true)
+      end
+      peer_ids[1].each do |peer_id|
+        # comm_peer expected
+        comm_peer = @user.comm_setting.comm_peers.find{|c_p|c_p.peer_id==peer_id.to_i}
+        if comm_peer.present?
+          # only delete granted, keep requests for decision
+          comm_peer.destroy if comm_peer.granted_by_peer == true
+        end
+      end
+    end
+    if params[:deny].present?
+      peer_ids = params[:deny][:comm_peers].inject([[],[]]){|res,kv|kv[1]=='true'?res[0]<<kv[0]:res[1]<<kv[0];res}
+      peer_ids[1].each do |peer_id|
+        # comm_peer expected
+        comm_peer = @user.comm_setting.comm_peers.find{|c_p|c_p.peer_id==peer_id.to_i}
+        if comm_peer.present?
+          # only delete granted, keep requests for decision
+          comm_peer.destroy if comm_peer.granted_by_peer == true
+        end
+      end
+    end
+    @user.attributes = params[:user].permit!
+    @user.save
+  end
+
   def change_details
     if current_user.present?
       edit = (!params[:username].present?)

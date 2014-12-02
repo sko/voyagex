@@ -155,7 +155,12 @@ jQuery ->
     #mySwiper.resizeFix()
     for listener in window.commListeners.uploads
       listener(upload)
-    $('a[href=#photo_nav_panel]').click()
+    if window.isMobile()
+      $('a[href=#photo_nav_panel]').click()
+    else
+      $('#photo_nav_panel').dialog('open')
+      if ! $('#photo_nav_panel').parent().hasClass('seethrough_panel')
+        $('#photo_nav_panel').parent().addClass('seethrough_panel')
 
   markerEventsCB = (event) ->
     address = null

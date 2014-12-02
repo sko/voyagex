@@ -1,0 +1,97 @@
+.container#comm_peer_data{style: 'padding: 20px 0px 30px 0px;'}
+  / TODO
+  .field{style: 'display: none;'}
+    %input{type: 'checkbox', name: 'peer_channel', value: 'talk', checked: true}
+      Chat
+    %input{type: 'checkbox', name: 'peer_channel', value: 'mapEvents'}
+      Map
+    %input{type: 'checkbox', name: 'peer_channel', value: 'uploads'}
+      Uploads
+    %input{type: 'checkbox', name: 'peer_channel', value: 'all'}
+      All
+  %table{border: 0, cellspacing: 0, cellpadding: 0}
+    - # peers followed by user and granted
+    %tr
+      %th{colspan: 4}
+        Peers I follow and have read-grant
+    - #user.comm_setting.comm_peers.where(granted_by_peer: true).each do |cp|
+    - user.follows.each do |cs|
+      %tr
+        %td{width: 5}
+          &nbsp;
+        %td
+          #{cs.user.username}
+        %td{width: 15}
+          &nbsp;
+        %td
+          = hidden_field_tag "follow[comm_peer_settings][#{cs.id.to_s}]", false
+          = check_box_tag "follow[comm_peer_settings][#{cs.id.to_s}]", true, :checked
+    - # peers followed by user and not granted
+    %tr
+      %th{colspan: 4}
+        Peers I want to follow and don't have read-grant
+    - user.requested_grant_to_follow.each do |cs|
+      %tr
+        %td{width: 5}
+          &nbsp;
+        %td
+          #{cs.user.username}
+        %td{width: 15}
+          &nbsp;
+        %td
+          = hidden_field_tag "follow[comm_peer_settings][#{cs.id.to_s}]", false
+          = check_box_tag "follow[comm_peer_settings][#{cs.id.to_s}]", true, :checked
+    - # peers not followed by user   / and comm_peers.id is null
+    %tr
+      %th{colspan: 4}
+        Peers I don't follow
+    - CommSetting.joins(:user).joins('left outer join comm_peers on comm_settings.id = comm_peers.comm_setting_id').where('comm_settings.user_id != ? and (comm_peers.peer_id is null or comm_peers.peer_id != ?)', user.id, user.id).order('users.username').each do |cs|
+      %tr
+        %td{width: 5}
+          &nbsp;
+        %td
+          #{cs.user.username}
+        %td{width: 15}
+          &nbsp;
+        %td
+          = hidden_field_tag "follow[comm_peer_settings][#{cs.id.to_s}]", false
+          = check_box_tag "follow[comm_peer_settings][#{cs.id.to_s}]", true
+    %tr
+      %th{colspan: 4}
+        <hr />
+    - # peers that follow user
+    %tr
+      %th{colspan: 4}
+        Peers that follow me
+    - user.comm_setting.followers.order(:username).each do |u|
+      %tr
+        %td{width: 5}
+          &nbsp;
+        %td
+          #{u.username}
+        %td{width: 15}
+          &nbsp;
+        %td
+          = hidden_field_tag "grant[comm_peers][#{u.id.to_s}]", false
+          = check_box_tag "grant[comm_peers][#{u.id.to_s}]", true, :checked
+    - # peers that requested grant to follow user
+    %tr
+      %th{colspan: 4}
+        Peers that requested grant to follow me.
+    - user.comm_setting.follow_grant_requests.order(:username).each do |u|
+      %tr
+        %td{width: 5}
+          &nbsp;
+        %td
+          #{u.username}
+        %td{width: 15}
+          &nbsp;
+        %td
+          %span{style: 'float: left;'}
+            = hidden_field_tag "grant[comm_peers][#{u.id.to_s}]", false
+            = check_box_tag "grant[comm_peers][#{u.id.to_s}]", true
+            grant
+          %span{style: 'margin-left: 15px;'}
+            = hidden_field_tag "deny[comm_peers][#{u.id.to_s}]", false
+            = check_box_tag "deny[comm_peers][#{u.id.to_s}]", true
+            reject

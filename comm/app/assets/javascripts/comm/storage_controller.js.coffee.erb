@@ -6,28 +6,6 @@ class window.Comm.StorageController
     unless Modernizr.localstorage
       alert('This Browser Doesn\'t Support Local Storage.')
     @_jsonObjects = {}
-#    @_grantedBytes = 0
-#    requestedBytes = Math.pow(2, 24) # 16MB
-#    navigator.webkitPersistentStorage.requestQuota(requestedBytes, (grantedBytes) ->
-#        window.webkitRequestFileSystem(PERSISTENT, grantedBytes, Comm.StorageController.instance().onInitFs, Comm.StorageController.instance().onFsError)
-#      , (e) ->
-#        console.log('Error', e)
-#      )
-
-  onInitFs: (fs) ->
-    console.log('filesystem zugang')
-    #fs.root.getFile('log.txt', {create: true, exclusive: true}, (fileEntry) ->
-    #    # fileEntry.isFile === true
-    #    # fileEntry.name == 'log.txt'
-    #    # fileEntry.fullPath == '/log.txt'
-    #    alert(fileEntry.toURL())
-    #  , Comm.StorageController.instance().onFileError);
-
-  onFsError: (e) ->
-    console.log('kein filesystem zugang')
-
-  onFileError: (e) ->
-    console.log('kein file zugang')
   
   # reserved listKeys:
   # push: creates/uses an array for entries stored with storeKey
