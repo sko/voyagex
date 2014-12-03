@@ -5,6 +5,11 @@
 class window.VoyageX.NavBar
   @menuNavClick: (clickSrc) ->
     window.clientState.setView(window.clientState.getView(clickSrc))
+    map.invalidateSize({
+              reset: true,
+              pan: false,
+              animate: false
+            })
     return false
 
   @showView: (view) ->

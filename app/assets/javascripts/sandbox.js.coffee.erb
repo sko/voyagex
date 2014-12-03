@@ -124,6 +124,13 @@ jQuery ->
                     replace(/\{username\}/g, message.peer.username)
       $('#want_to_follow_me').append(tr_template)
     else if message.type == 'subscription_granted'
+      for channel in Object.keys(window.commListeners)
+        if channel == 'system'
+          continue
+        channelPath = '/'+channel
+        unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
+          channelPath += VoyageX.PEER_CHANNEL_PREFIX+message.peer.channel_enc_key
+        Comm.Comm.register channelPath, Comm.Comm.channelCallBacksJSON[channel].callback # eval(channel+'CB')
       $('#i_want_to_follow_'+message.peer.comm_setting_id).remove()
       tr_template = $('#i_follow_template').html().
                     replace(/\{id\}/g, message.peer.comm_setting_id).
@@ -136,6 +143,13 @@ jQuery ->
                     replace(/\{username\}/g, message.peer.username)
       $('#i_dont_follow').append(tr_template)
     else if message.type == 'subscription_grant_revoked'
+      for channel in Object.keys(window.commListeners)
+        if channel == 'system'
+          continue
+        channelPath = '/'+channel
+        unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
+          channelPath += VoyageX.PEER_CHANNEL_PREFIX+message.peer.channel_enc_key
+        Comm.Comm.deRegistrate channelPath
       $('#i_follow_'+message.peer.comm_setting_id).remove()
       tr_template = $('#i_dont_follow_template').html().
                     replace(/\{id\}/g, message.peer.comm_setting_id).
