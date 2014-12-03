@@ -38,6 +38,46 @@
   #content_home
     = render partial: '/shared/uploads', locals: {resource: Upload.new, resource_name: :upload}
 
+%table#follow_templates{style: 'display: none;'}
+  %tr{id: "i_follow_{id}"}
+    %td{width: 5}
+      &nbsp;
+    %td
+      {username}
+    %td{width: 15}
+      &nbsp;
+    %td
+      = hidden_field_tag "follow[comm_peer_settings][{id}]", false
+      = check_box_tag "follow[comm_peer_settings][{id}]", true, :checked
+  %tr{id: "i_dont_follow_{id}"}
+    %td{width: 5}
+      &nbsp;
+    %td
+      {username}
+    %td{width: 15}
+      &nbsp;
+    %td
+      = hidden_field_tag "follow[comm_peer_settings][{id}]", false
+      = check_box_tag "follow[comm_peer_settings][{id}]", true, false, style: 'float: left;'
+      %span
+        #{t('admin.check_to_follow')}
+  %tr{id: "want_to_follow_me_{id}"}
+    %td{width: 5}
+      &nbsp;
+    %td
+      {username}
+    %td{width: 15}
+      &nbsp;
+    %td
+      %span{style: 'float: left;'}
+        = hidden_field_tag "grant[comm_peers][{id}]", false
+        = check_box_tag "grant[comm_peers][{id}]", true
+        grant
+      %span{style: 'margin-left: 15px;'}
+        = hidden_field_tag "deny[comm_peers][{id}]", false
+        = check_box_tag "deny[comm_peers][{id}]", true
+        reject
+
 #content_chat.talk_message
   = form_tag '#', method: :post, remote: true
 

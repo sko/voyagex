@@ -8,12 +8,12 @@ class window.Comm.StorageController
     @_jsonObjects = {}
     @_tileDB = {}
     @_tileMeta = null
-    window.webkitStorageInfo.queryUsageAndQuota(webkitStorageInfo.PERSISTENT, # the type can be either TEMPORARY or PERSISTENT
-        (used, remaining) ->
-          console.log("Used quota: " + used + ", remaining quota: " + remaining);
-      , (e) ->
-          console.log('Error', e); 
-      )
+#    window.webkitStorageInfo.queryUsageAndQuota(webkitStorageInfo.PERSISTENT, # the type can be either TEMPORARY or PERSISTENT
+#        (used, remaining) ->
+#          console.log("Used quota: " + used + ", remaining quota: " + remaining);
+#      , (e) ->
+#          console.log('Error', e); 
+#      )
 
   @storeKey: (xYZ) ->
     xYZ[2]+'/'+xYZ[0]+'/'+xYZ[1]
