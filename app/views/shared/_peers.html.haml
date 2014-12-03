@@ -13,7 +13,7 @@
     - # peers followed by user and granted
     %tr
       %th{colspan: 4}
-        Peers I follow and have read-grant
+        #{t('admin.i_follow')}
     - #user.comm_setting.comm_peers.where(granted_by_peer: true).each do |cp|
     - user.follows.each do |cs|
       - # on updates subscription is handled in controller
@@ -33,7 +33,7 @@
     - # peers followed by user and not granted
     %tr
       %th{colspan: 4}
-        Peers I want to follow and don't have read-grant
+        #{t('admin.i_want_to_follow')}
     - user.requested_grant_to_follow.each do |cs|
       %tr
         %td{width: 5}
@@ -48,7 +48,7 @@
     - # peers not followed by user   / and comm_peers.id is null
     %tr
       %th{colspan: 4}
-        Peers I don't follow
+        #{t('admin.i_dont_follow')}
     - CommSetting.joins(:user).joins('left outer join comm_peers on comm_settings.id = comm_peers.comm_setting_id').where('comm_settings.user_id != ? and (comm_peers.peer_id is null or comm_peers.peer_id != ?)', user.id, user.id).order('users.username').each do |cs|
       %tr
         %td{width: 5}
@@ -66,7 +66,7 @@
     - # peers that follow user
     %tr
       %th{colspan: 4}
-        Peers that follow me
+        #{t('admin.follow_me')}
     - user.comm_setting.followers.order(:username).each do |u|
       %tr
         %td{width: 5}
@@ -81,7 +81,7 @@
     - # peers that requested grant to follow user
     %tr
       %th{colspan: 4}
-        Peers that requested grant to follow me.
+        #{t('admin.want_to_follow_me')}
     - user.comm_setting.follow_grant_requests.order(:username).each do |u|
       %tr
         %td{width: 5}

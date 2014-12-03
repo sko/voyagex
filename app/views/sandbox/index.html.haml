@@ -1,19 +1,38 @@
 - if is_mobile
-  #content_home
-    %span.whoami{style: 'float :left; padding: 13px 0px 13px 0px;'}
-      - if user_signed_in?
-        = link_to t('auth.whoami', username: tmp_user().username), change_username_path, data: { remote: "true", format: :js }
-      - else
-        %span
-          #{t('auth.whoami', username: tmp_user().username).html_safe}
-    .logout-link{style: "display: #{user_signed_in? ? 'block' : 'none'}; padding: 13px 0px 0px 0px;"}
-      = link_to t('auth.sign_out'), destroy_user_session_path, style: 'margin-left: 20px;', data: { remote: "true", format: :js, method: :delete }
-    #content_auth{style: 'clear: both;'}
-      - popup_params = { data: { rel: 'popup', 'position-to' => 'window', 'data-role' => 'button' } }
-      .login-link{style: "display: #{user_signed_in? ? 'none' : 'block'}; float: left;"}
-        = link_to t('auth.sign_in'), '#sign_in_modal', popup_params
-      .reg-link{style: "display: #{user_signed_in? ? 'none' : 'block'}; margin-left: 20px;"}
-        = link_to t('auth.sign_up'), '#sign_up_modal', popup_params.merge(style: 'margin-left: 20px;')
+  #content_home{role: 'main'}
+    .upload_source_select{data: {role: 'controlgroup', type: 'horizontal'}}
+      %button{value: 'administration',onclick: 'toggleHomeTab(this)', class: 'ui-btn ui-corner-all'}
+        Administration
+      %button{value: 'upload', onclick: 'toggleHomeTab(this)', class: 'ui-btn ui-corner-all'}
+        Upload
+    .container.messages
+      #upload_error
+      #upload_message
+      #upload_progress
+    .container#administration
+      %span.whoami{style: 'float :left; padding: 13px 0px 13px 0px;'}
+        - if user_signed_in?
+          = link_to t('auth.whoami', username: tmp_user().username), change_username_path, data: { remote: "true", format: :js }
+        - else
+          %span
+            #{t('auth.whoami', username: tmp_user().username).html_safe}
+      .logout-link{style: "display: #{user_signed_in? ? 'block' : 'none'}; padding: 13px 0px 0px 0px;"}
+        = link_to t('auth.sign_out'), destroy_user_session_path, style: 'margin-left: 20px;', data: { remote: "true", format: :js, method: :delete }
+      #content_auth{style: 'clear: both;'}
+        - popup_params = { data: { rel: 'popup', 'position-to' => 'window', 'data-role' => 'button' } }
+        .login-link{style: "display: #{user_signed_in? ? 'none' : 'block'}; float: left;"}
+          = link_to t('auth.sign_in'), '#sign_in_modal', popup_params
+        .reg-link{style: "display: #{user_signed_in? ? 'none' : 'block'}; margin-left: 20px;"}
+          = link_to t('auth.sign_up'), '#sign_up_modal', popup_params.merge(style: 'margin-left: 20px;')
+      .container
+        = form_for tmp_user, remote: true, method: :patch, :html => { :id => "settings_form" } do |f|
+          .user_settings{style: 'padding: 0px 0px 20px 0px;'}
+            %span{style: 'float: left; padding: 0px 10px 0px 0px;'}
+              Suchradius (meter):
+            = f.text_field :search_radius_meters, size: 7, max_length: 7
+            .peers
+              = render partial: '/shared/peers', locals: {user: tmp_user}
+            = f.submit 'Sichern', :class => "btn btn-sm"
     = render partial: '/shared/uploads.mobile', locals: {resource: Upload.new, resource_name: :upload}
 - else
   #content_home

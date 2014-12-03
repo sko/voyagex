@@ -16,13 +16,13 @@ class window.VoyageX.MapControl
     @_tileImageContentType = 'image/webp'
     #@_tileImageContentType = 'image/png'
     @_fs = null
-    @_grantedBytes = 0
-    requestedBytes = Math.pow(2, 24) # 16MB
-    navigator.webkitPersistentStorage.requestQuota(requestedBytes, (grantedBytes) ->
-        window.webkitRequestFileSystem(PERSISTENT, grantedBytes, VoyageX.MapControl.onInitFs, VoyageX.MapControl.onFsError)
-      , (e) ->
-        console.log('Error', e)
-      )
+#    @_grantedBytes = 0
+#    requestedBytes = Math.pow(2, 24) # 16MB
+#    navigator.webkitPersistentStorage.requestQuota(requestedBytes, (grantedBytes) ->
+#        window.webkitRequestFileSystem(PERSISTENT, grantedBytes, VoyageX.MapControl.onInitFs, VoyageX.MapControl.onFsError)
+#      , (e) ->
+#        console.log('Error', e)
+#      )
 
   @onInitFs: (fs) ->
     console.log('filesystem zugang')

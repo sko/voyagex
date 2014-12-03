@@ -23,3 +23,10 @@ de:
     select_file: Datei auswählen
     add_comment: Kommentieren
     add_comment_submit: Hinzufügen
+  admin:
+    search_radius: Suchradius
+    i_follow: Ich folge
+    i_want_to_follow: Ich möchte folgen
+    i_dont_follow: Ich folge nicht
+    follow_me: Folgen mir
+    want_to_follow_me: Möchten mir folgen

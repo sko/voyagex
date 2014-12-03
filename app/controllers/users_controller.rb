@@ -2,16 +2,13 @@ class UsersController < ApplicationController
 
   def update
     @user = User.find(params[:id])
-    @subscribe = []
+    # there's no subscribe here because @user would need grant first. he could try anyway - TODO?
     @un_subscribe = []
     if params[:follow].present?
-      # "follow"=>{"comm_peer_settings"=>{"3"=>"false", "2"=>"true", "4"=>"false"}}
       peer_setting_ids = params[:follow][:comm_peer_settings].inject([[],[]]){|res,kv|kv[1]=='true'?res[0]<<kv[0]:res[1]<<kv[0];res}
       peer_setting_ids[0].each do |peer_setting_id|
         peer_setting = CommSetting.find peer_setting_id
-        if peer_setting.comm_peers.find{|c_p|c_p.peer_id==@user.id}
-          @subscribe << peer_setting.channel_enc_key
-        else
+        unless peer_setting.comm_peers.find{|c_p|c_p.peer_id==@user.id}
           peer_setting.comm_peers.create(peer_id: @user.id)
         end
       end
@@ -19,8 +16,8 @@ class UsersController < ApplicationController
         peer_setting = CommSetting.find peer_setting_id
         comm_peer = peer_setting.comm_peers.find{|c_p|c_p.peer_id==@user.id}
         if comm_peer.present?
-          comm_peer.destroy 
-          @un_subscribe << peer_setting.channel_enc_key
+          comm_peer.destroy
+          @un_subscribe << peer_setting.channel_enc_key if comm_peer.granted_by_peer
         end
       end
     end
@@ -42,7 +39,7 @@ class UsersController < ApplicationController
     end
     if params[:deny].present?
       peer_ids = params[:deny][:comm_peers].inject([[],[]]){|res,kv|kv[1]=='true'?res[0]<<kv[0]:res[1]<<kv[0];res}
-      peer_ids[1].each do |peer_id|
+      peer_ids[0].each do |peer_id|
         # comm_peer expected
         comm_peer = @user.comm_setting.comm_peers.find{|c_p|c_p.peer_id==peer_id.to_i}
         if comm_peer.present?

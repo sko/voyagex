@@ -16,6 +16,14 @@ jQuery ->
   selectedPositionLatLng = [-1, -1]
 #  window.subscribeTo = []
 #  window.unsubscribeFrom = []
+  
+  window.toggleHomeTab = (selected) ->
+    if selected.value == 'administration'
+      $('#content_uploads').css('display', 'none')
+      $('#administration').css('display', 'block')
+    else
+      $('#content_uploads').css('display', 'block')
+      $('#administration').css('display', 'none')
 
   window.photoClicked = (swiper) ->
     $('#current_address').html($(swiper.clickedSlide).attr('data-address'))

@@ -86,24 +86,32 @@ class window.Comm.Comm
   @register: (channel, callBack) ->
     # https://github.com/faye/faye/blob/master/javascript/protocol/client.js
     unless client._channels.hasSubscription(channel)
-      client.subscribe channel, (message) ->
-        if channel.match(/^\/system/) && message.type == 'ready_notification'
-          Comm.initChannelContexts message, Comm.channelCallBacksJSON
-          callBack message
-        else
-          callBack message
+      if channel.match(/^\/?system/)
+        client.subscribe channel, Comm._systemSubscriptionListener
+      else
+        client.subscribe channel, callBack
     else
       console.log('client already subscribed to channel '+channel)
 
-  @deRegistrate: (channel) ->
-    if channel == 'system'
+  @deRegistrate: (channelPath) ->
+    if channelPath.match(/^\/?system/)
       return
     # https://github.com/faye/faye/blob/master/javascript/protocol/client.js
-    if client._channels.hasSubscription(channel)
-      client.unsubscribe channel, (message) ->
-        Comm.channelCallBacksJSON.system.callBack(message)
+    if client._channels.hasSubscription(channelPath)
+      # you only can unsubscribe with passing the subscription-callback(=listener)
+      # otherwise faye will not perform unsubscription
+      # http://faye.jcoglan.com/architecture.html #Client
+      # FayeClient - channel.unbind
+      i = channelPath.indexOf(VoyageX.PEER_CHANNEL_PREFIX)
+      channel = (if i == -1 then channelPath else channelPath.substr(0, i)).substr(1)
+      client.unsubscribe channelPath, Comm.channelCallBacksJSON[channel].callback
     else
       console.log('client was not subscribed to channel '+channel)
 
-  @_instance: () ->
+  @instance: () ->
     @_SINGLETON
+
+  @_systemSubscriptionListener: (message) ->
+    if message.type == 'ready_notification'
+      Comm.initChannelContexts message, Comm.channelCallBacksJSON
+    Comm.channelCallBacksJSON.system.callback message
