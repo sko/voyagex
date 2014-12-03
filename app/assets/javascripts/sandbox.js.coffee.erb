@@ -119,25 +119,25 @@ jQuery ->
         channel = (if i == -1 then channelPath else channelPath.substr(0, i)).substr(1)
         Comm.Comm.register channelPath, Comm.Comm.channelCallBacksJSON[channel].callback # eval(channel+'CB')
     else if message.type == 'subscription_grant_request'
-      tr_template = $('#want_to_follow_me_\\{id\\}').html().
+      tr_template = $('#want_to_follow_me_template').html().
                     replace(/\{id\}/g, message.peer.id).
                     replace(/\{username\}/g, message.peer.username)
       $('#want_to_follow_me').append(tr_template)
     else if message.type == 'subscription_granted'
       $('#i_want_to_follow_'+message.peer.comm_setting_id).remove()
-      tr_template = $('#i_follow_\\{id\\}').html().
+      tr_template = $('#i_follow_template').html().
                     replace(/\{id\}/g, message.peer.comm_setting_id).
                     replace(/\{username\}/g, message.peer.username)
       $('#i_follow').append(tr_template)
     else if message.type == 'subscription_denied'
       $('#i_want_to_follow_'+message.peer.comm_setting_id).remove()
-      tr_template = $('#i_dont_follow_\\{id\\}').html().
+      tr_template = $('#i_dont_follow_template').html().
                     replace(/\{id\}/g, message.peer.comm_setting_id).
                     replace(/\{username\}/g, message.peer.username)
       $('#i_dont_follow').append(tr_template)
     else if message.type == 'subscription_grant_revoked'
       $('#i_follow_'+message.peer.comm_setting_id).remove()
-      tr_template = $('#i_dont_follow_\\{id\\}').html().
+      tr_template = $('#i_dont_follow_template').html().
                     replace(/\{id\}/g, message.peer.comm_setting_id).
                     replace(/\{username\}/g, message.peer.username)
       $('#i_dont_follow').append(tr_template)

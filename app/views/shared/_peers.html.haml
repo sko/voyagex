@@ -51,7 +51,7 @@
       %th{colspan: 4}
         #{t('admin.i_dont_follow')}
     %tbody#i_dont_follow
-      - CommSetting.joins(:user).joins('left outer join comm_peers on comm_settings.id = comm_peers.comm_setting_id').where('comm_settings.user_id != ? and (comm_peers.peer_id is null or (comm_peers.peer_id != ? and not comm_peers.granted_by_peer))', user.id, user.id).order('users.username').each do |cs|
+      - CommSetting.joins(:user).joins('left outer join comm_peers on comm_settings.id = comm_peers.comm_setting_id').where('comm_settings.user_id != ? and (comm_peers.peer_id is null or comm_peers.peer_id != ?)', user.id, user.id).order('users.username').each do |cs|
         %tr{id: "i_dont_follow_#{cs.id}"}
           %td{width: 5}
             &nbsp;

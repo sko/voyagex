@@ -58,7 +58,7 @@ class UsersController < ApplicationController
             peer_sys_channel_enc_key = comm_peer.peer.comm_setting.sys_channel_enc_key
             msg = { type: :subscription_grant_revoked, peer: { comm_setting_id: @user.comm_setting.id, username: @user.username, channel_enc_key: @user.comm_setting.channel_enc_key } }
             comm_peer.destroy 
-            # notify peer that his subscription-grant is revoked
+            # notify peer that his subscription-grant is revoked by @user
             Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
           end
         end
