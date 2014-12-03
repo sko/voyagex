@@ -1,6 +1,12 @@
 class SandboxController < ApplicationController
+  include ::AuthUtils
 
   def index
+    unless tmp_user.comm_setting.present?
+      comm_setting = CommSetting.create(user: tmp_user, channel_enc_key: enc_key)
+    end
+    @initial_subscribe = true
+    
     nearby_km = (tmp_user.search_radius_meters||20000)/1000
     location = tmp_user.last_location
     #@uploads = location.nearbys((nearby_km.to_f/1.609344).round).inject([]){|res,l|l.uploads.where('uploads.location_id is not null')}

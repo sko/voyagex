@@ -5,8 +5,8 @@ class window.VoyageX.MapControl
 
   # zooms msut be sorted from lowest (f.ex. 1) to highest (f.ex. 16)
   constructor: (cacheStrategy, zooms, offlineZooms, online) ->
+    MapControl._SINGLETON = this
     @_cacheStrategy = cacheStrategy
-    VoyageX.MapControl._SINGLETON = this
     @_online = online
     @_zooms = zooms
     @_minZoom = zooms[0]

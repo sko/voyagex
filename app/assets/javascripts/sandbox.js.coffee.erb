@@ -6,14 +6,16 @@ window.defaultLatLng = [51.3767, 7.49389]
 jQuery ->
   comm = null
   window.markerManager = null
-  window.commListeners = {
-                           system: [],
-                           talk: [],
-                           mapEvents: [],
-                           uploads: []
-                         }
+#  window.commListeners = {
+#                           system: [],
+#                           talk: [],
+#                           map_events: [],
+#                           uploads: []
+#                         }
 
   selectedPositionLatLng = [-1, -1]
+#  window.subscribeTo = []
+#  window.unsubscribeFrom = []
 
   window.photoClicked = (swiper) ->
     $('#current_address').html($(swiper.clickedSlide).attr('data-address'))
@@ -110,13 +112,16 @@ jQuery ->
   systemCB = (message) ->
     console.log 'got a system - message: ' + message.type
     #Object.keys(window.commListeners).every (channel) ->
-    if message.type == 'handshake'
-      alert('handshake')
+    if message.type == 'ready_notification'
+      while (channelPath = window.subscribeTo.pop())
+        i = channelPath.indexOf(VoyageX.PEER_CHANNEL_PREFIX)
+        channel = (if i == -1 then channelPath else channelPath.substr(0, i)).substr(1)
+        Comm.Comm.register channelPath, Comm.Comm.channelCallBacksJSON[channel].callback # eval(channel+'CB')
     else if message.type == 'subscription_notification'
-      for channel in ['talk', 'mapEvents', 'uploads']
+      for channel in ['talk', 'map_events', 'uploads']
         for peer in message.peers
           console.log 'subscribing: /'+channel+VoyageX.PEER_CHANNEL_PREFIX+peer.channel_enc_key + ' from user ' + peer.user.username
-          Comm.register '/'+channel+VoyageX.PEER_CHANNEL_PREFIX+peer.channel_enc_key, eval(channel+'CB')
+          Comm.Comm.register '/'+channel+VoyageX.PEER_CHANNEL_PREFIX+peer.channel_enc_key, Comm.Comm.channelCallBacksJSON[channel].callback # eval(channel+'CB')
 
   talkCB = (message) ->
     console.log 'got a talk - message: ' + message.type
@@ -136,7 +141,7 @@ jQuery ->
       setSelectedPositionLatLng markerManager.get(), mapEvent.lat, mapEvent.lng, null
     map.panTo([mapEvent.lat, mapEvent.lng])
     #map.setView [mapEvent.lat, mapEvent.lng], 16
-    for listener in window.commListeners.mapEvents
+    for listener in window.commListeners.map_events
       listener(mapEvent)
 
   uploadsCB = (upload) ->
@@ -181,7 +186,7 @@ jQuery ->
       $(this).selectRange(0) 
     
   $(document).on 'click', '#clear_cache', (event) ->
-    Comm.StorageController.instance().delete('tiles')
+    Comm.Comm.StorageController.instance().delete('tiles')
     cacheStats()
     
   
@@ -219,4 +224,4 @@ jQuery ->
     $('button[value=camera]').focus()
     zoomEnd(null)
     cacheStats()
-    
+

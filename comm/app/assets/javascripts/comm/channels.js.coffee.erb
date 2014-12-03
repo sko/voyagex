@@ -5,9 +5,11 @@
 
 # curl -X POST http://192.168.1.4:3005/comm -H 'Content-Type: application/json' -d '{"channel":"/system@0rg94cpmy","data":{"type":"handshake", "hello":"world"}}'
 class window.Comm.Comm
+
+  @_SINGLETON = null
+
   client = null
   channelCallBacksJSON = null
-  useGlobalSubscribe = window.VoyageX.USE_GLOBAL_SUBSCRIBE
 
 #
 # 1) on starting up the faye-client requests a channel-key from system, f.ex: talk213enfn23r2n3
@@ -23,6 +25,7 @@ class window.Comm.Comm
 #    @see fax-rails if railx can reduce listeners - even if possible - it's more complex
 # 3) everything over faye
   constructor: (userId, channelCallBacksList, systemCallBack) ->
+    Comm._SINGLETON = this
     @_storageController = window.Comm.StorageController.instance()
 
     client = new Faye.Client(document.location.origin+'/comm')
@@ -50,7 +53,7 @@ class window.Comm.Comm
     # 2) the same goes for requests when client is offline
     unless Comm.channelCallBacksJSON[channel.substr(1)] == null
       channelPath = channel
-      unless useGlobalSubscribe
+      unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
         channelPath += VoyageX.PEER_CHANNEL_PREFIX+Comm.channelCallBacksJSON[channel.substr(1)].channel_enc_key
       client.publish(channelPath, message)
     else
@@ -75,7 +78,7 @@ class window.Comm.Comm
         continue
       channelCallBacks[channel].channel_enc_key = initParams.channel_enc_key
       channelPath = '/'+channel
-      unless useGlobalSubscribe 
+      unless window.VoyageX.USE_GLOBAL_SUBSCRIBE 
         channelPath += VoyageX.PEER_CHANNEL_PREFIX+initParams.channel_enc_key
       # register to my own events - fails because of race-conditions
       Comm.register(channelPath, channelCallBacks[channel].callback)
@@ -86,7 +89,21 @@ class window.Comm.Comm
       client.subscribe channel, (message) ->
         if channel.match(/^\/system/) && message.type == 'ready_notification'
           Comm.initChannelContexts message, Comm.channelCallBacksJSON
+          callBack message
         else
-          callBack(message)
+          callBack message
     else
       console.log('client already subscribed to channel '+channel)
+
+  @deRegistrate: (channel) ->
+    if channel == 'system'
+      return
+    # https://github.com/faye/faye/blob/master/javascript/protocol/client.js
+    if client._channels.hasSubscription(channel)
+      client.unsubscribe channel, (message) ->
+        Comm.channelCallBacksJSON.system.callBack(message)
+    else
+      console.log('client was not subscribed to channel '+channel)
+
+  @_instance: () ->
+    @_SINGLETON

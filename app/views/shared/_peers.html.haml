@@ -3,7 +3,7 @@
   .field{style: 'display: none;'}
     %input{type: 'checkbox', name: 'peer_channel', value: 'talk', checked: true}
       Chat
-    %input{type: 'checkbox', name: 'peer_channel', value: 'mapEvents'}
+    %input{type: 'checkbox', name: 'peer_channel', value: 'map_events'}
       Map
     %input{type: 'checkbox', name: 'peer_channel', value: 'uploads'}
       Uploads
@@ -16,6 +16,10 @@
         Peers I follow and have read-grant
     - #user.comm_setting.comm_peers.where(granted_by_peer: true).each do |cp|
     - user.follows.each do |cs|
+      - # on updates subscription is handled in controller
+      - if @initial_subscribe == true
+        %script
+          = render(partial: '/shared/subscriptions', formats: [:js], locals: { channel_enc_key: cs.channel_enc_key }).html_safe
       %tr
         %td{width: 5}
           &nbsp;

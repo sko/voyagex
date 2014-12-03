@@ -1,3 +1,12 @@
+window.commListeners = {
+                         system: [],
+                         talk: [],
+                         map_events: [],
+                         uploads: []
+                       }
+window.subscribeTo = []
+window.unsubscribeFrom = []
+
 window.isMobile = () ->
   navigator.userAgent.match(/Mobile|webOS/) != null
   

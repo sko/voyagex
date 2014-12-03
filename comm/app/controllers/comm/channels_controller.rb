@@ -69,7 +69,10 @@ module Comm
             user_comm_setting = CommSetting.where(current_faye_client_id: message['clientId']).first
             if user_comm_setting.present?
               target = CommSetting.where(channel_enc_key: subscription_enc_key[1]).first
-              granted = target.present? && target.comm_peers.where(peer_id: user_comm_setting.user.id, granted_by_peer: true).present?
+              # allow self-subscription so that others can communicate with me
+              granted = target.present? &&
+                        (target.current_faye_client_id == message['clientId'] ||
+                         target.comm_peers.where(peer_id: user_comm_setting.user.id, granted_by_peer: true).present?)
               if granted
                 Rails.logger.debug "###### Inbound message: allow subscription on channel #{message['subscription']} for user #{user_comm_setting.user.id}"
               else
