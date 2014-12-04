@@ -96,17 +96,19 @@ class window.VoyageX.MapControl
   @storeKey: (xYZ) ->
     xYZ[2]+'/'+xYZ[0]+'/'+xYZ[1]
 
-  _prefetchHigherZoomLevel: (XYZ, left) ->
-    for index in [0,1]
-      for count in [1,2]
-        curXYZ = [XYZ[0]*2+index,
-                  XYZ[1]*2+index,
+  # fetch all tiles for next higher zoom-level.
+  # 1 level difference -> 4 tiles, 2 level -> 16, ...
+  _prefetchHigherZoomLevel: (XYZ, left, levelDiffLimit = 1) ->
+    for addToX in [0,1]
+      for addToY in [0,1]
+        curXYZ = [XYZ[0]*2+addToX,
+                  XYZ[1]*2+addToY,
                   XYZ[2]+1]
-        if left >= 1
+        if left >= Math.max(1, levelDiffLimit+1)
           this._prefetchHigherZoomLevel curXYZ, (left-1)
         if curXYZ[2] in @_offlineZooms
           curStoreKey = curXYZ[2]+'/'+curXYZ[0]+'/'+curXYZ[1]
-          console.log 'prefetch higher zoom tile: '+curStoreKey
+          console.log 'TODO: prefetch higher zoom tile: '+curStoreKey
 
   _prefetchLowerZoomLevels: (view) ->
     curXYZ = [view.tile.column, view.tile.row, view.zoom]

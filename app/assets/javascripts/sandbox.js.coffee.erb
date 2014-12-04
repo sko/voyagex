@@ -3,6 +3,7 @@
 # feu: [51.3767, 7.49389]
 window.defaultLatLng = [51.3767, 7.49389]
 #window.defaultLatLng = [0, 0]
+window.showSearchRadius = false
 jQuery ->
   window.markerManager = null
 
@@ -31,6 +32,16 @@ jQuery ->
     freeModeFluid: true,
     onSlideChangeEnd: window.photoChanged
   })
+
+  window.toggleSearchRadiusDisplay = (selected) ->
+    if selected.id == 'search_radius_display_show'
+      window.showSearchRadius = true
+      #markerManager._showSearchRadius = true
+      markerManager.searchBounds(VoyageX.searchRadiusMeters, map)
+    else
+      window.showSearchRadius = false
+      #markerManager._showSearchRadius = false
+      markerManager.searchBounds(0, map)
 
   window.toggleNetworkState = (selected) ->
     if selected.id == 'network_state_online'
@@ -94,6 +105,8 @@ jQuery ->
     selectedPositionLatLng[1] = lng
     if address != null
       $('#current_address').html(address) 
+    if showSearchRadius
+      markerManager.searchBounds(VoyageX.searchRadiusMeters, map)
 
   publishPosition = () ->
     comm.send('/map_events', {type: 'click',\
@@ -221,7 +234,7 @@ jQuery ->
       $(this).selectRange(0) 
     
   $(document).on 'click', '#clear_cache', (event) ->
-    Comm.Comm.StorageController.instance().delete('tiles')
+    Comm.StorageController.instance().delete('tiles')
     cacheStats()
     
   
