@@ -1,4 +1,4 @@
-$('#user_search_radius_meters').val('')
+#$('#user_search_radius_meters').val('')
 VoyageX.searchRadiusMeters = <%= @user.search_radius_meters %>
 # TODO handle errors
 $('#comm_peer_data').html("<%= j render(partial: '/shared/peers', locals: { user: @user }) -%>")
@@ -11,5 +11,5 @@ for channel in Object.keys(window.commListeners)
     channelPath += VoyageX.PEER_CHANNEL_PREFIX+'<%=channel_enc_key%>'
   #window.unsubscribeFrom.push channelPath
   #window.Comm.StorageController.instance().addToList 'unsubscribe', 'push', channelPath
-  Comm.Comm.deRegistrate channelPath
+  Comm.Comm.unsubscribeFrom channelPath
 <% end %>

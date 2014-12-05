@@ -2,6 +2,8 @@
   .modal-dialog#photo_nav_panel
     .modal-body
       %span#current_address
+        - if @uploads.present?
+          #{@uploads.first.location.address}
       #swipe_panel{style: 'text-align: center;'}
         .swiper-container
           .swiper-wrapper#upload_preview

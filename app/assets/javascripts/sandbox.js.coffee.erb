@@ -37,7 +37,7 @@ jQuery ->
     if selected.id == 'search_radius_display_show'
       window.showSearchRadius = true
       #markerManager._showSearchRadius = true
-      markerManager.searchBounds(VoyageX.searchRadiusMeters, map)
+      markerManager.searchBounds(VoyageX.SEARCH_RADIUS_METERS, map)
     else
       window.showSearchRadius = false
       #markerManager._showSearchRadius = false
@@ -106,7 +106,7 @@ jQuery ->
     if address != null
       $('#current_address').html(address) 
     if showSearchRadius
-      markerManager.searchBounds(VoyageX.searchRadiusMeters, map)
+      markerManager.searchBounds(VoyageX.SEARCH_RADIUS_METERS, map)
 
   publishPosition = () ->
     comm.send('/map_events', {type: 'click',\
@@ -130,7 +130,7 @@ jQuery ->
       while (channelPath = window.subscribeTo.pop())
         i = channelPath.indexOf(VoyageX.PEER_CHANNEL_PREFIX)
         channel = (if i == -1 then channelPath else channelPath.substr(0, i)).substr(1)
-        Comm.Comm.register channelPath, Comm.Comm.channelCallBacksJSON[channel].callback # eval(channel+'CB')
+        Comm.Comm.subscribeTo channelPath, Comm.Comm.channelCallBacksJSON[channel].callback # eval(channel+'CB')
     else if message.type == 'subscription_grant_request'
       tr_template = $('#want_to_follow_me_template').html().
                     replace(/\{id\}/g, message.peer.id).
@@ -143,7 +143,7 @@ jQuery ->
         channelPath = '/'+channel
         unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
           channelPath += VoyageX.PEER_CHANNEL_PREFIX+message.peer.channel_enc_key
-        Comm.Comm.register channelPath, Comm.Comm.channelCallBacksJSON[channel].callback # eval(channel+'CB')
+        Comm.Comm.subscribeTo channelPath, Comm.Comm.channelCallBacksJSON[channel].callback # eval(channel+'CB')
       $('#i_want_to_follow_'+message.peer.comm_setting_id).remove()
       tr_template = $('#i_follow_template').html().
                     replace(/\{id\}/g, message.peer.comm_setting_id).
@@ -162,7 +162,7 @@ jQuery ->
         channelPath = '/'+channel
         unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
           channelPath += VoyageX.PEER_CHANNEL_PREFIX+message.peer.channel_enc_key
-        Comm.Comm.deRegistrate channelPath
+        Comm.Comm.unsubscribeFrom channelPath
       $('#i_follow_'+message.peer.comm_setting_id).remove()
       tr_template = $('#i_dont_follow_template').html().
                     replace(/\{id\}/g, message.peer.comm_setting_id).
@@ -173,14 +173,17 @@ jQuery ->
 
   talkCB = (message) ->
     console.log 'got a talk - message: ' + message.type
-    if $('#current_user_id').val() != message.userId
-      $('#message').val('\n-------------------------\n'+message.text+$('#message').val())
-      $('#message').selectRange(0) 
-      for listener in window.commListeners.talk
-        listener(message)
+    if $('#current_user_id').val() == message.userId
+      return null
+    $('#message').val('\n-------------------------\n'+message.text+$('#message').val())
+    $('#message').selectRange(0) 
+    for listener in window.commListeners.talk
+      listener(message)
 
   mapEventsCB = (mapEvent) ->
     console.log 'got a map_events - message: ' + mapEvent.type
+    if $('#current_user_id').val() == mapEvent.userId# && mapEvent.type == 'click'
+      return null
     if markerManager.get().getPopup()?
       markerManager.get().unbindPopup()
     if mapEvent.address?
@@ -256,10 +259,11 @@ jQuery ->
     #    alert('geolocation timed out - manual selection required.\nsetting default location...')
     #  )
     comm = new Comm.Comm($('#current_user_id').val(),
-                         [['/talk', talkCB],
-                          ['/map_events', mapEventsCB],
-                          ['/uploads', uploadsCB]]
-                    systemCB)
+                         [['/talk', talkCB, window.VoyageX.CHANNEL_ENC_KEY],
+                          ['/map_events', mapEventsCB, window.VoyageX.CHANNEL_ENC_KEY],
+                          ['/uploads', uploadsCB, window.VoyageX.CHANNEL_ENC_KEY]],
+                         window.VoyageX.SYS_CHANNEL_ENC_KEY,
+                         systemCB)
     window.markerManager = new VoyageX.MarkerManager(map)
     if window.isMobile()
       map.invalidateSize({

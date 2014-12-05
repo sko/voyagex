@@ -1,6 +1,6 @@
 #require_dependency "comm/application_controller"
 
-# curl -X POST http://192.168.1.4:3005/comm -H 'Content-Type: application/json' -d '{"channel":"/talk","data":{"hello":"world"}}'
+# curl -X POST http://192.168.1.4:3005/comm -H 'Content-Type: application/json' -d '{"channel":"/talk@rxbcin9nc","data":{"type":"chat", "text":"hello world"}}'
 module Comm
   class ChannelsController < FayeRails::Controller
 

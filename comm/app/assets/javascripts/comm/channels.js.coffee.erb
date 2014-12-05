@@ -24,17 +24,25 @@ class window.Comm.Comm
 # 2) send everything to rails-app and let her handle  publishing
 #    @see fax-rails if railx can reduce listeners - even if possible - it's more complex
 # 3) everything over faye
-  constructor: (userId, channelCallBacksList, systemCallBack) ->
+  constructor: (userId, channelCallBacksList, sysChannelEncKey, systemCallBack) ->
     Comm._SINGLETON = this
+    @_user_id = userId
     @_storageController = window.Comm.StorageController.instance()
 
     client = new Faye.Client(document.location.origin+'/comm')
+
     # map callbacks to channels
     Comm.channelCallBacksJSON = new Object()
-    Comm.channelCallBacksJSON['system'] = { callback: systemCallBack, channel_enc_key: null }
+    Comm.channelCallBacksJSON['system'] = { callback: systemCallBack, channel_enc_key: sysChannelEncKey }
     for pair in channelCallBacksList
-      Comm.channelCallBacksJSON[pair[0].substr(1)] = { callback: pair[1], channel_enc_key: null }
-    
+      Comm.channelCallBacksJSON[pair[0].substr(1)] = { callback: pair[1], channel_enc_key: pair[2] }
+
+    if (sysChannelEncKey == null)
+      this.register(@_user_id)
+    else
+      Comm.initSystemContext {sys_channel_enc_key: sysChannelEncKey}, Comm._systemSubscriptionListener
+
+  register: (userId) ->
     data = { _method: 'put',\
              user_id: userId }
     $.ajax
@@ -43,7 +51,7 @@ class window.Comm.Comm
       url: '<%= comm_register_path %>'
       data: data
     .done (msg) ->
-        Comm.initSystemContext msg, Comm.channelCallBacksJSON['system']
+        Comm.initSystemContext msg, Comm._systemSubscriptionListener
     .fail (jqXHR, textStatus) ->
         alert('TODO: handle registration failure...')
 
@@ -64,12 +72,19 @@ class window.Comm.Comm
       else
         alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
 
+  @resetSystemContext: (userId) ->
+    Comm.instance()._user_id = userId
+    Comm.channelCallBacksJSON.system.channel_enc_key = null 
+    for channel in Object.keys(Comm.channelCallBacksJSON)
+      Comm.channelCallBacksJSON[channel].channel_enc_key = null
+    Comm.instance().register userId
+
   @initSystemContext: (response, systemCallBack) ->
     channelPath = '/system'+VoyageX.PEER_CHANNEL_PREFIX+response.sys_channel_enc_key
-    Comm.register channelPath, Comm.channelCallBacksJSON['system'].callback
+    Comm.subscribeTo channelPath, systemCallBack
     # this is done via serverside publishing to systemchannel 
     # @see ChannelsController - system:monitor
-    # @see Comm.register - subscribe-callback
+    # @see Comm.subscribeTo - subscribe-callback
     # Comm.initChannelContexts response, Comm.channelCallBacksJSON
 
   @initChannelContexts: (initParams, channelCallBacks) ->
@@ -80,10 +95,11 @@ class window.Comm.Comm
       channelPath = '/'+channel
       unless window.VoyageX.USE_GLOBAL_SUBSCRIBE 
         channelPath += VoyageX.PEER_CHANNEL_PREFIX+initParams.channel_enc_key
-      # register to my own events - fails because of race-conditions
-      Comm.register(channelPath, channelCallBacks[channel].callback)
+      # subscribe to my own events - fails because of race-conditions
+      #Comm.unsubscribeFrom channelPath
+      Comm.subscribeTo channelPath, channelCallBacks[channel].callback
 
-  @register: (channel, callBack) ->
+  @subscribeTo: (channel, callBack) ->
     # https://github.com/faye/faye/blob/master/javascript/protocol/client.js
     unless client._channels.hasSubscription(channel)
       if channel.match(/^\/?system/)
@@ -93,8 +109,8 @@ class window.Comm.Comm
     else
       console.log('client already subscribed to channel '+channel)
 
-  @deRegistrate: (channelPath) ->
-    if channelPath.match(/^\/?system/)
+  @unsubscribeFrom: (channelPath, signOut = false) ->
+    if channelPath.match(/^\/?system/) and not signOut
       return
     # https://github.com/faye/faye/blob/master/javascript/protocol/client.js
     if client._channels.hasSubscription(channelPath)
@@ -102,11 +118,14 @@ class window.Comm.Comm
       # otherwise faye will not perform unsubscription
       # http://faye.jcoglan.com/architecture.html #Client
       # FayeClient - channel.unbind
-      i = channelPath.indexOf(VoyageX.PEER_CHANNEL_PREFIX)
-      channel = (if i == -1 then channelPath else channelPath.substr(0, i)).substr(1)
-      client.unsubscribe channelPath, Comm.channelCallBacksJSON[channel].callback
+      if channelPath.match(/^\/?system/)
+        client.unsubscribe channelPath, Comm._systemSubscriptionListener
+      else
+        i = channelPath.indexOf(VoyageX.PEER_CHANNEL_PREFIX)
+        channel = (if i == -1 then channelPath else channelPath.substr(0, i)).substr(1)
+        client.unsubscribe channelPath, Comm.channelCallBacksJSON[channel].callback
     else
-      console.log('client was not subscribed to channel '+channel)
+      console.log('client was not subscribed to channel '+channelPath)
 
   @instance: () ->
     @_SINGLETON

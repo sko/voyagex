@@ -7,4 +7,4 @@ for channel in Object.keys(window.commListeners)
     channelPath += VoyageX.PEER_CHANNEL_PREFIX+'<%=channel_enc_key%>'
   window.subscribeTo.push channelPath
   #window.Comm.StorageController.instance().addToList 'subscribe', 'push', channelPath
-  #Comm.Comm._instance().register channelPath, Comm.Comm.channelCallBacksJSON[channel]
+  #Comm.Comm.subscribeTo channelPath, Comm.Comm.channelCallBacksJSON[channel]

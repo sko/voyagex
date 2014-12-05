@@ -1,4 +1,14 @@
 #photo_nav_panel{data: {role: 'panel', dismissible: 'false', animate: 'true', display: 'overlay'}}
+  #search_radius{style: 'margin: -10px 0px 0px 10px; padding: 0px;'}
+    %div{style: 'float:left; padding-top: 5px;'}
+      radius:
+    %div{style: 'float: right; padding-left: 5px;'}
+      %div{style: 'font-size: 9px; float:left;'}
+        = radio_button_tag 'search_radius_display', 'show', false, onclick: 'toggleSearchRadiusDisplay(this)'
+        = label_tag 'search_radius_display_show', 'on'
+      %div{style: 'font-size: 9px; float:right;'}
+        = radio_button_tag 'search_radius_display', 'hide', true, onclick: 'toggleSearchRadiusDisplay(this)'
+        = label_tag 'search_radius_display_hide', 'off'
   %span#current_address
   #swipe_panel{style: 'text-align: center;'}
     .swiper-container

@@ -35,7 +35,7 @@ class window.VoyageX.MarkerManager
       map.removeLayer(@_selectedSearchRadius)
     if radiusMeters <= 0
       return null
-      
+
     lat = @_selectedMarker.target().getLatLng().lat
     lng = @_selectedMarker.target().getLatLng().lng
     

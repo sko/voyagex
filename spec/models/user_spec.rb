@@ -11,7 +11,7 @@ RSpec.describe User, :type => :model do
       expect(user).to be_valid
     end
 
-    it 'email should be uniqu' do
+    it 'email should be unique' do
       user1 = user
       user1.save!
       user2 = user email: user1.email

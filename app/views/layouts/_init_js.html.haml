@@ -4,4 +4,10 @@
   window.VoyageX['PEER_CHANNEL_PREFIX'] = '#{PEER_CHANNEL_PREFIX}';
   window.VoyageX.TILE_URL_TEMPLATE = '#{Leaflet.tile_layer}';
   window.VoyageX.USE_GLOBAL_SUBSCRIBE = #{USE_GLOBAL_SUBSCRIBE};
-  window.VoyageX.searchRadiusMeters = #{tmp_user.search_radius_meters||100};
+  window.VoyageX.SEARCH_RADIUS_METERS = #{tmp_user.search_radius_meters||100};
+  - if current_user.present?
+    window.VoyageX.CHANNEL_ENC_KEY = '#{current_user.comm_setting.channel_enc_key}';
+    window.VoyageX.SYS_CHANNEL_ENC_KEY = '#{current_user.comm_setting.sys_channel_enc_key}';
+  - else
+    window.VoyageX.CHANNEL_ENC_KEY = null;
+    window.VoyageX.SYS_CHANNEL_ENC_KEY = null;

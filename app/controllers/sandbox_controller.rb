@@ -1,5 +1,6 @@
 class SandboxController < ApplicationController
   include ::AuthUtils
+  include ::GeoUtils
 
   def index
     unless tmp_user.comm_setting.present?
