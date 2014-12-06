@@ -10,6 +10,7 @@ class window.Comm.Comm
 
   client = null
   channelCallBacksJSON = null
+  systemReady = false
 
 #
 # 1) on starting up the faye-client requests a channel-key from system, f.ex: talk213enfn23r2n3
@@ -40,7 +41,7 @@ class window.Comm.Comm
     if (sysChannelEncKey == null)
       this.register(@_user_id)
     else
-      Comm.initSystemContext {sys_channel_enc_key: sysChannelEncKey}, Comm._systemSubscriptionListener
+      Comm.initSystemContext {sys_channel_enc_key: sysChannelEncKey}
 
   register: (userId) ->
     data = { _method: 'put',\
@@ -51,7 +52,7 @@ class window.Comm.Comm
       url: '<%= comm_register_path %>'
       data: data
     .done (msg) ->
-        Comm.initSystemContext msg, Comm._systemSubscriptionListener
+        Comm.initSystemContext msg
     .fail (jqXHR, textStatus) ->
         alert('TODO: handle registration failure...')
 
@@ -59,16 +60,17 @@ class window.Comm.Comm
     # 1) client wants to publish before register-ajax-response set the enc_key
     #    1.1: store request and send after register (local storage)
     # 2) the same goes for requests when client is offline
-    unless Comm.channelCallBacksJSON[channel.substr(1)] == null
+    unless Comm.channelCallBacksJSON[channel.substr(1)] == null or !systemReady
       channelPath = channel
       unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
         channelPath += VoyageX.PEER_CHANNEL_PREFIX+Comm.channelCallBacksJSON[channel.substr(1)].channel_enc_key
       client.publish(channelPath, message)
     else
       if (Modernizr.localstorage)
-        # later send: @_storageController.pop('publish')
+        console.log('caching publish to '+channel)
+        # later send: @_storageController.pop('comm.publish')
         cacheEntry = { channel: channel, message: message }
-        @_storageController.addToList('publish', 'push', cacheEntry)
+        @_storageController.addToList('comm.publish', 'push', cacheEntry)
       else
         alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
 
@@ -79,9 +81,12 @@ class window.Comm.Comm
       Comm.channelCallBacksJSON[channel].channel_enc_key = null
     Comm.instance().register userId
 
-  @initSystemContext: (response, systemCallBack) ->
-    channelPath = '/system'+VoyageX.PEER_CHANNEL_PREFIX+response.sys_channel_enc_key
-    Comm.subscribeTo channelPath, systemCallBack
+  @initSystemContext: (response) ->
+    Comm.channelCallBacksJSON.system.channel_enc_key = response.sys_channel_enc_key
+    channelPath = '/system'
+    unless window.VoyageX.USE_GLOBAL_SUBSCRIBE 
+      channelPath += VoyageX.PEER_CHANNEL_PREFIX+response.sys_channel_enc_key
+    Comm.subscribeTo channelPath, Comm._systemSubscriptionListener
     # this is done via serverside publishing to systemchannel 
     # @see ChannelsController - system:monitor
     # @see Comm.subscribeTo - subscribe-callback
@@ -133,4 +138,8 @@ class window.Comm.Comm
   @_systemSubscriptionListener: (message) ->
     if message.type == 'ready_notification'
       Comm.initChannelContexts message, Comm.channelCallBacksJSON
+      systemReady = true
+      while (cacheEntry = Comm.instance()._storageController.pop('comm.publish'))
+        console.log('sending cached-publish to '+cacheEntry.channel)
+        Comm.instance().send cacheEntry.channel, cacheEntry.message
     Comm.channelCallBacksJSON.system.callback message
