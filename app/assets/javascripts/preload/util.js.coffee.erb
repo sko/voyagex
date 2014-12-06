@@ -17,19 +17,6 @@ window.showLoginDialog = (confirmEmailAddress) ->
     $("#sign_in_flash").html("check email-account "+confirmEmailAddress+" first for confirmation-mail")
   $("#sign_in_modal").dialog('open')
 
-# TODO maybe better just unsubscribe in session-detroy response and have regular data-remote link without
-# this javascript-interception - @see login-success
-window.signOut = () ->
-  for channel in Object.keys(window.commListeners)
-    channelPath = '/'+channel
-    unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
-      channelPath += VoyageX.PEER_CHANNEL_PREFIX+Comm.Comm.channelCallBacksJSON[channel].channel_enc_key
-    Comm.Comm.unsubscribeFrom channelPath, true
-  $.ajax
-    type: 'DELETE'
-    dataType: 'script'
-    url: '<%= destroy_user_session_path %>'
-
 $(document).on 'keyup', '.edit_detail', (event) ->
   if (event.which == 13 || event.keyCode == 13)
     event.preventDefault()

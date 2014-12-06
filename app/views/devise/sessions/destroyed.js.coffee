@@ -7,10 +7,9 @@ $('.logout-link').each () ->
 # you are always someone
 $('.whoami').each () ->
   $(this).html("<%= escape_javascript(link_to t('auth.whoami', username: tmp_user().username), change_username_path, class: 'navbar-inverse navbar-brand', data: { remote: 'true', format: :js }) -%>")
-# @see util.js.coffee - window.signOut
-#for channel in Object.keys(window.commListeners)
-#  channelPath = '/'+channel
-#  unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
-#    channelPath += VoyageX.PEER_CHANNEL_PREFIX+Comm.Comm.channelCallBacksJSON[channel].channel_enc_key
-#  Comm.Comm.unsubscribeFrom channelPath, true
+for channel in Object.keys(window.commListeners)
+  channelPath = '/'+channel
+  unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
+    channelPath += VoyageX.PEER_CHANNEL_PREFIX+Comm.Comm.channelCallBacksJSON[channel].channel_enc_key
+  Comm.Comm.unsubscribeFrom channelPath, true
 Comm.Comm.resetSystemContext <%= tmp_user.id -%>
