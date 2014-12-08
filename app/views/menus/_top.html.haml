@@ -21,7 +21,6 @@
                   #{t('auth.whoami', username: tmp_user().username).html_safe}
             .logout-link{style: "display: #{user_signed_in? ? 'block' : 'none'}; float: right;"}
               = link_to t('auth.sign_out'), destroy_user_session_path, class: 'navbar-inverse navbar-brand', data: { remote: "true", format: :js, method: :delete }
-              -#= link_to t('auth.sign_out'), '#', onclick: 'javascript:signOut()', class: 'navbar-inverse navbar-brand'
           %li
             .login-link{style: "display: #{user_signed_in? ? 'none' : 'block'}; float :left;"}
               = link_to t('auth.sign_in'), '#', onclick: 'javascript:$("#sign_in_modal").dialog("open")', class: 'navbar-inverse navbar-brand'

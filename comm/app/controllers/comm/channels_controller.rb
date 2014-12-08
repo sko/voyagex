@@ -21,7 +21,7 @@ module Comm
           comm_setting.update_attribute(:current_faye_client_id, client_id)
 
           # now that current_faye_client_id is set, the client can start to communicate
-          # first it should register to it's own channels
+          # first it should register to it's own bidirectional channels
           msg = { type: :ready_notification, channel_enc_key: comm_setting.channel_enc_key }
           Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{subscription_enc_key[1]}", msg)
         end

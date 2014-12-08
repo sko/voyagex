@@ -1,5 +1,5 @@
 #$('#user_search_radius_meters').val('')
-VoyageX.searchRadiusMeters = <%= @user.search_radius_meters %>
+VoyageX.SEARCH_RADIUS_METERS = <%= @user.search_radius_meters %>
 # TODO handle errors
 $('#comm_peer_data').html("<%= j render(partial: '/shared/peers', locals: { user: @user }) -%>")
 <% @un_subscribe.each do |channel_enc_key| %>

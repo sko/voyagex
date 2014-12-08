@@ -1,3 +1,7 @@
+#
+# tile-length in meters:
+# map.containerPointToLatLng(L.point(0,0)).distanceTo(map.containerPointToLatLng(L.point(0,256)))
+#
 class window.VoyageX.MapControl
 
   @_SINGLETON = null
@@ -98,37 +102,32 @@ class window.VoyageX.MapControl
 
   # fetch all tiles for next higher zoom-level.
   # 1 level difference -> 4 tiles, 2 level -> 16, ...
-  _prefetchHigherZoomLevel: (XYZ, left, levelDiffLimit = 1) ->
+  # left: startingZoomLevel - nextHigherOfflineZoomLevel
+  # levelDiffLimit: max num of higher zoom-levels to check
+  # depth: internal recursion counter
+  _prefetchHigherZoomLevel: (XYZ, left, levelDiffLimit = 1, depth = 1) ->
     for addToX in [0,1]
       for addToY in [0,1]
         curXYZ = [XYZ[0]*2+addToX,
                   XYZ[1]*2+addToY,
                   XYZ[2]+1]
-        if left >= Math.max(1, levelDiffLimit+1)
-          this._prefetchHigherZoomLevel curXYZ, (left-1)
+        if left >= 1 && depth < levelDiffLimit
+          this._prefetchHigherZoomLevel curXYZ, (left-1), levelDiffLimit, (depth+1)
         if curXYZ[2] in @_offlineZooms
           curStoreKey = curXYZ[2]+'/'+curXYZ[0]+'/'+curXYZ[1]
           console.log 'TODO: prefetch higher zoom tile: '+curStoreKey
 
   _prefetchLowerZoomLevels: (view) ->
     curXYZ = [view.tile.column, view.tile.row, view.zoom]
-    # TODO @see read-only in StorageController: geoJSON = Comm.StorageController.instance().get 'tiles'
     for n in [(view.zoom-1)..@_minZoom]
       curXYZ = [Math.round((curXYZ[0]-0.1)/2),
                 Math.round((curXYZ[1]-0.1)/2),
                 n]
       if n in @_offlineZooms
         parentStoreKey = curXYZ[2]+'/'+curXYZ[0]+'/'+curXYZ[1]
-        #geoJSON = Comm.StorageController.instance().get 'tiles'
         geoJSON = Comm.StorageController.instance().getTile curXYZ
         unless geoJSON? && geoJSON[parentStoreKey]?
-          #
-          # FIXME - doesn't seem to work - stores same key more than once because _loadReadyImage
-          # returns soon
-          #
-          # hack 1: store image here - it's going to be overwritten when image is ready
-          #this._storeImage(curXYZ, null)
-          #Comm.StorageController.instance().addToList 'tiles', parentStoreKey, {}
+          # this._loadReadyImage stores Tiles asynchronously so we set empty-tile here to prevent multi-fetch
           Comm.StorageController.instance().storeTile curXYZ, null
           parentTileUrl = VoyageX.TILE_URL_TEMPLATE
                           .replace('{z}', curXYZ[2])

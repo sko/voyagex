@@ -1,5 +1,6 @@
 //= require client_state
 //= require upload_helper
+//= require main
 
 class window.VoyageX.NavBar
   @menuNavClick: (clickSrc) ->
