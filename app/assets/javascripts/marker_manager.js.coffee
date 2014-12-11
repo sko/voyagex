@@ -15,6 +15,7 @@ class window.VoyageX.MarkerManager
       marker.on 'click', callBack#, marker
       marker.on 'dragend', callBack
     marker.addTo(@_map)
+    # FIXME _icon not ready if no initial map-center is set
     marker._icon.title = marker._leaflet_id
     marker
 

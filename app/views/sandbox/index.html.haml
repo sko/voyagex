@@ -111,18 +111,22 @@
   %script
     var offlineZooms = [4,8,12,16];
     var zooms = [#{(1..16).collect{|n|",#{n}"}.join.sub(/^,/,'')}];
-    var mapControl = new VoyageX.MapControl(VoyageX.StorageStrategy.instance(), zooms, offlineZooms, true) 
-    var map = new L.Map('map',
-    { center: new L.LatLng(#{51.3767}, #{7.49389}),
+    var mapOptions = { center: new L.LatLng(#{51.3767}, #{7.49389}),
     zooms: zooms,
     zoom: 16,
     subdomains: ['a'],
     access_token: 'pk.eyJ1Ijoic3RlcGhhbmtvZWxsZXIiLCJhIjoiZEFHdnhwayJ9.AdtZiG5HGi5JAb64G1K-jA',
-    max_zoom: 30,
-    layers: [mapControl.tileLayer()] }
-    ).on('zoomend', function(e) {
+    max_zoom: 30 }
+    var mapControl = new VoyageX.MapControl(VoyageX.StorageStrategy.instance(), mapOptions, offlineZooms, true) 
+    -#var map = new L.Map('map',
+      ).on('zoomend', function(e) {
+      zoomEnd(e);
+      });
+    var map = mapControl.map();
+    map.on('zoomend', function(e) {
     zoomEnd(e);
     });
+    $('#zoom_level').html('<span style="color:white;">zoom: '+map.getZoom()+'</span>')
 
   -#
     :javascript

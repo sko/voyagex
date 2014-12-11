@@ -8,6 +8,7 @@ class window.Comm.StorageController
     @_jsonObjects = {}
     @_tileDB = {}
     @_tileMeta = null
+    @_tileLoadQueue = {}
 #    window.webkitStorageInfo.queryUsageAndQuota(webkitStorageInfo.PERSISTENT, # the type can be either TEMPORARY or PERSISTENT
 #        (used, remaining) ->
 #          console.log("Used quota: " + used + ", remaining quota: " + remaining);
@@ -18,7 +19,11 @@ class window.Comm.StorageController
   @storeKey: (xYZ) ->
     xYZ[2]+'/'+xYZ[0]+'/'+xYZ[1]
   
-  storeTile: (xYZ, data) ->
+  storeTile: (xYZ, data, promise = null) ->
+    if promise != null
+      @_tileLoadQueue[StorageController.storeKey(xYZ)] = promise
+      return promise
+
     tileMeta = localStorage.getItem 'comm.tiles.tileMeta'
     if tileMeta == null
       @_tileMeta = { tilesByteSize: 0, numTiles: 0 }
@@ -38,11 +43,12 @@ class window.Comm.StorageController
 #      yEntry[xYZ[1]] = data
 #      tileStoreZ[xYZ[0]] = [yEntry]
 #      localStorage.setItem 'comm.tiles.'+xYZ[2], JSON.stringify(listEntries)
+      delete @_tileLoadQueue[StorageController.storeKey(xYZ)]
       localStorage.setItem storeKey, data.properties.data
       @_tileDB[storeKey] = data.properties.data
       if stored != ''
         @_tileMeta.numTiles = @_tileMeta.numTiles+1
-        @_tileMeta.tilesByteSize = @_tileMeta.tilesByteSize+data.properties.data.length
+      @_tileMeta.tilesByteSize = @_tileMeta.tilesByteSize+data.properties.data.length
     else
       # for backward-compatibility
       stored = localStorage.getItem 'comm.tiles.-'+data.properties.id
@@ -50,6 +56,7 @@ class window.Comm.StorageController
         localStorage.setItem storeKey, data.properties.data
         @_tileDB[storeKey] = data.properties.data
         localStorage.removeItem 'comm.tiles.-'+data.properties.id
+        delete @_tileLoadQueue[storeKey]
 
         @_tileMeta.numTiles = @_tileMeta.numTiles+1
         @_tileMeta.tilesByteSize = @_tileMeta.tilesByteSize+data.properties.data.length
@@ -60,8 +67,12 @@ class window.Comm.StorageController
     storeKey = StorageController.storeKey(xYZ)
     stored = @_tileDB['comm.tiles.'+storeKey]
     unless stored?
-      stored = localStorage.getItem 'comm.tiles.'+storeKey
-      @_tileDB['comm.tiles.'+storeKey] = stored
+      stored = @_tileLoadQueue[storeKey]
+      unless stored?
+        stored = localStorage.getItem 'comm.tiles.'+storeKey
+        @_tileDB['comm.tiles.'+storeKey] = stored
+      else
+        console.log('stored in queue: '+storeKey); 
     # for backward-compatibility
     if stored?
       result = {}
