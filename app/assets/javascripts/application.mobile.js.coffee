@@ -1,12 +1,7 @@
-//= require jquery.mobile
-//= require client_state
-//= require upload_helper
-//= require main
-
 class window.VoyageX.NavBar
   @menuNavClick: (clickSrc) ->
     window.clientState.setView(window.clientState.getView(clickSrc))
-    map.invalidateSize({
+    VoyageX.Main.map().invalidateSize({
               reset: true,
               pan: false,
               animate: false

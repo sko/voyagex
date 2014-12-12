@@ -117,16 +117,17 @@
     subdomains: ['a'],
     access_token: 'pk.eyJ1Ijoic3RlcGhhbmtvZWxsZXIiLCJhIjoiZEFHdnhwayJ9.AdtZiG5HGi5JAb64G1K-jA',
     max_zoom: 30 }
-    var mapControl = new VoyageX.MapControl(VoyageX.StorageStrategy.instance(), mapOptions, offlineZooms, true) 
+    /var mapControl = new VoyageX.MapControl(VoyageX.StorageStrategy.instance(), mapOptions, offlineZooms, true) 
+    window.APP = new VoyageX.Main(VoyageX.StorageStrategy.instance(), mapOptions, offlineZooms, true) 
     -#var map = new L.Map('map',
       ).on('zoomend', function(e) {
       zoomEnd(e);
       });
-    var map = mapControl.map();
-    map.on('zoomend', function(e) {
-    zoomEnd(e);
-    });
-    $('#zoom_level').html('<span style="color:white;">zoom: '+map.getZoom()+'</span>')
+    -#var map = mapControl.map();
+      map.on('zoomend', function(e) {
+      zoomEnd(e);
+      });
+      $('#zoom_level').html('<span style="color:white;">zoom: '+map.getZoom()+'</span>')
 
   -#
     :javascript

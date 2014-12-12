@@ -5,7 +5,7 @@ window.defaultLatLng = [51.3767, 7.49389]
 #window.defaultLatLng = [0, 0]
 window.showSearchRadius = false
 jQuery ->
-  window.markerManager = null
+  #window.markerManager = null
 
   comm = null
   selectedPositionLatLng = [-1, -1]
@@ -36,12 +36,12 @@ jQuery ->
   window.toggleSearchRadiusDisplay = (selected) ->
     if selected.id == 'search_radius_display_show'
       window.showSearchRadius = true
-      #markerManager._showSearchRadius = true
-      markerManager.searchBounds(VoyageX.SEARCH_RADIUS_METERS, map)
+      #VoyageX.Main.markerManager()._showSearchRadius = true
+      VoyageX.Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, VoyageX.Main.map())
     else
       window.showSearchRadius = false
-      #markerManager._showSearchRadius = false
-      markerManager.searchBounds(0, map)
+      #VoyageX.Main.markerManager()._showSearchRadius = false
+      VoyageX.Main.markerManager().searchBounds(0, VoyageX.Main.map())
 
   window.toggleNetworkState = (selected) ->
     if selected.id == 'network_state_online'
@@ -79,16 +79,16 @@ jQuery ->
       $("#photo_nav_panel").panel("close")
 
   window.panPosition = (lat, lng, address) ->
-    setSelectedPositionLatLng markerManager.get(), lat, lng, address
-    map.panTo([lat, lng])
-    #map.setView([lat, lng], 16)
+    setSelectedPositionLatLng VoyageX.Main.markerManager().get(), lat, lng, address
+    VoyageX.Main.map().panTo([lat, lng])
+    #VoyageX.Main.map().setView([lat, lng], 16)
     VoyageX.NavBar.menuNavClick('map')
 
   window.getSelectedPositionLatLng = () ->
     return [selectedPositionLatLng[0], selectedPositionLatLng[1]]
 
   window.zoomEnd = (e) ->
-    $('#zoom_level').html('<span style="color:white;">zoom: '+map.getZoom()+'</span>')
+    $('#zoom_level').html('<span style="color:white;">zoom: '+VoyageX.Main.map().getZoom()+'</span>')
 
   getUploadComments = (upload_id) ->
     $.ajax
@@ -98,15 +98,15 @@ jQuery ->
 
   setSelectedPositionLatLng = (marker, lat, lng, address) ->
     if marker == null
-      marker = markerManager.add lat, lng, markerEventsCB
+      marker = VoyageX.Main.markerManager().add lat, lng, markerEventsCB
     else
-      marker = markerManager.sel marker, lat, lng, markerEventsCB
+      marker = VoyageX.Main.markerManager().sel marker, lat, lng, markerEventsCB
     selectedPositionLatLng[0] = lat
     selectedPositionLatLng[1] = lng
     if address != null
       $('#cur_loc_addr').html(address) 
     if showSearchRadius
-      markerManager.searchBounds(VoyageX.SEARCH_RADIUS_METERS, map)
+      VoyageX.Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, VoyageX.Main.map())
 
   publishPosition = () ->
     comm.send('/map_events', {type: 'click',\
@@ -114,12 +114,12 @@ jQuery ->
                               lat: selectedPositionLatLng[0],\
                               lng: selectedPositionLatLng[1]})
 
-  initPositionCB = (position) ->
+  window.initPositionCB = (position) ->
     address = null
-    marker = markerManager.sel null, position.coords.latitude, position.coords.longitude, markerEventsCB
+    marker = VoyageX.Main.markerManager().sel null, position.coords.latitude, position.coords.longitude, markerEventsCB
     setSelectedPositionLatLng marker, position.coords.latitude, position.coords.longitude, address
-    map.panTo([position.coords.latitude, position.coords.longitude])
-    #map.setView [position.coords.latitude, position.coords.longitude], 16
+    VoyageX.Main.map().panTo([position.coords.latitude, position.coords.longitude])
+    #VoyageX.Main.map().setView [position.coords.latitude, position.coords.longitude], 16
     publishPosition()
 
   #Object.keys(window.commListeners).every (channel) ->
@@ -184,14 +184,14 @@ jQuery ->
     console.log 'got a map_events - message: ' + mapEvent.type
     if $('#current_user_id').val() == mapEvent.userId# && mapEvent.type == 'click'
       return null
-    if markerManager.get().getPopup()?
-      markerManager.get().unbindPopup()
+    if VoyageX.Main.markerManager().get().getPopup()?
+      VoyageX.Main.markerManager().get().unbindPopup()
     if mapEvent.address?
-      setSelectedPositionLatLng markerManager.get(), mapEvent.lat, mapEvent.lng, mapEvent.address
+      setSelectedPositionLatLng VoyageX.Main.markerManager().get(), mapEvent.lat, mapEvent.lng, mapEvent.address
     else
-      setSelectedPositionLatLng markerManager.get(), mapEvent.lat, mapEvent.lng, null
-    map.panTo([mapEvent.lat, mapEvent.lng])
-    #map.setView [mapEvent.lat, mapEvent.lng], 16
+      setSelectedPositionLatLng VoyageX.Main.markerManager().get(), mapEvent.lat, mapEvent.lng, null
+    VoyageX.Main.map().panTo([mapEvent.lat, mapEvent.lng])
+    #VoyageX.Main.map().setView [mapEvent.lat, mapEvent.lng], 16
     for listener in window.commListeners.map_events
       listener(mapEvent)
 
@@ -239,41 +239,44 @@ jQuery ->
   $(document).on 'click', '#clear_cache', (event) ->
     Comm.StorageController.instance().delete('tiles')
     cacheStats()
-    
-  
-  map.on 'click', (event) ->
-    address = null
-    setSelectedPositionLatLng markerManager.get()||markerManager.add(event.latlng.lat, event.latlng.lng, markerEventsCB), event.latlng.lat, event.latlng.lng, address
-    publishPosition()
 
   $(document).ready () ->
-    if navigator.geolocation 
-      navigator.geolocation.getCurrentPosition(initPositionCB, (error) ->
-          alert('geolocation timed out - manual selection required.\nsetting default location...')
-          initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
-      , { enableHighAccuracy: true, timeout : 10000 })
-    #map.on('locationfound', (e) ->
-    #    alert('found location...')
-    #  )
-    #map.on('locationerror', (e) ->
-    #    alert('geolocation timed out - manual selection required.\nsetting default location...')
-    #  )
     comm = new Comm.Comm($('#current_user_id').val(),
                          [['/talk', talkCB, window.VoyageX.CHANNEL_ENC_KEY],
                           ['/map_events', mapEventsCB, window.VoyageX.CHANNEL_ENC_KEY],
                           ['/uploads', uploadsCB, window.VoyageX.CHANNEL_ENC_KEY]],
                          window.VoyageX.SYS_CHANNEL_ENC_KEY,
                          systemCB)
-    window.markerManager = new VoyageX.MarkerManager(map)
+#    window.markerManager = new VoyageX.MarkerManager(VoyageX.Main.map())
     if window.isMobile()
-      map.invalidateSize({
+      VoyageX.Main.map().invalidateSize({
           reset: true,
           pan: false,
           animate: false
         })
-    # next statement removes value from inputs!!
-    $("#network_state").buttonset()
-    $('button[value=camera]').focus()
-    zoomEnd(null)
-    cacheStats()
+#    initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
+##    if navigator.geolocation 
+##      navigator.geolocation.getCurrentPosition(initPositionCB, (error) ->
+##          alert('geolocation timed out - manual selection required.\nsetting default location...')
+##          initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
+##      , { enableHighAccuracy: true, timeout : 10000 })
+##    #VoyageX.Main.map().on('locationfound', (e) ->
+##    #    alert('found location...')
+##    #  )
+##    #VoyageX.Main.map().on('locationerror', (e) ->
+##    #    alert('geolocation timed out - manual selection required.\nsetting default location...')
+##    #  )
+#    VoyageX.Main.map().on 'click', (event) ->
+#      address = null
+#      setSelectedPositionLatLng VoyageX.Main.markerManager().get()||VoyageX.Main.markerManager().add(event.latlng.lat, event.latlng.lng, markerEventsCB), event.latlng.lat, event.latlng.lng, address
+#      publishPosition()
+#    VoyageX.Main.map().on('zoomend', (e) ->
+#        zoomEnd(e);
+#      )
+#    $('#zoom_level').html('<span style="color:white;">zoom: '+VoyageX.Main.map().getZoom()+'</span>')
+#    # next statement removes value from inputs!!
+#    $("#network_state").buttonset()
+#    $('button[value=camera]').focus()
+#    zoomEnd(null)
+#    cacheStats()
 
