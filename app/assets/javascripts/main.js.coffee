@@ -48,6 +48,12 @@ class window.VoyageX.Main
         VoyageX.Main.map().on('zoomend', (e) ->
             zoomEnd(e);
           )
+        if window.isMobile()
+          VoyageX.Main.map().invalidateSize({
+              reset: true,
+              pan: false,
+              animate: false
+            })
         initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
         $('#zoom_level').html('<span style="color:white;">zoom: '+VoyageX.Main.map().getZoom()+'</span>')
         # next statement removes value from inputs!!

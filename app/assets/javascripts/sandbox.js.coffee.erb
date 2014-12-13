@@ -248,12 +248,12 @@ jQuery ->
                          window.VoyageX.SYS_CHANNEL_ENC_KEY,
                          systemCB)
 #    window.markerManager = new VoyageX.MarkerManager(VoyageX.Main.map())
-    if window.isMobile()
-      VoyageX.Main.map().invalidateSize({
-          reset: true,
-          pan: false,
-          animate: false
-        })
+#    if window.isMobile()
+#      VoyageX.Main.map().invalidateSize({
+#          reset: true,
+#          pan: false,
+#          animate: false
+#        })
 #    initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
 ##    if navigator.geolocation 
 ##      navigator.geolocation.getCurrentPosition(initPositionCB, (error) ->
