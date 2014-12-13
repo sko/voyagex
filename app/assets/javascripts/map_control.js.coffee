@@ -113,11 +113,11 @@ class window.VoyageX.MapControl
       if view.zoom in mC._offlineZooms
         if deferredModeParams != null
           deferredModeParams.tileUrl = tileUrl
-        # that if/else was before map ready
-        #if mC._map?
+        # _map maybe not ready on very first call
+        if mC._map?
           readyImage = mC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS, deferredModeParams
-        #else
-        #  readyImage = mC._loadAndPrefetch [view.tile.column, view.tile.row, view.zoom], view.subdomain
+        else
+          readyImage = mC._loadAndPrefetch [view.tile.column, view.tile.row, view.zoom], view.subdomain
       else
         readyImage = tileUrl
         #mC._prefetchZoomLevels [view.tile.column, view.tile.row, view.zoom], view.subdomain, deferredModeParams

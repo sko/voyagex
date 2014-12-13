@@ -26,30 +26,39 @@ class window.Comm.StorageController
 #      )
 #    @deprecated
 #    window.webkitStorageInfo.requestQuota(webkitStorageInfo.PERSISTENT, requestedBytes, (grantedBytes) ->
-    navigator.webkitPersistentStorage.requestQuota(requestedBytes, (grantedBytes) ->
-#        @deprecated
-        window.webkitRequestFileSystem(webkitStorageInfo.PERSISTENT,
-                                       grantedBytes,
-                                       (fs) ->
-                                           console.log('filesystem zugang')
-                                           sC = Comm.StorageController.instance()
-                                           sC._dirReaders = { parent: null, path: '/', entry: fs.root, reader: fs.root.createReader(), entries: {} }
-                                           StorageController._FS = fs
-                                           fsInitCB false
-                                       ,
-                                       (e) ->
-                                           console.log('kein filesystem zugang')
-                                           fsInitCB true
-                                       )
-      , (e) ->
-        console.log('Error', e); 
-        fsInitCB true
-      )
+    try
+      fileAPISupport = `navigator.webkitPersistentStorage !== undefined`
+    catch error
+      fileAPISupport = false
+    console.log('StorageController.constructor - fileAPISupport = '+fileAPISupport)
+    
+    if fileAPISupport
+      navigator.webkitPersistentStorage.requestQuota(requestedBytes, (grantedBytes) ->
+          # @deprecated
+          window.webkitRequestFileSystem(webkitStorageInfo.PERSISTENT,
+                                         grantedBytes,
+                                         (fs) ->
+                                             console.log('filesystem zugang')
+                                             sC = Comm.StorageController.instance()
+                                             sC._dirReaders = { parent: null, path: '/', entry: fs.root, reader: fs.root.createReader(), entries: {} }
+                                             StorageController._FS = fs
+                                             fsInitCB false
+                                         ,
+                                         (e) ->
+                                             console.log('kein filesystem zugang')
+                                             fsInitCB true
+                                         )
+        , (e) ->
+          console.log('Error', e); 
+          fsInitCB true
+        )
 #    navigator.webkitPersistentStorage.requestQuota(requestedBytes, (grantedBytes) ->
 #        window.webkitRequestFileSystem(PERSISTENT, grantedBytes, StorageController.onInitFs, StorageController.onFsError)
 #      , (e) ->
 #        console.log('Error', e)
 #      )
+    else
+      fsInitCB true
 
   @storeKey: (xYZ) ->
     xYZ[2]+'/'+xYZ[0]+'/'+xYZ[1]
@@ -109,11 +118,12 @@ class window.Comm.StorageController
               if (e.code == FileError.NOT_FOUND_ERR) 
                 console.log('_getDirectory - No such file: '+path)
               else
-                console.log('_getDirectory - '+e+' when trying to CREATE directory '+path)
                 # it's likely that directory has been created by other request
                 if firstCall
-                  console.log('_getDirectory - trying one more READ directory '+path)
+                  #console.log('_getDirectory - '+e+' when trying to CREATE directory / trying one more READ: '+path)
                   return sC._getDirectory xYZ, nextDirIdx, dirReader, data, false
+                else
+                  console.log('_getDirectory - '+e+' when trying to CREATE directory '+path)
               sC._storeTileAsFile xYZ, dirReader, data, nextDirIdx
             )
         else
@@ -153,11 +163,12 @@ class window.Comm.StorageController
 #            #reader.readAsDataURL(file, StorageController.instance()._tileImageContentType)
       , (e) ->
         if (e.code == FileError.NOT_FOUND_ERR) 
-          console.log('_getTileFile - No such file: '+path)
           if firstCall
             # check one more time if other thread stored file
-            console.log('_getTileFile - trying one more READ file '+path)
+            #console.log('_getTileFile - no such file / trying one more READ: '+path)
             return Comm.StorageController.instance()._getTileFile xYZ, deferredModeParams, false
+          else
+            console.log('_getTileFile - no such file: '+path)
         else
           console.log('error: '+e+' for '+path)
         #deferredModeParams.deferred.resolve deferredModeParams.tileUrlCB(deferredModeParams.mC, deferredModeParams.view, deferredModeParams)
