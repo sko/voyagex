@@ -3,7 +3,7 @@ class window.VoyageX.View
   @_SINGLETON = null
 
   constructor: () ->
-    @_SINGLETON = this
+    View._SINGLETON = this
     @_commListeners = {}
     for channel in ['talk', 'map_events', 'uploads']
       @_commListeners[channel] = []
@@ -43,7 +43,7 @@ class window.VoyageX.View
       return null
     $('#message').val('\n-------------------------\n'+message.text+$('#message').val())
     $('#message').selectRange(0) 
-    for listener in View.instance().commListeners.talk
+    for listener in View.instance()._commListeners.talk
       listener(message)
 
   _mapEventsCB: (mapEvent) ->
@@ -58,7 +58,7 @@ class window.VoyageX.View
       setSelectedPositionLatLng VoyageX.Main.markerManager().get(), mapEvent.lat, mapEvent.lng, null
     VoyageX.Main.map().panTo([mapEvent.lat, mapEvent.lng])
     #VoyageX.Main.map().setView [mapEvent.lat, mapEvent.lng], 16
-    for listener in View.instance().commListeners.map_events
+    for listener in View.instance()._commListeners.map_events
       listener(mapEvent)
 
   _uploadsCB: (upload) ->
@@ -75,7 +75,7 @@ class window.VoyageX.View
     $("#upload_preview").prepend(tag)
     mySwiper.reInit()
     #mySwiper.resizeFix()
-    for listener in View.instance().commListeners.uploads
+    for listener in View.instance()._commListeners.uploads
       listener(upload)
     if window.isMobile()
       $('a[href=#photo_nav_panel]').click()

@@ -10,6 +10,7 @@ class window.VoyageX.Main
     Main._SINGLETON = this
     @_initState = 0
     @_view = view
+    @_comm = null
     $(window.document).ready () ->
         Main.instance()._init userId, cacheStrategy, view, mapOptions, offlineZooms, online
 
@@ -23,12 +24,12 @@ class window.VoyageX.Main
             #else
             Main.instance()._init userId, cacheStrategy, view, mapOptions, offlineZooms, online
           )
-        comm = new Comm.Comm(userId,
-                             [['/talk', view._talkCB, window.VoyageX.CHANNEL_ENC_KEY],
-                              ['/map_events', view._mapEventsCB, window.VoyageX.CHANNEL_ENC_KEY],
-                              ['/uploads', view._uploadsCB, window.VoyageX.CHANNEL_ENC_KEY]],
-                             window.VoyageX.SYS_CHANNEL_ENC_KEY,
-                             this._systemCB)
+        Main.instance()._comm = new Comm.Comm(userId,
+                                              [['/talk', view._talkCB, window.VoyageX.CHANNEL_ENC_KEY],
+                                               ['/map_events', view._mapEventsCB, window.VoyageX.CHANNEL_ENC_KEY],
+                                               ['/uploads', view._uploadsCB, window.VoyageX.CHANNEL_ENC_KEY]],
+                                              window.VoyageX.SYS_CHANNEL_ENC_KEY,
+                                              Main.instance()._systemCB)
       when 2
         Main._MAP_CONTROL = new VoyageX.MapControl cacheStrategy, mapOptions, offlineZooms, online
         Main._MARKER_MANAGER = new VoyageX.MarkerManager(Main.map())
@@ -74,7 +75,7 @@ class window.VoyageX.Main
         Comm.Comm.subscribeTo channelPath, Comm.Comm.channelCallBacksJSON[channel].callback # eval(channel+'CB')
     else if message.type == 'subscription_grant_request'
     else if message.type == 'subscription_granted'
-      for channel in VoyageX.Main.instance().commChannels()
+      for channel in VoyageX.Main.commChannels()
         if channel == 'system'
           continue
         channelPath = '/'+channel
@@ -83,7 +84,7 @@ class window.VoyageX.Main
         Comm.Comm.subscribeTo channelPath, Comm.Comm.channelCallBacksJSON[channel].callback # eval(channel+'CB')
     else if message.type == 'subscription_denied'
     else if message.type == 'subscription_grant_revoked'
-      for channel in VoyageX.Main.instance().commChannels()
+      for channel in VoyageX.Main.commChannels()
         if channel == 'system'
           continue
         channelPath = '/'+channel
@@ -93,6 +94,9 @@ class window.VoyageX.Main
     else if message.type == 'quit_subscription'
       true # do nothing
     Main.instance()._view._systemCB message
+
+  comm: () ->
+    @_comm
 
   @instance: () ->
     Main._SINGLETON

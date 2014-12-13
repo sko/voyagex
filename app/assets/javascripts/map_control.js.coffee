@@ -117,10 +117,10 @@ class window.VoyageX.MapControl
         if mC._map?
           readyImage = mC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS, deferredModeParams
         else
-          readyImage = mC._loadAndPrefetch [view.tile.column, view.tile.row, view.zoom], view.subdomain
+          readyImage = mC._loadAndPrefetch [view.tile.column, view.tile.row, view.zoom], view.subdomain, deferredModeParams
       else
         readyImage = tileUrl
-        #mC._prefetchZoomLevels [view.tile.column, view.tile.row, view.zoom], view.subdomain, deferredModeParams
+        mC._prefetchZoomLevels [view.tile.column, view.tile.row, view.zoom], view.subdomain, deferredModeParams
       readyImage
     else
       readyImage = mC._notInCacheImage $('#tile_canvas')[0], view.tile.column, view.tile.row, view.zoom
@@ -135,7 +135,7 @@ class window.VoyageX.MapControl
               .replace('{x}', xYZ[0])
               .replace('{s}', viewSubdomain)
     readyImage = this._loadReadyImage tileUrl, xYZ, (if deferredModeParams!=null then deferredModeParams.deferred else null)
-    #this._prefetchZoomLevels xYZ, viewSubdomain, deferredModeParams
+    this._prefetchZoomLevels xYZ, viewSubdomain, deferredModeParams
     readyImage
 
   _prefetchZoomLevels: (xYZ, viewSubdomain, deferredModeParams = null) ->
@@ -169,7 +169,7 @@ class window.VoyageX.MapControl
        #unless geoJSON? && geoJSON[storeKey]?
         unless geoJSON? && geoJSON[storeKey]? && (deferredModeParams==null)
           console.log 'prefetching area tile: '+storeKey
-          readyImage = this._loadAndPrefetch curXYZ, view.subdomain
+          readyImage = this._loadAndPrefetch curXYZ, view.subdomain, deferredModeParams
           if addToX == 0 and addToY == 0
             centerTile = readyImage
         else

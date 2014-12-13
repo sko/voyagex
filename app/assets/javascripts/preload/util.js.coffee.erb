@@ -17,9 +17,12 @@ $(document).on 'keyup', '.edit_detail', (event) ->
     $(this).closest('form').submit()
 
 window.cacheStats = () ->
+  fileSysLink = ''
+  if Comm.StorageController.isFileBased()
+    fileSysLink = ' / <span style="color:white;">[<a href="filesystem:http://'+document.location.host+'/persistent/" style="color:white;">show</a>]</span>'
   tilesSize = Math.round(Comm.StorageController.instance().getByteSize('tiles')/1024)+' kB'
   numTiles = Comm.StorageController.instance().getNumElements('tiles')
-  $('#cache_stats').html('<span style="color:white;">cache-size: '+tilesSize+' / #'+numTiles+' tiles</span>')
+  $('#cache_stats').html('<span><span style="color:white;">cache-size: '+tilesSize+' / #'+numTiles+' tiles</span>'+fileSysLink+'</span>')
 
 jQuery ->
 #  $.ajaxSetup({

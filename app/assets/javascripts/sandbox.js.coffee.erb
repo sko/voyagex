@@ -109,10 +109,10 @@ jQuery ->
       VoyageX.Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, VoyageX.Main.map())
 
   window.publishPosition = () ->
-    comm.send('/map_events', {type: 'click',\
-                              userId: $('#current_user_id').val(),\
-                              lat: selectedPositionLatLng[0],\
-                              lng: selectedPositionLatLng[1]})
+    APP.comm().send('/map_events', {type: 'click',\
+                                    userId: $('#current_user_id').val(),\
+                                    lat: selectedPositionLatLng[0],\
+                                    lng: selectedPositionLatLng[1]})
 
   window.initPositionCB = (position) ->
     address = null
@@ -134,9 +134,9 @@ jQuery ->
         publishText = $(this).val()
       else
         publishText = $(this).val().substr(0, endIdx)
-      comm.send('/talk', {type: 'message',\
-                          text: $('#current_user_id').val()+': '+publishText,\
-                          userId: $('#current_user_id').val()})
+      APP.comm().send('/talk', {type: 'message',\
+                                text: $('#current_user_id').val()+': '+publishText,\
+                                userId: $('#current_user_id').val()})
       $(this).val('\n-------------------------\n'+$(this).val())
       $(this).selectRange(0) 
     
