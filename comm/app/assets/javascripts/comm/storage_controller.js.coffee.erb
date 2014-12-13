@@ -18,45 +18,33 @@ class window.Comm.StorageController
     @_grantedBytes = 0
     @_dirReaders = {}
     requestedBytes = Math.pow(2, 24) # 16MB
-#    window.webkitStorageInfo.queryUsageAndQuota(webkitStorageInfo.PERSISTENT, # the type can be either TEMPORARY or PERSISTENT
-#        (used, remaining) ->
-#          console.log("Used quota: " + used + ", remaining quota: " + remaining);
-#      , (e) ->
-#          console.log('Error', e); 
-#      )
-#    @deprecated
-#    window.webkitStorageInfo.requestQuota(webkitStorageInfo.PERSISTENT, requestedBytes, (grantedBytes) ->
     try
       fileAPISupport = `navigator.webkitPersistentStorage !== undefined`
     catch error
       fileAPISupport = false
     console.log('StorageController.constructor - fileAPISupport = '+fileAPISupport)
-    
     if fileAPISupport
+      # @deprecated
+      #window.webkitStorageInfo.queryUsageAndQuota(webkitStorageInfo.PERSISTENT,  (used, remaining) ->
+      #window.webkitStorageInfo.requestQuota(webkitStorageInfo.PERSISTENT, requestedBytes, (grantedBytes) ->
       navigator.webkitPersistentStorage.requestQuota(requestedBytes, (grantedBytes) ->
+          #window.webkitRequestFileSystem(PERSISTENT, grantedBytes, StorageController.onInitFs, StorageController.onFsError)
           # @deprecated
-          window.webkitRequestFileSystem(webkitStorageInfo.PERSISTENT,
-                                         grantedBytes,
-                                         (fs) ->
-                                             console.log('filesystem zugang')
-                                             sC = Comm.StorageController.instance()
-                                             sC._dirReaders = { parent: null, path: '/', entry: fs.root, reader: fs.root.createReader(), entries: {} }
-                                             StorageController._FS = fs
-                                             fsInitCB false
-                                         ,
-                                         (e) ->
-                                             console.log('kein filesystem zugang')
-                                             fsInitCB true
-                                         )
+          window.webkitRequestFileSystem(webkitStorageInfo.PERSISTENT, grantedBytes, (fs) ->
+                console.log('filesystem zugang')
+                sC = Comm.StorageController.instance()
+                sC._dirReaders = { parent: null, path: '/', entry: fs.root, reader: fs.root.createReader(), entries: {} }
+                StorageController._FS = fs
+                fsInitCB false
+            ,
+            (e) ->
+                console.log('kein filesystem zugang')
+                fsInitCB true
+            )
         , (e) ->
-          console.log('Error', e); 
-          fsInitCB true
+            console.log('Error', e); 
+            fsInitCB true
         )
-#    navigator.webkitPersistentStorage.requestQuota(requestedBytes, (grantedBytes) ->
-#        window.webkitRequestFileSystem(PERSISTENT, grantedBytes, StorageController.onInitFs, StorageController.onFsError)
-#      , (e) ->
-#        console.log('Error', e)
-#      )
     else
       fsInitCB true
 

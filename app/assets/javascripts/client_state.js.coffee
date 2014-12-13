@@ -15,7 +15,7 @@ class window.VoyageX.ClientState
     @_views[view]
 
   getViews: () ->
-    #Object.keys(window.commListeners).every (channel) ->
+    #VoyageX.Main.instance().commChannels().every (channel) ->
     console.log 'TODO'
 
   setView: (view) ->

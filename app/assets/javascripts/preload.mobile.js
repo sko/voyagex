@@ -15,4 +15,4 @@
 //= require client_state
 //= require upload_helper
 //= require main
-
+//= require view

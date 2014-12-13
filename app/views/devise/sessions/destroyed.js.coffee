@@ -7,7 +7,7 @@ $('.logout-link').each () ->
 # you are always someone
 $('.whoami').each () ->
   $(this).html("<%= escape_javascript(link_to t('auth.whoami', username: tmp_user().username), change_username_path, class: 'navbar-inverse navbar-brand', data: { remote: 'true', format: :js }) -%>")
-for channel in Object.keys(window.commListeners)
+for channel in VoyageX.Main.instance().commChannels()
   channelPath = '/'+channel
   unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
     channelPath += VoyageX.PEER_CHANNEL_PREFIX+Comm.Comm.channelCallBacksJSON[channel].channel_enc_key

@@ -6,4 +6,4 @@ jQuery ->
     if window.document.getElementById('content_chat').style.display == 'none'
       $('#nav_chat_popup_link').click()
 
-  window.commListeners.talk.push(talkExtCB);
+  VoyageX.View.instance().addListener 'talk', talkExtCB

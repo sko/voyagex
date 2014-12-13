@@ -109,6 +109,7 @@
   %canvas{id: 'tile_canvas', style: 'display: none; width: 256px; height: 256px;'}
   #map
   %script
+    var view = new VoyageX.View();
     var offlineZooms = [4,8,12,16];
     var zooms = [#{(1..16).collect{|n|",#{n}"}.join.sub(/^,/,'')}];
     var mapOptions = { center: new L.LatLng(#{51.3767}, #{7.49389}),
@@ -118,7 +119,7 @@
     access_token: 'pk.eyJ1Ijoic3RlcGhhbmtvZWxsZXIiLCJhIjoiZEFHdnhwayJ9.AdtZiG5HGi5JAb64G1K-jA',
     max_zoom: 30 }
     /var mapControl = new VoyageX.MapControl(VoyageX.StorageStrategy.instance(), mapOptions, offlineZooms, true) 
-    window.APP = new VoyageX.Main(VoyageX.StorageStrategy.instance(), mapOptions, offlineZooms, true) 
+    window.APP = new VoyageX.Main($('#current_user_id').val(), VoyageX.StorageStrategy.instance(), view, mapOptions, offlineZooms, true) 
     -#var map = new L.Map('map',
       ).on('zoomend', function(e) {
       zoomEnd(e);

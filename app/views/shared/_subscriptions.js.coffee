@@ -1,5 +1,5 @@
 # required partial-param (locals): channel_enc_key
-for channel in Object.keys(window.commListeners)
+for channel in VoyageX.Main.instance().commChannels()
   if channel == 'system'
     continue
   channelPath = '/'+channel

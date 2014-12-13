@@ -15,6 +15,10 @@ Concept
 +) jeder client baut nen eignenen channel auf mit seiner verschlüsselten id
 +) best practises
 +) man sieht die bilder im umkreis von 50 km
++) der rest ist GIT commit/push - abgrenzung zur versionscontrolle. limit on history, keine branches.
+   mein master mit online master.
++) aber online können auch nebenläufigkeiten bestehen.
+   die bas sind alle einträge. also versionskontrolle pro eintrag, ein eintrag ist ein file. jsoon kan man aber zerschiesen+
 
 ==========
 Pragmatic Diary
