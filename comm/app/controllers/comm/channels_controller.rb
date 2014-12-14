@@ -126,7 +126,7 @@ module Comm
           user = User.where(id: data['userId']).first
           location = Location.new(latitude: data['lat'], longitude: data['lng'])
           # TODO maybe select existing location if exists instead of creating new - l.nearbys(5)
-          ls_u = user.locations_users.create(location: location)
+          # NO_SAVE_ON_ALL_CLICKS ls_u = user.locations_users.create(location: location)
           # provide reverse lookup
           unless data['address'].present?
             Rails.logger.debug "###### providing reverse-geocoding-service: #{location.address}"

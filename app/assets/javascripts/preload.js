@@ -7,6 +7,7 @@
 //= require Leaflet.LimitZoom
 //= require leaflet.functionaltilelayer
 //= require canvas-toBlob
+//= require buffer-loader
 //= require preload/util
 //= require storage_strategy
 //= require map_control

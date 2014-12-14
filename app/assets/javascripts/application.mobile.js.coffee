@@ -21,11 +21,6 @@ class window.VoyageX.NavBar
 
 window.clientState = new VoyageX.ClientState('map', 'camera', VoyageX.NavBar.showView, VoyageX.NavBar.hideView)
 
-$(document).on 'click', '.activate_chat', (event) ->
-  VoyageX.NavBar.menuNavClick('chat')
-  if $('#nav_chat_popup-popup').hasClass('ui-popup-active')
-    $('#nav_chat_popup-popup').removeClass('ui-popup-active').addClass('ui-popup-hidden')
-
 $(document).on 'click', '.activate_map', (event) ->
   VoyageX.NavBar.menuNavClick('map')
 

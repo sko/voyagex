@@ -120,6 +120,8 @@ class window.VoyageX.MapControl
           readyImage = mC._loadAndPrefetch [view.tile.column, view.tile.row, view.zoom], view.subdomain, deferredModeParams
       else
         readyImage = tileUrl
+        if deferredModeParams != null
+          deferredModeParams.tileUrl = readyImage
         mC._prefetchZoomLevels [view.tile.column, view.tile.row, view.zoom], view.subdomain, deferredModeParams
       readyImage
     else

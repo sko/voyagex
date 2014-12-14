@@ -1,0 +1,13 @@
+.container#stats{style: 'display: none;'}
+  #zoom_level
+  #cache_stats
+  #cache_ctrls
+    %button{id: 'clear_cache'}
+      Clear Cache
+  #network_state
+    %div
+      = radio_button_tag 'network_state', 'online', true, onclick: 'toggleNetworkState(this)'
+      = label_tag 'network_state_online', 'online'
+    %div
+      = radio_button_tag 'network_state', 'offline', false, onclick: 'toggleNetworkState(this)'
+      = label_tag 'network_state_offline', 'offline'

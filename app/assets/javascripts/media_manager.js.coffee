@@ -1,6 +1,9 @@
 class window.VoyageX.MediaManager
 
+  @_SINGLETON = null
+
   constructor: () ->
+    MediaManager._SINGLETON = this
     @_audioSourceIds = null
     @_curSelAudSrcIdx = -1
     @_videoSourceIds = null
@@ -8,6 +11,12 @@ class window.VoyageX.MediaManager
     # coffedscript would compile MediaStreamTrack.getSources? to "MediaStreamTrack.getSources != null" only
     if MediaStreamTrack? && (`MediaStreamTrack.getSources !== undefined`)
       initMediaSources(this)
+    @_audioPlayer = null
+    try
+      AudioContext = window.AudioContext||window.webkitAudioContext;
+      @_audioPlayer = new AudioContext()
+    catch error
+      console.log('no audio-player-support', error)
 
   initMediaSources = (mm) ->
     MediaStreamTrack.getSources((sourceInfos) ->
@@ -69,3 +78,25 @@ class window.VoyageX.MediaManager
     context.drawImage(image, -image.width/2, -image.width/2);
     # we’re done with the rotating so restore the unrotated context
     context.restore();
+
+  playSound: (filePath) ->
+    if @_audioPlayer?
+      audio1 = MediaManager.instance()._audioPlayer.createBufferSource()
+      stopCB = () ->
+        audio1.stop()
+        #audio1.currentTime = 0
+      bufferLoader = new BufferLoader(
+        @_audioPlayer,
+        [
+          filePath
+        ],
+        (bufferList) ->
+            audio1.buffer = bufferList[0]
+            audio1.connect(MediaManager.instance()._audioPlayer.destination)
+            audio1.start(0)
+      )
+      bufferLoader.load()
+      stopCB
+
+  @instance: () ->
+    @_SINGLETON

@@ -14,9 +14,15 @@ jQuery ->
     if selected.value == 'administration'
       $('#content_uploads').css('display', 'none')
       $('#administration').css('display', 'block')
-    else
+      $('#stats').css('display', 'none')
+    else if selected.value == 'upload'
       $('#content_uploads').css('display', 'block')
       $('#administration').css('display', 'none')
+      $('#stats').css('display', 'none')
+    else
+      $('#content_uploads').css('display', 'none')
+      $('#administration').css('display', 'none')
+      $('#stats').css('display', 'block')
 
   window.photoClicked = (swiper) ->
     $('#current_address').html($(swiper.clickedSlide).attr('data-address'))
@@ -125,6 +131,9 @@ jQuery ->
   markerEventsCB = (event) ->
     address = null
     setSelectedPositionLatLng event.target, event.target._latlng.lat, event.target._latlng.lng, address
+    if event.type != 'click'
+      # click is handled by mapclick
+      publishPosition()
 
   $('#message').on 'keyup', (event) ->
     if (event.which == 13 || event.keyCode == 13)
@@ -143,44 +152,3 @@ jQuery ->
   $(document).on 'click', '#clear_cache', (event) ->
     Comm.StorageController.instance().delete('tiles')
     cacheStats()
-
-#  $(document).ready () ->
-#    comm = new Comm.Comm($('#current_user_id').val(),
-#                         [['/talk', talkCB, window.VoyageX.CHANNEL_ENC_KEY],
-#                          ['/map_events', mapEventsCB, window.VoyageX.CHANNEL_ENC_KEY],
-#                          ['/uploads', uploadsCB, window.VoyageX.CHANNEL_ENC_KEY]],
-#                         window.VoyageX.SYS_CHANNEL_ENC_KEY,
-#                         systemCB)
-#    window.markerManager = new VoyageX.MarkerManager(VoyageX.Main.map())
-#    if window.isMobile()
-#      VoyageX.Main.map().invalidateSize({
-#          reset: true,
-#          pan: false,
-#          animate: false
-#        })
-#    initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
-##    if navigator.geolocation 
-##      navigator.geolocation.getCurrentPosition(initPositionCB, (error) ->
-##          alert('geolocation timed out - manual selection required.\nsetting default location...')
-##          initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
-##      , { enableHighAccuracy: true, timeout : 10000 })
-##    #VoyageX.Main.map().on('locationfound', (e) ->
-##    #    alert('found location...')
-##    #  )
-##    #VoyageX.Main.map().on('locationerror', (e) ->
-##    #    alert('geolocation timed out - manual selection required.\nsetting default location...')
-##    #  )
-#    VoyageX.Main.map().on 'click', (event) ->
-#      address = null
-#      setSelectedPositionLatLng VoyageX.Main.markerManager().get()||VoyageX.Main.markerManager().add(event.latlng.lat, event.latlng.lng, markerEventsCB), event.latlng.lat, event.latlng.lng, address
-#      publishPosition()
-#    VoyageX.Main.map().on('zoomend', (e) ->
-#        zoomEnd(e);
-#      )
-#    $('#zoom_level').html('<span style="color:white;">zoom: '+VoyageX.Main.map().getZoom()+'</span>')
-#    # next statement removes value from inputs!!
-#    $("#network_state").buttonset()
-#    $('button[value=camera]').focus()
-#    zoomEnd(null)
-#    cacheStats()
-

@@ -198,12 +198,6 @@ class window.Comm.StorageController
 
       localStorage.setItem 'comm.tiles.tileMeta', JSON.stringify(@_tileMeta)
   
-  # sko_13122014 @oldscool: 
-  #_result: (storeKey, stored) ->
-  #  result = {}
-  #  result[storeKey] = { properties: { id: storeKey, data: stored } }
-  #  result
-
   getTile: (xYZ, deferredModeParams = null) ->
     storeKey = StorageController.storeKey(xYZ)
     stored = @_tileLoadQueue[storeKey]

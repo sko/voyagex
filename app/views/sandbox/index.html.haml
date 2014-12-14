@@ -5,6 +5,8 @@
         Administration
       %button{value: 'upload', onclick: 'toggleHomeTab(this)', class: 'ui-btn ui-corner-all'}
         Upload
+      %button{value: 'stats', onclick: 'toggleHomeTab(this)', class: 'ui-btn ui-corner-all'}
+        Stats
     .container.messages
       #upload_error
       #upload_message
@@ -34,6 +36,7 @@
               = render partial: '/shared/peers', locals: {user: tmp_user}
             = f.submit 'Sichern', :class => "btn btn-sm"
     = render partial: '/shared/uploads.mobile', locals: {resource: Upload.new, resource_name: :upload}
+    = render partial: '/sandbox/stats.mobile'
 - else
   #content_home
     = render partial: '/shared/uploads', locals: {resource: Upload.new, resource_name: :upload}
