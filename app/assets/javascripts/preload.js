@@ -1,7 +1,7 @@
 //= require jquery
 //= require jquery_ujs
-//= require jquery-ui
 //= require bootstrap-sprockets
+//= require jquery-ui
 //= require swiper
 //= require leaflet
 //= require Leaflet.LimitZoom

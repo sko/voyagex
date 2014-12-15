@@ -13,6 +13,7 @@ class window.VoyageX.MarkerManager
     @_markers.push new VoyageX.Marker(marker)
     if callBack != null
       marker.on 'click', callBack#, marker
+      marker.on 'dblclick', callBack
       marker.on 'dragend', callBack
     marker.addTo(@_map)
     # FIXME _icon not ready if no initial map-center is set

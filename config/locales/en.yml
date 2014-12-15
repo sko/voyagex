@@ -14,6 +14,7 @@ en:
       email-confirmation for %{email} required before sign in
       TODO: resend confirmation instructions"
   uploads:
+    upload: Upload
     take_photo: Take a Photo
     start_camera: Start Camera
     take_shot: Take Shot
@@ -21,6 +22,7 @@ en:
     upload_file: Upload File
     select_camera: Take a Photo
     select_file: Select File
+    comment: Comment
     add_comment: Comment
     add_comment_submit: Add
   admin:

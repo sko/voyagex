@@ -51,9 +51,9 @@ jQuery ->
 
   window.toggleNetworkState = (selected) ->
     if selected.id == 'network_state_online'
-      VoyageX.MapControl._instance().setOnline()
+      VoyageX.MapControl.instance().setOnline()
     else
-      VoyageX.MapControl._instance().setOffline()
+      VoyageX.MapControl.instance().setOffline()
 
   window.openUploadCommentControls = (upload_id) ->
     #$("#upload_comment_conrols").css('display', 'block')
@@ -131,9 +131,19 @@ jQuery ->
   markerEventsCB = (event) ->
     address = null
     setSelectedPositionLatLng event.target, event.target._latlng.lat, event.target._latlng.lng, address
-    if event.type != 'click'
-      # click is handled by mapclick
-      publishPosition()
+    switch event.type
+      #when 'click'
+      when 'dblclick'
+        #VoyageX.Main.markerManager().get().bindPopup("").openPopup({minWidth: '100px'});
+        if window.isMobile()
+          $('#open_upload_data_btn').click()
+        else
+          $('#upload_data_conrols').dialog('open')
+          if ! $('#upload_data_conrols').parent().hasClass('seethrough_panel')
+            $('#upload_data_conrols').parent().addClass('seethrough_panel')
+      else
+        # click is handled by mapclick
+        publishPosition()
 
   $('#message').on 'keyup', (event) ->
     if (event.which == 13 || event.keyCode == 13)

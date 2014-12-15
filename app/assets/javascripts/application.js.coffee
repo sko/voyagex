@@ -72,8 +72,15 @@ photoNavPanel = $("#photo_nav_panel").dialog({
       width: Math.abs($(window).width() * 0.5),
       top: ($(window).height()-Math.abs($(window).height() * 0.8))+'px',
       left: '0px',
-      show: { effect: "drop", duration: 800 },
-      hide: { effect: "explode", duration: 1000 },
+      show: { effect: "drop", duration: 500 },
+      hide: { effect: "fade", duration: 500 },
       modal: true
     })
 #$("head").append("<style type='text/css'>#photo_nav_panel {positon: fixed; top:"+($(window).height()-Math.abs($(window).height() * 0.8))+"px;}</style>");
+window.uploadDataDialog = $("#upload_data_conrols").dialog({
+      autoOpen: false,
+      height: Math.abs($(window).height() * 0.8),
+      width: Math.abs($(window).width() * 0.5),
+      modal: true
+    })
+#$("head").append("<style type='text/css'>#sign_in_modal {width:"+Math.abs($(window).width() * 0.3)+"px;}</style>");

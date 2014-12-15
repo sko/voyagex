@@ -14,6 +14,7 @@ de:
       email-bestätigung für %{email} für&apos;s einloggen erforderlich
       TODO: resend confirmation instructions"
   uploads:
+    upload: Hochladen
     take_photo: Foto aufnehmen
     start_camera: Kamera starten
     take_shot: Schnappschuss aufnehmen
@@ -21,6 +22,7 @@ de:
     upload_file: Datei Hochladen
     select_camera: Foto aufnehmen
     select_file: Datei auswählen
+    comment: Kommentar
     add_comment: Kommentieren
     add_comment_submit: Hinzufügen
   admin:

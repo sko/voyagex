@@ -24,6 +24,12 @@ class window.Comm.StorageController
       fileAPISupport = false
     console.log('StorageController.constructor - fileAPISupport = '+fileAPISupport)
     if fileAPISupport
+      window.webkitStorageInfo.queryUsageAndQuota(webkitStorageInfo.PERSISTENT, 
+          (used, remaining) ->
+              console.log("Used quota: " + used + ", remaining quota: " + remaining)
+          , (e) ->
+              console.log('Error', e)
+          )
       # @deprecated
       #window.webkitStorageInfo.queryUsageAndQuota(webkitStorageInfo.PERSISTENT,  (used, remaining) ->
       #window.webkitStorageInfo.requestQuota(webkitStorageInfo.PERSISTENT, requestedBytes, (grantedBytes) ->
@@ -32,7 +38,7 @@ class window.Comm.StorageController
           # @deprecated
           window.webkitRequestFileSystem(webkitStorageInfo.PERSISTENT, grantedBytes, (fs) ->
                 console.log('filesystem zugang')
-                sC = Comm.StorageController.instance()
+                sC = StorageController.instance()
                 sC._dirReaders = { parent: null, path: '/', entry: fs.root, reader: fs.root.createReader(), entries: {} }
                 StorageController._FS = fs
                 fsInitCB false
@@ -53,10 +59,10 @@ class window.Comm.StorageController
   
   @isFileBased: () ->
     StorageController._FS?
-    #false
+    false
 
   _saveFile: (xYZ, fileIdx, dirReader, data) ->
-    sC = Comm.StorageController.instance()
+    sC = StorageController.instance()
     path = dirReader.path+'/'+xYZ[fileIdx]
     dirReader.entry.getFile(xYZ[fileIdx], {}, (fileEntry) ->
 #        unless dirReader.entries[xYZ[fileIdx]]?
@@ -68,7 +74,18 @@ class window.Comm.StorageController
                 fileEntry.createWriter((fileWriter) ->
                   fileWriter.onwriteend = (e) ->
                       console.log('Write completed.')
-                      delete sC._tileLoadQueue[StorageController.storeKey(xYZ)]
+                      storeKey = StorageController.storeKey(xYZ)
+                      delete sC._tileLoadQueue[storeKey]
+                      tileMeta = localStorage.getItem 'comm.tiles.tileMeta'
+                      if tileMeta == null
+                        sC._tileMeta = { tilesByteSize: 0, numTiles: 0 }
+                      else
+                        sC._tileMeta = eval("(" + tileMeta + ")")
+                      #sC._tileDB[storeKey] = data.properties.data
+                      sC._tileMeta.numTiles = sC._tileMeta.numTiles+1
+                      sC._tileMeta.tilesByteSize = sC._tileMeta.tilesByteSize+data.properties.data.size
+                      localStorage.setItem 'comm.tiles.tileMeta', JSON.stringify(sC._tileMeta)
+                      showCacheStats(sC._tileMeta.numTiles, sC._tileMeta.tilesByteSize)
                   fileWriter.onerror = (e) ->
                       console.log('Write failed: ' + e.toString())
                       delete sC._tileLoadQueue[StorageController.storeKey(xYZ)]
@@ -88,7 +105,7 @@ class window.Comm.StorageController
       )
 
   _getDirectory: (xYZ, nextDirIdx, dirReader, data, firstCall = true) ->
-    sC = Comm.StorageController.instance()
+    sC = StorageController.instance()
     path = (if dirReader.parent == null then '' else dirReader.path)+'/'+xYZ[nextDirIdx]
     dirReader.entry.getDirectory(xYZ[nextDirIdx], {}, (fileEntry) ->
         #console.log('found directory: '+path)
@@ -134,7 +151,7 @@ class window.Comm.StorageController
     @_dirReaders.entry.getFile(path, {}, (fileEntry) ->
         console.log('found file: '+path)
         # if binary:
-        deferredModeParams.deferred.resolve fileEntry.toURL(Comm.StorageController.instance()._tileImageContentType)
+        deferredModeParams.deferred.resolve fileEntry.toURL(StorageController.instance()._tileImageContentType)
 #        # if text (base64):
 #        fileEntry.file (file) ->
 #            #@_dirReaders.entries[xYZ[2]].entries[xYZ[0].reader
@@ -154,21 +171,33 @@ class window.Comm.StorageController
           if firstCall
             # check one more time if other thread stored file
             #console.log('_getTileFile - no such file / trying one more READ: '+path)
-            return Comm.StorageController.instance()._getTileFile xYZ, deferredModeParams, false
+            return StorageController.instance()._getTileFile xYZ, deferredModeParams, false
           else
             console.log('_getTileFile - no such file: '+path)
         else
           console.log('error: '+e+' for '+path)
         #deferredModeParams.deferred.resolve deferredModeParams.tileUrlCB(deferredModeParams.mC, deferredModeParams.view, deferredModeParams)
-        deferredModeParams.tileUrlCB(deferredModeParams.mC, deferredModeParams.view, deferredModeParams)
-        deferredModeParams.deferred.resolve deferredModeParams.tileUrl
+        #if deferredModeParams.callBack
+        #  deferredModeParams.callBack = false
+        #  # TODO
+        if xYZ[2] == deferredModeParams.view.zoom
+          # one mor check for asynchronous request
+          loadQueueEntry = StorageController.instance()._tileLoadQueue[StorageController.storeKey(xYZ)]
+          unless loadQueueEntry? && (!loadQueueEntry.storeFile)
+            loadQueueEntry.storeFile = false
+            deferredModeParams.tileUrlCB(deferredModeParams.mC, deferredModeParams.view, deferredModeParams)
+            deferredModeParams.deferred.resolve deferredModeParams.tileUrl
+          else
+            console.log('TODO: _getTileFile - if this is logged then loadQueueEntry-check is necessary')
+        #else
+        #  deferredModeParams.prefetchTileUrlCB(deferredModeParams.mC, xYZ, deferredModeParams.view.subdomain, deferredModeParams)
       )
 
   storeTile: (xYZ, data, promise = null) ->
     if promise != null
       # @see getTile
       unless @_tileLoadQueue[StorageController.storeKey(xYZ)]?
-        @_tileLoadQueue[StorageController.storeKey(xYZ)] = promise
+        @_tileLoadQueue[StorageController.storeKey(xYZ)] = { promise: promise, storeFile: true }
       else
         console.log('storeTile - promise for '+StorageController.storeKey(xYZ)+' already stored in queue ...')
       return promise
@@ -202,20 +231,21 @@ class window.Comm.StorageController
     storeKey = StorageController.storeKey(xYZ)
     stored = @_tileLoadQueue[storeKey]
     if stored?
-      console.log('stored in queue: '+storeKey); 
+      console.log('getTile - stored in queue: '+storeKey); 
       #return this._result storeKey, stored
-      return stored
+      return stored.promise
 
     if StorageController.isFileBased()
+      console.log('getTile - '+storeKey); 
       # for file-API works asynchronously we have to always promise file - given that tile-loadimg-logic
       # is also handled here
       #deferredModeParams.deferred = $.Deferred()
       this._getTileFile xYZ, deferredModeParams
-      filePromise = deferredModeParams.deferred.promise()
+      deferredModeParams.promise = deferredModeParams.deferred.promise()
       # @see storeTile
-      @_tileLoadQueue[storeKey] = filePromise
-      filePromise
-      #null
+      @_tileLoadQueue[storeKey] = { promise: deferredModeParams.promise, storeFile: true }
+      #deferredModeParams.promise
+      null
 # this was required in mixed mode (localStorage/file) when fs was not ready but images already started load
 #    else if deferredModeParams != null
 #      #deferredModeParams.tileUrlCB(deferredModeParams.mC, deferredModeParams.view, deferredModeParams)

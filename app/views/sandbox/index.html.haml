@@ -7,11 +7,11 @@
         Upload
       %button{value: 'stats', onclick: 'toggleHomeTab(this)', class: 'ui-btn ui-corner-all'}
         Stats
-    .container.messages
+    .messages
       #upload_error
       #upload_message
       #upload_progress
-    .container#administration
+    #administration
       %span.whoami{style: 'float :left; padding: 13px 0px 13px 0px;'}
         - if user_signed_in?
           = link_to t('auth.whoami', username: tmp_user().username), change_username_path, data: { remote: "true", format: :js }
@@ -26,7 +26,7 @@
           = link_to t('auth.sign_in'), '#sign_in_modal', popup_params
         .reg-link{style: "display: #{user_signed_in? ? 'none' : 'block'}; margin-left: 20px;"}
           = link_to t('auth.sign_up'), '#sign_up_modal', popup_params.merge(style: 'margin-left: 20px;')
-      .container
+      %div
         = form_for tmp_user, remote: true, method: :patch, :html => { :id => "settings_form" } do |f|
           .user_settings{style: 'padding: 0px 0px 20px 0px;'}
             %span{style: 'float: left; padding: 0px 10px 0px 0px;'}
@@ -39,6 +39,7 @@
     = render partial: '/sandbox/stats.mobile'
 - else
   #content_home
+    = render partial: '/users/settings'
     = render partial: '/shared/uploads', locals: {resource: Upload.new, resource_name: :upload}
 
 %table#follow_templates{style: 'display: none;'}

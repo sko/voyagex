@@ -5,6 +5,7 @@
 class window.VoyageX.MapControl
 
   @_SINGLETON = null
+#  @_COUNT = 0
 
   # zooms msut be sorted from lowest (f.ex. 1) to highest (f.ex. 16)
   constructor: (cacheStrategy, mapOptions, offlineZooms, online) ->
@@ -26,7 +27,7 @@ class window.VoyageX.MapControl
     @_map.whenReady () ->
         console.log 'map is ready ...'
         # TODO: view missing for first load
-        #mC = VoyageX.MapControl._instance()
+        #mC = VoyageX.MapControl.instance()
         #readyImage = mC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS
 
   map: () ->
@@ -74,7 +75,7 @@ class window.VoyageX.MapControl
   curTileWidthToMeters: () ->
     this.tileWidthToMeters(@_map.getZoom())
 
-  @_instance: () ->
+  @instance: () ->
     @_SINGLETON
 
   # provides cached tiles
@@ -84,23 +85,32 @@ class window.VoyageX.MapControl
   # plugged in via https://github.com/ismyrnow/Leaflet.functionaltilelayer
   # cat ../tmp/chrome.log | sed "s/.\\+\\?: //" | sort
   @drawTile: (view) ->
-    mC = VoyageX.MapControl._instance()
+#    MapControl._COUNT += 1
+#    unless MapControl._COUNT <= 1
+#      return VoyageX.TILE_URL_TEMPLATE.replace('{z}', view.zoom).replace('{y}', view.tile.row).replace('{x}', view.tile.column).replace('{s}', view.subdomain)
+    mC = VoyageX.MapControl.instance()
     storeKey = Comm.StorageController.storeKey([view.tile.column, view.tile.row, view.zoom])
     if Comm.StorageController.isFileBased()
-      deferredModeParams = { tileUrlCB: VoyageX.MapControl.tileUrl, mC: mC, view: view, deferred: $.Deferred() }
-      #deferredModeParams = { tileUrlCB: VoyageX.MapControl.tileUrl, mC: mC, view: view }
+      console.log 'drawTile - ........................................'+storeKey
+      deferredModeParams = { tileUrlCB: VoyageX.MapControl.tileUrl,\
+                             prefetchTileUrlCB: VoyageX.MapControl.loadAndPrefetch,\
+                             mC: mC,\
+                             view: view,\
+                             prefetchZoomLevels: true,\
+                             save: true,\
+                             deferred: $.Deferred(),\
+                             promise: null }
       Comm.StorageController.instance().getTile [view.tile.column, view.tile.row, view.zoom], deferredModeParams
-      #deferredModeParams.deferred.promise()
+      deferredModeParams.promise
     else
       # use localStorage
       stored = if view.zoom in mC._offlineZooms then Comm.StorageController.instance().getTile [view.tile.column, view.tile.row, view.zoom] else null
-      # sko_13122014 @oldscool: if stored == null || !(geoJSON = stored[storeKey])?
-      if stored == null || !(geoJSON = stored)?
+      #if stored == null || !(geoJSON = stored)?
+      unless stored?
         VoyageX.MapControl.tileUrl mC, view
       else
         console.log 'using cached tile: '+storeKey
-        # sko_13122014 @oldscool: geoJSON.properties.data
-        geoJSON
+        stored
 
   @tileUrl: (mC, view, deferredModeParams = null) ->
     tileUrl = VoyageX.TILE_URL_TEMPLATE
@@ -117,7 +127,7 @@ class window.VoyageX.MapControl
         if mC._map?
           readyImage = mC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS, deferredModeParams
         else
-          readyImage = mC._loadAndPrefetch [view.tile.column, view.tile.row, view.zoom], view.subdomain, deferredModeParams
+          readyImage = MapControl.loadAndPrefetch mC, [view.tile.column, view.tile.row, view.zoom], view.subdomain, deferredModeParams
       else
         readyImage = tileUrl
         if deferredModeParams != null
@@ -130,14 +140,17 @@ class window.VoyageX.MapControl
         deferredModeParams.tileUrl = readyImage
       readyImage
 
-  _loadAndPrefetch: (xYZ, viewSubdomain, deferredModeParams = null) ->
+  @loadAndPrefetch: (mC, xYZ, viewSubdomain, deferredModeParams = null) ->
     tileUrl = VoyageX.TILE_URL_TEMPLATE
               .replace('{z}', xYZ[2])
               .replace('{y}', xYZ[1])
               .replace('{x}', xYZ[0])
               .replace('{s}', viewSubdomain)
-    readyImage = this._loadReadyImage tileUrl, xYZ, (if deferredModeParams!=null then deferredModeParams.deferred else null)
-    this._prefetchZoomLevels xYZ, viewSubdomain, deferredModeParams
+    readyImage = mC._loadReadyImage tileUrl, xYZ, (if deferredModeParams!=null then deferredModeParams.deferred else null)
+    if deferredModeParams == null || deferredModeParams.prefetchZoomLevels
+      unless deferredModeParams == null
+        deferredModeParams.prefetchZoomLevels = false
+      mC._prefetchZoomLevels xYZ, viewSubdomain, deferredModeParams
     readyImage
 
   _prefetchZoomLevels: (xYZ, viewSubdomain, deferredModeParams = null) ->
@@ -167,18 +180,17 @@ class window.VoyageX.MapControl
                   xYZ[1]+addToY,
                   xYZ[2]]
         storeKey = Comm.StorageController.storeKey([curXYZ[0], curXYZ[1], curXYZ[2]])
-        geoJSON = Comm.StorageController.instance().getTile curXYZ, deferredModeParams
-       #unless geoJSON? && geoJSON[storeKey]?
-        unless geoJSON? && geoJSON[storeKey]? && (deferredModeParams==null)
+        stored = Comm.StorageController.instance().getTile curXYZ, deferredModeParams
+        #unless stored? && (deferredModeParams==null || !deferredModeParams.save)
+        unless stored?
           console.log 'prefetching area tile: '+storeKey
-          readyImage = this._loadAndPrefetch curXYZ, view.subdomain, deferredModeParams
+          readyImage = MapControl.loadAndPrefetch MapControl.instance(), curXYZ, view.subdomain, deferredModeParams
           if addToX == 0 and addToY == 0
             centerTile = readyImage
         else
           console.log 'area tile already cached: '+storeKey
           if addToX == 0 and addToY == 0
-            # sko_13122014 @oldscool: centerTile = geoJSON[storeKey].properties.data
-            centerTile = geoJSON
+            centerTile = stored
     centerTile
 
   # fetch all tiles for next higher zoom-level.
@@ -205,8 +217,10 @@ class window.VoyageX.MapControl
                 n]
       if n in @_offlineZooms
         parentStoreKey = curXYZ[2]+'/'+curXYZ[0]+'/'+curXYZ[1]
-        geoJSON = Comm.StorageController.instance().getTile curXYZ, deferredModeParams
-        unless geoJSON? && geoJSON[parentStoreKey]?
+        stored = Comm.StorageController.instance().getTile curXYZ, deferredModeParams
+        #unless stored? && stored[parentStoreKey]?
+        #unless stored? && (!stored.storeFile)
+        unless stored?
           parentTileUrl = VoyageX.TILE_URL_TEMPLATE
                           .replace('{z}', curXYZ[2])
                           .replace('{y}', curXYZ[1])
@@ -227,13 +241,13 @@ class window.VoyageX.MapControl
       base64ImgDataUrl = mC._toBase64 $('#tile_canvas')[0], this # event.target
       unless Comm.StorageController.isFileBased()
         Comm.StorageController.instance().storeImage xYZ, base64ImgDataUrl
+        cacheStats()
       else
         # actually we could store base64 in file as wall
         #Comm.StorageController.instance().storeImage xYZ, base64ImgDataUrl
         $('#tile_canvas')[0].toBlob((blob) ->
             Comm.StorageController.instance().storeImage xYZ, blob
           )
-      cacheStats()
       deferred.resolve(base64ImgDataUrl)
     img.src = imgUrl
     if promise

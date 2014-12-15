@@ -87,8 +87,13 @@ jQuery ->
   $(document).on 'click', '#media_input_stop_btn', (event) ->
     stopCurrentVideo()
     if $.mobile
-      $("#media_input_panel").panel("close")
-      $('button[value=camera]').focus()
+      closeMediaInputPanel()
+
+  closeMediaInputPanel = () ->
+    $("#media_input_panel").panel("close")
+    $('button[value=camera]').focus()
+    # reopen panel
+    $('#open_upload_data_btn').click()
 
   stopCurrentVideo = () ->
     mediaInputVideo[0].pause()
@@ -106,8 +111,7 @@ jQuery ->
       #mediaInputImage.attr('src', mediaInputCanvas[0].toDataURL('image/webp'))
       $('#fileupload').attr('value', mediaInputImage[0].src)
       if $.mobile
-        $("#media_input_panel").panel("close")
-        $('button[value=camera]').focus()
+        closeMediaInputPanel()
 
   takePhoto = () ->
     if (Modernizr.getusermedia) 
