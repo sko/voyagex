@@ -5,7 +5,7 @@
 class window.VoyageX.MapControl
 
   @_SINGLETON = null
-#  @_COUNT = 0
+  @_COUNT = 0
 
   # zooms msut be sorted from lowest (f.ex. 1) to highest (f.ex. 16)
   constructor: (cacheStrategy, mapOptions, offlineZooms, online) ->
@@ -78,6 +78,13 @@ class window.VoyageX.MapControl
   @instance: () ->
     @_SINGLETON
 
+  @toUrl: (xYZ, viewSubdomain) ->
+    VoyageX.TILE_URL_TEMPLATE
+      .replace('{z}', xYZ[2])
+      .replace('{y}', xYZ[1])
+      .replace('{x}', xYZ[0])
+      .replace('{s}', viewSubdomain)
+
   # provides cached tiles
   # static becaus called in context of Leaflet.functionaltilelayer
   # converts tiles to data-url: data:image/png;base64,...
@@ -86,14 +93,13 @@ class window.VoyageX.MapControl
   # cat ../tmp/chrome.log | sed "s/.\\+\\?: //" | sort
   @drawTile: (view) ->
 #    MapControl._COUNT += 1
-#    unless MapControl._COUNT <= 1
+#    unless MapControl._COUNT <= 2
 #      return VoyageX.TILE_URL_TEMPLATE.replace('{z}', view.zoom).replace('{y}', view.tile.row).replace('{x}', view.tile.column).replace('{s}', view.subdomain)
     mC = VoyageX.MapControl.instance()
     storeKey = Comm.StorageController.storeKey([view.tile.column, view.tile.row, view.zoom])
     if Comm.StorageController.isFileBased()
       console.log 'drawTile - ........................................'+storeKey
       deferredModeParams = { tileUrlCB: VoyageX.MapControl.tileUrl,\
-                             prefetchTileUrlCB: VoyageX.MapControl.loadAndPrefetch,\
                              mC: mC,\
                              view: view,\
                              prefetchZoomLevels: true,\
@@ -141,12 +147,7 @@ class window.VoyageX.MapControl
       readyImage
 
   @loadAndPrefetch: (mC, xYZ, viewSubdomain, deferredModeParams = null) ->
-    tileUrl = VoyageX.TILE_URL_TEMPLATE
-              .replace('{z}', xYZ[2])
-              .replace('{y}', xYZ[1])
-              .replace('{x}', xYZ[0])
-              .replace('{s}', viewSubdomain)
-    readyImage = mC._loadReadyImage tileUrl, xYZ, (if deferredModeParams!=null then deferredModeParams.deferred else null)
+    readyImage = mC._loadReadyImage MapControl.toUrl(xYZ, viewSubdomain), xYZ, (if deferredModeParams!=null then deferredModeParams.deferred else null)
     if deferredModeParams == null || deferredModeParams.prefetchZoomLevels
       unless deferredModeParams == null
         deferredModeParams.prefetchZoomLevels = false
@@ -180,17 +181,32 @@ class window.VoyageX.MapControl
                   xYZ[1]+addToY,
                   xYZ[2]]
         storeKey = Comm.StorageController.storeKey([curXYZ[0], curXYZ[1], curXYZ[2]])
-        stored = Comm.StorageController.instance().getTile curXYZ, deferredModeParams
-        #unless stored? && (deferredModeParams==null || !deferredModeParams.save)
-        unless stored?
-          console.log 'prefetching area tile: '+storeKey
-          readyImage = MapControl.loadAndPrefetch MapControl.instance(), curXYZ, view.subdomain, deferredModeParams
+        if Comm.StorageController.isFileBased()
+          prefetchParams = { loadTileDataCB: this._loadReadyImage,\
+                             mC: this,\
+                             view: deferredModeParams.view,\
+                             xYZ: curXYZ,\
+                             tileUrl: MapControl.toUrl(curXYZ, view.subdomain),\
+                             prefetchZoomLevels: true,\
+                             save: true,\
+                             deferred: $.Deferred(),\
+                             promise: null }
           if addToX == 0 and addToY == 0
-            centerTile = readyImage
+            Comm.StorageController.instance().loadAndPrefetchTile prefetchParams
+          else
+            Comm.StorageController.instance().prefetchTile prefetchParams
         else
-          console.log 'area tile already cached: '+storeKey
-          if addToX == 0 and addToY == 0
-            centerTile = stored
+          stored = Comm.StorageController.instance().getTile curXYZ, deferredModeParams
+         #unless stored? && (deferredModeParams==null || !deferredModeParams.loadAndPrefetch?)
+          unless stored?
+            console.log 'prefetching area tile: '+storeKey
+            readyImage = MapControl.loadAndPrefetch MapControl.instance(), curXYZ, view.subdomain, deferredModeParams
+            if addToX == 0 and addToY == 0
+              centerTile = readyImage
+          else
+            #console.log 'area tile already cached: '+storeKey
+            if addToX == 0 and addToY == 0
+              centerTile = stored
     centerTile
 
   # fetch all tiles for next higher zoom-level.
@@ -217,17 +233,22 @@ class window.VoyageX.MapControl
                 n]
       if n in @_offlineZooms
         parentStoreKey = curXYZ[2]+'/'+curXYZ[0]+'/'+curXYZ[1]
-        stored = Comm.StorageController.instance().getTile curXYZ, deferredModeParams
-        #unless stored? && stored[parentStoreKey]?
-        #unless stored? && (!stored.storeFile)
-        unless stored?
-          parentTileUrl = VoyageX.TILE_URL_TEMPLATE
-                          .replace('{z}', curXYZ[2])
-                          .replace('{y}', curXYZ[1])
-                          .replace('{x}', curXYZ[0])
-                          .replace('{s}', viewSubdomain)
-          console.log 'prefetching lower-zoom tile: '+parentStoreKey
-          readyImage = this._loadReadyImage parentTileUrl, curXYZ, (if deferredModeParams!=null then deferredModeParams.deferred else null)
+        if Comm.StorageController.isFileBased()
+          prefetchParams = { loadTileDataCB: this._loadReadyImage,\
+                             mC: this,\
+                             view: deferredModeParams.view,\
+                             xYZ: curXYZ,\
+                             tileUrl: MapControl.toUrl(curXYZ, viewSubdomain),\
+                             deferred: $.Deferred() }
+          Comm.StorageController.instance().prefetchTile prefetchParams
+        else
+          stored = Comm.StorageController.instance().getTile curXYZ, deferredModeParams
+          #unless stored? && stored[parentStoreKey]?
+          #unless stored? && (!stored.storeFile)
+          unless stored?
+            parentTileUrl = MapControl.toUrl(curXYZ, viewSubdomain)
+            console.log 'prefetching lower-zoom tile: '+parentStoreKey
+            readyImage = this._loadReadyImage parentTileUrl, curXYZ, (if deferredModeParams!=null then deferredModeParams.deferred else null)
 
   # has to be done sequentially becaus we're using one canvas for all
   _loadReadyImage: (imgUrl, xYZ, deferred = null) ->

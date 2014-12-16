@@ -17,7 +17,7 @@ class window.Comm.StorageController
     @_tileImageContentType = 'image/webp'
     @_grantedBytes = 0
     @_dirReaders = {}
-    requestedBytes = Math.pow(2, 24) # 16MB
+    requestedBytes = Math.pow(2, 26) # 64MB
     try
       fileAPISupport = `navigator.webkitPersistentStorage !== undefined`
     catch error
@@ -59,7 +59,23 @@ class window.Comm.StorageController
   
   @isFileBased: () ->
     StorageController._FS?
-    false
+    #false
+
+  _removeDirectory: (dirName) ->
+    @_dirReaders.entry.getDirectory(dirName, {}, (dirEntry) ->
+            dirEntry.removeRecursively(() ->
+                console.log('removing directory '+dirName+' ...')
+              , (e) ->
+                console.log('error when removing directory '+dirName+': ', e)
+              )
+          , (e) ->
+              console.log('error when removing directory '+dirName+': ', e)
+          )
+
+  clearCache: () ->
+    this.delete('tiles')
+    for dirName in VoyageX.MapControl.instance()._offlineZooms
+      this._removeDirectory dirName
 
   _saveFile: (xYZ, fileIdx, dirReader, data) ->
     sC = StorageController.instance()
@@ -146,7 +162,7 @@ class window.Comm.StorageController
     else if data != null
       this._saveFile xYZ, 1, parentDirReader, data
   
-  _getTileFile: (xYZ, deferredModeParams, firstCall = true) ->
+  _getTileFile: (xYZ, prefetchMode, deferredModeParams, firstCall = true) ->
     path = '/'+xYZ[2]+'/'+xYZ[0]+'/'+xYZ[1]
     @_dirReaders.entry.getFile(path, {}, (fileEntry) ->
         console.log('found file: '+path)
@@ -171,7 +187,7 @@ class window.Comm.StorageController
           if firstCall
             # check one more time if other thread stored file
             #console.log('_getTileFile - no such file / trying one more READ: '+path)
-            return StorageController.instance()._getTileFile xYZ, deferredModeParams, false
+            return StorageController.instance()._getTileFile xYZ, prefetchMode, deferredModeParams, false
           else
             console.log('_getTileFile - no such file: '+path)
         else
@@ -180,18 +196,52 @@ class window.Comm.StorageController
         #if deferredModeParams.callBack
         #  deferredModeParams.callBack = false
         #  # TODO
-        if xYZ[2] == deferredModeParams.view.zoom
+        #if xYZ[2] == deferredModeParams.view.zoom
+        if prefetchMode == 0
           # one mor check for asynchronous request
           loadQueueEntry = StorageController.instance()._tileLoadQueue[StorageController.storeKey(xYZ)]
           unless loadQueueEntry? && (!loadQueueEntry.storeFile)
-            loadQueueEntry.storeFile = false
+            #loadQueueEntry.storeFile = false
             deferredModeParams.tileUrlCB(deferredModeParams.mC, deferredModeParams.view, deferredModeParams)
             deferredModeParams.deferred.resolve deferredModeParams.tileUrl
           else
             console.log('TODO: _getTileFile - if this is logged then loadQueueEntry-check is necessary')
-        #else
-        #  deferredModeParams.prefetchTileUrlCB(deferredModeParams.mC, xYZ, deferredModeParams.view.subdomain, deferredModeParams)
+        else
+          if prefetchMode == 1
+            VoyageX.MapControl.loadAndPrefetch deferredModeParams.mC, xYZ, deferredModeParams.view.subdomain, deferredModeParams
+          else
+            deferredModeParams.mC._loadReadyImage deferredModeParams.tileUrl, xYZ
       )
+
+  _checkedTileLoadQueue: (xYZ, checkStoreFile, callback) ->
+    storeKey = StorageController.storeKey(xYZ)
+    stored = @_tileLoadQueue[storeKey]
+    if stored?
+      if checkStoreFile && stored.storeFile
+        promise = callback(stored)
+        stored.storeFile = false
+      #console.log('getTile - stored in queue: '+storeKey); 
+      #return this._result storeKey, stored
+      return stored.promise
+    queueEntry = { promise: null, storeFile: true }
+    callback(queueEntry)
+    # @see storeTile
+    @_tileLoadQueue[storeKey] = queueEntry
+
+  loadAndPrefetchTile: (prefetchParams) ->
+    sC = this
+    this._checkedTileLoadQueue prefetchParams.xYZ, true, (queueEntry) ->
+        sC._getTileFile prefetchParams.xYZ, 1, prefetchParams
+        prefetchParams.promise = prefetchParams.deferred.promise()
+        queueEntry.promise = prefetchParams.promise
+
+  prefetchTile: (prefetchParams) ->
+    sC = this
+    this._checkedTileLoadQueue prefetchParams.xYZ, true, (queueEntry) ->
+        sC._getTileFile prefetchParams.xYZ, 2, prefetchParams
+        prefetchParams.promise = prefetchParams.deferred.promise()
+        queueEntry.promise = prefetchParams.promise
+        queueEntry.storeFile = false
 
   storeTile: (xYZ, data, promise = null) ->
     if promise != null
@@ -228,29 +278,28 @@ class window.Comm.StorageController
       localStorage.setItem 'comm.tiles.tileMeta', JSON.stringify(@_tileMeta)
   
   getTile: (xYZ, deferredModeParams = null) ->
-    storeKey = StorageController.storeKey(xYZ)
-    stored = @_tileLoadQueue[storeKey]
-    if stored?
-      console.log('getTile - stored in queue: '+storeKey); 
-      #return this._result storeKey, stored
-      return stored.promise
-
     if StorageController.isFileBased()
-      console.log('getTile - '+storeKey); 
-      # for file-API works asynchronously we have to always promise file - given that tile-loadimg-logic
-      # is also handled here
-      #deferredModeParams.deferred = $.Deferred()
-      this._getTileFile xYZ, deferredModeParams
-      deferredModeParams.promise = deferredModeParams.deferred.promise()
-      # @see storeTile
-      @_tileLoadQueue[storeKey] = { promise: deferredModeParams.promise, storeFile: true }
-      #deferredModeParams.promise
+      sC = this
+      this._checkedTileLoadQueue xYZ, false, (queueEntry) ->
+          console.log('getTile - '+StorageController.storeKey(xYZ)); 
+          # for file-API works asynchronously we have to always promise file - given that tile-loadimg-logic
+          # is also handled here
+          #deferredModeParams.deferred = $.Deferred()
+          sC._getTileFile xYZ, 0, deferredModeParams
+          deferredModeParams.promise = deferredModeParams.deferred.promise()
+          queueEntry.promise = deferredModeParams.promise
       null
 # this was required in mixed mode (localStorage/file) when fs was not ready but images already started load
 #    else if deferredModeParams != null
 #      #deferredModeParams.tileUrlCB(deferredModeParams.mC, deferredModeParams.view, deferredModeParams)
 #      deferredModeParams.deferred.resolve deferredModeParams.tileUrlCB(deferredModeParams.mC, deferredModeParams.view, deferredModeParams)
     else
+      storeKey = StorageController.storeKey(xYZ)
+      stored = @_tileLoadQueue[storeKey]
+      if stored?
+        #console.log('getTile - stored in queue: '+storeKey); 
+        #return this._result storeKey, stored
+        return stored.promise
       stored = @_tileDB['comm.tiles.'+storeKey]
       unless stored?
 #        stored = @_tileLoadQueue[storeKey]

@@ -160,5 +160,5 @@ jQuery ->
       $(this).selectRange(0) 
     
   $(document).on 'click', '#clear_cache', (event) ->
-    Comm.StorageController.instance().delete('tiles')
+    Comm.StorageController.instance().clearCache()
     cacheStats()
