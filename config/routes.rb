@@ -13,6 +13,9 @@ VoyageX::Application.routes.draw do
   post '/uploads_base64', to: 'uploads#create_from_base64', as: :uploads_base64
   put '/upload_base64/:id', to: 'uploads#update_from_base64', as: :upload_base64
 
+  post '/uploads', to: 'uploads#create', as: :poi_notes
+  put '/uploads/:id', to: 'uploads#update', as: :poi_note
+
   get '/photo_nav/:lat/:lng', to: 'sandbox#photo_nav', as: :photo_nav, :constraints => { :lat => /([0-9]+\.[0-9]+|:[a-z]+)/,
                                                                                          :lng => /([0-9]+\.[0-9]+|:[a-z]+)/ }
   match '/change_username', to: 'users#change_details', as: :change_username, via: [:get, :post]

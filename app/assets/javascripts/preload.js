@@ -10,6 +10,8 @@
 //= require buffer-loader
 //= require preload/util
 //= require storage_strategy
+//= require storage/model
+//= require template_helper
 //= require map_control
 //= require marker_manager
 //= require media_manager

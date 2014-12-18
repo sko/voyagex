@@ -69,8 +69,10 @@ class UploadsController < ApplicationController
     @upload = Upload.find(params[:upload_id])
     if params[:text].present?
       @upload.comments.create(user: user, text: params[:text])
+      render "shared/upload_comments", layout: false, formats: [:js]
+    else
+      render json: @upload.to_json
     end
-    render "shared/upload_comments", layout: false, formats: [:js]
   end
 
   def csrf

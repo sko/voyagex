@@ -2,5 +2,5 @@
   = hidden_field_tag 'upload_comment[text]', '', id: 'upload_comment_text'
   %span{style: 'float: left;'}
     = f.file_field 'file', id: 'fileupload'
-  %button.show-page-loading-msg{id: "upload_button", data: {type: 'json', theme: 'a', textonly: 'false', textvisible: 'true', msgtext: 'Loading'}}
+  %button.show-page-loading-msg{id: 'upload_button', data: {type: 'json', theme: 'a', textonly: 'false', textvisible: 'true', msgtext: 'Loading'}}
     #{t('uploads.upload').html_safe}

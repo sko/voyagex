@@ -1,3 +1,4 @@
+/@see _comment_data.html-haml: almost identical
 #content_uploads
   %input{type: 'radio', name: 'upload_type', value: 'camera', checked: true, onclick: 'toggleUploadType(this)'}
     #{t('uploads.select_camera').html_safe} 
@@ -11,7 +12,7 @@
     .field
       %span{style: 'float: left; padding-right: 20px;'}
         #{t('uploads.comment')}
-      = text_area_tag 'upload_comment_text', '', id: 'upload_comment'
+      = text_area_tag 'upload_comment[text]', '', id: 'data_upload_comment'
     .upload_data_container#upload_cam_container
       = render partial: '/uploads/form/camera_data', locals: {resource: resource}
     .upload_data_container#upload_file_container

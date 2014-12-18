@@ -1,17 +1,7 @@
+/ @see layouts/application.mobile.html.haml
 /= render partial: '/shared/upload_data.mobile', locals: {resource: Upload.new, resource_name: :upload}
 
-/= render partial: '/shared/upload_data.mobile', locals: {resource: Upload.new, resource_name: :upload}
+/ @see layouts/application.mobile.html.haml
+/= render partial: '/uploads/upload_comment.mobile', locals: {resource: Upload.new, resource_name: :upload}
 
-#upload_comment_conrols{data: {role: 'popup', 'overlay-theme' => 'a', theme: 'a'}}
-  %div{data: {role: 'header'}}
-    %h4.ui-title #{t('uploads.add_comment')}
-  %div{role: 'main'}
-    = text_area_tag 'upload_comment[text]', '', id: 'add_upload_comment_text'
-    .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: 'add_upload_comment_btn'}
-      .ui-button-text
-        #{t('uploads.add_comment_submit')}
-    %a{ id: 'upload_comment_cancel', :href => "#", :class => "btn btn-sm", data: { role: 'button', rel: 'back' } } #{t('cancel')}
-      
 %iframe{id: "upload_target", name: "upload_target", style: "display:none;"}
-
-

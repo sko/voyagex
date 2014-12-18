@@ -1,0 +1,23 @@
+<% environment.context_class.instance_eval { include Rails.application.routes.url_helpers } %>
+
+class window.Storage.Model
+ 
+  @_SINGLETON = null
+
+  constructor: () ->
+    Model._SINGLETON = this
+
+  loadPoiNotes: (uploadId, callback) ->
+    $.ajax
+      type: 'GET'
+      dataType: 'json'
+      url: '<%= upload_comments_path(upload_id: '') %>'+uploadId
+    .done (msg) ->
+        callback msg
+    .fail (jqXHR, textStatus) ->
+        # get from localStorage
+        console.log('TODO: maybe get from local storage')
+        #alert('TODO: handle registration failure...')
+
+  @instance: () ->
+    Model._SINGLETON

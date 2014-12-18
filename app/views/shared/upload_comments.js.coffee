@@ -8,4 +8,8 @@ $('#upload_comment_btn_<%= @upload.id -%>').on 'click', (event) ->
   $('#upload_comment_conrols').dialog('open')
   if ! $('#upload_comment_conrols').parent().hasClass('seethrough_panel')
     $('#upload_comment_conrols').parent().addClass('seethrough_panel')
+<% if is_mobile %>
+$('#upload_comment_container').html("<%= j render(partial: 'uploads/form/comment_data.mobile', locals: {resource: @upload, resource_name: :upload}) -%>")
+<% else %>
 $('#upload_comment_container').html("<%= j render(partial: 'uploads/form/comment_data', locals: {resource: @upload, resource_name: :upload}) -%>")
+<% end %>

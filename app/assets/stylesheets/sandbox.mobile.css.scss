@@ -20,6 +20,11 @@
   filter: alpha(opacity=90); /* For IE8 and earlier */
 }
 
+#upload_comment_panel {
+  opacity: 0.9;
+  filter: alpha(opacity=90); /* For IE8 and earlier */
+}
+
 .ctrls_bar {
   vertical-align: center;
 }

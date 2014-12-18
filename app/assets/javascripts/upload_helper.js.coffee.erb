@@ -21,7 +21,6 @@ jQuery ->
     $("#location_latitude").val(selLatLng[0])
     $("#location_longitude").val(selLatLng[1])
     $("#upload_comment_text").val($("#upload_comment").val())
-    #$("#user_id").val($("#current_user_id").val())
     $("#upload_form").submit()
 
   uploadPhoto64 = () ->
@@ -112,11 +111,16 @@ jQuery ->
     if $.mobile
       closeMediaInputPanel()
 
+  openCommentForm = () ->
+    $("#open_upload_comment_btn").click()
+
   closeMediaInputPanel = () ->
     $("#media_input_panel").panel("close")
     $('button[value=camera]').focus()
     # reopen panel
+    # TODO: which one?
     $('#open_upload_data_btn').click()
+    $('#open_upload_comment_btn').click()
 
   stopCurrentVideo = () ->
     mediaInputVideo[0].pause()

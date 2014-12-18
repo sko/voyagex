@@ -1,6 +1,7 @@
 //= require jquery
 //= require jquery_ujs
 //= require jquery-ui
+//= require jquery.mobile
 //= require swiper
 //= require leaflet
 //= require Leaflet.LimitZoom
@@ -9,10 +10,11 @@
 //= require buffer-loader
 //= require preload/util
 //= require storage_strategy
+//= require storage/model
+//= require template_helper
 //= require map_control
 //= require marker_manager
 //= require media_manager
-//= require jquery.mobile
 //= require client_state
 //= require upload_helper
 //= require main

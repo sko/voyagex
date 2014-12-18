@@ -3,18 +3,18 @@
     .modal-header
       %h4.modal-title #{t('uploads.upload').html_safe}
     .modal-body
-      = render partial: '/shared/upload_data', locals: {resource: Upload.new, resource_name: :upload}
+      #poi_note_input
+      /= render partial: '/shared/upload_data', locals: {resource: Upload.new}
 
 .modal
   .modal-dialog#upload_comment_conrols
     .modal-header
       %h4.modal-title #{t('uploads.add_comment').html_safe}
     .modal-body
-      .upload_data_container#upload_comment_container
-      /.ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: 'add_upload_comment_btn'}
-      /  .ui-button-text
-      /    #{t('uploads.add_comment_submit').html_safe}
+      #upload_comment_container
       
+= render partial: '/uploads/form/tmpl', locals: {poi_note: PoiNote.new}
+
 %iframe{id: "upload_target", src: csrf_path, name: "upload_target", style: "display:none;"}
 
 

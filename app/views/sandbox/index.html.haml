@@ -1,12 +1,10 @@
 - if is_mobile
   #content_home{role: 'main'}
-    .upload_source_select{data: {role: 'controlgroup', type: 'horizontal'}}
-      %button{value: 'administration',onclick: 'toggleHomeTab(this)', class: 'ui-btn ui-corner-all'}
-        Administration
-      %button{value: 'upload', onclick: 'toggleHomeTab(this)', class: 'ui-btn ui-corner-all'}
-        Upload
-      %button{value: 'stats', onclick: 'toggleHomeTab(this)', class: 'ui-btn ui-corner-all'}
-        Stats
+    %fieldset.upload_source_select{data: {role: 'controlgroup', type: 'horizontal'}}
+      %input{type: 'radio', id: 'home_administration', name: 'home', value: 'administration', checked: true, onclick: 'toggleHomeTab(this)'}
+      = label_tag 'home_administration', 'Administration'
+      %input{type: 'radio', id: 'home_stats', name: 'home', value: 'stats', onclick: 'toggleHomeTab(this)'}
+      = label_tag 'home_stats', 'Stats'
     .messages
       #upload_error
       #upload_message

@@ -63,8 +63,9 @@ jQuery ->
       if ! $('#upload_data_conrols').parent().hasClass('seethrough_panel')
         $('#upload_data_conrols').parent().addClass('seethrough_panel')
 
-  window.panUpload = (upload_id) ->
-    getUploadComments(upload_id)
+  window.panUpload = (uploadId) ->
+    #getUploadComments(upload_id)
+    Storage.Model.instance().loadPoiNotes uploadId, VoyageX.TemplateHelper.openPOINoteInput
     if window.isMobile()
       $("#photo_nav_panel").panel("close")
 
@@ -80,11 +81,11 @@ jQuery ->
   window.zoomEnd = (e) ->
     $('#zoom_level').html('<span style="color:white;">zoom: '+VoyageX.Main.map().getZoom()+'</span>')
 
-  getUploadComments = (upload_id) ->
-    $.ajax
-      type: 'GET'
-      dataType: 'script'
-      url: '<%= upload_comments_path(upload_id: '') %>'+upload_id
+#  getUploadComments = (upload_id) ->
+#    $.ajax
+#      type: 'GET'
+#      dataType: 'script'
+#      url: '<%= upload_comments_path(upload_id: '') %>'+upload_id
 
   window.setSelectedPositionLatLng = (marker, lat, lng, address) ->
     if marker == null
@@ -123,6 +124,9 @@ jQuery ->
         if window.isMobile()
           $('#open_upload_data_btn').click()
         else
+          poiNoteInputHtml = VoyageX.TemplateHelper.poiNoteInputHtml()
+          $('#poi_note_input').html(poiNoteInputHtml)
+          $('#poi_note_input').css('display', 'block')
           $('#upload_data_conrols').dialog('open')
           if ! $('#upload_data_conrols').parent().hasClass('seethrough_panel')
             $('#upload_data_conrols').parent().addClass('seethrough_panel')

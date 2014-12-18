@@ -7,12 +7,14 @@ class window.VoyageX.Main
   @_MAP_CONTROL = null
   @_MARKER_MANAGER = null
   @_COMM_CHANNELS = ['system', 'talk', 'map_events', 'uploads']
+  @_STORAGE_MODEL = null
 
   constructor: (userId, cacheStrategy, view, mapOptions, offlineZooms, online) ->
     Main._SINGLETON = this
     @_initState = 0
     @_view = view
     @_comm = null
+    @_STORAGE_MODEL = new Storage.Model()
     $(window.document).ready () ->
         Main.instance()._init userId, cacheStrategy, view, mapOptions, offlineZooms, online
 
@@ -122,6 +124,9 @@ class window.VoyageX.Main
 
   @markerManager: () ->
     Main._MARKER_MANAGER
+
+  @storage: () ->
+    Main._STORAGE_MODEL
 
   @instance: () ->
     Main._SINGLETON
