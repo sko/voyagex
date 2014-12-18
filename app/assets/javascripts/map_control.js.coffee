@@ -5,7 +5,7 @@
 class window.VoyageX.MapControl
 
   @_SINGLETON = null
-  @_COUNT = 0
+#  @_COUNT = 0
 
   # zooms msut be sorted from lowest (f.ex. 1) to highest (f.ex. 16)
   constructor: (cacheStrategy, mapOptions, offlineZooms, online) ->

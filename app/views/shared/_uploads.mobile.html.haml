@@ -7,7 +7,6 @@
     %h4.ui-title #{t('uploads.add_comment')}
   %div{role: 'main'}
     = text_area_tag 'upload_comment[text]', '', id: 'add_upload_comment_text'
-    = hidden_field_tag 'upload[id]', '', id: 'add_upload_comment_upload_id'
     .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: 'add_upload_comment_btn'}
       .ui-button-text
         #{t('uploads.add_comment_submit')}

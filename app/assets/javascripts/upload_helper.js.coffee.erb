@@ -20,24 +20,47 @@ jQuery ->
     selLatLng = getSelectedPositionLatLng()
     $("#location_latitude").val(selLatLng[0])
     $("#location_longitude").val(selLatLng[1])
-    $("#user_id").val($("#current_user_id").val())
+    $("#upload_comment_text").val($("#upload_comment").val())
+    #$("#user_id").val($("#current_user_id").val())
     $("#upload_form").submit()
 
   uploadPhoto64 = () ->
     selLatLng = getSelectedPositionLatLng()
     fileContentType = $('#media_input_current').attr('src').match(/^data:([^;]+)/)[1]
     fileData = $('#media_input_current').attr('src').replace(/^data:image\/.+?base64,/,'')
+    data = { location: { latitude: selLatLng[0], longitude: selLatLng[1] },\
+             file_comment: $('#upload_comment').val(),\
+             file_data: fileData,\
+             file_content_type: fileContentType }
+    uploadIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/([0-9]+)/)
+    if uploadIdMatch?
+      url = '<%= upload_base64_path(id: ':id') %>'.replace(/:id/, uploadIdMatch[1])
+      data._method = 'put'
+    else
+      url = '<%= uploads_base64_path %>'
     $.ajax
       type: 'POST'
       dataType: 'script'
-      url: '<%= json_uploads_path %>'
-      data: { _method: 'put',\
-              user_id: $('#current_user_id').val(),\
-              location_lat: selLatLng[0],\
-              location_lng: selLatLng[1],\
-              file_comment: $('#upload_comment').val(),\
-              file_data: fileData,\
-              file_content_type: fileContentType }
+      url: url
+      data: data
+
+#  $('#add_upload_comment_btn').on 'click', (event) ->
+#    upload_id = $('#add_upload_comment_upload_id').val()
+#    $.ajax
+#      type: 'POST'
+#      dataType: 'script'
+#      url: '<-%= create_upload_comment_path(upload_id: '') %>'+upload_id
+#      data: { _method: 'put',\
+#              user_id: $('#current_user_id').val(),\
+#              text: $('#add_upload_comment_text').val() }
+#    $('#add_upload_comment_text').val('')
+#    #$("#upload_comment_conrols").css('display', 'none')
+#    if window.isMobile()
+#      #if $('#upload_comment_conrols').hasClass('ui-popup-active')
+#      #  $('#upload_comment_conrols').removeClass('ui-popup-active').addClass('ui-popup-hidden')
+#      $('#upload_comment_cancel').click()
+#    else
+#      uploadCommentDialog.dialog("close")
     
   $(document).on 'click', '#upload_button', (event) ->
     uploadPhoto()

@@ -17,7 +17,7 @@ class window.Comm.StorageController
     @_tileImageContentType = 'image/webp'
     @_grantedBytes = 0
     @_dirReaders = {}
-    requestedBytes = Math.pow(2, 26) # 64MB
+    requestedBytes = 1 #Math.pow(2, 26) # 64MB
     try
       fileAPISupport = `navigator.webkitPersistentStorage !== undefined`
     catch error

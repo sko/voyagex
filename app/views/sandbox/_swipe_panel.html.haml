@@ -10,6 +10,6 @@
   -# height = (geometry.height* scale + 0.49).round
   -# scroll_width += width
   -#%span.swiper-slide{data: {id: upload.id, address: upload.location.address}}
-  %span.swiper-slide{onclick: 'photoClicked({clickedSlide: this})', data: {id: upload.id, address: upload.location.address}}
+  %span.swiper-slide{onclick: 'photoClicked({clickedSlide: this})', data: {id: upload.id, address: upload.poi_note.poi.location.address}}
     = image_tag upload.file.url, style: "height:#{max_height.to_i}px;"
 -# swiper_style = "width: #{max_width}px; height: #{max_height.to_i}px;"

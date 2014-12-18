@@ -1,5 +1,3 @@
-/= render partial: '/shared/upload_data', locals: {resource: Upload.new, resource_name: :upload}
-
 .modal
   .modal-dialog#upload_data_conrols
     .modal-header
@@ -12,11 +10,10 @@
     .modal-header
       %h4.modal-title #{t('uploads.add_comment').html_safe}
     .modal-body
-      = text_area_tag 'upload_comment[text]', '', id: 'add_upload_comment_text'
-      = hidden_field_tag 'upload[id]', '', id: 'add_upload_comment_upload_id'
-      .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: 'add_upload_comment_btn'}
-        .ui-button-text
-          #{t('uploads.add_comment_submit').html_safe}
+      .upload_data_container#upload_comment_container
+      /.ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: 'add_upload_comment_btn'}
+      /  .ui-button-text
+      /    #{t('uploads.add_comment_submit').html_safe}
       
 %iframe{id: "upload_target", src: csrf_path, name: "upload_target", style: "display:none;"}
 

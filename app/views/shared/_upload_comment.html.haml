@@ -1,2 +1,11 @@
-.upload_comment{'data-index' => i}
-  #{comment.user.username}: #{comment.text}
+.upload_comment{style: 'vertical-align: top;', data: {index: i}}
+  %tr
+    %td{style: 'vertical-align: top;'}
+      /- if comment.upload != @upload
+      - if i == 0
+        = upload_entity_to_view @upload
+      - else
+        = comment_attachment_to_view comment
+    %td{style: 'width: 10px;'}
+    %td{style: 'vertical-align: top;'}
+      #{comment.user.username}: #{comment.text}

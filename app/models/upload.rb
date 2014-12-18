@@ -1,20 +1,22 @@
 class Upload < ActiveRecord::Base
-  belongs_to :user
-  belongs_to :location
-  has_many :comments, class_name: 'UploadComment', inverse_of: :upload
+  #belongs_to :user
+  belongs_to :poi_note
+  belongs_to :entity, polymorphic: true
+  #has_many :comments, class_name: 'UploadComment', inverse_of: :upload
+  #has_one :attached_to, class_name: 'UploadComment', inverse_of: :attachment
 
-  has_attached_file :file,
-                    url: '/assets/:attachment/:id/:style/:filename'
+  validates :entity, presence: true
+  validates_associated :entity
+  
+  def file
+    entity.file
+  end
 
-  validates_attachment :file, presence: true
-  validates_attachment_content_type :file, content_type: ["image/jpg", "image/jpeg", "image/png", "image/gif", "image/webp", "application/octet-stream"]
-
-  def set_base64_file file_json, content_type, file_name
-    StringIO.open(Base64.decode64(file_json)) do |data|
-      data.class.class_eval { attr_accessor :original_filename, :content_type }
-      data.original_filename = file_name
-      data.content_type = content_type
-      self.file = data
+  def build_entity content_type, build_params = {}
+    case content_type.match(/^[^\/]+/)[0]
+    when 'image'
+      self.entity = UploadEntity::Mediafile.new(build_params.merge!(upload: self))
+    else
     end
   end
 
@@ -27,5 +29,4 @@ class Upload < ActiveRecord::Base
       return [content_type]
     end
   end
-
 end

@@ -1,6 +1,8 @@
 .upload_comment_container
-  - @upload.comments.each_with_index do |comment, i|
-    = render partial: '/shared/upload_comment', locals: { comment: comment, i: i }
+  %table
+    = render partial: '/shared/upload_comment', locals: { comment: @upload.poi_note, i: 0 }
+    - @upload.poi_note.comments.each_with_index do |poi_note, i|
+      = render partial: '/shared/upload_comment', locals: { comment: poi_note, i: (i+1) }
 
 - bid = "upload_comment_btn_#{@upload.id}"
 - if is_mobile
@@ -10,5 +12,3 @@
   .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: bid}
     .ui-button-text
       #{t('uploads.add_comment')}
-
-  

@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20141201194126) do
+ActiveRecord::Schema.define(version: 20141216151016) do
 
   create_table "comm_peers", force: true do |t|
     t.integer  "comm_setting_id", null: false
@@ -55,24 +55,32 @@ ActiveRecord::Schema.define(version: 20141201194126) do
   add_index "locations_users", ["location_id"], name: "index_locations_users_on_location_id", using: :btree
   add_index "locations_users", ["user_id"], name: "index_locations_users_on_user_id", using: :btree
 
-  create_table "roles", force: true do |t|
-    t.string "name", null: false
-  end
-
-  create_table "upload_comments", force: true do |t|
-    t.integer  "user_id",    null: false
-    t.integer  "upload_id"
+  create_table "poi_notes", force: true do |t|
+    t.integer  "poi_id"
+    t.integer  "user_id"
     t.text     "text"
+    t.integer  "comments_on_id"
+    t.integer  "attachment_id"
     t.datetime "created_at"
     t.datetime "updated_at"
   end
 
-  add_index "upload_comments", ["upload_id"], name: "index_upload_comments_on_upload_id", using: :btree
-  add_index "upload_comments", ["user_id"], name: "index_upload_comments_on_user_id", using: :btree
+  add_index "poi_notes", ["comments_on_id"], name: "index_poi_notes_on_comments_on_id", using: :btree
+  add_index "poi_notes", ["poi_id"], name: "index_poi_notes_on_poi_id", using: :btree
+  add_index "poi_notes", ["user_id"], name: "index_poi_notes_on_user_id", using: :btree
 
-  create_table "uploads", force: true do |t|
-    t.integer  "user_id",           null: false
+  create_table "pois", force: true do |t|
     t.integer  "location_id"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "roles", force: true do |t|
+    t.string "name", null: false
+  end
+
+  create_table "upload_entities_mediafiles", force: true do |t|
+    t.integer  "upload_id"
     t.string   "file_file_name"
     t.string   "file_content_type"
     t.integer  "file_file_size"
@@ -81,8 +89,17 @@ ActiveRecord::Schema.define(version: 20141201194126) do
     t.datetime "updated_at"
   end
 
-  add_index "uploads", ["location_id"], name: "index_uploads_on_location_id", using: :btree
-  add_index "uploads", ["user_id"], name: "index_uploads_on_user_id", using: :btree
+  add_index "upload_entities_mediafiles", ["upload_id"], name: "index_upload_entities_mediafiles_on_upload_id", using: :btree
+
+  create_table "uploads", force: true do |t|
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.integer  "poi_note_id"
+    t.integer  "entity_id"
+    t.string   "entity_type"
+  end
+
+  add_index "uploads", ["entity_id", "entity_type"], name: "index_uploads_on_entity_id_and_entity_type", using: :btree
 
   create_table "users", force: true do |t|
     t.string   "username"

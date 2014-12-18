@@ -1,3 +1,5 @@
+<% environment.context_class.instance_eval { include Rails.application.routes.url_helpers } %>
+
 class window.VoyageX.Main
   
   @_SINGLETON = null
@@ -98,8 +100,13 @@ class window.VoyageX.Main
   comm: () ->
     @_comm
 
-  @instance: () ->
-    Main._SINGLETON
+  photoNav: () ->
+    $.ajax
+      type: 'GET'
+      dataType: 'script'
+      url: '<%= photo_nav_path(lat: ':lat', lng: ':lng') %>'
+           .replace(/:lat/, selectedPositionLatLng[0])
+           .replace(/:lng/, selectedPositionLatLng[1])
 
   @commChannels: () ->
     Main._COMM_CHANNELS.slice(0)
@@ -115,3 +122,6 @@ class window.VoyageX.Main
 
   @markerManager: () ->
     Main._MARKER_MANAGER
+
+  @instance: () ->
+    Main._SINGLETON

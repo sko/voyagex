@@ -66,22 +66,26 @@ module Comm
           subscription_enc_key = message['subscription'].match(/^.+?#{PEER_CHANNEL_PREFIX}([^\/]+)/)
           if subscription_enc_key.present?
             Rails.logger.debug "###### Inbound message: found subscription_enc_key '#{subscription_enc_key[1]}'"
-            user_comm_setting = CommSetting.where(current_faye_client_id: message['clientId']).first
-            if user_comm_setting.present?
-              target = CommSetting.where(channel_enc_key: subscription_enc_key[1]).first
-              # allow self-subscription so that others can communicate with me
-              granted = target.present? &&
-                        (target.current_faye_client_id == message['clientId'] ||
-                         target.comm_peers.where(peer_id: user_comm_setting.user.id, granted_by_peer: true).present?)
-              if granted
-                Rails.logger.debug "###### Inbound message: allow subscription on channel #{message['subscription']} for user #{user_comm_setting.user.id}"
+            begin
+              user_comm_setting = CommSetting.where(current_faye_client_id: message['clientId']).first
+              if user_comm_setting.present?
+                target = CommSetting.where(channel_enc_key: subscription_enc_key[1]).first
+                # allow self-subscription so that others can communicate with me
+                granted = target.present? &&
+                          (target.current_faye_client_id == message['clientId'] ||
+                           target.comm_peers.where(peer_id: user_comm_setting.user.id, granted_by_peer: true).present?)
+                if granted
+                  Rails.logger.debug "###### Inbound message: allow subscription on channel #{message['subscription']} for user #{user_comm_setting.user.id}"
+                else
+                  Rails.logger.debug "###### Inbound message: deny subscription on channel #{message['subscription']} for user #{user_comm_setting.user.id} because grant missing"
+                  block_msg = 'grant required for subscription'
+                end
               else
-                Rails.logger.debug "###### Inbound message: deny subscription on channel #{message['subscription']} for user #{user_comm_setting.user.id} because grant missing"
-                block_msg = 'grant required for subscription'
+                Rails.logger.debug "###### Inbound message: deny subscription on channel #{message['subscription']} because user not signed in"
+                block_msg = 'only subscribable for signed in users...'
               end
-            else
-              Rails.logger.debug "###### Inbound message: deny subscription on channel #{message['subscription']} because user not signed in"
-              block_msg = 'only subscribable for signed in users...'
+            rescue => e
+              Rails.logger.error "###### #{e.message}"
             end
           end
         end

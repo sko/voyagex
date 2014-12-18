@@ -21,32 +21,12 @@
       #upload_error
       #upload_message
       #upload_progress
+    .field
+      %span{style: 'float: left; padding-right: 20px;'}
+        #{t('uploads.comment')}
+      = text_area_tag 'upload_comment_text', '', id: 'upload_comment'
     .upload_data_container#upload_cam_container{style: 'width: 100%;'}
-      %span{style: 'float: left;'}
-        %button{id: 'media_input_init'}
-          #{t('uploads.start_camera')}
-        = link_to '', '#media_input_panel', id: 'media_input_panel_show'
-      /%span.btn{id: 'switch_camera'}
-      /  %img{src: '/assets/switch-camera.png', style: 'margin: 12px 0px 0px 20px;'}
-      #upload_form_ui
-        #media_input_container{style: 'display: none; text-align: center;'}
-          /%video{id: 'media_input_capture', style: 'width: 307px; height: 250px;', autoplay: true}
-          %img{id: 'media_input_current', src: ''}
-          /%canvas{id: 'media_input_display', style: 'display: none;'}
-          %br
-          /.ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: 'media_input_capture_btn'}
-          /  .ui-button-text
-          /    #{t('uploads.take_shot').html_safe}
-          /.ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: 'media_input_stop_btn'}
-          /  .ui-button-text
-          /    Stop
-          .field
-            %span{style: 'float: left;'}
-              #{t('uploads.add_comment')}
-            = text_area_tag 'upload_comment[text]', '', id: 'upload_comment'
-          .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: 'media_input_upload_btn'}
-            .ui-button-text
-              #{t('uploads.upload_photo').html_safe}
+      = render partial: '/uploads/form/camera_data.mobile', locals: {resource: Upload.new, resource_name: :upload}
     .upload_data_container#upload_file_container
       = form_for resource, remote: true, method: :put, :html => { class: nil, :multipart => true, :id => "upload_form", target: "upload_target" } do |f|
         #upload_file_controls{style: 'float: left; display: none;'}
