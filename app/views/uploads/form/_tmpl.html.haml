@@ -11,11 +11,13 @@
     .field
       %span{style: 'float: left; padding-right: 20px;'}
         #{t('uploads.comment')}
-      = text_area_tag 'upload_comment[text]', '', 'tmpl-id' => 'upload_comment'
+      = text_area_tag 'upload_comment[text]', '', id: ':remove', 'tmpl-id' => 'upload_comment'
     %div{tmpl: {id: :upload_cam_container}}
       = render partial: '/uploads/form/tmpl_camera_data', locals: {poi_note: poi_note}
     %div{tmpl: {id: :upload_file_container}}
+      %script
+        var updateActionPathTmpl = '#{upload_path(id: ':id')}';
       = form_for poi_note, remote: true, :html => { class: nil, multipart: true, 'tmpl-id' => 'upload_form', target: 'upload_target' } do |f|
         = render partial: '/uploads/form/tmpl_file_data', locals: {poi_note: poi_note, f: f}
-        = hidden_field_tag 'location[latitude]'
-        = hidden_field_tag 'location[longitude]'
+        = hidden_field_tag 'location[latitude]', '', id: ':remove', 'tmpl-id' => 'location_latitude'
+        = hidden_field_tag 'location[longitude]', '', id: ':remove', 'tmpl-id' => 'location_longitude'

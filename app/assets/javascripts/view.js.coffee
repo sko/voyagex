@@ -64,25 +64,49 @@ class window.VoyageX.View
   _uploadsCB: (upload) ->
     console.log 'got an uploads - message: ' + upload.type
     maxHeight = 100
-    scale = maxHeight / upload.file.height
-    width = Math.round(upload.file.width * scale)
+    scale = maxHeight / upload.poi_note.attachment.height
+    width = Math.round(upload.poi_note.attachment.width * scale)
     style = 'width:'+width+'px;'
-    if upload.file.type == 'image'
+    if upload.poi_note.attachment.content_type.match(/^[^\/]+/)[0] == 'image'
      #tag = '<span class="swiper-slide" onclick="panPosition('+upload.location.lat+','+upload.location.lng+',\''+upload.location.address+'\','+upload.file.id+')">'+
-      tag = '<span class="swiper-slide" onclick="panUpload('+upload.id+')">'+
-            '<img src="'+upload.file.url+'" style="'+style+'">'+
+      tag = '<span class="swiper-slide" onclick="panUpload('+upload.poi_note.attachment.id+')">'+
+            '<img src="'+upload.poi_note.attachment.url+'" style="'+style+'">'+
             '</span>'
     $("#upload_preview").prepend(tag)
     mySwiper.reInit()
     #mySwiper.resizeFix()
     for listener in View.instance()._commListeners.uploads
-      listener(upload)
+      listener(upload.poi_note)
+
+    #
+    # TODO: close uploads
+    #
+    if window.isMobile()
+#      #if $('#upload_comment_conrols').hasClass('ui-popup-active')
+#      #  $('#upload_comment_conrols').removeClass('ui-popup-active').addClass('ui-popup-hidden')
+#      $('#upload_comment_cancel').click()
+    else
+      uploadDataDialog.dialog('close')
+      uploadCommentDialog.dialog('close')
+    # ??? $('#poi_note_input').html('')
+
     if window.isMobile()
       $('a[href=#photo_nav_panel]').click()
     else
-      $('#photo_nav_panel').dialog('open')
-      if ! $('#photo_nav_panel').parent().hasClass('seethrough_panel')
-        $('#photo_nav_panel').parent().addClass('seethrough_panel')
+      popup = VoyageX.Main.markerManager().get().getPopup()
+      if popup?
+        i = $('.leaflet-popup .upload_comment').length
+        popupEntryHtml = VoyageX.TemplateHelper.poiNotePopupHtmlFromTmpl(upload.poi_note, i)
+        $('.leaflet-popup .upload_comment').last().after(popupEntryHtml)
+        #popup.update()
+      else
+        poi = upload.poi_note.poi
+        poi['notes'] = [ upload.poi_note ]
+        VoyageX.TemplateHelper.openPOINotePopup poi
+      #else
+      #  $('#photo_nav_panel').dialog('open')
+      #  if ! $('#photo_nav_panel').parent().hasClass('seethrough_panel')
+      #    $('#photo_nav_panel').parent().addClass('seethrough_panel')
 
   addListener: (channel, callBack) ->
     @_commListeners[channel].push(callBack)

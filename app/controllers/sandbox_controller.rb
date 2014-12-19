@@ -15,7 +15,7 @@ class SandboxController < ApplicationController
       limits = latLngLimits location.latitude, location.longitude, nearby_m
       limits_lat = limits[:lat_south] > limits[:lat_north] ? limits[:lat_north]..limits[:lat_south] : limits[:lat_south]..limits[:lat_north]
       limits_lng = limits[:lng_east] > limits[:lng_west] ? limits[:lng_west]..limits[:lng_east] : limits[:lng_east]..limits[:lng_west]
-      @uploads = Upload.joins(poi_note: { poi: :location }).where(locations: {latitude: limits_lat, longitude: limits_lng})
+      @uploads = Upload.joins(attached_to: { poi: :location }).where(locations: {latitude: limits_lat, longitude: limits_lng})
     else
       @uploads = []
     end
@@ -47,7 +47,7 @@ class SandboxController < ApplicationController
       limits = latLngLimits location.latitude, location.longitude, nearby_m
       limits_lat = limits[:lat_south] > limits[:lat_north] ? limits[:lat_north]..limits[:lat_south] : limits[:lat_south]..limits[:lat_north]
       limits_lng = limits[:lng_east] > limits[:lng_west] ? limits[:lng_west]..limits[:lng_east] : limits[:lng_east]..limits[:lng_west]
-      @uploads = Upload.joins(poi_note: { poi: :location }).where(locations: {latitude: limits_lat, longitude: limits_lng})
+      @uploads = Upload.joins(attached_to: { poi: :location }).where(locations: {latitude: limits_lat, longitude: limits_lng})
 #    else
 #      @uploads = []
 #    end

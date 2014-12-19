@@ -3,7 +3,7 @@
     .modal-body
       %span#current_address
         - if @uploads.present?
-          #{@uploads.first.poi_note.poi.location.address}
+          #{@uploads.first.attached_to.poi.location.address}
       #swipe_panel{style: 'text-align: center;'}
         .swiper-container
           .swiper-wrapper#upload_preview

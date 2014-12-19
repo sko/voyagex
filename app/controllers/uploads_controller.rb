@@ -6,8 +6,9 @@ class UploadsController < ApplicationController
   def create
     user = current_user || tmp_user
     poi = nearby user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
-    @upload = Upload.new poi_note: PoiNote.new(poi: poi, user: user, text: params[:upload_comment][:text])
-    @upload.build_entity params[:upload][:file].content_type, file: params[:upload][:file]
+    @upload = Upload.new(attached_to: PoiNote.new(poi: poi, user: user, text: params[:poi_note][:text]))
+    @upload.attached_to.attachment = @upload
+    @upload.build_entity params[:poi_note][:file].content_type, file: params[:poi_note][:file]
     if @upload.save
       render "shared/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
     else
@@ -38,11 +39,12 @@ class UploadsController < ApplicationController
   # adds a comment
   def update
     user = current_user || tmp_user
-    @upload = Upload.find(params[:id])
-    #comment_attachment = build_upload_base64 user, @upload.poi_note.poi, attachment_mapping
+    @poi_note = PoiNote.find(params[:id])
+    @upload = @poi_note.attachment
+    #comment_attachment = build_upload_base64 user, @upload.attached_to.poi, attachment_mapping
     comment_attachment = Upload.new
-    comment_attachment.build_entity params[:upload][:file].content_type, file: params[:upload][:file]
-    comment = @upload.poi_note.comments.create(poi: @upload.poi_note.poi, user: user, text: params[:upload_comment][:text], attachment: comment_attachment)
+    comment_attachment.build_entity params[:poi_note][:file].content_type, file: params[:poi_note][:file]
+    comment = @upload.attached_to.comments.create(poi: @upload.attached_to.poi, user: user, text: params[:poi_note][:text], attachment: comment_attachment)
     render "shared/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
     after_save
   end
@@ -52,8 +54,8 @@ class UploadsController < ApplicationController
     user = current_user || tmp_user
     @upload = Upload.find(params[:id])
     attachment_mapping = Upload.get_attachment_mapping params[:file_content_type]
-    comment_attachment = build_upload_base64 user, @upload.poi_note.poi, attachment_mapping
-    comment = @upload.poi_note.comments.create(poi: @upload.poi_note.poi, user: user, text: params[:file_comment], attachment: comment_attachment)
+    comment_attachment = build_upload_base64 user, @upload.attached_to.poi, attachment_mapping
+    comment = @upload.attached_to.comments.create(poi: @upload.attached_to.poi, user: user, text: params[:file_comment], attachment: comment_attachment)
     if attachment_mapping.size >= 2
       # restore original content-type after imagemagick did it's job
       suffix = ".#{params[:file_content_type].match(/^[^\/]+\/([^\s;,]+)/)[1]}" rescue ''
@@ -72,14 +74,14 @@ class UploadsController < ApplicationController
       render "shared/upload_comments", layout: false, formats: [:js]
     else
       poi_notes = []
-      cur_poi_note = @upload.poi_note
+      cur_poi_note = @upload.attached_to
       cur_poi_note_json = { id: cur_poi_note.id,
                             user: { id: cur_poi_note.user.id,
                                     username: cur_poi_note.user.username },
                             text: cur_poi_note.text }
       add_attachment_to_poi_note_json @upload, cur_poi_note_json
       poi_notes << cur_poi_note_json
-      @upload.poi_note.comments.each do |cur_poi_note|
+      @upload.attached_to.comments.each do |cur_poi_note|
         cur_poi_note_json = { id: cur_poi_note.id,
                               user: { id: cur_poi_note.user.id,
                                       username: cur_poi_note.user.username },
@@ -87,10 +89,10 @@ class UploadsController < ApplicationController
         add_attachment_to_poi_note_json cur_poi_note.attachment, cur_poi_note_json
         poi_notes << cur_poi_note_json
       end
-      json = { poi: { id: @upload.poi_note.poi.id,
-                      lat: @upload.poi_note.poi.location.latitude,
-                      lng: @upload.poi_note.poi.location.longitude,
-                      address: @upload.poi_note.poi.location.address,
+      json = { poi: { id: @upload.attached_to.poi.id,
+                      lat: @upload.attached_to.poi.location.latitude,
+                      lng: @upload.attached_to.poi.location.longitude,
+                      address: @upload.attached_to.poi.location.address,
                       notes: poi_notes } }
       render json: json
     end
@@ -106,16 +108,17 @@ class UploadsController < ApplicationController
     if upload.entity is_a? UploadEntity::Mediafile
       case upload.entity.content_type.match(/^[^\/]+/)[0]
       when 'image'
-        poi_note_json[:attachment] = { content_type: upload.entity.file.content_type, id: upload.entity.id, url: upload.entity.file.url }
+        geometry = Paperclip::Geometry.from_file(upload.entity.file)
+        poi_note_json[:attachment] = { content_type: upload.entity.file.content_type, id: upload.id, url: upload.entity.file.url, width: geometry.width.to_i, height: geometry.height.to_i }
       when 'audio'
-        poi_note_json[:attachment] = { content_type: upload.entity.file.content_type, id: upload.entity.id, url: upload.entity.file.url }
+        poi_note_json[:attachment] = { content_type: upload.entity.file.content_type, id: upload.id, url: upload.entity.file.url }
       when 'video'
-        poi_note_json[:attachment] = { content_type: upload.entity.file.content_type, id: upload.entity.id, url: upload.entity.file.url }
+        poi_note_json[:attachment] = { content_type: upload.entity.file.content_type, id: upload.id, url: upload.entity.file.url }
       else
-        poi_note_json[:attachment] = { content_type: 'unknown/unknown', id: upload.entity.id, url: upload.entity.file.url }
+        poi_note_json[:attachment] = { content_type: 'unknown/unknown', id: upload.id, url: upload.entity.file.url }
       end
     else
-      poi_note_json[:attachment] = { content_type: 'unknown/unknown', id: upload.entity.id, url: nil }
+      poi_note_json[:attachment] = { content_type: 'unknown/unknown', id: upload.id, url: nil }
     end
   end
 
@@ -155,12 +158,24 @@ class UploadsController < ApplicationController
   end
   
   def after_save
-    geometry = Paperclip::Geometry.from_file(@upload.file)
-    file_data = { type: 'image', url: @upload.file.url, width: geometry.width.to_i, height: geometry.height.to_i }
-    location_data = { lat: @upload.poi_note.poi.location.latitude, lng: @upload.poi_note.poi.location.longitude, address: @upload.poi_note.poi.location.address }
-    upload_msg = { id: @upload.id, file: file_data, location: location_data }
+    #geometry = Paperclip::Geometry.from_file(@upload.file)
+    #file_data = { type: 'image', url: @upload.file.url, width: geometry.width.to_i, height: geometry.height.to_i }
+    #location_data = { lat: @upload.attached_to.poi.location.latitude, lng: @upload.attached_to.poi.location.longitude, address: @upload.attached_to.poi.location.address }
+    #upload_msg = { id: @upload.id, file: file_data, location: location_data }
+    poi_note = @upload.attached_to
+    upload_msg = { type: 'poi_note_upload',
+                   poi_note: { poi: { id: poi_note.poi.id,
+                                      lat: poi_note.poi.location.latitude,
+                                      lng: poi_note.poi.location.longitude,
+                                      address: poi_note.poi.location.address },
+                               id: poi_note.id,
+                               user: { id: poi_note.user.id,
+                                       username: poi_note.user.username },
+                               text: poi_note.text } }
+    add_attachment_to_poi_note_json @upload, upload_msg[:poi_note]
+
     channel_path = '/uploads'
-    channel_path += "#{PEER_CHANNEL_PREFIX}#{@upload.poi_note.user.comm_setting.channel_enc_key}" unless USE_GLOBAL_SUBSCRIBE
+    channel_path += "#{PEER_CHANNEL_PREFIX}#{@upload.attached_to.user.comm_setting.channel_enc_key}" unless USE_GLOBAL_SUBSCRIBE
     Comm::ChannelsController.publish(channel_path, upload_msg)
   end
 end

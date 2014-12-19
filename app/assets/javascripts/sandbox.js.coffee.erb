@@ -65,12 +65,12 @@ jQuery ->
 
   window.panUpload = (uploadId) ->
     #getUploadComments(upload_id)
-    Storage.Model.instance().loadPoiNotes uploadId, VoyageX.TemplateHelper.openPOINoteInput
+    Storage.Model.instance().loadPoiNotes uploadId, VoyageX.TemplateHelper.openPOINotePopup
     if window.isMobile()
       $("#photo_nav_panel").panel("close")
     else
       photoNavPanel.dialog("close")
-      
+
   window.panPosition = (lat, lng, address) ->
     setSelectedPositionLatLng VoyageX.Main.markerManager().get(), lat, lng, address
     VoyageX.Main.map().panTo([lat, lng])
@@ -126,9 +126,9 @@ jQuery ->
         if window.isMobile()
           $('#open_upload_data_btn').click()
         else
-          poiNoteInputHtml = VoyageX.TemplateHelper.poiNoteInputHtml()
-          $('#poi_note_input').html(poiNoteInputHtml)
-          $('#poi_note_input').css('display', 'block')
+          $('#poi_note_input').html('')
+          poiNoteInputHtml = VoyageX.TemplateHelper.poiNoteInputHtml('poi_note_input')
+          #$('#poi_note_input').css('display', 'block')
           $('#upload_data_conrols').dialog('open')
           if ! $('#upload_data_conrols').parent().hasClass('seethrough_panel')
             $('#upload_data_conrols').parent().addClass('seethrough_panel')

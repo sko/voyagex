@@ -1,7 +1,7 @@
 .upload_comment_container
   %table
-    = render partial: '/shared/upload_comment', locals: { comment: @upload.poi_note, i: 0 }
-    - @upload.poi_note.comments.each_with_index do |poi_note, i|
+    = render partial: '/shared/upload_comment', locals: { comment: @upload.attached_to, i: 0 }
+    - @upload.attached_to.comments.each_with_index do |poi_note, i|
       = render partial: '/shared/upload_comment', locals: { comment: poi_note, i: (i+1) }
 
 - bid = "upload_comment_btn_#{@upload.id}"
