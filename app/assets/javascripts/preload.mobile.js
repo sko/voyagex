@@ -1,7 +1,9 @@
 //= require jquery
+//= require debug
 //= require jquery_ujs
 //= require jquery-ui
 //= require jquery.mobile
+//= require jquery.scrollpanel
 //= require swiper
 //= require leaflet
 //= require Leaflet.LimitZoom

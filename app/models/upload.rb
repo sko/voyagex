@@ -8,6 +8,8 @@ class Upload < ActiveRecord::Base
 
   validates :entity, presence: true
   validates_associated :entity
+  #validates :attached_to, presence: true
+  #validates_associated :attached_to
   
   def file
     entity.file

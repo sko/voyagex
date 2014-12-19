@@ -6,9 +6,11 @@ class UploadsController < ApplicationController
   def create
     user = current_user || tmp_user
     poi = nearby user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
+    
     @upload = Upload.new(attached_to: PoiNote.new(poi: poi, user: user, text: params[:poi_note][:text]))
     @upload.attached_to.attachment = @upload
     @upload.build_entity params[:poi_note][:file].content_type, file: params[:poi_note][:file]
+    
     if @upload.save
       render "shared/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
     else
@@ -17,12 +19,31 @@ class UploadsController < ApplicationController
     after_save
   end
 
+  # adds a comment
+  def update
+    user = current_user || tmp_user
+    @poi_note = PoiNote.find(params[:id])
+
+    upload = Upload.new
+    upload.build_entity params[:poi_note][:file].content_type, file: params[:poi_note][:file]
+    comment = @poi_note.comments.build(poi: @poi_note.poi, user: user, text: params[:poi_note][:text], attachment: upload)
+    upload.attached_to = comment
+    comment.save
+    
+    @upload = comment.attachment
+    
+    render "shared/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
+    after_save
+  end
+
   def create_from_base64
     user = current_user || tmp_user
     poi = nearby user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
+    
     attachment_mapping = Upload.get_attachment_mapping params[:file_content_type]
     @upload = build_upload_base64 user, poi, attachment_mapping
-    if @upload.save
+    
+    if @upload.attached_to.save
       if attachment_mapping.size >= 2
         # restore original content-type after imagemagick did it's job
         suffix = ".#{params[:file_content_type].match(/^[^\/]+\/([^\s;,]+)/)[1]}" rescue ''
@@ -37,30 +58,23 @@ class UploadsController < ApplicationController
   end
 
   # adds a comment
-  def update
-    user = current_user || tmp_user
-    @poi_note = PoiNote.find(params[:id])
-    #@upload = build_upload_base64 user, @poi_note.poi, attachment_mapping
-    @upload = Upload.new
-    @upload.build_entity params[:poi_note][:file].content_type, file: params[:poi_note][:file]
-    comment = @poi_note.comments.create(poi: @poi_note.poi, user: user, text: params[:poi_note][:text], attachment: @upload)
-    render "shared/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
-    after_save
-  end
-
-  # adds a comment
   def update_from_base64
     user = current_user || tmp_user
     @poi_note = PoiNote.find(params[:id])
+    
     attachment_mapping = Upload.get_attachment_mapping params[:file_content_type]
+
     @upload = build_upload_base64 user, @poi_note.poi, attachment_mapping
-    comment = @poi_note.comments.create(poi: @poi_note.poi, user: user, text: params[:file_comment], attachment: @upload)
+    @poi_note.comments << @upload.attached_to
+    @poi_note.save
+
     if attachment_mapping.size >= 2
       # restore original content-type after imagemagick did it's job
       suffix = ".#{params[:file_content_type].match(/^[^\/]+\/([^\s;,]+)/)[1]}" rescue ''
-      File.rename(comment.attachment.entity.file.path, comment.attachment.entity.file.path.sub(/\.[^.]+$/, suffix))
-      comment.attachment.entity.update_attributes(file_file_name: comment.attachment.entity.file_file_name.sub(/\.[^.]+$/, suffix), file_content_type: params[:file_content_type])
+      File.rename(@upload.entity.file.path, @upload.entity.file.path.sub(/\.[^.]+$/, suffix))
+      @upload.entity.update_attributes(file_file_name: @upload.entity.file_file_name.sub(/\.[^.]+$/, suffix), file_content_type: params[:file_content_type])
     end
+    
     render "uploads/uploaded_base64", formats: [:js]
     after_save
   end
@@ -131,6 +145,7 @@ class UploadsController < ApplicationController
     end
     upload.build_entity params[:file_content_type]
     upload.entity.set_base64_file params[:file_data], attachment_mapping[0], file_name
+    upload.attached_to.attachment = upload
     upload
   end
 

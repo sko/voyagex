@@ -125,11 +125,11 @@ jQuery ->
         `;`
       when 'dblclick'
         #VoyageX.Main.markerManager().get().bindPopup("").openPopup({minWidth: '100px'});
+        $('#poi_note_input').html('')
         VoyageX.TemplateHelper.poiNoteInputHtml('poi_note_input')
         if window.isMobile()
           $('#open_upload_data_btn').click()
         else
-          $('#poi_note_input').html('')
           #$('#poi_note_input').css('display', 'block')
           $('#upload_data_conrols').dialog('open')
           if ! $('#upload_data_conrols').parent().hasClass('seethrough_panel')
@@ -151,6 +151,10 @@ jQuery ->
                                 userId: $('#current_user_id').val()})
       $(this).val('\n-------------------------\n'+$(this).val())
       $(this).selectRange(0) 
+
+  $('#poi_notes_container').scrollpanel({
+      prefix: 'pcn-'
+    })
     
   $(document).on 'click', '#clear_cache', (event) ->
     Comm.StorageController.instance().clearCache()

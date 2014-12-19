@@ -1,14 +1,15 @@
 #tmpl_poi_notes_container{style: 'display: none;'}
-  %table
-    {poi_notes}
-  - if is_mobile
-    /- popup_params = { data: { rel: 'popup', 'position-to' => 'window', 'data-role' => 'button' } }
-    /= link_to t('uploads.add_comment'), '#upload_comment_conrols', popup_params
-    = link_to t('uploads.add_comment'), '#', onclick: 'javascript:openUploadCommentControls({base_poi_note_id})'
-  - else
-    .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: 'upload_comment_btn_{base_poi_note_id}'}
-      .ui-button-text
-        #{t('uploads.add_comment')}
+  %div{tmpl: {id: 'poi_notes_container'}}
+    %table
+      {poi_notes}
+    - if is_mobile
+      /- popup_params = { data: { rel: 'popup', 'position-to' => 'window', 'data-role' => 'button' } }
+      /= link_to t('uploads.add_comment'), '#upload_comment_conrols', popup_params
+      = link_to t('uploads.add_comment'), '#', onclick: 'javascript:openUploadCommentControls({base_poi_note_id})'
+    - else
+      .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: 'upload_comment_btn_{base_poi_note_id}'}
+        .ui-button-text
+          #{t('uploads.add_comment')}
 
 #tmpl_poi_note{style: 'display: none;'}
   .upload_comment{style: 'vertical-align: top;', data: {index: '{i}'}}

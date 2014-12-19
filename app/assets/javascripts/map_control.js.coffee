@@ -147,12 +147,16 @@ class window.VoyageX.MapControl
       readyImage
 
   @loadAndPrefetch: (mC, xYZ, viewSubdomain, deferredModeParams = null) ->
-    readyImage = mC._loadReadyImage MapControl.toUrl(xYZ, viewSubdomain), xYZ, (if deferredModeParams!=null then deferredModeParams.deferred else null)
+    readyImage = mC._loadReadyImage MapControl.toUrl(xYZ, viewSubdomain), xYZ, deferredModeParams
     if deferredModeParams == null || deferredModeParams.prefetchZoomLevels
       unless deferredModeParams == null
         deferredModeParams.prefetchZoomLevels = false
       mC._prefetchZoomLevels xYZ, viewSubdomain, deferredModeParams
     readyImage
+
+  @notInCacheImage: (x, y, z) ->
+    mC = VoyageX.MapControl.instance()
+    mC._notInCacheImage $('#tile_canvas')[0], x, y, z
 
   _prefetchZoomLevels: (xYZ, viewSubdomain, deferredModeParams = null) ->
     storeKey = Comm.StorageController.storeKey([xYZ[0], xYZ[1], xYZ[2]])
@@ -189,8 +193,8 @@ class window.VoyageX.MapControl
                              tileUrl: MapControl.toUrl(curXYZ, view.subdomain),\
                              prefetchZoomLevels: true,\
                              save: true,\
-                             deferred: $.Deferred(),\
-                             promise: null }
+                             deferred: deferredModeParams.deferred,\
+                             promise: deferredModeParams.promise }
           if addToX == 0 and addToY == 0
             Comm.StorageController.instance().loadAndPrefetchTile prefetchParams
           else
@@ -248,33 +252,36 @@ class window.VoyageX.MapControl
           unless stored?
             parentTileUrl = MapControl.toUrl(curXYZ, viewSubdomain)
             console.log 'prefetching lower-zoom tile: '+parentStoreKey
-            readyImage = this._loadReadyImage parentTileUrl, curXYZ, (if deferredModeParams!=null then deferredModeParams.deferred else null)
+            readyImage = this._loadReadyImage parentTileUrl, curXYZ, deferredModeParams
 
   # has to be done sequentially becaus we're using one canvas for all
-  _loadReadyImage: (imgUrl, xYZ, deferred = null) ->
-    if deferred == null
+  _loadReadyImage: (imgUrl, xYZ, deferredModeParams = null) ->
+    if deferredModeParams == null
       promise = true
       deferred = $.Deferred()
+#    else
+#      deferred = deferredModeParams.deferred
     img = new Image
     img.crossOrigin = ''
     mC = this
     img.onload = (event) ->
       base64ImgDataUrl = mC._toBase64 $('#tile_canvas')[0], this # event.target
       unless Comm.StorageController.isFileBased()
-        Comm.StorageController.instance().storeImage xYZ, base64ImgDataUrl
+        Comm.StorageController.instance().storeImage xYZ, base64ImgDataUrl, deferredModeParams
         cacheStats()
       else
         # actually we could store base64 in file as wall
-        #Comm.StorageController.instance().storeImage xYZ, base64ImgDataUrl
+        #Comm.StorageController.instance().storeImage xYZ, base64ImgDataUrl, deferredModeParams
         $('#tile_canvas')[0].toBlob((blob) ->
-            Comm.StorageController.instance().storeImage xYZ, blob
+            Comm.StorageController.instance().storeImage xYZ, blob, deferredModeParams
           )
-      deferred.resolve(base64ImgDataUrl)
+      if promise
+        deferred.resolve(base64ImgDataUrl)
     img.src = imgUrl
     if promise
       readyImg = deferred.promise()
       # this._loadReadyImage stores Tiles asynchronously so we set empty-tile here to prevent multi-fetch
-      Comm.StorageController.instance().storeTile xYZ, null, readyImg
+      Comm.StorageController.instance().storeTile xYZ, null, readyImg, deferredModeParams
       readyImg
     else
       null
