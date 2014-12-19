@@ -13,7 +13,7 @@ class window.Storage.Model
       dataType: 'json'
       url: '<%= upload_comments_path(upload_id: '') %>'+uploadId
     .done (msg) ->
-        callback msg
+        callback msg.poi
     .fail (jqXHR, textStatus) ->
         # get from localStorage
         console.log('TODO: maybe get from local storage')

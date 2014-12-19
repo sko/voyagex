@@ -66,7 +66,7 @@ window.uploadCommentDialog = $("#upload_comment_conrols").dialog({
       modal: true
     })
 #$("head").append("<style type='text/css'>#sign_in_modal {width:"+Math.abs($(window).width() * 0.3)+"px;}</style>");
-photoNavPanel = $("#photo_nav_panel").dialog({
+window.photoNavPanel = $("#photo_nav_panel").dialog({
       autoOpen: false,
       height: Math.abs($(window).height() * 0.8),
       width: Math.abs($(window).width() * 0.5),

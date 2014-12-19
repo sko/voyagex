@@ -16,14 +16,18 @@ module Comm
         Rails.logger.debug "###### Client #{client_id} subscribed to #{channel}."
         subscription_enc_key = channel.match(/^\/system#{PEER_CHANNEL_PREFIX}([^\/]+)/)
         if subscription_enc_key.present?
-          comm_setting = CommSetting.where(sys_channel_enc_key: subscription_enc_key[1]).first
-          Rails.logger.debug "###### Found User #{comm_setting.user.id} for Client #{client_id}."
-          comm_setting.update_attribute(:current_faye_client_id, client_id)
+          begin
+            comm_setting = CommSetting.where(sys_channel_enc_key: subscription_enc_key[1]).first
+            Rails.logger.debug "###### Found User #{comm_setting.user.id} for Client #{client_id}."
+            comm_setting.update_attribute(:current_faye_client_id, client_id)
 
-          # now that current_faye_client_id is set, the client can start to communicate
-          # first it should register to it's own bidirectional channels
-          msg = { type: :ready_notification, channel_enc_key: comm_setting.channel_enc_key }
-          Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{subscription_enc_key[1]}", msg)
+            # now that current_faye_client_id is set, the client can start to communicate
+            # first it should register to it's own bidirectional channels
+            msg = { type: :ready_notification, channel_enc_key: comm_setting.channel_enc_key }
+            Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{subscription_enc_key[1]}", msg)
+          rescue => e
+            Rails.logger.error "!!!!!! #{e.message}"
+          end
         end
       end
       monitor :unsubscribe do
@@ -85,7 +89,7 @@ module Comm
                 block_msg = 'only subscribable for signed in users...'
               end
             rescue => e
-              Rails.logger.error "###### #{e.message}"
+              Rails.logger.error "!!!!!! #{e.message}"
             end
           end
         end
@@ -103,16 +107,20 @@ module Comm
         Rails.logger.debug "###### Outbound message #{message}."
         publish_data = message['data']
         if publish_data.present?
-          case publish_data['type']
-          when 'click'
-            # could calculate it via Location.new(latitude: data['lat'], longitude: data['lng']).address
-            # but maybe this is less expensive since reverse-geocode-lookup already done
-            user = User.where(id: publish_data['userId']).first
-            if user.present? && user.locations.present?
-              location = user.locations.last
-              Rails.logger.debug "###### providing reverse-geocoding-service: #{location.address}"
-              publish_data['address'] = location.address
+          begin
+            case publish_data['type']
+            when 'click'
+              # could calculate it via Location.new(latitude: data['lat'], longitude: data['lng']).address
+              # but maybe this is less expensive since reverse-geocode-lookup already done
+              user = User.where(id: publish_data['userId']).first
+              if user.present? && user.locations.present?
+                location = user.locations.last
+                Rails.logger.debug "###### providing reverse-geocoding-service: #{location.address}"
+                publish_data['address'] = location.address
+              end
             end
+          rescue => e
+            Rails.logger.error "!!!!!! #{e.message}"
           end
         end
         pass
@@ -125,17 +133,21 @@ module Comm
       end
       monitor :publish do
         Rails.logger.debug "###### Client #{client_id} published #{data.inspect} to #{channel}."
-        case data['type']
-        when 'click'
-          user = User.where(id: data['userId']).first
-          location = Location.new(latitude: data['lat'], longitude: data['lng'])
-          # TODO maybe select existing location if exists instead of creating new - l.nearbys(5)
-          # NO_SAVE_ON_ALL_CLICKS ls_u = user.locations_users.create(location: location)
-          # provide reverse lookup
-          unless data['address'].present?
-            Rails.logger.debug "###### providing reverse-geocoding-service: #{location.address}"
-            data['address'] = location.address
+        begin
+          case data['type']
+          when 'click'
+            user = User.where(id: data['userId']).first
+            location = Location.new(latitude: data['lat'], longitude: data['lng'])
+            # TODO maybe select existing location if exists instead of creating new - l.nearbys(5)
+            # NO_SAVE_ON_ALL_CLICKS ls_u = user.locations_users.create(location: location)
+            # provide reverse lookup
+            unless data['address'].present?
+              Rails.logger.debug "###### providing reverse-geocoding-service: #{location.address}"
+              data['address'] = location.address
+            end
           end
+        rescue => e
+          Rails.logger.error "!!!!!! #{e.message}"
         end
       end
     end

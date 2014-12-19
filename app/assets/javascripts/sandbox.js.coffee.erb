@@ -68,7 +68,9 @@ jQuery ->
     Storage.Model.instance().loadPoiNotes uploadId, VoyageX.TemplateHelper.openPOINoteInput
     if window.isMobile()
       $("#photo_nav_panel").panel("close")
-
+    else
+      photoNavPanel.dialog("close")
+      
   window.panPosition = (lat, lng, address) ->
     setSelectedPositionLatLng VoyageX.Main.markerManager().get(), lat, lng, address
     VoyageX.Main.map().panTo([lat, lng])

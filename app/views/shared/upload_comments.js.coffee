@@ -1,3 +1,4 @@
+<% binding.pry %>
 panPosition(<%= @upload.poi_note.poi.location.latitude -%>,<%= @upload.poi_note.poi.location.longitude -%>,'<%= escape_javascript(@upload.poi_note.poi.location.address).html_safe -%>')
 VoyageX.Main.markerManager().get().bindPopup("<%= j render(partial: 'shared/upload_comments') -%>").openPopup({minWidth: '100px'});
 $('.leaflet-popup-close-button').on 'click', (event) ->

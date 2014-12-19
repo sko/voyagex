@@ -71,7 +71,28 @@ class UploadsController < ApplicationController
       @upload.comments.create(user: user, text: params[:text])
       render "shared/upload_comments", layout: false, formats: [:js]
     else
-      render json: @upload.to_json
+      poi_notes = []
+      cur_poi_note = @upload.poi_note
+      cur_poi_note_json = { id: cur_poi_note.id,
+                            user: { id: cur_poi_note.user.id,
+                                    username: cur_poi_note.user.username },
+                            text: cur_poi_note.text }
+      add_attachment_to_poi_note_json @upload, cur_poi_note_json
+      poi_notes << cur_poi_note_json
+      @upload.poi_note.comments.each do |cur_poi_note|
+        cur_poi_note_json = { id: cur_poi_note.id,
+                              user: { id: cur_poi_note.user.id,
+                                      username: cur_poi_note.user.username },
+                              text: cur_poi_note.text }
+        add_attachment_to_poi_note_json cur_poi_note.attachment, cur_poi_note_json
+        poi_notes << cur_poi_note_json
+      end
+      json = { poi: { id: @upload.poi_note.poi.id,
+                      lat: @upload.poi_note.poi.location.latitude,
+                      lng: @upload.poi_note.poi.location.longitude,
+                      address: @upload.poi_note.poi.location.address,
+                      notes: poi_notes } }
+      render json: json
     end
   end
 
@@ -80,6 +101,23 @@ class UploadsController < ApplicationController
   end
 
   private
+
+  def add_attachment_to_poi_note_json upload, poi_note_json
+    if upload.entity is_a? UploadEntity::Mediafile
+      case upload.entity.content_type.match(/^[^\/]+/)[0]
+      when 'image'
+        poi_note_json[:attachment] = { content_type: upload.entity.file.content_type, id: upload.entity.id, url: upload.entity.file.url }
+      when 'audio'
+        poi_note_json[:attachment] = { content_type: upload.entity.file.content_type, id: upload.entity.id, url: upload.entity.file.url }
+      when 'video'
+        poi_note_json[:attachment] = { content_type: upload.entity.file.content_type, id: upload.entity.id, url: upload.entity.file.url }
+      else
+        poi_note_json[:attachment] = { content_type: 'unknown/unknown', id: upload.entity.id, url: upload.entity.file.url }
+      end
+    else
+      poi_note_json[:attachment] = { content_type: 'unknown/unknown', id: upload.entity.id, url: nil }
+    end
+  end
 
   def build_upload_base64 user, poi, attachment_mapping
     upload = Upload.new poi_note: PoiNote.new(poi: poi, user: user, text: params[:file_comment])
