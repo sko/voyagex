@@ -55,12 +55,13 @@
         = link_to image_tag('/assets/arrow-up-right.png', style: 'width: 32px; height: 43px;'), '#', onclick: 'javascript:APP.photoNav()'
         = link_to '', '#photo_nav_panel', id: 'open_photo_nav_btn'
         = link_to '', '#upload_data_panel', id: 'open_upload_data_btn'
-        = link_to '', '#upload_comment_panel', id: 'open_upload_comment_btn'
+        /= link_to '', '#upload_comment_panel', id: 'open_upload_comment_btn'
     / panels nust be beginning or end in data-role: page
     = render partial: '/sandbox/photo_nav_panel.mobile'
-    = render partial: '/shared/upload_data.mobile', locals: {resource: Upload.new}
     = render partial: '/sandbox/media_input_panel'
-    = render partial: '/uploads/upload_comment.mobile', locals: {resource: Upload.new}
+    /= render partial: '/shared/upload_data.mobile', locals: {resource: Upload.new}
+    /= render partial: '/uploads/upload_comment.mobile', locals: {resource: Upload.new}
+    = render partial: '/uploads/uploads.mobile', locals: {poi_note: PoiNote.new}
     = javascript_include_tag 'application.mobile'
     = javascript_include_tag "#{params[:controller]}"
     = javascript_include_tag 'extensions.mobile'

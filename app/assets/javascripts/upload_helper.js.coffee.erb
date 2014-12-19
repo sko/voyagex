@@ -111,8 +111,8 @@ jQuery ->
     if $.mobile
       closeMediaInputPanel()
 
-  openCommentForm = () ->
-    $("#open_upload_comment_btn").click()
+  #openCommentForm = () ->
+  #  $("#open_upload_comment_btn").click()
 
   closeMediaInputPanel = () ->
     $("#media_input_panel").panel("close")
@@ -120,7 +120,7 @@ jQuery ->
     # reopen panel
     # TODO: which one?
     $('#open_upload_data_btn').click()
-    $('#open_upload_comment_btn').click()
+    #$('#open_upload_comment_btn').click()
 
   stopCurrentVideo = () ->
     mediaInputVideo[0].pause()

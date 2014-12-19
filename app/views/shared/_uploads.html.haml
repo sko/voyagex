@@ -6,12 +6,12 @@
       #poi_note_input
       /= render partial: '/shared/upload_data', locals: {resource: Upload.new}
 
-.modal
-  .modal-dialog#upload_comment_conrols
-    .modal-header
-      %h4.modal-title #{t('uploads.add_comment').html_safe}
-    .modal-body
-      #upload_comment_container
+/.modal
+/  .modal-dialog#upload_comment_conrols
+/    .modal-header
+/      %h4.modal-title #{t('uploads.add_comment').html_safe}
+/    .modal-body
+/      #upload_comment_container
       
 = render partial: '/uploads/form/tmpl', locals: {poi_note: PoiNote.new}
 = render partial: '/shared/tmpl_poi_notes'

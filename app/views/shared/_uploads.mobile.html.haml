@@ -4,4 +4,7 @@
 / @see layouts/application.mobile.html.haml
 /= render partial: '/uploads/upload_comment.mobile', locals: {resource: Upload.new, resource_name: :upload}
 
+= render partial: '/uploads/form/tmpl.mobile', locals: {poi_note: PoiNote.new}
+= render partial: '/shared/tmpl_poi_notes'
+
 %iframe{id: "upload_target", name: "upload_target", style: "display:none;"}

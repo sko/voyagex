@@ -55,11 +55,13 @@ jQuery ->
     else
       VoyageX.MapControl.instance().setOffline()
 
-  window.openUploadCommentControls = (upload_id) ->
+  window.openUploadCommentControls = (poiId) ->
     #$("#upload_comment_conrols").css('display', 'block')
     #VoyageX.NavBar.menuNavClick('map')
-    unless window.isMobile()
-      $("#upload_comment_conrols").dialog("open")
+    if window.isMobile()
+      $("#open_upload_data_btn").click()
+    else
+      $('#upload_data_conrols').dialog('open')
       if ! $('#upload_data_conrols').parent().hasClass('seethrough_panel')
         $('#upload_data_conrols').parent().addClass('seethrough_panel')
 
@@ -123,11 +125,11 @@ jQuery ->
         `;`
       when 'dblclick'
         #VoyageX.Main.markerManager().get().bindPopup("").openPopup({minWidth: '100px'});
+        VoyageX.TemplateHelper.poiNoteInputHtml('poi_note_input')
         if window.isMobile()
           $('#open_upload_data_btn').click()
         else
           $('#poi_note_input').html('')
-          poiNoteInputHtml = VoyageX.TemplateHelper.poiNoteInputHtml('poi_note_input')
           #$('#poi_note_input').css('display', 'block')
           $('#upload_data_conrols').dialog('open')
           if ! $('#upload_data_conrols').parent().hasClass('seethrough_panel')

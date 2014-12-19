@@ -63,15 +63,11 @@ class window.VoyageX.TemplateHelper
       VoyageX.Main.markerManager().get().unbindPopup()
       $('.leaflet-popup').remove()
     $('#upload_comment_btn_'+poi.notes[0].id).on 'click', (event) ->
-      #openUploadCommentControls(poi.notes[0].attachment.id)
-      $('#upload_comment_conrols').dialog('open')
-      if ! $('#upload_comment_conrols').parent().hasClass('seethrough_panel')
-        $('#upload_comment_conrols').parent().addClass('seethrough_panel')
-    #if isMobile()
-    #  $('#upload_comment_container').html("<%= j render(partial: 'uploads/form/comment_data.mobile', locals: {resource: @upload, resource_name: :upload}) -%>")
-    #else
-    #  $('#upload_comment_container').html("<%= j render(partial: 'uploads/form/comment_data', locals: {resource: @upload, resource_name: :upload}) -%>")
-    poiNoteInputHtml = TemplateHelper.poiNoteInputHtml('upload_comment_container', poi.notes[0])
+      openUploadCommentControls(poi.notes[0].id)
+      #$('#upload_comment_conrols').dialog('open')
+      #if ! $('#upload_comment_conrols').parent().hasClass('seethrough_panel')
+      #  $('#upload_comment_conrols').parent().addClass('seethrough_panel')
+    TemplateHelper.poiNoteInputHtml('poi_note_input', poi.notes[0])
   
   @_mediaFileTag: (upload) ->
     switch upload.content_type.match(/^[^\/]+/)[0]

@@ -40,11 +40,10 @@ class UploadsController < ApplicationController
   def update
     user = current_user || tmp_user
     @poi_note = PoiNote.find(params[:id])
-    @upload = @poi_note.attachment
-    #comment_attachment = build_upload_base64 user, @upload.attached_to.poi, attachment_mapping
-    comment_attachment = Upload.new
-    comment_attachment.build_entity params[:poi_note][:file].content_type, file: params[:poi_note][:file]
-    comment = @upload.attached_to.comments.create(poi: @upload.attached_to.poi, user: user, text: params[:poi_note][:text], attachment: comment_attachment)
+    #@upload = build_upload_base64 user, @poi_note.poi, attachment_mapping
+    @upload = Upload.new
+    @upload.build_entity params[:poi_note][:file].content_type, file: params[:poi_note][:file]
+    comment = @poi_note.comments.create(poi: @poi_note.poi, user: user, text: params[:poi_note][:text], attachment: @upload)
     render "shared/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
     after_save
   end
@@ -52,10 +51,10 @@ class UploadsController < ApplicationController
   # adds a comment
   def update_from_base64
     user = current_user || tmp_user
-    @upload = Upload.find(params[:id])
+    @poi_note = PoiNote.find(params[:id])
     attachment_mapping = Upload.get_attachment_mapping params[:file_content_type]
-    comment_attachment = build_upload_base64 user, @upload.attached_to.poi, attachment_mapping
-    comment = @upload.attached_to.comments.create(poi: @upload.attached_to.poi, user: user, text: params[:file_comment], attachment: comment_attachment)
+    @upload = build_upload_base64 user, @poi_note.poi, attachment_mapping
+    comment = @poi_note.comments.create(poi: @poi_note.poi, user: user, text: params[:file_comment], attachment: @upload)
     if attachment_mapping.size >= 2
       # restore original content-type after imagemagick did it's job
       suffix = ".#{params[:file_content_type].match(/^[^\/]+\/([^\s;,]+)/)[1]}" rescue ''
@@ -123,7 +122,7 @@ class UploadsController < ApplicationController
   end
 
   def build_upload_base64 user, poi, attachment_mapping
-    upload = Upload.new poi_note: PoiNote.new(poi: poi, user: user, text: params[:file_comment])
+    upload = Upload.new(attached_to: PoiNote.new(poi: poi, user: user, text: params[:file_comment]))
     if attachment_mapping.size >= 2
       file_name = "#{user.username}.#{attachment_mapping[1]}" 
     else
