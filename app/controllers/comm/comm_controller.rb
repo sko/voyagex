@@ -8,11 +8,8 @@ module Comm
     def register
       @user = User.find(params[:user_id])
       unless @user.comm_setting.present?
-        comm_setting = CommSetting.create(user: @user, channel_enc_key: enc_key)
+        comm_setting = CommSetting.create(user: @user, channel_enc_key: enc_key, sys_channel_enc_key: enc_key)
         @user.comm_setting = comm_setting
-      end
-      unless @user.comm_setting.sys_channel_enc_key.present?
-        @user.comm_setting.update_attribute(:sys_channel_enc_key, enc_key)
       end
 
       if params[:subscribe_to_peers] == 'true'

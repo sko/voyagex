@@ -99,6 +99,8 @@ class window.VoyageX.MapControl
     storeKey = Comm.StorageController.storeKey([view.tile.column, view.tile.row, view.zoom])
     if Comm.StorageController.isFileBased()
       console.log 'drawTile - ........................................'+storeKey
+      # TODO ? maybe just query offline-zoom-files - see MapControl.tileUrl else of if view.zoom in mC._offlineZooms
+      # NO - because other zoom-levels may trigger some extra-action (liek prefetch ...)
       deferredModeParams = { mC: mC,\
                              view: view,\
                              prefetchZoomLevels: true,\
@@ -136,7 +138,8 @@ class window.VoyageX.MapControl
       else
         readyImage = tileUrl
         if deferredModeParams != null
-          deferredModeParams.tileUrl = readyImage
+          #deferredModeParams.tileUrl = tileUrl
+          Comm.StorageController.instance().resolveOnlineNotInOfflineZooms tileUrl, deferredModeParams
         mC._prefetchZoomLevels [view.tile.column, view.tile.row, view.zoom], view.subdomain, deferredModeParams
       readyImage
     else

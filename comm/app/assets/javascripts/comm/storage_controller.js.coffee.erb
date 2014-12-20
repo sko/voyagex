@@ -74,8 +74,9 @@ class window.Comm.StorageController
 
   clearCache: () ->
     this.delete('tiles')
-    for dirName in VoyageX.MapControl.instance()._offlineZooms
-      this._removeDirectory dirName
+    if StorageController.isFileBased()
+      for dirName in VoyageX.MapControl.instance()._offlineZooms
+        this._removeDirectory dirName
 
   _saveFile: (xYZ, fileIdx, dirReader, data, deferredModeParams) ->
     sC = StorageController.instance()
@@ -248,6 +249,12 @@ class window.Comm.StorageController
         queueEntry.promise = prefetchParams.promise
         queueEntry.storeFile = false
   
+  resolveOnlineNotInOfflineZooms: (tileUrl, deferredModeParams) ->
+    #deferredModeParams.tileUrl = readyImage
+    deferredModeParams.deferred.resolve tileUrl
+    view = deferredModeParams.view
+    delete this._tileLoadQueue[StorageController.storeKey([view.tile.column, view.tile.row, view.zoom])]
+  
   resolveOfflineNotInCache: (readyImage, deferredModeParams) ->
     deferredModeParams.tileUrl = readyImage
     deferredModeParams.deferred.resolve readyImage
@@ -349,13 +356,10 @@ class window.Comm.StorageController
   addToList: (storeKey, listKey, data) ->
     stored = localStorage.getItem(storeKey)
     if stored == null
-      listEntries = {}
       if listKey == 'push'
-        #listEntries[listKey] = [data]
-        # using push will return push-function on anArray['push']
-        listEntries['sc_list'] = [data]
-        #listEntries[listKey] = { push: [data] }
+        listEntries = [data]
       else
+        listEntries = {}
         @_jsonObjects[storeKey] = listEntries
         listEntries[listKey] = data
       localStorage.setItem(storeKey, JSON.stringify(listEntries))
@@ -370,7 +374,7 @@ class window.Comm.StorageController
         if listKey == 'push'
         ##storedJSON[listKey].push(data) # LIFO with push
          #storedJSON[listKey].splice(0, 0, data) # FIFO with push
-          storedJSON['sc_list'].splice(0, 0, data) # FIFO with push
+          storedJSON.splice(0, 0, data) # FIFO with push
         else
           storedJSON[listKey] = data
         localStorage.setItem(storeKey, JSON.stringify(storedJSON));
@@ -422,9 +426,7 @@ class window.Comm.StorageController
   pop: (storeKey) ->
     stored = localStorage.getItem(storeKey)
     unless stored == null
-      storedJSON = eval("(" + stored + ")")
-     #listEntries = storedJSON['push']
-      listEntries = storedJSON['sc_list']
+      listEntries = eval("(" + stored + ")")
       if listEntries?
         listEntry = listEntries.pop()
         if listEntries.length >= 1

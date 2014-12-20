@@ -25,6 +25,8 @@ en:
     comment: Comment
     add_comment: Comment
     add_comment_submit: Add
+    camera: Camera
+    file: File
   admin:
     search_radius: Searchradius
     i_follow: I follow

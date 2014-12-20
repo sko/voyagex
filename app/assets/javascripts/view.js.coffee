@@ -53,9 +53,9 @@ class window.VoyageX.View
     if VoyageX.Main.markerManager().get().getPopup()?
       VoyageX.Main.markerManager().get().unbindPopup()
     if mapEvent.address?
-      setSelectedPositionLatLng VoyageX.Main.markerManager().get(), mapEvent.lat, mapEvent.lng, mapEvent.address
+      APP._setSelectedPositionLatLng VoyageX.Main.markerManager().get(), mapEvent.lat, mapEvent.lng, mapEvent.address
     else
-      setSelectedPositionLatLng VoyageX.Main.markerManager().get(), mapEvent.lat, mapEvent.lng, null
+      APP._setSelectedPositionLatLng VoyageX.Main.markerManager().get(), mapEvent.lat, mapEvent.lng, null
     VoyageX.Main.map().panTo([mapEvent.lat, mapEvent.lng])
     #VoyageX.Main.map().setView [mapEvent.lat, mapEvent.lng], 16
     for listener in View.instance()._commListeners.map_events

@@ -25,6 +25,8 @@ de:
     comment: Kommentar
     add_comment: Kommentieren
     add_comment_submit: Hinzufügen
+    camera: Foto
+    file: Datei
   admin:
     search_radius: Suchradius
     i_follow: Ich folge

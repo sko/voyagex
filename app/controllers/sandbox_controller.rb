@@ -4,7 +4,7 @@ class SandboxController < ApplicationController
 
   def index
     unless tmp_user.comm_setting.present?
-      comm_setting = CommSetting.create(user: tmp_user, channel_enc_key: enc_key)
+      comm_setting = CommSetting.create(user: tmp_user, channel_enc_key: enc_key, sys_channel_enc_key: enc_key)
     end
     @initial_subscribe = true
     
