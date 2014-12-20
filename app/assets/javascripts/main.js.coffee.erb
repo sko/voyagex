@@ -11,30 +11,30 @@ class window.VoyageX.Main
 
   constructor: (userId, cacheStrategy, view, mapOptions, offlineZooms, online) ->
     Main._SINGLETON = this
+    window.APP = this
     @_initState = 0
     @_view = view
     @_comm = null
+    @_selectedPositionLatLng = [-1, -1]
     @_STORAGE_MODEL = new Storage.Model()
     $(window.document).ready () ->
-        Main.instance()._init userId, cacheStrategy, view, mapOptions, offlineZooms, online
+        APP._init userId, cacheStrategy, view, mapOptions, offlineZooms, online
 
   _init: (userId, cacheStrategy, view, mapOptions, offlineZooms, online) ->
-    Main.instance()._initState += 1
-    switch Main.instance()._initState
+    APP._initState += 1
+    switch APP._initState
       when 1
         Main._STORAGE_CONTROLLER = new Comm.StorageController((initError) ->
             console.log 'StorageController initialized FileSystem with message: '+(if initError then 'FAILED' else 'OK')
-            #if error
-            #else
-            Main.instance()._init userId, cacheStrategy, view, mapOptions, offlineZooms, online
+            APP._init userId, cacheStrategy, view, mapOptions, offlineZooms, online
           )
-        Main.instance()._comm = new Comm.Comm(userId,
-                                              [['/talk', view._talkCB, window.VoyageX.CHANNEL_ENC_KEY],
-                                               ['/map_events', view._mapEventsCB, window.VoyageX.CHANNEL_ENC_KEY],
-                                               ['/uploads', view._uploadsCB, window.VoyageX.CHANNEL_ENC_KEY]],
-                                              window.VoyageX.SYS_CHANNEL_ENC_KEY,
-                                              Main.instance()._systemCB)
       when 2
+        APP._comm = new Comm.Comm(userId,
+                                  [['/talk', view._talkCB, window.VoyageX.CHANNEL_ENC_KEY],
+                                   ['/map_events', view._mapEventsCB, window.VoyageX.CHANNEL_ENC_KEY],
+                                   ['/uploads', view._uploadsCB, window.VoyageX.CHANNEL_ENC_KEY]],
+                                   window.VoyageX.SYS_CHANNEL_ENC_KEY,
+                                   APP._systemCB)
         Main._MAP_CONTROL = new VoyageX.MapControl cacheStrategy, mapOptions, offlineZooms, online
         Main._MARKER_MANAGER = new VoyageX.MarkerManager(Main.map())
 #      if navigator.geolocation 
@@ -42,32 +42,69 @@ class window.VoyageX.Main
 #            alert('geolocation timed out - manual selection required.\nsetting default location...')
 #            initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
 #        , { enableHighAccuracy: true, timeout : 10000 })
-#      #VoyageX.Main.map().on('locationfound', (e) ->
+#      #Main.map().on('locationfound', (e) ->
 #      #    alert('found location...')
 #      #  )
-#      #VoyageX.Main.map().on('locationerror', (e) ->
+#      #Main.map().on('locationerror', (e) ->
 #      #    alert('geolocation timed out - manual selection required.\nsetting default location...')
 #      #  )
-        VoyageX.Main.map().on 'click', (event) ->
+        Main.map().on 'click', (event) ->
           address = null
-          setSelectedPositionLatLng Main.markerManager().get()||Main.markerManager().add(event.latlng.lat, event.latlng.lng, markerEventsCB), event.latlng.lat, event.latlng.lng, address
-          publishPosition()
-        VoyageX.Main.map().on('zoomend', (e) ->
-            zoomEnd(e);
+          APP._setSelectedPositionLatLng Main.markerManager().get()||Main.markerManager().add(event.latlng.lat, event.latlng.lng, Main._markerEventsCB), event.latlng.lat, event.latlng.lng, address
+          APP.publishPosition()
+        Main.map().on('zoomend', (e) ->
+            APP._zoomEnd(e);
           )
         if window.isMobile()
-          VoyageX.Main.map().invalidateSize({
+          Main.map().invalidateSize({
               reset: true,
               pan: false,
               animate: false
             })
-        initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
-        $('#zoom_level').html('<span style="color:white;">zoom: '+VoyageX.Main.map().getZoom()+'</span>')
+        APP._initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
+        $('#zoom_level').html('<span style="color:white;">zoom: '+Main.map().getZoom()+'</span>')
         # next statement removes value from inputs!!
         $("#network_state").buttonset()
         $('button[value=camera]').focus()
-        zoomEnd(null)
+        APP._zoomEnd(null)
         cacheStats()
+
+  publishPosition: () ->
+    @_comm.send('/map_events', {type: 'click',\
+                                userId: $('#current_user_id').val(),\
+                                lat: @_selectedPositionLatLng[0],\
+                                lng: @_selectedPositionLatLng[1]})
+
+  publishMessage: (publishText) ->
+    @_comm.send('/talk', {type: 'message',\
+                          userId: $('#current_user_id').val(),\
+                          text: $('#current_user_id').val()+': '+publishText})
+
+  getSelectedPositionLatLng: () ->
+    return [@_selectedPositionLatLng[0], @_selectedPositionLatLng[1]]
+
+  _setSelectedPositionLatLng: (marker, lat, lng, address) ->
+    if marker == null
+      marker = VoyageX.Main.markerManager().add lat, lng, Main._markerEventsCB
+    else
+      marker = VoyageX.Main.markerManager().sel marker, lat, lng, Main._markerEventsCB
+    @_selectedPositionLatLng[0] = lat
+    @_selectedPositionLatLng[1] = lng
+    if address != null
+      $('#cur_loc_addr').html(address) 
+    if showSearchRadius
+      VoyageX.Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, Main.map())
+
+  _zoomEnd: (e) ->
+    $('#zoom_level').html('<span style="color:white;">zoom: '+Main.map().getZoom()+'</span>')
+
+  _initPositionCB: (position) ->
+    address = null
+    marker = VoyageX.Main.markerManager().sel null, position.coords.latitude, position.coords.longitude, Main._markerEventsCB
+    APP._setSelectedPositionLatLng marker, position.coords.latitude, position.coords.longitude, address
+    Main.map().panTo([position.coords.latitude, position.coords.longitude])
+    #Main.map().setView [position.coords.latitude, position.coords.longitude], 16
+    APP.publishPosition()
 
   _systemCB: (message) ->
     console.log 'got a system - message: ' + message.type
@@ -97,18 +134,42 @@ class window.VoyageX.Main
         Comm.Comm.unsubscribeFrom channelPath
     else if message.type == 'quit_subscription'
       true # do nothing
-    Main.instance()._view._systemCB message
+    APP._view._systemCB message
 
-  comm: () ->
-    @_comm
+  panPosition: (lat, lng, address) ->
+    APP._setSelectedPositionLatLng VoyageX.Main.markerManager().get(), lat, lng, address
+    Main.map().panTo([lat, lng])
+    #Main.map().setView([lat, lng], 16)
+    VoyageX.NavBar.menuNavClick('map')
 
   photoNav: () ->
     $.ajax
       type: 'GET'
       dataType: 'script'
       url: '<%= photo_nav_path(lat: ':lat', lng: ':lng') %>'
-           .replace(/:lat/, selectedPositionLatLng[0])
-           .replace(/:lng/, selectedPositionLatLng[1])
+           .replace(/:lat/, @_selectedPositionLatLng[0])
+           .replace(/:lng/, @_selectedPositionLatLng[1])
+
+  @_markerEventsCB: (event) ->
+    address = null
+    APP._setSelectedPositionLatLng event.target, event.target._latlng.lat, event.target._latlng.lng, address
+    switch event.type
+      when 'click'
+        `;`
+      when 'dblclick'
+        #VoyageX.Main.markerManager().get().bindPopup("").openPopup({minWidth: '100px'});
+        $('#poi_note_input').html('')
+        VoyageX.TemplateHelper.poiNoteInputHtml('poi_note_input')
+        if window.isMobile()
+          $('#open_upload_data_btn').click()
+        else
+          #$('#poi_note_input').css('display', 'block')
+          $('#upload_data_conrols').dialog('open')
+          if ! $('#upload_data_conrols').parent().hasClass('seethrough_panel')
+            $('#upload_data_conrols').parent().addClass('seethrough_panel')
+      else
+        # click is handled by mapclick
+        APP.publishPosition()
 
   @commChannels: () ->
     Main._COMM_CHANNELS.slice(0)

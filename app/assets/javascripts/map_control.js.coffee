@@ -99,8 +99,7 @@ class window.VoyageX.MapControl
     storeKey = Comm.StorageController.storeKey([view.tile.column, view.tile.row, view.zoom])
     if Comm.StorageController.isFileBased()
       console.log 'drawTile - ........................................'+storeKey
-      deferredModeParams = { tileUrlCB: VoyageX.MapControl.tileUrl,\
-                             mC: mC,\
+      deferredModeParams = { mC: mC,\
                              view: view,\
                              prefetchZoomLevels: true,\
                              save: true,\
@@ -143,7 +142,7 @@ class window.VoyageX.MapControl
     else
       readyImage = mC._notInCacheImage $('#tile_canvas')[0], view.tile.column, view.tile.row, view.zoom
       if deferredModeParams != null
-        deferredModeParams.tileUrl = readyImage
+        Comm.StorageController.instance().resolveOfflineNotInCache readyImage, deferredModeParams
       readyImage
 
   @loadAndPrefetch: (mC, xYZ, viewSubdomain, deferredModeParams = null) ->

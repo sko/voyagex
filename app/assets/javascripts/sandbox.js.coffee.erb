@@ -4,7 +4,6 @@
 window.defaultLatLng = [51.3767, 7.49389]
 #window.defaultLatLng = [0, 0]
 window.showSearchRadius = false
-window.selectedPositionLatLng = [-1, -1]
 jQuery ->
   #window.markerManager = null
 
@@ -52,6 +51,8 @@ jQuery ->
   window.toggleNetworkState = (selected) ->
     if selected.id == 'network_state_online'
       VoyageX.MapControl.instance().setOnline()
+      Comm.StorageController.instance()._tileLoadQueue = {}
+      VoyageX.Main.map()._resetView VoyageX.Main.map().getCenter(), VoyageX.Main.map().getZoom(), true
     else
       VoyageX.MapControl.instance().setOffline()
 
@@ -73,70 +74,11 @@ jQuery ->
     else
       photoNavPanel.dialog("close")
 
-  window.panPosition = (lat, lng, address) ->
-    setSelectedPositionLatLng VoyageX.Main.markerManager().get(), lat, lng, address
-    VoyageX.Main.map().panTo([lat, lng])
-    #VoyageX.Main.map().setView([lat, lng], 16)
-    VoyageX.NavBar.menuNavClick('map')
-
-  window.getSelectedPositionLatLng = () ->
-    return [selectedPositionLatLng[0], selectedPositionLatLng[1]]
-
-  window.zoomEnd = (e) ->
-    $('#zoom_level').html('<span style="color:white;">zoom: '+VoyageX.Main.map().getZoom()+'</span>')
-
 #  getUploadComments = (upload_id) ->
 #    $.ajax
 #      type: 'GET'
 #      dataType: 'script'
 #      url: '<%= upload_comments_path(upload_id: '') %>'+upload_id
-
-  window.setSelectedPositionLatLng = (marker, lat, lng, address) ->
-    if marker == null
-      marker = VoyageX.Main.markerManager().add lat, lng, markerEventsCB
-    else
-      marker = VoyageX.Main.markerManager().sel marker, lat, lng, markerEventsCB
-    selectedPositionLatLng[0] = lat
-    selectedPositionLatLng[1] = lng
-    if address != null
-      $('#cur_loc_addr').html(address) 
-    if showSearchRadius
-      VoyageX.Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, VoyageX.Main.map())
-
-  window.publishPosition = () ->
-    APP.comm().send('/map_events', {type: 'click',\
-                                    userId: $('#current_user_id').val(),\
-                                    lat: selectedPositionLatLng[0],\
-                                    lng: selectedPositionLatLng[1]})
-
-  window.initPositionCB = (position) ->
-    address = null
-    marker = VoyageX.Main.markerManager().sel null, position.coords.latitude, position.coords.longitude, markerEventsCB
-    setSelectedPositionLatLng marker, position.coords.latitude, position.coords.longitude, address
-    VoyageX.Main.map().panTo([position.coords.latitude, position.coords.longitude])
-    #VoyageX.Main.map().setView [position.coords.latitude, position.coords.longitude], 16
-    publishPosition()
-
-  markerEventsCB = (event) ->
-    address = null
-    setSelectedPositionLatLng event.target, event.target._latlng.lat, event.target._latlng.lng, address
-    switch event.type
-      when 'click'
-        `;`
-      when 'dblclick'
-        #VoyageX.Main.markerManager().get().bindPopup("").openPopup({minWidth: '100px'});
-        $('#poi_note_input').html('')
-        VoyageX.TemplateHelper.poiNoteInputHtml('poi_note_input')
-        if window.isMobile()
-          $('#open_upload_data_btn').click()
-        else
-          #$('#poi_note_input').css('display', 'block')
-          $('#upload_data_conrols').dialog('open')
-          if ! $('#upload_data_conrols').parent().hasClass('seethrough_panel')
-            $('#upload_data_conrols').parent().addClass('seethrough_panel')
-      else
-        # click is handled by mapclick
-        publishPosition()
 
   $('#message').on 'keyup', (event) ->
     if (event.which == 13 || event.keyCode == 13)
@@ -146,9 +88,7 @@ jQuery ->
         publishText = $(this).val()
       else
         publishText = $(this).val().substr(0, endIdx)
-      APP.comm().send('/talk', {type: 'message',\
-                                text: $('#current_user_id').val()+': '+publishText,\
-                                userId: $('#current_user_id').val()})
+      APP.publishMessage(publishText)
       $(this).val('\n-------------------------\n'+$(this).val())
       $(this).selectRange(0) 
 

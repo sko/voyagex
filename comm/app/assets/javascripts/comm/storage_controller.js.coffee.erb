@@ -185,6 +185,7 @@ class window.Comm.StorageController
 #                deferredModeParams.deferred.resolve this.result
 #            reader.readAsText(file)
 #            #reader.readAsDataURL(file, StorageController.instance()._tileImageContentType)
+        delete StorageController.instance()._tileLoadQueue[StorageController.storeKey(xYZ)]
       , (e) ->
         if (e.code == FileError.NOT_FOUND_ERR) 
           if firstCall
@@ -195,7 +196,7 @@ class window.Comm.StorageController
             console.log('_getTileFile - no such file: '+path)
         else
           console.log('error: '+e+' for '+path)
-        #deferredModeParams.deferred.resolve deferredModeParams.tileUrlCB(deferredModeParams.mC, deferredModeParams.view, deferredModeParams)
+        #deferredModeParams.deferred.resolve VoyageX.MapControl.tileUrl(deferredModeParams.mC, deferredModeParams.view, deferredModeParams)
         #if deferredModeParams.callBack
         #  deferredModeParams.callBack = false
         #  # TODO
@@ -205,8 +206,9 @@ class window.Comm.StorageController
           loadQueueEntry = StorageController.instance()._tileLoadQueue[StorageController.storeKey(xYZ)]
           unless loadQueueEntry? && (!loadQueueEntry.storeFile)
             #loadQueueEntry.storeFile = false
-            deferredModeParams.tileUrlCB(deferredModeParams.mC, deferredModeParams.view, deferredModeParams)
-            console.log('sko_NOT SHURE ON 1912: ')
+            VoyageX.MapControl.tileUrl deferredModeParams.mC, deferredModeParams.view, deferredModeParams
+            loadQueueEntry.deferred = true
+            #console.log('sko_NOT SHURE ON 1912: removed defer with original tile-url')
           else
             console.log('TODO: _getTileFile - if this is logged then loadQueueEntry-check is necessary')
         else
@@ -226,7 +228,7 @@ class window.Comm.StorageController
       #console.log('getTile - stored in queue: '+storeKey); 
       #return this._result storeKey, stored
       return stored.promise
-    queueEntry = { promise: null, storeFile: true }
+    queueEntry = { promise: null, deferred: false, storeFile: true }
     callback(queueEntry)
     # @see storeTile
     @_tileLoadQueue[storeKey] = queueEntry
@@ -245,12 +247,18 @@ class window.Comm.StorageController
         prefetchParams.promise = prefetchParams.deferred.promise()
         queueEntry.promise = prefetchParams.promise
         queueEntry.storeFile = false
+  
+  resolveOfflineNotInCache: (readyImage, deferredModeParams) ->
+    deferredModeParams.tileUrl = readyImage
+    deferredModeParams.deferred.resolve readyImage
+    view = deferredModeParams.view
+    delete this._tileLoadQueue[StorageController.storeKey([view.tile.column, view.tile.row, view.zoom])]
 
   storeTile: (xYZ, data, promise = null, deferredModeParams = null) ->
     if promise != null
       # @see getTile
       unless @_tileLoadQueue[StorageController.storeKey(xYZ)]?
-        @_tileLoadQueue[StorageController.storeKey(xYZ)] = { promise: promise, storeFile: true }
+        @_tileLoadQueue[StorageController.storeKey(xYZ)] = { promise: promise, deferred: false, storeFile: true }
       else
         console.log('storeTile - promise for '+StorageController.storeKey(xYZ)+' already stored in queue ...')
       return promise
@@ -296,8 +304,8 @@ class window.Comm.StorageController
       deferredModeParams.promise
 # this was required in mixed mode (localStorage/file) when fs was not ready but images already started load
 #    else if deferredModeParams != null
-#      #deferredModeParams.tileUrlCB(deferredModeParams.mC, deferredModeParams.view, deferredModeParams)
-#      deferredModeParams.deferred.resolve deferredModeParams.tileUrlCB(deferredModeParams.mC, deferredModeParams.view, deferredModeParams)
+#      #VoyageX.MapControl.tileUrl(deferredModeParams.mC, deferredModeParams.view, deferredModeParams)
+#      deferredModeParams.deferred.resolve VoyageX.MapControl.tileUrl(deferredModeParams.mC, deferredModeParams.view, deferredModeParams)
     else
       storeKey = StorageController.storeKey(xYZ)
       stored = @_tileLoadQueue[storeKey]

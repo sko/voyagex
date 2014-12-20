@@ -73,12 +73,15 @@ class window.VoyageX.TemplateHelper
                 replace(/\{base_poi_note_id\}/, poi.notes[0].id)
 
   @openPOINotePopup: (poi) ->
-    panPosition(poi.lat, poi.lng, poi.address)
+    APP.panPosition(poi.lat, poi.lng, poi.address)
     popupHtml = TemplateHelper.poiNotePopupHtml(poi)
-    VoyageX.Main.markerManager().get().bindPopup(popupHtml).openPopup({minWidth: '100px'})
-    $('#poi_notes_container').scrollpanel({
-        prefix: 'pcn-'
-      })
+    VoyageX.Main.markerManager().get().bindPopup(popupHtml).openPopup({maxHeight: '200px', minWidth: '100px'})
+    #popup = L.popup({minWidth: '100px', maxHeight: '400px'})
+    #popup.setContent(popupHtml)
+    #VoyageX.Main.markerManager().get().bindPopup(popup).openPopup({minWidth: '200px'})
+    #$('#poi_notes_container').scrollpanel({
+    #    prefix: 'pcn-'
+    #  })
     $('.leaflet-popup-close-button').on 'click', (event) ->
       VoyageX.Main.markerManager().get().unbindPopup()
       $('.leaflet-popup').remove()

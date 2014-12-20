@@ -1,4 +1,4 @@
-panPosition(<%= @upload.attached_to.poi.location.latitude -%>,<%= @upload.attached_to.poi.location.longitude -%>,'<%= escape_javascript(@upload.attached_to.poi.location.address).html_safe -%>')
+APP.panPosition(<%= @upload.attached_to.poi.location.latitude -%>,<%= @upload.attached_to.poi.location.longitude -%>,'<%= escape_javascript(@upload.attached_to.poi.location.address).html_safe -%>')
 VoyageX.Main.markerManager().get().bindPopup("<%= j render(partial: 'shared/upload_comments') -%>").openPopup({minWidth: '100px'});
 $('.leaflet-popup-close-button').on 'click', (event) ->
   VoyageX.Main.markerManager().get().unbindPopup()

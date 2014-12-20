@@ -68,7 +68,7 @@ class window.VoyageX.View
     width = Math.round(upload.poi_note.attachment.width * scale)
     style = 'width:'+width+'px;'
     if upload.poi_note.attachment.content_type.match(/^[^\/]+/)[0] == 'image'
-     #tag = '<span class="swiper-slide" onclick="panPosition('+upload.location.lat+','+upload.location.lng+',\''+upload.location.address+'\','+upload.file.id+')">'+
+     #tag = '<span class="swiper-slide" onclick="APP.panPosition('+upload.location.lat+','+upload.location.lng+',\''+upload.location.address+'\','+upload.file.id+')">'+
       tag = '<span class="swiper-slide" onclick="panUpload('+upload.poi_note.attachment.id+')">'+
             '<img src="'+upload.poi_note.attachment.url+'" style="'+style+'">'+
             '</span>'
