@@ -22,6 +22,52 @@ Concept
 +) Objekt-basierte Versionierung
 +) rebase!!!!!
 
+
+flacher baum.
+
+
+hier: objekt-semantik ist statisch - es ginbt bestimmte attribute und die ändern sich nicht.
+abhängigkeiten können sequentiell serialisierbar sein
+
+keine komma, ProtoBuffer
+key value immer auf einer zeile
+v1:
+a{
+b: null
+comments[
+]
+}
+v2:
+a{
+b: null
+comments[
+d[i=0]: null
+e[i=1]: null
+c[i=2]: null
+]
+}
+
+v3:
+a{
+b: null
+comments[
+d[i=0]: null
+e[i=1]: 
+[
+]
+c[i=2]: null
+]
+}
+
+einer löscht e, anderer bearbeitet es
+i immer unveränderlch
+
+appendonly
+
+bei chat werden listen länger, ich kann auf einen beitrag antworten aber nicht stele aussuchen
+so gesehen ist i lokal temporär,
+
+
 ==========
 Pragmatic Diary
 ==========

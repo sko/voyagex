@@ -6,6 +6,11 @@ VoyageX::Application.configure do
   # since you don't have to restart the web server when you make code changes.
   config.cache_classes = false
 
+  # Do not eager load code on boot. This avoids loading your whole application
+  # just for the purpose of running a single test. If you are using a tool that
+  # preloads Rails for running tests, you may have to set it to true.
+  config.eager_load = false
+
   # Log error messages when you accidentally call methods on nil.
   config.whiny_nils = true
 
