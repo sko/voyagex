@@ -54,9 +54,12 @@ class window.Comm.StorageController
     else
       fsInitCB true
 
-  @storeKey: (xYZ) ->
+  @tileKey: (xYZ) ->
     xYZ[2]+'/'+xYZ[0]+'/'+xYZ[1]
   
+  @poiNoteAttachmentKey: (poiNote) ->
+    'poiNote.'+poiNote.id+'.attachment'
+
   @isFileBased: () ->
     StorageController._FS?
     #false
@@ -92,7 +95,7 @@ class window.Comm.StorageController
                   fileWriter.onwriteend = (e) ->
                       console.log('Write completed.')
                       deferredModeParams.deferred.resolve fileEntry.toURL(StorageController.instance()._tileImageContentType)
-                      storeKey = StorageController.storeKey(xYZ)
+                      storeKey = StorageController.tileKey(xYZ)
                       delete sC._tileLoadQueue[storeKey]
                       tileMeta = localStorage.getItem 'comm.tiles.tileMeta'
                       if tileMeta == null
@@ -108,7 +111,7 @@ class window.Comm.StorageController
                       console.log('Write failed: ' + e.toString())
                       #deferredModeParams.deferred.resolve deferredModeParams.tileUrl
                       deferredModeParams.deferred.resolve VoyageX.MapControl.notInCacheImage(xYZ[0], xYZ[1], xYZ[2])
-                      delete sC._tileLoadQueue[StorageController.storeKey(xYZ)]
+                      delete sC._tileLoadQueue[StorageController.tileKey(xYZ)]
                   console.log('saving file: '+path)
                   fileWriter.write(new Blob([data.properties.data], {type: sC._tileImageContentType}))
                   # text-files
@@ -169,7 +172,7 @@ class window.Comm.StorageController
   _getTileFile: (xYZ, prefetchMode, deferredModeParams, firstCall = true) ->
     path = '/'+xYZ[2]+'/'+xYZ[0]+'/'+xYZ[1]
     @_dirReaders.entry.getFile(path, {}, (fileEntry) ->
-        console.log('found file: '+path)
+        console.log('_getTileFile - found file: '+path)
         # if binary:
         deferredModeParams.deferred.resolve fileEntry.toURL(StorageController.instance()._tileImageContentType)
 #        # if text (base64):
@@ -186,7 +189,7 @@ class window.Comm.StorageController
 #                deferredModeParams.deferred.resolve this.result
 #            reader.readAsText(file)
 #            #reader.readAsDataURL(file, StorageController.instance()._tileImageContentType)
-        delete StorageController.instance()._tileLoadQueue[StorageController.storeKey(xYZ)]
+        delete StorageController.instance()._tileLoadQueue[StorageController.tileKey(xYZ)]
       , (e) ->
         if (e.code == FileError.NOT_FOUND_ERR) 
           if firstCall
@@ -197,19 +200,12 @@ class window.Comm.StorageController
             console.log('_getTileFile - no such file: '+path)
         else
           console.log('error: '+e+' for '+path)
-        #deferredModeParams.deferred.resolve VoyageX.MapControl.tileUrl(deferredModeParams.mC, deferredModeParams.view, deferredModeParams)
-        #if deferredModeParams.callBack
-        #  deferredModeParams.callBack = false
-        #  # TODO
-        #if xYZ[2] == deferredModeParams.view.zoom
         if prefetchMode == 0
           # one mor check for asynchronous request
-          loadQueueEntry = StorageController.instance()._tileLoadQueue[StorageController.storeKey(xYZ)]
+          loadQueueEntry = StorageController.instance()._tileLoadQueue[StorageController.tileKey(xYZ)]
           unless loadQueueEntry? && (!loadQueueEntry.storeFile)
-            #loadQueueEntry.storeFile = false
             VoyageX.MapControl.tileUrl deferredModeParams.mC, deferredModeParams.view, deferredModeParams
             loadQueueEntry.deferred = true
-            #console.log('sko_NOT SHURE ON 1912: removed defer with original tile-url')
           else
             console.log('TODO: _getTileFile - if this is logged then loadQueueEntry-check is necessary')
         else
@@ -220,14 +216,13 @@ class window.Comm.StorageController
       )
 
   _checkedTileLoadQueue: (xYZ, checkStoreFile, callback) ->
-    storeKey = StorageController.storeKey(xYZ)
+    storeKey = StorageController.tileKey(xYZ)
     stored = @_tileLoadQueue[storeKey]
     if stored?
       if checkStoreFile && stored.storeFile
         promise = callback(stored)
         stored.storeFile = false
-      #console.log('getTile - stored in queue: '+storeKey); 
-      #return this._result storeKey, stored
+      #console.log('_checkedTileLoadQueue - stored in queue: '+storeKey); 
       return stored.promise
     queueEntry = { promise: null, deferred: false, storeFile: true }
     callback(queueEntry)
@@ -253,21 +248,21 @@ class window.Comm.StorageController
     #deferredModeParams.tileUrl = readyImage
     deferredModeParams.deferred.resolve tileUrl
     view = deferredModeParams.view
-    delete this._tileLoadQueue[StorageController.storeKey([view.tile.column, view.tile.row, view.zoom])]
+    delete this._tileLoadQueue[StorageController.tileKey([view.tile.column, view.tile.row, view.zoom])]
   
   resolveOfflineNotInCache: (readyImage, deferredModeParams) ->
     deferredModeParams.tileUrl = readyImage
     deferredModeParams.deferred.resolve readyImage
     view = deferredModeParams.view
-    delete this._tileLoadQueue[StorageController.storeKey([view.tile.column, view.tile.row, view.zoom])]
+    delete this._tileLoadQueue[StorageController.tileKey([view.tile.column, view.tile.row, view.zoom])]
 
   storeTile: (xYZ, data, promise = null, deferredModeParams = null) ->
     if promise != null
       # @see getTile
-      unless @_tileLoadQueue[StorageController.storeKey(xYZ)]?
-        @_tileLoadQueue[StorageController.storeKey(xYZ)] = { promise: promise, deferred: false, storeFile: true }
+      unless @_tileLoadQueue[StorageController.tileKey(xYZ)]?
+        @_tileLoadQueue[StorageController.tileKey(xYZ)] = { promise: promise, deferred: false, storeFile: true }
       else
-        console.log('storeTile - promise for '+StorageController.storeKey(xYZ)+' already stored in queue ...')
+        console.log('storeTile - promise for '+StorageController.tileKey(xYZ)+' already stored in queue ...')
       return promise
 
     if StorageController.isFileBased()
@@ -287,7 +282,7 @@ class window.Comm.StorageController
 #        yEntry[xYZ[1]] = data
 #        tileStoreZ[xYZ[0]] = [yEntry]
 #        localStorage.setItem 'comm.tiles.'+xYZ[2], JSON.stringify(listEntries)
-        delete @_tileLoadQueue[StorageController.storeKey(xYZ)]
+        delete @_tileLoadQueue[StorageController.tileKey(xYZ)]
         localStorage.setItem storeKey, data.properties.data
         @_tileDB[storeKey] = data.properties.data
         @_tileMeta.numTiles = @_tileMeta.numTiles+1
@@ -301,24 +296,17 @@ class window.Comm.StorageController
       if deferredModeParams.promise == null
         deferredModeParams.promise = deferredModeParams.deferred.promise()
       this._checkedTileLoadQueue xYZ, false, (queueEntry) ->
-          console.log('getTile - '+StorageController.storeKey(xYZ)); 
-          # for file-API works asynchronously we have to always promise file - given that tile-loadimg-logic
-          # is also handled here
-          #deferredModeParams.deferred = $.Deferred()
+          console.log('getTile - '+StorageController.tileKey(xYZ)); 
+          # for file-API works asynchronously we have to always promise the file - that given,
+          # tile-loading-logic is also handled here
           sC._getTileFile xYZ, 0, deferredModeParams
-          #deferredModeParams.promise = deferredModeParams.deferred.promise()
           queueEntry.promise = deferredModeParams.promise
       deferredModeParams.promise
-# this was required in mixed mode (localStorage/file) when fs was not ready but images already started load
-#    else if deferredModeParams != null
-#      #VoyageX.MapControl.tileUrl(deferredModeParams.mC, deferredModeParams.view, deferredModeParams)
-#      deferredModeParams.deferred.resolve VoyageX.MapControl.tileUrl(deferredModeParams.mC, deferredModeParams.view, deferredModeParams)
     else
-      storeKey = StorageController.storeKey(xYZ)
+      storeKey = StorageController.tileKey(xYZ)
       stored = @_tileLoadQueue[storeKey]
       if stored?
         #console.log('getTile - stored in queue: '+storeKey); 
-        #return this._result storeKey, stored
         return stored.promise
       stored = @_tileDB['comm.tiles.'+storeKey]
       unless stored?
@@ -330,13 +318,63 @@ class window.Comm.StorageController
 #          console.log('stored in queue: '+storeKey); 
       # for backward-compatibility
       if stored?
-         # sko_13122014 @oldscool: this._result storeKey, stored
-         stored
+        stored
+      else
+        null
+  
+  _getPoiNoteAttachmentFile: (poiNote, prefetchMode, deferredModeParams) ->
+    path = '/poiNotes/attachments/'+poiNote.id
+    @_dirReaders.entry.getFile(path, {}, (fileEntry) ->
+        console.log('_getPoiNoteAttachmentFile - found file: '+path)
+        # if binary:
+        deferredModeParams.deferred.resolve fileEntry.toURL(poiNote.attachment.content_type)
+#        # if text (base64):
+#        fileEntry.file (file) ->
+#            #@_dirReaders.entries.poiNotes.entries.attachments.reader
+#            reader = new FileReader()
+#            reader.onabort = (e) ->
+#                console.log('aborted '+path+": "+e)
+#            reader.onerror = (e) ->
+#                console.log('failed '+path+": "+e)
+#            reader.onload = (e) ->
+#                if this.result == ''
+#                  console.log('bad read on '+path)
+#                deferredModeParams.deferred.resolve this.result
+#            reader.readAsText(file)
+      , (e) ->
+        if (e.code == FileError.NOT_FOUND_ERR) 
+          console.log('_getTileFile - no such file: '+path)
+        else
+          console.log('error: '+e+' for '+path)
+       #VoyageX.MapControl.tileUrl deferredModeParams.mC, deferredModeParams.view, deferredModeParams
+        #if prefetchMode == 0
+          deferredModeParams.attachmentUrl poiNote, deferredModeParams
+        #else
+        #  VoyageX.MapControl.loadAndPrefetch deferredModeParams.mC, xYZ, deferredModeParams.view.subdomain, deferredModeParams
+      )
+
+  #loadAndPrefetchPoiNoteAttachment: (prefetchParams) ->
+  #  #this._getPoiNoteAttachmentFile prefetchParams.xYZ, 1, prefetchParams
+  #  VoyageX.MapControl.loadAndPrefetch deferredModeParams.mC, xYZ, deferredModeParams.view.subdomain, deferredModeParams
+  #  prefetchParams.promise = prefetchParams.deferred.promise()
+  
+  getPoiNoteAttachment: (poiNote, deferredModeParams = null) ->
+    if StorageController.isFileBased()
+      if deferredModeParams.promise == null
+        deferredModeParams.promise = deferredModeParams.deferred.promise()
+      console.log('getPoiNoteAttachment - '+StorageController.poiNoteAttachmentKey(poiNote))
+      this._getPoiNoteAttachmentFile poiNote, 0, deferredModeParams
+      deferredModeParams.promise
+    else
+      storeKey = StorageController.poiNoteAttachmentKey(poiNote)
+      stored = localStorage.getItem 'comm.poiNoteAttachments.'+storeKey
+      if stored?
+        stored
       else
         null
 
   storeImage: (xYZ, tileDataUrl, deferredModeParams = null) ->
-    storeKey = StorageController.storeKey(xYZ)
+    storeKey = StorageController.tileKey(xYZ)
     geoJSON = {
         properties: {
             id: storeKey,
@@ -372,8 +410,7 @@ class window.Comm.StorageController
           storedJSON = eval("(" + stored + ")")
           @_jsonObjects[storeKey] = storedJSON
         if listKey == 'push'
-        ##storedJSON[listKey].push(data) # LIFO with push
-         #storedJSON[listKey].splice(0, 0, data) # FIFO with push
+         #storedJSON.push(data)         # LIFO with push
           storedJSON.splice(0, 0, data) # FIFO with push
         else
           storedJSON[listKey] = data

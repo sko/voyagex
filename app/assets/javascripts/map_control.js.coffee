@@ -8,14 +8,14 @@ class window.VoyageX.MapControl
 #  @_COUNT = 0
 
   # zooms msut be sorted from lowest (f.ex. 1) to highest (f.ex. 16)
-  constructor: (cacheStrategy, mapOptions, offlineZooms, online) ->
+  constructor: (cacheStrategy, mapOptions, offlineZooms) ->
     MapControl._SINGLETON = this
     mapOptions.layers = [new L.TileLayer.Functional(VoyageX.MapControl.drawTile, {
         subdomains: mapOptions.subdomains
       })]
     @_mapOptions = mapOptions
     @_cacheStrategy = cacheStrategy
-    @_online = online
+    #@_online = online
     @_zooms = mapOptions.zooms
     @_minZoom = @_zooms[0]
     @_maxZoom = @_zooms[@_zooms.length - 1]
@@ -33,17 +33,17 @@ class window.VoyageX.MapControl
   map: () ->
     @_map
 
-  setOnline: () ->
-    @_online = true
-    @_zooms.splice(0, @_zooms.length)
-    for n in [@_minZoom..@_maxZoom]
-      @_zooms.push n
+#  setOnline: () ->
+#    @_online = true
+#    @_zooms.splice(0, @_zooms.length)
+#    for n in [@_minZoom..@_maxZoom]
+#      @_zooms.push n
 
-  setOffline: () ->
-    @_online = false
-    @_zooms.splice(0, @_zooms.length)
-    for n in @_offlineZooms
-      @_zooms.push n
+#  setOffline: () ->
+#    @_online = false
+#    @_zooms.splice(0, @_zooms.length)
+#    for n in @_offlineZooms
+#      @_zooms.push n
 
   # google z/x/y
   # x ... parseInt(map.project(map.getCenter()).x/256)
@@ -96,8 +96,9 @@ class window.VoyageX.MapControl
 #    unless MapControl._COUNT <= 2
 #      return VoyageX.TILE_URL_TEMPLATE.replace('{z}', view.zoom).replace('{y}', view.tile.row).replace('{x}', view.tile.column).replace('{s}', view.subdomain)
     mC = VoyageX.MapControl.instance()
-    storeKey = Comm.StorageController.storeKey([view.tile.column, view.tile.row, view.zoom])
+    storeKey = Comm.StorageController.tileKey([view.tile.column, view.tile.row, view.zoom])
     if Comm.StorageController.isFileBased()
+      # use File-API
       console.log 'drawTile - ........................................'+storeKey
       # TODO ? maybe just query offline-zoom-files - see MapControl.tileUrl else of if view.zoom in mC._offlineZooms
       # NO - because other zoom-levels may trigger some extra-action (liek prefetch ...)
@@ -112,7 +113,6 @@ class window.VoyageX.MapControl
     else
       # use localStorage
       stored = if view.zoom in mC._offlineZooms then Comm.StorageController.instance().getTile [view.tile.column, view.tile.row, view.zoom] else null
-      #if stored == null || !(geoJSON = stored)?
       unless stored?
         VoyageX.MapControl.tileUrl mC, view
       else
@@ -125,16 +125,16 @@ class window.VoyageX.MapControl
               .replace('{y}', view.tile.row)
               .replace('{x}', view.tile.column)
               .replace('{s}', view.subdomain)
-    if mC._online
+    if APP.isOnline()
       # if current zoom-level is not offline-zoom-level then load from web
       if view.zoom in mC._offlineZooms
         if deferredModeParams != null
           deferredModeParams.tileUrl = tileUrl
         # _map maybe not ready on very first call
-        if mC._map?
+        #if mC._map?
           readyImage = mC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS, deferredModeParams
-        else
-          readyImage = MapControl.loadAndPrefetch mC, [view.tile.column, view.tile.row, view.zoom], view.subdomain, deferredModeParams
+        #else
+        #  readyImage = MapControl.loadAndPrefetch mC, [view.tile.column, view.tile.row, view.zoom], view.subdomain, deferredModeParams
       else
         readyImage = tileUrl
         if deferredModeParams != null
@@ -161,7 +161,7 @@ class window.VoyageX.MapControl
     mC._notInCacheImage $('#tile_canvas')[0], x, y, z
 
   _prefetchZoomLevels: (xYZ, viewSubdomain, deferredModeParams = null) ->
-    storeKey = Comm.StorageController.storeKey([xYZ[0], xYZ[1], xYZ[2]])
+    storeKey = Comm.StorageController.tileKey([xYZ[0], xYZ[1], xYZ[2]])
     # store 1 higher zoomlevel if current zoomlevel is not in @_offlineZooms
     for z in @_offlineZooms
       if z > xYZ[2]
@@ -175,7 +175,7 @@ class window.VoyageX.MapControl
   _prefetchArea: (view, radiusMeters, deferredModeParams = null) ->
     xYZ = [view.tile.column, view.tile.row, view.zoom]
     centerTile = null
-    console.log 'area-prefetch-base: '+Comm.StorageController.storeKey([xYZ[0], xYZ[1], xYZ[2]])
+    console.log 'area-prefetch-base: '+Comm.StorageController.tileKey([xYZ[0], xYZ[1], xYZ[2]])
     curTileWidthMeters = this.curTileWidthToMeters()
     numTilesLeft = 0
     while radiusMeters - curTileWidthMeters > 0
@@ -186,7 +186,7 @@ class window.VoyageX.MapControl
         curXYZ = [xYZ[0]+addToX,
                   xYZ[1]+addToY,
                   xYZ[2]]
-        storeKey = Comm.StorageController.storeKey([curXYZ[0], curXYZ[1], curXYZ[2]])
+        storeKey = Comm.StorageController.tileKey([curXYZ[0], curXYZ[1], curXYZ[2]])
         if Comm.StorageController.isFileBased()
           prefetchParams = { loadTileDataCB: this._loadReadyImage,\
                              mC: this,\
@@ -238,7 +238,7 @@ class window.VoyageX.MapControl
                 Math.round((curXYZ[1]-0.1)/2),
                 n]
       if n in @_offlineZooms
-        parentStoreKey = curXYZ[2]+'/'+curXYZ[0]+'/'+curXYZ[1]
+        parentStoreKey = Comm.StorageController.tileKey([curXYZ[0], curXYZ[1], curXYZ[2]])
         if Comm.StorageController.isFileBased()
           prefetchParams = { loadTileDataCB: this._loadReadyImage,\
                              mC: this,\

@@ -9,33 +9,35 @@ class window.VoyageX.Main
   @_COMM_CHANNELS = ['system', 'talk', 'map_events', 'uploads']
   @_STORAGE_MODEL = null
 
-  constructor: (userId, cacheStrategy, view, mapOptions, offlineZooms, online) ->
+  constructor: (user, cacheStrategy, view, mapOptions, offlineZooms, online) ->
     Main._SINGLETON = this
     window.APP = this
+    @_user = user
     @_initState = 0
+    @_online = online
     @_view = view
     @_comm = null
     @_selectedPositionLatLng = [-1, -1]
     @_STORAGE_MODEL = new Storage.Model()
     $(window.document).ready () ->
-        APP._init userId, cacheStrategy, view, mapOptions, offlineZooms, online
+        APP._init cacheStrategy, view, mapOptions, offlineZooms
 
-  _init: (userId, cacheStrategy, view, mapOptions, offlineZooms, online) ->
+  _init: (cacheStrategy, view, mapOptions, offlineZooms) ->
     APP._initState += 1
     switch APP._initState
       when 1
         Main._STORAGE_CONTROLLER = new Comm.StorageController((initError) ->
             console.log 'StorageController initialized FileSystem with message: '+(if initError then 'FAILED' else 'OK')
-            APP._init userId, cacheStrategy, view, mapOptions, offlineZooms, online
+            APP._init cacheStrategy, view, mapOptions, offlineZooms
           )
       when 2
-        APP._comm = new Comm.Comm(userId,
+        APP._comm = new Comm.Comm(APP.userId(),
                                   [['/talk', view._talkCB, window.VoyageX.CHANNEL_ENC_KEY],
                                    ['/map_events', view._mapEventsCB, window.VoyageX.CHANNEL_ENC_KEY],
                                    ['/uploads', view._uploadsCB, window.VoyageX.CHANNEL_ENC_KEY]],
                                    window.VoyageX.SYS_CHANNEL_ENC_KEY,
                                    APP._systemCB)
-        Main._MAP_CONTROL = new VoyageX.MapControl cacheStrategy, mapOptions, offlineZooms, online
+        Main._MAP_CONTROL = new VoyageX.MapControl cacheStrategy, mapOptions, offlineZooms
         Main._MARKER_MANAGER = new VoyageX.MarkerManager(Main.map())
 #      if navigator.geolocation 
 #        navigator.geolocation.getCurrentPosition(initPositionCB, (error) ->
@@ -69,16 +71,37 @@ class window.VoyageX.Main
         APP._zoomEnd(null)
         cacheStats()
 
+  userId: () ->
+    APP._user.id
+
+  userName: () ->
+    APP._user.username
+
+  isOnline: () ->
+    @_online
+
+  setOnline: () ->
+    Main._MAP_CONTROL._online = true
+    Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
+    for n in [Main._MAP_CONTROL._minZoom..Main._MAP_CONTROL._maxZoom]
+      Main._MAP_CONTROL._zooms.push n
+
+  setOffline: () ->
+    Main._MAP_CONTROL._online = false
+    Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
+    for n in Main._MAP_CONTROL._offlineZooms
+      Main._MAP_CONTROL._zooms.push n
+    
   publishPosition: () ->
     @_comm.send('/map_events', {type: 'click',\
-                                userId: $('#current_user_id').val(),\
+                                userId: APP.userId(),\
                                 lat: @_selectedPositionLatLng[0],\
                                 lng: @_selectedPositionLatLng[1]})
 
   publishMessage: (publishText) ->
     @_comm.send('/talk', {type: 'message',\
-                          userId: $('#current_user_id').val(),\
-                          text: $('#current_user_id').val()+': '+publishText})
+                          userId: APP.userId(),\
+                          text: APP.userName()+': '+publishText})
 
   getSelectedPositionLatLng: () ->
     return [@_selectedPositionLatLng[0], @_selectedPositionLatLng[1]]

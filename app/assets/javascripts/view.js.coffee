@@ -39,7 +39,7 @@ class window.VoyageX.View
 
   _talkCB: (message) ->
     console.log 'got a talk - message: ' + message.type
-    if $('#current_user_id').val() == message.userId
+    if APP.userId() == message.userId
       return null
     $('#message').val('\n-------------------------\n'+message.text+$('#message').val())
     $('#message').selectRange(0) 
@@ -48,7 +48,7 @@ class window.VoyageX.View
 
   _mapEventsCB: (mapEvent) ->
     console.log 'got a map_events - message: ' + mapEvent.type
-    if $('#current_user_id').val() == mapEvent.userId# && mapEvent.type == 'click'
+    if APP.userId() == mapEvent.userId# && mapEvent.type == 'click'
       return null
     if VoyageX.Main.markerManager().get().getPopup()?
       VoyageX.Main.markerManager().get().unbindPopup()
@@ -63,6 +63,8 @@ class window.VoyageX.View
 
   _uploadsCB: (upload) ->
     console.log 'got an uploads - message: ' + upload.type
+    unless upload.poi_note.user.id == APP.userId()
+      window.stopSound = VoyageX.MediaManager.instance().playSound('/Treat.mp3')
     maxHeight = 100
     scale = maxHeight / upload.poi_note.attachment.height
     width = Math.round(upload.poi_note.attachment.width * scale)

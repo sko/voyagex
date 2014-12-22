@@ -5,6 +5,7 @@
   window.VoyageX.TILE_URL_TEMPLATE = '#{Leaflet.tile_layer}';
   window.VoyageX.USE_GLOBAL_SUBSCRIBE = #{USE_GLOBAL_SUBSCRIBE};
   window.VoyageX.SEARCH_RADIUS_METERS = #{tmp_user.search_radius_meters||100};
+  window.currentUser = { id: #{tmp_user.id}, username: '#{tmp_user.username}'};
   - if current_user.present?
     window.VoyageX.CHANNEL_ENC_KEY = '#{current_user.comm_setting.channel_enc_key}';
     window.VoyageX.SYS_CHANNEL_ENC_KEY = '#{current_user.comm_setting.sys_channel_enc_key}';

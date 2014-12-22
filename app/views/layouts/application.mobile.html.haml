@@ -17,7 +17,6 @@
     = javascript_include_tag "/comm/faye-browser.js"
     = javascript_include_tag "/assets/comm/channels.js"
   %body{data: {role: 'page'}}    
-    = hidden_field_tag :current_user_id, current_user.present? ? current_user.id : tmp_user.id, { id: :current_user_id }
     #header{'data-role' => 'header', 'data-position' => 'fixed'}
       #navbar{'data-role' => 'navbar'}
         %ul
@@ -42,7 +41,7 @@
       $("head").append("<style type='text/css'>#cur_loc_addr {position: fixed; top: "+41+"px; height: 20px; z-index: 1000 !important;}</style>");
       var panelCtrlTopOff = $(window).height() - 41;
       $("head").append("<style type='text/css'>#panel_control {position: fixed; top: "+panelCtrlTopOff+"px; height: 20px; z-index: 1000 !important;}</style>");
-    #content{'data-role' => 'content', style: 'padding: 0px !important;'}
+    #content{data: {role: 'content', position: 'fixed'}, style: 'padding: 0px !important;'}
       .auth{style: 'display:none;'}
         = render partial: '/auth/sign_in.mobile', locals: {resource: User.new, resource_name: :user}
         = render partial: '/auth/sign_up.mobile', locals: {resource: User.new, resource_name: :user}

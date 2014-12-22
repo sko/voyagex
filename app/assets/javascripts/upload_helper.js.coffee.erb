@@ -50,7 +50,7 @@ jQuery ->
 #      dataType: 'script'
 #      url: '<-%= create_upload_comment_path(upload_id: '') %>'+upload_id
 #      data: { _method: 'put',\
-#              user_id: $('#current_user_id').val(),\
+#              user_id: APP.userId(),\
 #              text: $('#add_upload_comment_text').val() }
 #    $('#add_upload_comment_text').val('')
 #    #$("#upload_comment_conrols").css('display', 'none')

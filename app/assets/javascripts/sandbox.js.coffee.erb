@@ -50,11 +50,11 @@ jQuery ->
 
   window.toggleNetworkState = (selected) ->
     if selected.id == 'network_state_online'
-      VoyageX.MapControl.instance().setOnline()
+      APP.setOnline()
       Comm.StorageController.instance()._tileLoadQueue = {}
       VoyageX.Main.map()._resetView VoyageX.Main.map().getCenter(), VoyageX.Main.map().getZoom(), true
     else
-      VoyageX.MapControl.instance().setOffline()
+      APP.setOffline()
 
   window.openUploadCommentControls = (poiId) ->
     #$("#upload_comment_conrols").css('display', 'block')
