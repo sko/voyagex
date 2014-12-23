@@ -38,35 +38,35 @@ class window.VoyageX.Main
                                    window.VoyageX.SYS_CHANNEL_ENC_KEY,
                                    APP._systemCB)
         Main._MAP_CONTROL = new VoyageX.MapControl cacheStrategy, mapOptions, offlineZooms
-        Main._MARKER_MANAGER = new VoyageX.MarkerManager(Main.map())
+        Main._MARKER_MANAGER = new VoyageX.MarkerManager(APP.map())
 #      if navigator.geolocation 
 #        navigator.geolocation.getCurrentPosition(initPositionCB, (error) ->
 #            alert('geolocation timed out - manual selection required.\nsetting default location...')
 #            initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
 #        , { enableHighAccuracy: true, timeout : 10000 })
-#      #Main.map().on('locationfound', (e) ->
+#      #APP.map().on('locationfound', (e) ->
 #      #    alert('found location...')
 #      #  )
-#      #Main.map().on('locationerror', (e) ->
+#      #APP.map().on('locationerror', (e) ->
 #      #    alert('geolocation timed out - manual selection required.\nsetting default location...')
 #      #  )
-        Main.map().on 'click', (event) ->
+        APP.map().on 'click', (event) ->
           address = null
           APP._setSelectedPositionLatLng Main.markerManager().get()||Main.markerManager().add(event.latlng.lat, event.latlng.lng, Main._markerEventsCB), event.latlng.lat, event.latlng.lng, address
           APP.publishPosition()
-        Main.map().on('zoomend', (e) ->
+        APP.map().on('zoomend', (e) ->
             APP._zoomEnd(e);
           )
         if window.isMobile()
-          Main.map().invalidateSize({
+          APP.map().invalidateSize({
               reset: true,
               pan: false,
               animate: false
             })
         APP._initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
-        $('#zoom_level').html('<span style="color:white;">zoom: '+Main.map().getZoom()+'</span>')
+        $('#zoom_level').html('<span style="color:white;">zoom: '+APP.map().getZoom()+'</span>')
         # next statement removes value from inputs!!
-        $("#network_state").buttonset()
+        #$("#network_state").buttonset()
         $('button[value=camera]').focus()
         APP._zoomEnd(null)
         cacheStats()
@@ -116,17 +116,17 @@ class window.VoyageX.Main
     if address != null
       $('#cur_loc_addr').html(address) 
     if showSearchRadius
-      VoyageX.Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, Main.map())
+      VoyageX.Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, APP.map())
 
   _zoomEnd: (e) ->
-    $('#zoom_level').html('<span style="color:white;">zoom: '+Main.map().getZoom()+'</span>')
+    $('#zoom_level').html('<span style="color:white;">zoom: '+APP.map().getZoom()+'</span>')
 
   _initPositionCB: (position) ->
     address = null
     marker = VoyageX.Main.markerManager().sel null, position.coords.latitude, position.coords.longitude, Main._markerEventsCB
     APP._setSelectedPositionLatLng marker, position.coords.latitude, position.coords.longitude, address
-    Main.map().panTo([position.coords.latitude, position.coords.longitude])
-    #Main.map().setView [position.coords.latitude, position.coords.longitude], 16
+    APP.map().panTo([position.coords.latitude, position.coords.longitude])
+    #APP.map().setView [position.coords.latitude, position.coords.longitude], 16
     APP.publishPosition()
 
   _systemCB: (message) ->
@@ -161,9 +161,9 @@ class window.VoyageX.Main
 
   panPosition: (lat, lng, address) ->
     APP._setSelectedPositionLatLng VoyageX.Main.markerManager().get(), lat, lng, address
-    Main.map().panTo([lat, lng])
-    #Main.map().setView([lat, lng], 16)
-    VoyageX.NavBar.menuNavClick('map')
+    APP.map().panTo([lat, lng])
+    #APP.map().setView([lat, lng], 16)
+    #VoyageX.NavBar.menuNavClick('map')
 
   photoNav: () ->
     $.ajax
@@ -203,7 +203,7 @@ class window.VoyageX.Main
   @mapControl: () ->
     Main._MAP_CONTROL
 
-  @map: () ->
+  map: () ->
     Main._MAP_CONTROL.map()
 
   @markerManager: () ->

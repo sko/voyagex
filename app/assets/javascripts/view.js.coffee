@@ -65,8 +65,8 @@ class window.VoyageX.View
       APP._setSelectedPositionLatLng VoyageX.Main.markerManager().get(), mapEvent.lat, mapEvent.lng, mapEvent.address
     else
       APP._setSelectedPositionLatLng VoyageX.Main.markerManager().get(), mapEvent.lat, mapEvent.lng, null
-    VoyageX.Main.map().panTo([mapEvent.lat, mapEvent.lng])
-    #VoyageX.Main.map().setView [mapEvent.lat, mapEvent.lng], 16
+    APP.map().panTo([mapEvent.lat, mapEvent.lng])
+    #APP.map().setView [mapEvent.lat, mapEvent.lng], 16
     for listener in View.instance()._commListeners.map_events
       listener(mapEvent)
 

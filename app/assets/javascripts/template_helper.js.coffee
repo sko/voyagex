@@ -15,9 +15,11 @@ class window.VoyageX.TemplateHelper
       methodDiv.append('<input type="hidden" name="_method" value="put">')
       $('#'+formId).attr('action', updateActionPathTmpl.replace(/:id/, poiNote.id))
 
-  @poiNotePopupHtmlFromTmpl: (poiNote, i, addContainer = false) ->
+  @poiNotePopupHtmlFromTmpl: (poiNote, i, addContainer = false, meta = null) ->
+    unless meta?
+      meta = {height: 0}
     html = TemplateHelper._updateIds 'tmpl_poi_note'
-    poiNotesHtml = TemplateHelper.poiNotePopupEntryHtml(poiNote, html, i)
+    poiNotesHtml = TemplateHelper.poiNotePopupEntryHtml(poiNote, html, i, meta)
     if addContainer
       popupHtml = TemplateHelper._updateIds 'tmpl_poi_notes_container'
       popupHtml = popupHtml.
@@ -26,33 +28,36 @@ class window.VoyageX.TemplateHelper
     else
       poiNotesHtml
 
-  @poiNotePopupEntryHtml: (poiNote, poiNoteTmpl, i) ->
+  @poiNotePopupEntryHtml: (poiNote, poiNoteTmpl, i, meta) ->
     poiNoteTmpl.
     replace(/\{i\}/g, i).
-    replace(/\{media_file_tag\}/, TemplateHelper._mediaFileTag(poiNote.attachment)).
+    replace(/\{media_file_tag\}/, TemplateHelper._mediaFileTag(poiNote.attachment, meta)).
     replace(/\{username\}/, poiNote.user.username).
     replace(/\{comment\}/, poiNote.text)
 
-  @poiNotePopupHtml: (poi) ->
+  @poiNotePopupHtml: (poi, meta) ->
     popupHtml = TemplateHelper._updateIds 'tmpl_poi_notes_container'
     poiNoteTmpl = TemplateHelper._updateIds 'tmpl_poi_note'
     poiNotesHtml = ''
     for poiNote, i in poi.notes
-      poiNotesHtml += TemplateHelper.poiNotePopupEntryHtml(poiNote, poiNoteTmpl, i)
+      poiNotesHtml += TemplateHelper.poiNotePopupEntryHtml(poiNote, poiNoteTmpl, i, meta)
     popupHtml = popupHtml.
                 replace(/\{poi_notes\}/, poiNotesHtml).
                 replace(/\{base_poi_note_id\}/, poi.notes[0].id)
 
   @openPOINotePopup: (poi) ->
+    meta = {height: 0}
     APP.panPosition(poi.lat, poi.lng, poi.address)
-    popupHtml = TemplateHelper.poiNotePopupHtml(poi)
-    VoyageX.Main.markerManager().get().bindPopup(popupHtml).openPopup({maxHeight: '200px', minWidth: '100px'})
-    #popup = L.popup({minWidth: '100px', maxHeight: '400px'})
-    #popup.setContent(popupHtml)
-    #VoyageX.Main.markerManager().get().bindPopup(popup).openPopup({minWidth: '200px'})
-    #$('#poi_notes_container').scrollpanel({
-    #    prefix: 'pcn-'
-    #  })
+    popupHtml = TemplateHelper.poiNotePopupHtml(poi, meta)
+    marker = VoyageX.Main.markerManager().get()
+    popup = marker.getPopup()
+    unless popup?
+      popup = L.popup {minWidth: 100, maxHeight: 300}
+      marker.bindPopup(popup)
+      popup.setContent(popupHtml)
+    else
+      popup.setContent(popupHtml)
+    marker.openPopup()
     $('.leaflet-popup-close-button').on 'click', (event) ->
       VoyageX.Main.markerManager().get().unbindPopup()
       $('.leaflet-popup').remove()
@@ -93,11 +98,16 @@ class window.VoyageX.TemplateHelper
     html = html.replace(new RegExp(' tmpl-ref=[\'"][^\'"]+[\'"]', 'g'), '')
     html
   
-  @_mediaFileTag: (upload) ->
+  @_mediaFileTag: (upload, meta) ->
+    scale = -1.0
+    height = -1
     switch upload.content_type.match(/^[^\/]+/)[0]
       when 'image' 
-        maxWidth = 100
-        '<img src='+upload.url+' style="width:'+maxWidth+'px;">'
+        maxWidth = 100.0
+        scale = maxWidth/upload.width
+        height = Math.round(upload.height*scale)
+        meta.height += height
+        '<img src='+upload.url+' style="width:'+maxWidth+'px;height:'+height+'px;">'
       when 'audio'
         '<audio controls: "controls">'+
           '<source src="'+upload.url+'" type="'+upload.content_type+'">'+

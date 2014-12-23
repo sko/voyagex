@@ -11,15 +11,15 @@ jQuery ->
   
   window.toggleHomeTab = (selected) ->
     if selected.value == 'administration'
-      $('#content_uploads').css('display', 'none')
+      $('#content_help').css('display', 'none')
       $('#administration').css('display', 'block')
       $('#stats').css('display', 'none')
-    else if selected.value == 'upload'
-      $('#content_uploads').css('display', 'block')
+    else if selected.value == 'help'
+      $('#content_help').css('display', 'block')
       $('#administration').css('display', 'none')
       $('#stats').css('display', 'none')
     else
-      $('#content_uploads').css('display', 'none')
+      $('#content_help').css('display', 'none')
       $('#administration').css('display', 'none')
       $('#stats').css('display', 'block')
 
@@ -42,17 +42,17 @@ jQuery ->
     if selected.id == 'search_radius_display_show'
       window.showSearchRadius = true
       #VoyageX.Main.markerManager()._showSearchRadius = true
-      VoyageX.Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, VoyageX.Main.map())
+      VoyageX.Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, APP.map())
     else
       window.showSearchRadius = false
       #VoyageX.Main.markerManager()._showSearchRadius = false
-      VoyageX.Main.markerManager().searchBounds(0, VoyageX.Main.map())
+      VoyageX.Main.markerManager().searchBounds(0, APP.map())
 
   window.toggleNetworkState = (selected) ->
     if selected.id == 'network_state_online'
       APP.setOnline()
       Comm.StorageController.instance()._tileLoadQueue = {}
-      VoyageX.Main.map()._resetView VoyageX.Main.map().getCenter(), VoyageX.Main.map().getZoom(), true
+      APP.map()._resetView APP.map().getCenter(), APP.map().getZoom(), true
     else
       APP.setOffline()
 

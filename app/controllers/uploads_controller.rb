@@ -83,33 +83,29 @@ class UploadsController < ApplicationController
     user = current_user || tmp_user
     poi_note = PoiNote.find(params[:upload_id])
     @upload = poi_note.attachment
-    if params[:text].present?
-      @upload.comments.create(user: user, text: params[:text])
-      render "shared/upload_comments", layout: false, formats: [:js]
-    else
-      poi_notes = []
-      cur_poi_note = @upload.attached_to
+    
+    poi_notes = []
+    cur_poi_note = @upload.attached_to
+    cur_poi_note_json = { id: cur_poi_note.id,
+                          user: { id: cur_poi_note.user.id,
+                                  username: cur_poi_note.user.username },
+                          text: cur_poi_note.text }
+    add_attachment_to_poi_note_json @upload, cur_poi_note_json
+    poi_notes << cur_poi_note_json
+    @upload.attached_to.comments.each do |cur_poi_note|
       cur_poi_note_json = { id: cur_poi_note.id,
                             user: { id: cur_poi_note.user.id,
                                     username: cur_poi_note.user.username },
                             text: cur_poi_note.text }
-      add_attachment_to_poi_note_json @upload, cur_poi_note_json
+      add_attachment_to_poi_note_json cur_poi_note.attachment, cur_poi_note_json
       poi_notes << cur_poi_note_json
-      @upload.attached_to.comments.each do |cur_poi_note|
-        cur_poi_note_json = { id: cur_poi_note.id,
-                              user: { id: cur_poi_note.user.id,
-                                      username: cur_poi_note.user.username },
-                              text: cur_poi_note.text }
-        add_attachment_to_poi_note_json cur_poi_note.attachment, cur_poi_note_json
-        poi_notes << cur_poi_note_json
-      end
-      json = { poi: { id: @upload.attached_to.poi.id,
-                      lat: @upload.attached_to.poi.location.latitude,
-                      lng: @upload.attached_to.poi.location.longitude,
-                      address: @upload.attached_to.poi.location.address,
-                      notes: poi_notes } }
-      render json: json
     end
+    json = { poi: { id: @upload.attached_to.poi.id,
+                    lat: @upload.attached_to.poi.location.latitude,
+                    lng: @upload.attached_to.poi.location.longitude,
+                    address: @upload.attached_to.poi.location.address,
+                    notes: poi_notes } }
+    render json: json
   end
 
   def csrf

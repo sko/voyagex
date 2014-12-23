@@ -1,13 +1,14 @@
 #stats{style: 'display: none;'}
+  #network_state_view{style: 'vertical-align: top;'}
+    %div
+      = radio_button_tag 'network_state', 'online', true, data: {mini: true}, onclick: 'toggleNetworkState(this)'
+      = label_tag 'network_state_online', 'online'
+      = radio_button_tag 'network_state', 'offline', false, data: {mini: true}, onclick: 'toggleNetworkState(this)'
+      = label_tag 'network_state_offline', 'offline'
   #zoom_level
   #cache_stats
   #cache_ctrls
     %button{id: 'clear_cache'}
       Clear Cache
-  #network_state
-    %div
-      = radio_button_tag 'network_state', 'online', true, onclick: 'toggleNetworkState(this)'
-      = label_tag 'network_state_online', 'online'
-    %div
-      = radio_button_tag 'network_state', 'offline', false, onclick: 'toggleNetworkState(this)'
-      = label_tag 'network_state_offline', 'offline'
+
+  %iframe{id: 'cache_view', style: 'width: 100%; display: none'}

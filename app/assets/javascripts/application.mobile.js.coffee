@@ -1,7 +1,7 @@
 class window.VoyageX.NavBar
   @menuNavClick: (clickSrc) ->
     window.clientState.setView(window.clientState.getView(clickSrc))
-    VoyageX.Main.map().invalidateSize({
+    APP.map().invalidateSize({
               reset: true,
               pan: false,
               animate: false
