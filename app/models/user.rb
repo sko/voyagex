@@ -2,7 +2,7 @@ class User < ActiveRecord::Base
   has_many :locations_users, dependent: :destroy
   has_many :locations, through: :locations_users
   has_many :uploads
-  has_one :comm_setting, inverse_of: :user
+  has_one :comm_setting, inverse_of: :user, dependent: :destroy
 
   #scope :last_location, ->(){where(locations: {id: locations.maximum(:id)})}
 

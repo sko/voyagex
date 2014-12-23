@@ -37,7 +37,7 @@ signUpDialog = $("#sign_up_modal").dialog({
     })
 #$("head").append("<style type='text/css'>#sign_up_modal {width:"+Math.abs($(window).width() * 0.3)+"px;}</style>");
 
-allSignInFields = $([]).add($("#auth_email")).add($("#auth_password")).add($("#auth_password_confirmation"))
+allSignInFields = $([]).add($("#auth_signin_email")).add($("#auth_signin_password"))
 signInUser = () ->
   $("#new_session").submit()
   signInDialog.dialog("close")

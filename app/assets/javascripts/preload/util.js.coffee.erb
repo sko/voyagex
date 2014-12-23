@@ -11,6 +11,18 @@ window.showLoginDialog = (confirmEmailAddress) ->
     $("#sign_in_flash").html("check email-account "+confirmEmailAddress+" first for confirmation-mail")
   $("#sign_in_modal").dialog('open')
 
+sendAuthFormOn13 = (event) ->
+  if (event.which == 13 || event.keyCode == 13)
+    submit = $('#auth_signin_email').val() != '' && $('#auth_signin_password').val() != ''
+    if submit
+      $(event.target).closest('form').submit()
+
+$(document).on 'keyup', '#auth_signin_email', (event) ->
+    sendAuthFormOn13 event
+
+$(document).on 'keyup', '#auth_signin_password', (event) ->
+    sendAuthFormOn13 event
+
 $(document).on 'keyup', '.edit_detail', (event) ->
   if (event.which == 13 || event.keyCode == 13)
     event.preventDefault()

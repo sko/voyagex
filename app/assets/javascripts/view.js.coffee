@@ -16,24 +16,33 @@ class window.VoyageX.View
                     replace(/\{id\}/g, message.peer.id).
                     replace(/\{username\}/g, message.peer.username)
       $('#want_to_follow_me').append(tr_template)
+      if window.isMobile()
+        $('#comm_peer_data').trigger("create")
     else if message.type == 'subscription_granted'
       $('#i_want_to_follow_'+message.peer.comm_setting_id).remove()
       tr_template = $('#i_follow_template').html().
                     replace(/\{id\}/g, message.peer.comm_setting_id).
                     replace(/\{username\}/g, message.peer.username)
       $('#i_follow').append(tr_template)
+      if window.isMobile()
+        $('#comm_peer_data').trigger("create")
     else if message.type == 'subscription_denied'
       $('#i_want_to_follow_'+message.peer.comm_setting_id).remove()
       tr_template = $('#i_dont_follow_template').html().
                     replace(/\{id\}/g, message.peer.comm_setting_id).
                     replace(/\{username\}/g, message.peer.username)
       $('#i_dont_follow').append(tr_template)
+      if window.isMobile()
+        $('#comm_peer_data').trigger("create")
     else if message.type == 'subscription_grant_revoked'
       $('#i_follow_'+message.peer.comm_setting_id).remove()
-      tr_template = $('#i_dont_follow_template').html().
-                    replace(/\{id\}/g, message.peer.comm_setting_id).
-                    replace(/\{username\}/g, message.peer.username)
-      $('#i_dont_follow').append(tr_template)
+      if $('#i_dont_follow > #i_dont_follow_'+message.peer.id).length == 0
+        tr_template = $('#i_dont_follow_template').html().
+                      replace(/\{id\}/g, message.peer.comm_setting_id).
+                      replace(/\{username\}/g, message.peer.username)
+        $('#i_dont_follow').append(tr_template)
+        if window.isMobile()
+          $('#comm_peer_data').trigger("create")
     else if message.type == 'quit_subscription'
       $('#follow_me_'+message.peer.id).remove()
 

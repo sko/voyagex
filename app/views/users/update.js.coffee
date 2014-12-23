@@ -2,6 +2,9 @@
 VoyageX.SEARCH_RADIUS_METERS = <%= @user.search_radius_meters %>
 # TODO handle errors
 $('#comm_peer_data').html("<%= j render(partial: '/shared/peers', locals: { user: @user }) -%>")
+<% if is_mobile %>
+$('#comm_peer_data').trigger("create")
+<% end %>
 <% @un_subscribe.each do |channel_enc_key| %>
 for channel in VoyageX.Main.commChannels()
   if channel == 'system'

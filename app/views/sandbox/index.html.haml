@@ -24,15 +24,7 @@
           = link_to t('auth.sign_in'), '#sign_in_modal', popup_params
         .reg-link{style: "display: #{user_signed_in? ? 'none' : 'block'}; margin-left: 20px;"}
           = link_to t('auth.sign_up'), '#sign_up_modal', popup_params.merge(style: 'margin-left: 20px;')
-      %div
-        = form_for tmp_user, remote: true, method: :patch, :html => { :id => "settings_form" } do |f|
-          .user_settings{style: 'padding: 0px 0px 20px 0px;'}
-            %span{style: 'float: left; padding: 0px 10px 0px 0px;'}
-              Suchradius (meter):
-            = f.text_field :search_radius_meters, size: 7, max_length: 7
-            .peers
-              = render partial: '/shared/peers', locals: {user: tmp_user}
-            = f.submit 'Sichern', :class => "btn btn-sm"
+      = render partial: '/users/settings.mobile'
     = render partial: '/shared/uploads.mobile', locals: {resource: Upload.new, resource_name: :upload}
     = render partial: '/sandbox/stats.mobile'
 - else
@@ -40,48 +32,7 @@
     = render partial: '/users/settings'
     = render partial: '/shared/uploads', locals: {resource: Upload.new, resource_name: :upload}
 
-%table#follow_templates{style: 'display: none;'}
-  %tbody#i_follow_template
-    %tr{id: "i_follow_{id}"}
-      %td{width: 5}
-        &nbsp;
-      %td
-        {username}
-      %td{width: 15}
-        &nbsp;
-      %td
-        = hidden_field_tag "follow[comm_peer_settings][{id}]", false
-        = check_box_tag "follow[comm_peer_settings][{id}]", true, :checked
-  %tbody#i_dont_follow_template
-    %tr{id: "i_dont_follow_{id}"}
-      %td{width: 5}
-        &nbsp;
-      %td
-        {username}
-      %td{width: 15}
-        &nbsp;
-      %td
-        = hidden_field_tag "follow[comm_peer_settings][{id}]", false
-        = check_box_tag "follow[comm_peer_settings][{id}]", true, false, style: 'float: left;'
-        %span
-          #{t('admin.check_to_follow')}
-  %tbody#want_to_follow_me_template
-    %tr{id: "want_to_follow_me_{id}"}
-      %td{width: 5}
-        &nbsp;
-      %td
-        {username}
-      %td{width: 15}
-        &nbsp;
-      %td
-        %span{style: 'float: left;'}
-          = hidden_field_tag "grant[comm_peers][{id}]", false
-          = check_box_tag "grant[comm_peers][{id}]", true
-          grant
-        %span{style: 'margin-left: 15px;'}
-          = hidden_field_tag "deny[comm_peers][{id}]", false
-          = check_box_tag "deny[comm_peers][{id}]", true
-          reject
+= render partial: '/users/follow_templates'
 
 #content_chat.talk_message
   = form_tag '#', method: :post, remote: true

@@ -1,0 +1,42 @@
+%table#follow_templates{style: 'display: none;'}
+  %tbody#i_follow_template
+    %tr{id: "i_follow_{id}"}
+      %td{width: 5}
+        &nbsp;
+      %td
+        {username}
+      %td{width: 15}
+        &nbsp;
+      %td
+        = hidden_field_tag "follow[comm_peer_settings][{id}]", false, id: "i_follow_{id}.h"
+        = check_box_tag "follow[comm_peer_settings][{id}]", true, :checked, id: "i_follow_{id}"
+        %label{'for' => "i_follow_{id}"}
+  %tbody#i_dont_follow_template
+    %tr{id: "i_dont_follow_{id}"}
+      %td{width: 5}
+        &nbsp;
+      %td
+        {username}
+      %td{width: 15}
+        &nbsp;
+      %td
+        = hidden_field_tag "follow[comm_peer_settings][{id}].h", false, id: "i_dont_follow_{id}.h"
+        = check_box_tag "follow[comm_peer_settings][{id}]", true, false, id: "i_dont_follow_{id}", style: 'float: left;'
+        %label{'for' => "i_dont_follow_{id}"} #{t('admin.check_to_follow')}
+  %tbody#want_to_follow_me_template
+    %tr{id: "want_to_follow_me_{id}"}
+      %td{width: 5}
+        &nbsp;
+      %td
+        {username}
+      %td{width: 15}
+        &nbsp;
+      %td
+        %div{style: 'float: left;'}
+          = hidden_field_tag "grant[comm_peers][{id}]", false, id: "grant_comm_peers_{id}.h"
+          = check_box_tag "grant[comm_peers][{id}]", true, false, id: "grant_comm_peers_{id}"
+          %label{'for' => "grant_comm_peers_{id}"} grant
+        %div{style: 'margin-left: 15px;'}
+          = hidden_field_tag "deny[comm_peers][{id}]", false, id: "deny_comm_peers_{id}.h"
+          = check_box_tag "deny[comm_peers][{id}]", true, false, id: "deny_comm_peers_{id}"
+          %label{'for' => "deny_comm_peers_{id}"} reject

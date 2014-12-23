@@ -7,8 +7,10 @@ $('.logout-link').each () ->
 <% if is_mobile -%>
 $('#sign_in_cancel').click()
 <% end -%>
+VoyageX.SEARCH_RADIUS_METERS = <%= current_user.search_radius_meters||100 %>
+currentUser = { id: <%= current_user.id -%>, username: '<%= current_user.username -%>' }
 $('.whoami').each () ->
-  $(this).html("<%= escape_javascript(link_to t('auth.whoami', username: tmp_user().username), change_username_path, class: 'navbar-inverse navbar-brand', data: { remote: 'true', format: :js }) -%>")
+  $(this).html("<%= escape_javascript(link_to t('auth.whoami', username: current_user.username), change_username_path, class: 'navbar-inverse navbar-brand', data: { remote: 'true', format: :js }) -%>")
 # first unsubscripe old channels before subscribing new - TODO: check if faye handles thso orderly
 for channel in VoyageX.Main.commChannels()
   channelPath = '/'+channel
