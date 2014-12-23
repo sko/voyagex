@@ -18,14 +18,20 @@
         - else
           %span
             #{t('auth.whoami', username: tmp_user().username).html_safe}
-      .logout-link{style: "display: #{user_signed_in? ? 'block' : 'none'}; padding: 13px 0px 0px 0px;"}
+      .logout-link{style: "float: left; display: #{user_signed_in? ? 'block' : 'none'}; padding: 13px 0px 0px 0px;"}
         = link_to t('auth.sign_out'), destroy_user_session_path, style: 'margin-left: 20px;', data: { remote: "true", format: :js, method: :delete }
-      #content_auth{style: 'clear: both;'}
+      #content_auth{style: 'float: left;'}
         - popup_params = { data: { rel: 'popup', 'position-to' => 'window', 'data-role' => 'button' } }
         .login-link{style: "display: #{user_signed_in? ? 'none' : 'block'}; float: left;"}
           = link_to t('auth.sign_in'), '#sign_in_modal', popup_params
         .reg-link{style: "display: #{user_signed_in? ? 'none' : 'block'}; margin-left: 20px;"}
           = link_to t('auth.sign_up'), '#sign_up_modal', popup_params.merge(style: 'margin-left: 20px;')
+      #lang_select{style: 'float: right;'}
+        - lcls = lang_change_links request, ['c']
+        %div{style: 'float: left; margin: 10px 10px 0px 20px;'}
+          = link_to image_tag("/assets/en.png", style: "border-width:0px;width:30px;height:20px;"), '#', onclick: "javascript:document.location.href=window.clientState.linkForView('#{lcls[0]}', 'en', '#{lcls[1]}');", :style => "color:#00dd;"
+        %div{style: 'float: right; margin: 10px 10px 0px 0px;'}
+          = link_to image_tag("/assets/de.png", style: "border-width:0px;width:30px;height:20px;"), '#', onclick: "javascript:document.location.href=window.clientState.linkForView('#{lcls[0]}', 'de', '#{lcls[1]}');", :style => "color:#00dd;"
       = render partial: '/users/settings.mobile'
     = render partial: '/shared/uploads.mobile', locals: {resource: Upload.new, resource_name: :upload}
     = render partial: '/sandbox/stats.mobile'

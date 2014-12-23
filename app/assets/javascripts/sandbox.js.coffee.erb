@@ -25,7 +25,7 @@ jQuery ->
 
   window.photoClicked = (swiper) ->
     $('#current_address').html($(swiper.clickedSlide).attr('data-address'))
-    panUpload($(swiper.clickedSlide).attr('data-poiId'), $(swiper.clickedSlide).attr('data-poiNoteId'))
+    APP.showPOI $(swiper.clickedSlide).attr('data-poiId'), $(swiper.clickedSlide).attr('data-poiNoteId')
 
   window.photoChanged = (swiper) ->
     $('#current_address').html($(swiper.activeSlide()).attr('data-address'))
@@ -65,14 +65,6 @@ jQuery ->
       $('#upload_data_conrols').dialog('open')
       if ! $('#upload_data_conrols').parent().hasClass('seethrough_panel')
         $('#upload_data_conrols').parent().addClass('seethrough_panel')
-
-  window.panUpload = (poiId, poiNoteId) ->
-    #getUploadComments(upload_id)
-    Storage.Model.instance().loadPoiNotes poiId, poiNoteId, VoyageX.TemplateHelper.openPOINotePopup
-    if window.isMobile()
-      $("#photo_nav_panel").panel("close")
-    else
-      photoNavPanel.dialog("close")
 
 #  getUploadComments = (upload_id) ->
 #    $.ajax

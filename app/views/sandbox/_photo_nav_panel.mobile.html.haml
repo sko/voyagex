@@ -6,14 +6,6 @@
         = render partial: 'swipe_panel'
     
     %img{src: '/assets/swipe.jpg', style: 'width: 35px; height: 35px;'}
-
-  - max_height = 100.0
-  - max_width = 300
-  - swiper_style = "width: #{max_width}px; height: #{max_height.to_i}px;"
-  %script
-    $("head").append("<style type='text/css'>#swipe_panel, .swiper-container, .swiper-slide { #{swiper_style} }</style>");
-
-
   %br
   %br
   %br
@@ -21,3 +13,14 @@
   .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{onclick: '$("#photo_nav_panel").panel("close");'}
     .ui-button-text
       Close Panel
+
+- max_height = 100.0
+- max_width = 300
+
+#tmpl_swiper_slide{style: 'display: none;'}
+  %span.swiper-slide{onclick: 'photoClicked({clickedSlide: this})', data: {poiId: '{poiId}', poiNoteId: '{poiNoteId}', address: '{address}'}}
+    = image_tag '{attachment_url}', style: "height: #{max_height.to_i}px;"
+
+- swiper_style = "width: #{max_width}px; height: #{max_height.to_i}px;"
+%script
+  $("head").append("<style type='text/css'>#swipe_panel, .swiper-container, .swiper-slide { #{swiper_style} }</style>");

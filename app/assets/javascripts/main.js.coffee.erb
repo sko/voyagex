@@ -18,6 +18,7 @@ class window.VoyageX.Main
     @_view = view
     @_comm = null
     @_selectedPositionLatLng = [-1, -1]
+    @_curPOI = null
     @_STORAGE_MODEL = new Storage.Model()
     $(window.document).ready () ->
         APP._init cacheStrategy, view, mapOptions, offlineZooms
@@ -102,6 +103,14 @@ class window.VoyageX.Main
     @_comm.send('/talk', {type: 'message',\
                           userId: APP.userId(),\
                           text: APP.userName()+': '+publishText})
+
+  showPOI: (poiId, poiNoteId) ->
+    #getUploadComments(upload_id)
+    Storage.Model.instance().loadPoiNotes poiId, poiNoteId, VoyageX.TemplateHelper.openPOINotePopup
+    if window.isMobile()
+      $("#photo_nav_panel").panel("close")
+    else
+      photoNavPanel.dialog("close")
 
   getSelectedPositionLatLng: () ->
     return [@_selectedPositionLatLng[0], @_selectedPositionLatLng[1]]

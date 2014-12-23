@@ -68,6 +68,13 @@ class window.VoyageX.TemplateHelper
       #  $('#upload_comment_conrols').parent().addClass('seethrough_panel')
     TemplateHelper.poiNoteInputHtml('poi_note_input', poi.notes[0])
 
+  @swiperSlideHtml: (poi_note) ->
+    swiperSlideTmpl = TemplateHelper._updateIds('tmpl_swiper_slide').
+    replace(/\{poiId\}/g, poi_note.poi.id).
+    replace(/\{poiNoteId\}/g, poi_note.id).
+    replace(/\{address\}/g, poi_note.poi.address).
+    replace(/\{attachment_url\}/g, poi_note.attachment.url)
+
   @_updateIds: (rootElementId, callback = null) ->
     html = $('#'+rootElementId).html()
     $('#'+rootElementId+' [tmpl-id]').each () ->

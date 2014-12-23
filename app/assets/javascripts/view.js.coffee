@@ -8,6 +8,9 @@ class window.VoyageX.View
     for channel in ['talk', 'map_events', 'uploads']
       @_commListeners[channel] = []
 
+  addListener: (channel, callBack) ->
+    @_commListeners[channel].push(callBack)
+
   _systemCB: (message) ->
     console.log 'got a system - message: ' + message.type
     if message.type == 'ready_notification'
@@ -79,19 +82,24 @@ class window.VoyageX.View
     scale = maxHeight / upload.poi_note.attachment.height
     width = Math.round(upload.poi_note.attachment.width * scale)
     style = 'width:'+width+'px;'
-    if upload.poi_note.attachment.content_type.match(/^[^\/]+/)[0] == 'image'
-     #tag = '<span class="swiper-slide" onclick="APP.panPosition('+upload.location.lat+','+upload.location.lng+',\''+upload.location.address+'\','+upload.file.id+')">'+
-      tag = '<span class="swiper-slide" onclick="panUpload('+poi.id+','+upload.poi_note.id+')">'+
-            '<img src="'+upload.poi_note.attachment.url+'" style="'+style+'">'+
-            '</span>'
-    $("#upload_preview").prepend(tag)
+    #
+    # TODO: store local before
+    #
+    msg = { poi: poi, poiNote: upload.poi_note }
+    Storage.Model._syncWithStorage msg, View.addPoiNote, upload.poi_note, 0
+
+  @addPoiNote: (msg) ->
+    if msg.poi_note.attachment.content_type.match(/^[^\/]+/)[0] == 'image'
+      swiperSlideHtml = VoyageX.TemplateHelper.swiperSlideHtml msg.poi_note
+    $("#upload_preview").prepend(swiperSlideHtml)
     mySwiper.reInit()
     #mySwiper.resizeFix()
     for listener in View.instance()._commListeners.uploads
-      listener(upload.poi_note)
+      listener(msg.poi_note)
 
     #
-    # TODO: close uploads
+    # TODO: close uploads - this should go to the user who uploaded - not as a callback via faye
+    #                       though lots of logic is te same
     #
     if window.isMobile()
 #      #if $('#upload_comment_conrols').hasClass('ui-popup-active')
@@ -116,9 +124,6 @@ class window.VoyageX.View
     #  $('#photo_nav_panel').dialog('open')
     #  if ! $('#photo_nav_panel').parent().hasClass('seethrough_panel')
     #    $('#photo_nav_panel').parent().addClass('seethrough_panel')
-
-  addListener: (channel, callBack) ->
-    @_commListeners[channel].push(callBack)
 
   @instance: () ->
     @_SINGLETON
