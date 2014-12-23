@@ -20,39 +20,63 @@ class window.Storage.Model
   # if id == id - modified
   # else inserted / removed
   #
-  loadPoiNotes: (uploadId, callback) ->
+  loadPoiNotes: (poiId, poiNoteId, callback) ->
     $.ajax
       type: 'GET'
       dataType: 'json'
-      url: '<%= upload_comments_path(upload_id: '') %>'+uploadId
+      url: '<%= upload_comments_path(upload_id: '') %>'+poiNoteId
     .done (msg) ->
-#        for note in msg.poi.notes
-#          # store image
-         #attachmentUrl = Model._viewPoiNoteAttachment msg.poi
-#        addToList 'poi.'+msg.poi.id, 'push', msg.poi.notes
-        callback msg.poi
+        for note, i in msg.poi.notes
+          Model._syncWithStorage msg, callback, note, i
+        #callback msg.poi
     .fail (jqXHR, textStatus) ->
         # get from localStorage
         console.log('TODO: maybe get from local storage')
-        #alert('TODO: handle registration failure...')
+        #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
 
-  # @see VoyageX.MapControl - drawTile
+  @_syncWithStorage: (msg, callback, note, i) ->
+    # store image
+    attachmentUrl = Model._viewPoiNoteAttachment note
+    # @see leaflet-funbctionaltilelayer _loadTile: function / MapControl - drawTile
+    if (typeof attachmentUrl == 'string') 
+      console.log '_syncWithStorage - attachmentUrl-string = '+attachmentUrl
+      if i == (msg.poi.notes.length - 1)
+        #console.log '_syncWithStorage - saving poiNotes ...'
+        existingPoiData = Comm.StorageController.instance().get Comm.StorageController.poiKey(msg.poi)
+        unless existingPoiData?
+          Comm.StorageController.instance().addToList Comm.StorageController.poiKey(msg.poi), 'push', msg.poi.notes
+        #console.log '_syncWithStorage - calling back ...'
+        callback msg.poi
+    else if (typeof attachmentUrl.then == 'function') 
+      # Assume we are dealing with a promise.
+      attachmentUrl.then (url) ->
+          console.log '_syncWithStorage - attachmentUrl-promise resolved to: '+url
+          note.attachment.url = url
+          if i == (msg.poi.notes.length - 1)
+            #console.log '_syncWithStorage - saving poiNotes ...'
+            existingPoiData = Comm.StorageController.instance().get Comm.StorageController.poiKey(msg.poi)
+            unless existingPoiData?
+              Comm.StorageController.instance().addToList Comm.StorageController.poiKey(msg.poi), 'push', msg.poi.notes
+            #console.log '_syncWithStorage - calling back ...'
+            callback msg.poi
+
   @_viewPoiNoteAttachment: (poiNote) ->
-    storeKey = 'poiNote.'+poiNote.id+'.attachment'
+    storeKey = Comm.StorageController.poiNoteAttachmentKey poiNote
     if Comm.StorageController.isFileBased()
       # use File-API
       console.log '_viewPoiNoteAttachment - ........................................'+storeKey
       # TODO ? maybe just query offline-zoom-files - see MapControl.tileUrl else of if view.zoom in mC._offlineZooms
       # NO - because other zoom-levels may trigger some extra-action (liek prefetch ...)
-      deferredModeParams = { poiNote: poiNote,\
+      deferredModeParams = { attachmentUrl: Model.attachmentUrl,\
+                             poiNote: poiNote,\
                              save: true,\
                              deferred: $.Deferred(),\
                              promise: null }
-      Comm.StorageController.instance().getPoiNoteAttachment storeKey, deferredModeParams
+      Comm.StorageController.instance().getPoiNoteAttachment poiNote, deferredModeParams
       deferredModeParams.promise
     else
       # use localStorage
-      stored = Comm.StorageController.instance().getPoiNoteAttachment storeKey
+      stored = Comm.StorageController.instance().getPoiNoteAttachment poiNote
       unless stored?
         Model.attachmentUrl poiNote
       else
@@ -61,43 +85,71 @@ class window.Storage.Model
    
   @attachmentUrl: (poiNote, deferredModeParams = null) ->
     if APP.isOnline()
-      readyImage = this.cacheAttachment poiNote, deferredModeParams
+      readyImage = Model._SINGLETON.cacheAttachment poiNote, deferredModeParams
     else
-      readyImage = this._notInCacheImage $('#tile_canvas')[0], view.tile.column, view.tile.row, view.zoom
+      readyImage = Model._SINGLETON._notInCacheImage $('#attachment_canvas')[0], poiNote
       if deferredModeParams != null
         Comm.StorageController.instance().resolveOfflineNotInCache readyImage, deferredModeParams
       readyImage
 
   cacheAttachment: (poiNote, deferredModeParams = null) ->
     if Comm.StorageController.isFileBased()
-      #Comm.StorageController.instance().loadAndPrefetchTile prefetchParams
-      #  VoyageX.MapControl.loadAndPrefetch deferredModeParams.mC, xYZ, deferredModeParams.view.subdomain, deferredModeParams
+      attachment = this._loadReadyImage poiNote, deferredModeParams
     else
-      stored = Comm.StorageController.instance().getPoiNoteAttachment poiNote, deferredModeParams
-     #unless stored? && (deferredModeParams==null || !deferredModeParams.loadAndPrefetch?)
-      unless stored?
-        console.log 'prefetching area tile: '+storeKey
-        readyImage = MapControl.loadAndPrefetch MapControl.instance(), curXYZ, view.subdomain, deferredModeParams
-        if addToX == 0 and addToY == 0
-          centerTile = readyImage
-      else
-        #console.log 'area tile already cached: '+storeKey
-        if addToX == 0 and addToY == 0
-          centerTile = stored
+      attachment = Comm.StorageController.instance().getPoiNoteAttachment poiNote, deferredModeParams
+      unless attachment?
+        #console.log 'cacheAttachment - '+Comm.StorageController.poiNoteAttachmentKey(poiNote)
+        attachment = this._loadReadyImage poiNote, deferredModeParams
+      attachment
 
   @instance: () ->
     Model._SINGLETON
 
-  _notInCacheImage: (canvas, x, y, z) ->
-    canvas.width = 256
-    canvas.height = 256
+  # has to be done sequentially becaus we're using one canvas for all
+  _loadReadyImage: (poiNote, deferredModeParams = null) ->
+    if deferredModeParams == null
+      promise = true
+      deferred = $.Deferred()
+    img = new Image
+    img.crossOrigin = ''
+    img.onload = (event) ->
+      base64ImgDataUrl = Model._SINGLETON._toBase64 $('#attachment_canvas')[0], poiNote, this # event.target
+      unless Comm.StorageController.isFileBased()
+        Comm.StorageController.instance().storePoiNoteAttachment poiNote, base64ImgDataUrl, deferredModeParams
+        cacheStats()
+      else
+        # actually we could store base64 in file as wall
+        #Comm.StorageController.instance().storePoiNoteAttachment poiNote, base64ImgDataUrl, deferredModeParams
+        $('#attachment_canvas')[0].toBlob((blob) ->
+            Comm.StorageController.instance().storePoiNoteAttachment poiNote, blob, deferredModeParams
+          )
+      if promise
+        deferred.resolve(base64ImgDataUrl)
+    if promise
+      readyImg = deferred.promise()
+      img.src = poiNote.attachment.url
+      readyImg
+    else
+      img.src = poiNote.attachment.url
+      null
+
+  _toBase64: (canvas, poiNote, image) ->
+    canvas.width = poiNote.attachment.width
+    canvas.height = poiNote.attachment.height
+    context = canvas.getContext('2d')
+    context.drawImage(image, 0, 0)
+    canvas.toDataURL(poiNote.attachment.content_type)
+
+  _notInCacheImage: (canvas, poiNote) ->
+    canvas.width = poiNote.attachment.width
+    canvas.height = poiNote.attachment.height
     context = canvas.getContext('2d')
     context.fillStyle = "black";
-    context.fillRect(0,0,256,256);
+    context.fillRect(0,0,poiNote.attachment.width,poiNote.attachment.height);
     context.fillStyle = "white";
-    context.fillRect(1,1,254,254);
+    context.fillRect(1,1,poiNote.attachment.width-2,poiNote.attachment.height-2);
     context.fillStyle = "blue";
     context.font = "bold 16px Arial";
     context.fillText("Not Cached", 100, 80);
-    context.fillText(z+' / '+x+' / '+y, 40, 110);
+    context.fillText(poiNote.attachment.content_type, 40, 110);
     canvas.toDataURL(@_tileImageContentType)

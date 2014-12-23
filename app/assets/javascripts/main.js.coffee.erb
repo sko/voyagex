@@ -81,13 +81,13 @@ class window.VoyageX.Main
     @_online
 
   setOnline: () ->
-    Main._MAP_CONTROL._online = true
+    @_online = true
     Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
     for n in [Main._MAP_CONTROL._minZoom..Main._MAP_CONTROL._maxZoom]
       Main._MAP_CONTROL._zooms.push n
 
   setOffline: () ->
-    Main._MAP_CONTROL._online = false
+    @_online = false
     Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
     for n in Main._MAP_CONTROL._offlineZooms
       Main._MAP_CONTROL._zooms.push n

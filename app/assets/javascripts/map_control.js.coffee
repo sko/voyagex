@@ -15,7 +15,6 @@ class window.VoyageX.MapControl
       })]
     @_mapOptions = mapOptions
     @_cacheStrategy = cacheStrategy
-    #@_online = online
     @_zooms = mapOptions.zooms
     @_minZoom = @_zooms[0]
     @_maxZoom = @_zooms[@_zooms.length - 1]
@@ -32,18 +31,6 @@ class window.VoyageX.MapControl
 
   map: () ->
     @_map
-
-#  setOnline: () ->
-#    @_online = true
-#    @_zooms.splice(0, @_zooms.length)
-#    for n in [@_minZoom..@_maxZoom]
-#      @_zooms.push n
-
-#  setOffline: () ->
-#    @_online = false
-#    @_zooms.splice(0, @_zooms.length)
-#    for n in @_offlineZooms
-#      @_zooms.push n
 
   # google z/x/y
   # x ... parseInt(map.project(map.getCenter()).x/256)
@@ -131,10 +118,10 @@ class window.VoyageX.MapControl
         if deferredModeParams != null
           deferredModeParams.tileUrl = tileUrl
         # _map maybe not ready on very first call
-        #if mC._map?
+        if mC._map?
           readyImage = mC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS, deferredModeParams
-        #else
-        #  readyImage = MapControl.loadAndPrefetch mC, [view.tile.column, view.tile.row, view.zoom], view.subdomain, deferredModeParams
+        else
+          readyImage = MapControl.loadAndPrefetch mC, [view.tile.column, view.tile.row, view.zoom], view.subdomain, deferredModeParams
       else
         readyImage = tileUrl
         if deferredModeParams != null
@@ -249,8 +236,6 @@ class window.VoyageX.MapControl
           Comm.StorageController.instance().prefetchTile prefetchParams
         else
           stored = Comm.StorageController.instance().getTile curXYZ, deferredModeParams
-          #unless stored? && stored[parentStoreKey]?
-          #unless stored? && (!stored.storeFile)
           unless stored?
             parentTileUrl = MapControl.toUrl(curXYZ, viewSubdomain)
             console.log 'prefetching lower-zoom tile: '+parentStoreKey
@@ -261,8 +246,6 @@ class window.VoyageX.MapControl
     if deferredModeParams == null
       promise = true
       deferred = $.Deferred()
-#    else
-#      deferred = deferredModeParams.deferred
     img = new Image
     img.crossOrigin = ''
     mC = this
@@ -279,13 +262,14 @@ class window.VoyageX.MapControl
           )
       if promise
         deferred.resolve(base64ImgDataUrl)
-    img.src = imgUrl
     if promise
       readyImg = deferred.promise()
+      img.src = imgUrl
       # this._loadReadyImage stores Tiles asynchronously so we set empty-tile here to prevent multi-fetch
       Comm.StorageController.instance().storeTile xYZ, null, readyImg, deferredModeParams
       readyImg
     else
+      img.src = imgUrl
       null
 
   _toBase64: (canvas, image) ->

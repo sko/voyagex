@@ -65,13 +65,14 @@ class window.VoyageX.View
     console.log 'got an uploads - message: ' + upload.type
     unless upload.poi_note.user.id == APP.userId()
       window.stopSound = VoyageX.MediaManager.instance().playSound('/Treat.mp3')
+    poi = upload.poi_note.poi
     maxHeight = 100
     scale = maxHeight / upload.poi_note.attachment.height
     width = Math.round(upload.poi_note.attachment.width * scale)
     style = 'width:'+width+'px;'
     if upload.poi_note.attachment.content_type.match(/^[^\/]+/)[0] == 'image'
      #tag = '<span class="swiper-slide" onclick="APP.panPosition('+upload.location.lat+','+upload.location.lng+',\''+upload.location.address+'\','+upload.file.id+')">'+
-      tag = '<span class="swiper-slide" onclick="panUpload('+upload.poi_note.attachment.id+')">'+
+      tag = '<span class="swiper-slide" onclick="panUpload('+poi.id+','+upload.poi_note.id+')">'+
             '<img src="'+upload.poi_note.attachment.url+'" style="'+style+'">'+
             '</span>'
     $("#upload_preview").prepend(tag)
@@ -100,7 +101,6 @@ class window.VoyageX.View
       $('.leaflet-popup .upload_comment').last().after(popupEntryHtml)
       #popup.update()
     else
-      poi = upload.poi_note.poi
       poi['notes'] = [ upload.poi_note ]
       VoyageX.TemplateHelper.openPOINotePopup poi
     #else

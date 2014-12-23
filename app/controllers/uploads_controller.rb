@@ -81,7 +81,8 @@ class UploadsController < ApplicationController
 
   def comments
     user = current_user || tmp_user
-    @upload = Upload.find(params[:upload_id])
+    poi_note = PoiNote.find(params[:upload_id])
+    @upload = poi_note.attachment
     if params[:text].present?
       @upload.comments.create(user: user, text: params[:text])
       render "shared/upload_comments", layout: false, formats: [:js]

@@ -15,6 +15,7 @@ class window.Comm.StorageController
     @_tileMeta = null
     @_tileLoadQueue = {}
     @_tileImageContentType = 'image/webp'
+    @_attachmentMeta = null
     @_grantedBytes = 0
     @_dirReaders = {}
     requestedBytes = 1 #Math.pow(2, 26) # 64MB
@@ -57,8 +58,14 @@ class window.Comm.StorageController
   @tileKey: (xYZ) ->
     xYZ[2]+'/'+xYZ[0]+'/'+xYZ[1]
   
+  @poiKey: (poi) ->
+    'comm.poi.'+poi.id
+  
   @poiNoteAttachmentKey: (poiNote) ->
-    'poiNote.'+poiNote.id+'.attachment'
+    'comm.poiNoteAttachment.'+poiNote.id
+
+  @poiNoteAttachmentPath: (poiNote) ->
+    ['poiNotes', 'attachments', ''+poiNote.id]
 
   @isFileBased: () ->
     StorageController._FS?
@@ -80,13 +87,18 @@ class window.Comm.StorageController
     if StorageController.isFileBased()
       for dirName in VoyageX.MapControl.instance()._offlineZooms
         this._removeDirectory dirName
+      this._removeDirectory 'poiNotes'
+
+  _saveTileFile: (xYZ, fileIdx, dirReader, data, deferredModeParams) ->
+    `;`
 
   _saveFile: (xYZ, fileIdx, dirReader, data, deferredModeParams) ->
     sC = StorageController.instance()
     path = dirReader.path+'/'+xYZ[fileIdx]
     dirReader.entry.getFile(xYZ[fileIdx], {}, (fileEntry) ->
-#        unless dirReader.entries[xYZ[fileIdx]]?
-#          dirReader.entries[xYZ[fileIdx]] = { parent: dirReader, path: path, entry: fileEntry, reader: fileEntry.createReader(), entries: {} }
+        #unless dirReader.entries[xYZ[fileIdx]]?
+        #  dirReader.entries[xYZ[fileIdx]] = { parent: dirReader, path: path, entry: fileEntry, reader: fileEntry.createReader(), entries: {} }
+        # TODO - what is this for? is this call necessary?
         sC._storeTileAsFile xYZ, dirReader, null, deferredModeParams
       , (e) ->
         if (e.code == FileError.NOT_FOUND_ERR) 
@@ -123,10 +135,11 @@ class window.Comm.StorageController
                 console.log('_saveFile - '+e+' when trying to SAVE file '+path)
             )
         else
-          console.log('_saveFile - '+e+' when trying to READ file '+path)
-          sC._storeTileAsFile xYZ, dirReader, data, deferredModeParams, nextDirIdx
+          console.log('_saveFile - '+e+' when trying to STORE file '+path)
+          sC._storeTileAsFile xYZ, dirReader, null, deferredModeParams
       )
 
+  # '/'+xYZ[2]+'/'+xYZ[0]+'/'+xYZ[1]
   _getDirectory: (xYZ, nextDirIdx, dirReader, data, deferredModeParams, firstCall = true) ->
     sC = StorageController.instance()
     path = (if dirReader.parent == null then '' else dirReader.path)+'/'+xYZ[nextDirIdx]
@@ -248,13 +261,15 @@ class window.Comm.StorageController
     #deferredModeParams.tileUrl = readyImage
     deferredModeParams.deferred.resolve tileUrl
     view = deferredModeParams.view
-    delete this._tileLoadQueue[StorageController.tileKey([view.tile.column, view.tile.row, view.zoom])]
+    if view?
+      delete this._tileLoadQueue[StorageController.tileKey([view.tile.column, view.tile.row, view.zoom])]
   
   resolveOfflineNotInCache: (readyImage, deferredModeParams) ->
     deferredModeParams.tileUrl = readyImage
     deferredModeParams.deferred.resolve readyImage
     view = deferredModeParams.view
-    delete this._tileLoadQueue[StorageController.tileKey([view.tile.column, view.tile.row, view.zoom])]
+    if view?
+      delete this._tileLoadQueue[StorageController.tileKey([view.tile.column, view.tile.row, view.zoom])]
 
   storeTile: (xYZ, data, promise = null, deferredModeParams = null) ->
     if promise != null
@@ -321,6 +336,111 @@ class window.Comm.StorageController
         stored
       else
         null
+
+  storePoiNoteAttachment: (poiNote, data, deferredModeParams = null) ->
+    if StorageController.isFileBased()
+      this._storePoiNoteAttachmentAsFile poiNote, null, data, deferredModeParams
+    else
+      attachmentMeta = localStorage.getItem 'comm.poiNotes.attachmentMeta'
+      if attachmentMeta == null
+        @_attachmentMeta = { bytes: 0, count: 0 }
+      else
+        @_attachmentMeta = eval("(" + attachmentMeta + ")")
+
+      storeKey = StorageController.poiNoteAttachmentKey poiNote
+      stored = localStorage.getItem storeKey
+      if stored == null
+        localStorage.setItem storeKey, data
+        @_attachmentMeta.count = @_attachmentMeta.count+1
+        @_attachmentMeta.bytes = @_attachmentMeta.bytes+data.length
+
+      localStorage.setItem 'comm.poiNotes.attachmentMeta', JSON.stringify(@_attachmentMeta)
+
+  _savePoiNoteAttachmentFile: (poiNote, dirReader, data, deferredModeParams) ->
+    sC = StorageController.instance()
+    fileName = poiNote.id
+    path = dirReader.path+'/'+fileName
+    dirReader.entry.getFile(fileName, {}, (fileEntry) ->
+        #unless dirReader.entries[fileName]?
+        #  dirReader.entries[fileName] = { parent: dirReader, path: path, entry: fileEntry, reader: fileEntry.createReader(), entries: {} }
+        # TODO - what is this for? is this call necessary?
+        sC._storePoiNoteAttachmentAsFile poiNote, dirReader, null, deferredModeParams
+      , (e) ->
+        if (e.code == FileError.NOT_FOUND_ERR) 
+          dirReader.entry.getFile(fileName, {create: true}, (fileEntry) ->
+                fileEntry.createWriter((fileWriter) ->
+                  fileWriter.onwriteend = (e) ->
+                      console.log('Write completed.')
+                      deferredModeParams.deferred.resolve fileEntry.toURL(poiNote.attachment.content_type)
+                      attachmentMeta = localStorage.getItem 'comm.poiNotes.attachmentMeta'
+                      if attachmentMeta == null
+                        sC._attachmentMeta = { bytes: 0, count: 0 }
+                      else
+                        sC._attachmentMeta = eval("(" + attachmentMeta + ")")
+                      #sC._tileDB[storeKey] = data.properties.data
+                      sC._attachmentMeta.count = sC._attachmentMeta.count+1
+                      sC._attachmentMeta.bytes = sC._attachmentMeta.bytes+data.size
+                      localStorage.setItem 'comm.poiNotes.attachmentMeta', JSON.stringify(sC._attachmentMeta)
+                      #showCacheStats(sC._tileMeta.numTiles, sC._tileMeta.tilesByteSize)
+                  fileWriter.onerror = (e) ->
+                      console.log('Write failed: ' + e.toString())
+                      #deferredModeParams.deferred.resolve deferredModeParams.tileUrl
+                      deferredModeParams.deferred.resolve Storage.Model.notInCacheImage(poiNote)
+                  console.log('saving file: '+path)
+                  fileWriter.write(new Blob([data], {type: poiNote.attachment.content_type}))
+                  # text-files
+                  #fileWriter.write(data.properties.data)
+                , (e) ->
+                    console.log('_savePoiNoteAttachmentFile - '+e+' when trying to WRITE file '+path)
+                )
+            , (e) ->
+                console.log('_savePoiNoteAttachmentFile - '+e+' when trying to SAVE file '+path)
+            )
+        else
+          console.log('_savePoiNoteAttachmentFile - '+e+' when trying to STORE file '+path)
+          sC._storePoiNoteAttachmentAsFile poiNote, dirReader, null, deferredModeParams
+      )
+
+  # '/poiNotes/attachments/'+poiNote.id
+  # path ... ['poiNotes', 'attachments']
+  _getPoiNoteDirectory: (nextDirIdx, dirReader, poiNote, data, deferredModeParams) ->
+    sC = StorageController.instance()
+    path = StorageController.poiNoteAttachmentPath poiNote
+    curPathDir = path[nextDirIdx]
+    path = (if dirReader.parent == null then '' else dirReader.path)+'/'+curPathDir
+    dirReader.entry.getDirectory(curPathDir, {}, (fileEntry) ->
+        #console.log('_getPoiNoteDirectory - found directory: '+path)
+        unless dirReader.entries[curPathDir]?
+          dirReader.entries[curPathDir] = { parent: dirReader, path: path, entry: fileEntry, reader: fileEntry.createReader(), entries: {} }
+        sC._storePoiNoteAttachmentAsFile poiNote, dirReader.entries[curPathDir], data, deferredModeParams
+      , (e) ->
+        if (e.code == FileError.NOT_FOUND_ERR) 
+          console.log('creating directory: '+path)
+          dirReader.entry.getDirectory(curPathDir, {create: true, exclusive: true}, (fileEntry) ->
+              unless dirReader.entries[curPathDir]?
+                dirReader.entries[curPathDir] = { parent: dirReader, path: path, entry: fileEntry, reader: fileEntry.createReader(), entries: {} }
+              sC._storePoiNoteAttachmentAsFile poiNote, dirReader.entries[curPathDir], data, deferredModeParams
+            , (e) ->
+              if (e.code == FileError.NOT_FOUND_ERR) 
+                console.log('_getPoiNoteDirectory - No such file: '+path)
+              else
+                console.log('_getPoiNoteDirectory - '+e+' when trying to CREATE directory '+path)
+              sC._storePoiNoteAttachmentAsFile poiNote, dirReader, data, deferredModeParams, nextDirIdx
+            )
+        else
+          console.log('_getPoiNoteDirectory - '+e+' when trying to READ directory '+path)
+          sC._storePoiNoteAttachmentAsFile poiNote, dirReader, data, deferredModeParams, nextDirIdx
+      )
+
+  _storePoiNoteAttachmentAsFile: (poiNote, parentDirReader, data, deferredModeParams, failedIndex = -1) ->
+    if failedIndex != -1
+      console.log('error: failedIndex = '+failedIndex+' for '+poiNote)
+    else if parentDirReader == null
+      this._getPoiNoteDirectory 0, @_dirReaders, poiNote, data, deferredModeParams
+    else if parentDirReader.parent.parent == null
+      this._getPoiNoteDirectory 1, parentDirReader, poiNote, data, deferredModeParams
+    else if data != null
+      this._savePoiNoteAttachmentFile poiNote, parentDirReader, data, deferredModeParams
   
   _getPoiNoteAttachmentFile: (poiNote, prefetchMode, deferredModeParams) ->
     path = '/poiNotes/attachments/'+poiNote.id
@@ -343,12 +463,12 @@ class window.Comm.StorageController
 #            reader.readAsText(file)
       , (e) ->
         if (e.code == FileError.NOT_FOUND_ERR) 
-          console.log('_getTileFile - no such file: '+path)
+          console.log('_getPoiNoteAttachmentFile - no such file: '+path)
         else
-          console.log('error: '+e+' for '+path)
+          console.log('_getPoiNoteAttachmentFile - error: '+e+' for '+path)
        #VoyageX.MapControl.tileUrl deferredModeParams.mC, deferredModeParams.view, deferredModeParams
         #if prefetchMode == 0
-          deferredModeParams.attachmentUrl poiNote, deferredModeParams
+        deferredModeParams.attachmentUrl poiNote, deferredModeParams
         #else
         #  VoyageX.MapControl.loadAndPrefetch deferredModeParams.mC, xYZ, deferredModeParams.view.subdomain, deferredModeParams
       )
@@ -359,15 +479,15 @@ class window.Comm.StorageController
   #  prefetchParams.promise = prefetchParams.deferred.promise()
   
   getPoiNoteAttachment: (poiNote, deferredModeParams = null) ->
+    storeKey = StorageController.poiNoteAttachmentKey poiNote
     if StorageController.isFileBased()
       if deferredModeParams.promise == null
         deferredModeParams.promise = deferredModeParams.deferred.promise()
-      console.log('getPoiNoteAttachment - '+StorageController.poiNoteAttachmentKey(poiNote))
-      this._getPoiNoteAttachmentFile poiNote, 0, deferredModeParams
+      console.log('getPoiNoteAttachment - '+storeKey)
+      this._getPoiNoteAttachmentFile deferredModeParams.poiNote, 0, deferredModeParams
       deferredModeParams.promise
     else
-      storeKey = StorageController.poiNoteAttachmentKey(poiNote)
-      stored = localStorage.getItem 'comm.poiNoteAttachments.'+storeKey
+      stored = localStorage.getItem storeKey
       if stored?
         stored
       else
@@ -395,7 +515,7 @@ class window.Comm.StorageController
     stored = localStorage.getItem(storeKey)
     if stored == null
       if listKey == 'push'
-        listEntries = [data]
+        listEntries = if data instanceof Array then data else [data]
       else
         listEntries = {}
         @_jsonObjects[storeKey] = listEntries
@@ -410,13 +530,18 @@ class window.Comm.StorageController
           storedJSON = eval("(" + stored + ")")
           @_jsonObjects[storeKey] = storedJSON
         if listKey == 'push'
-         #storedJSON.push(data)         # LIFO with push
-          storedJSON.splice(0, 0, data) # FIFO with push
+          if data instanceof Array
+            for entry, i in data
+             #storedJSON.push(data)                          # LIFO with push
+              storedJSON.splice(0, 0, data[data.length-1-i]) # FIFO with push
+          else
+           #storedJSON.push(data)         # LIFO with push
+            storedJSON.splice(0, 0, data) # FIFO with push
         else
           storedJSON[listKey] = data
         localStorage.setItem(storeKey, JSON.stringify(storedJSON));
 
-  get: (storeKey, listKey) ->
+  get: (storeKey, listKey = null) ->
     # FIXME @_jsonObjects is an internal cache-object and should not be exposed to concurrent access
     #       readonly but 'live' copy -> wrapper object! with methods getItem() for [] and real object 
     @_jsonObjects[storeKey] || eval("(" + localStorage.getItem(storeKey) + ")")

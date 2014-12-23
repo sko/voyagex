@@ -66,7 +66,7 @@ class window.VoyageX.TemplateHelper
   @_updateIds: (rootElementId, callback = null) ->
     html = $('#'+rootElementId).html()
     $('#'+rootElementId+' [tmpl-id]').each () ->
-      console.log('... replacing '+this.getAttribute('tmpl-id')+' ...')
+      #console.log('... replacing '+this.getAttribute('tmpl-id')+' ...')
       unless callback == null
         callback this.getAttribute('tmpl-id')
       curIdRegExpStr = 'tmpl-id=([\'"]?)'+this.getAttribute('tmpl-id')+'[\'"]?'
@@ -84,7 +84,7 @@ class window.VoyageX.TemplateHelper
     if html == null
       html = $('#'+rootElementId).html()
     $('#'+rootElementId+' [tmpl-ref]').each () ->
-      console.log('... replacing '+this.getAttribute('tmpl-ref')+' ...')
+      #console.log('... replacing '+this.getAttribute('tmpl-ref')+' ...')
       unless callback == null
         callback this.getAttribute('tmpl-ref')
       # TODO only once per label, clear tmpl-ref attr
