@@ -19,7 +19,7 @@
 
 #tmpl_swiper_slide{style: 'display: none;'}
   %span.swiper-slide{onclick: 'photoClicked({clickedSlide: this})', data: {poiId: '{poiId}', poiNoteId: '{poiNoteId}', address: '{address}'}}
-    = image_tag '{attachment_url}', style: "height: #{max_height.to_i}px;"
+    %img{tmpl: {src: '{attachment_url}'}, style: "height: #{max_height.to_i}px;"}
 
 - swiper_style = "width: #{max_width}px; height: #{max_height.to_i}px;"
 %script

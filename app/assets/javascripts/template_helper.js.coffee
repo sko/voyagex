@@ -69,7 +69,7 @@ class window.VoyageX.TemplateHelper
     TemplateHelper.poiNoteInputHtml('poi_note_input', poi.notes[0])
 
   @swiperSlideHtml: (poi_note) ->
-    swiperSlideTmpl = TemplateHelper._updateIds('tmpl_swiper_slide').
+    swiperSlideTmpl = TemplateHelper._updateAttributes('tmpl_swiper_slide', ['src'], TemplateHelper._updateIds('tmpl_swiper_slide')).
     replace(/\{poiId\}/g, poi_note.poi.id).
     replace(/\{poiNoteId\}/g, poi_note.id).
     replace(/\{address\}/g, poi_note.poi.address).
@@ -103,6 +103,20 @@ class window.VoyageX.TemplateHelper
       refRegExpStr = new RegExp('(<'+this.localName+'.+?'+this.getAttribute('tmpl-ref')+'=[\'"])'+tmplRefPrefix+'(.+?[\'"])')
       html = html.replace(refRegExpStr, '$1$2')
     html = html.replace(new RegExp(' tmpl-ref=[\'"][^\'"]+[\'"]', 'g'), '')
+    html
+
+  @_updateAttributes: (rootElementId, attrs, html = null, callback = null) ->
+    if html == null
+      html = $('#'+rootElementId).html()
+    for attr in attrs
+      $('#'+rootElementId+' [tmpl-'+attr+']').each () ->
+        #console.log('... replacing '+this.getAttribute('tmpl-'+attr)+' ...')
+        unless callback == null
+          callback this.getAttribute('tmpl-'+attr)
+        # TODO only once per label, clear tmpl-ref attr
+        refRegExpStr = new RegExp('(<'+this.localName+'.+?)tmpl-'+attr+'(=[\'"].+?[\'"])')
+        html = html.replace(refRegExpStr, '$1'+attr+'$2')
+      html = html.replace(new RegExp(' tmpl-'+attr+'=[\'"][^\'"]+[\'"]', 'g'), '')
     html
   
   @_mediaFileTag: (upload, meta) ->

@@ -85,21 +85,22 @@ class window.VoyageX.View
     #
     # TODO: store local before
     #
-    msg = { poi: poi, poiNote: upload.poi_note }
-    Storage.Model._syncWithStorage msg, View.addPoiNote, upload.poi_note, 0
+    poi['notes'] = [upload.poi_note]
+    msg = { poi: poi }
+    Storage.Model._syncWithStorage msg, View.addPoiNotes, upload.poi_note, 0
 
-  @addPoiNote: (msg) ->
-    if msg.poi_note.attachment.content_type.match(/^[^\/]+/)[0] == 'image'
-      swiperSlideHtml = VoyageX.TemplateHelper.swiperSlideHtml msg.poi_note
+  @addPoiNotes: (poi) ->
+    if poi.notes[0].attachment.content_type.match(/^[^\/]+/)[0] == 'image'
+      swiperSlideHtml = VoyageX.TemplateHelper.swiperSlideHtml poi.notes[0]
     $("#upload_preview").prepend(swiperSlideHtml)
     mySwiper.reInit()
     #mySwiper.resizeFix()
     for listener in View.instance()._commListeners.uploads
-      listener(msg.poi_note)
+      listener(poi.notes[0])
 
     #
     # TODO: close uploads - this should go to the user who uploaded - not as a callback via faye
-    #                       though lots of logic is te same
+    #                       though lots of logic is the same
     #
     if window.isMobile()
 #      #if $('#upload_comment_conrols').hasClass('ui-popup-active')
@@ -114,11 +115,11 @@ class window.VoyageX.View
     popup = VoyageX.Main.markerManager().get().getPopup()
     if popup?
       i = $('.leaflet-popup .upload_comment').length
-      popupEntryHtml = VoyageX.TemplateHelper.poiNotePopupHtmlFromTmpl(upload.poi_note, i)
+      popupEntryHtml = VoyageX.TemplateHelper.poiNotePopupHtmlFromTmpl(poi.notes[0], i)
       $('.leaflet-popup .upload_comment').last().after(popupEntryHtml)
       #popup.update()
     else
-      poi['notes'] = [ upload.poi_note ]
+      #poi['notes'] = msg.poi.notes
       VoyageX.TemplateHelper.openPOINotePopup poi
     #else
     #  $('#photo_nav_panel').dialog('open')
