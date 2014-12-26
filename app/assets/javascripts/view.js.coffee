@@ -77,17 +77,21 @@ class window.VoyageX.View
     console.log 'got an uploads - message: ' + upload.type
     unless upload.poi_note.user.id == APP.userId()
       window.stopSound = VoyageX.MediaManager.instance().playSound('/Treat.mp3')
-    poi = upload.poi_note.poi
-    maxHeight = 100
-    scale = maxHeight / upload.poi_note.attachment.height
-    width = Math.round(upload.poi_note.attachment.width * scale)
-    style = 'width:'+width+'px;'
-    #
-    # TODO: store local before
-    #
-    poi['notes'] = [upload.poi_note]
-    msg = { poi: poi }
-    Storage.Model._syncWithStorage msg, View.addPoiNotes, upload.poi_note, 0
+      # TODO: unify json-format, until then avoid circular structure
+      poi = upload.poi_note.poi
+      #unless poi.notes?
+      #  poi.notes = [note]
+      #poiClone = eval("("+JSON.stringify(poi)+")")
+      #delete upload.poi_note.poi
+      #poi.notes = [eval("("+JSON.stringify(upload.poi_note)+")")]
+      #poi.notes[0].poi = poiClone
+      #upload.poi_note.poi = poi
+      #msg = { poi: upload.poi_note.poi }
+      ##poi = eval("("+JSON.stringify(upload.poi_note.poi)+")")
+      ##poi.notes = [upload.poi_note]
+      ##upload.poiNote.poi.notes = [eval("("+JSON.stringify(upload.poiNote)+")")]
+      msg = { poi: poi }
+      Storage.Model._syncWithStorage msg, View.addPoiNotes, upload.poi_note, 0
 
   @addPoiNotes: (poi) ->
     if poi.notes[0].attachment.content_type.match(/^[^\/]+/)[0] == 'image'
@@ -112,19 +116,37 @@ class window.VoyageX.View
       #uploadCommentDialog.dialog('close')
     # ??? $('#poi_note_input').html('')
 
-    popup = VoyageX.Main.markerManager().get().getPopup()
-    if popup?
-      i = $('.leaflet-popup .upload_comment').length
-      popupEntryHtml = VoyageX.TemplateHelper.poiNotePopupHtmlFromTmpl(poi.notes[0], i)
-      $('.leaflet-popup .upload_comment').last().after(popupEntryHtml)
-      #popup.update()
-    else
-      #poi['notes'] = msg.poi.notes
-      VoyageX.TemplateHelper.openPOINotePopup poi
+    unless poi.notes[0].poi?
+      poi.notes[0].poi = poi
     #else
     #  $('#photo_nav_panel').dialog('open')
     #  if ! $('#photo_nav_panel').parent().hasClass('seethrough_panel')
     #    $('#photo_nav_panel').parent().addClass('seethrough_panel')
+
+    popup = VoyageX.Main.markerManager().get().getPopup()
+    if popup?
+      i = $('.leaflet-popup .upload_comment').length
+      popupEntryHtml = VoyageX.TemplateHelper.poiNotePopupHtmlFromTmpl(poi.notes[0], i)
+      #$('.leaflet-popup .upload_comment').last().after(popupEntryHtml)
+      #popup.update()
+      #popupHtml = $('#poi_notes_container').parent().html().replace(/(<div[^>].+?upload_comment_btn_)/, popupEntryHtml+'$1')
+      popupHtml = popup.getContent().replace(/(<div[^>].+?upload_comment_btn_)/, popupEntryHtml+'$1')
+      $('#poi_notes_container').parent().html('')
+      popup.setContent(popupHtml)
+      popup.update()
+      #$('#upload_comment_btn_'+poi.notes[0].id).on 'click', (event) ->
+      #  openUploadCommentControls(poi.notes[0].id)
+    else
+      VoyageX.TemplateHelper.openPOINotePopup poi
+      # @see TemplateHelper - openPOINotePopup for the following logic. it's also called from Model
+      #$('.leaflet-popup-close-button').on 'click', (event) ->
+      #    VoyageX.Main.markerManager().get().unbindPopup()
+      #    $('.leaflet-popup').remove()
+      #$('#upload_comment_btn_'+poiNote.id).on 'click', (event) ->
+      #    openUploadCommentControls(poiNote.id);
+      #    #$('#upload_comment_conrols').dialog('open')
+      #    #if ! $('#upload_comment_conrols').parent().hasClass('seethrough_panel')
+      #    #  $('#upload_comment_conrols').parent().addClass('seethrough_panel')
 
   @instance: () ->
     @_SINGLETON

@@ -21,7 +21,7 @@ jQuery ->
     $("#location_latitude").val(selLatLng[0])
     $("#location_longitude").val(selLatLng[1])
     $("#upload_comment_text").val($("#upload_comment").val())
-    $("#upload_form").submit()
+    Storage.Model.instance().savePoiNote 'upload_form', afterUploadPhoto
 
   uploadPhoto64 = () ->
     selLatLng = APP.getSelectedPositionLatLng()
@@ -33,15 +33,22 @@ jQuery ->
              file_content_type: fileContentType }
     uploadIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/([0-9]+)/)
     if uploadIdMatch?
-      url = '<%= upload_base64_path(id: ':id') %>'.replace(/:id/, uploadIdMatch[1])
-      data._method = 'put'
+      Storage.Model.instance().savePoiNote64 data, afterUploadPhoto, uploadIdMatch[1]
     else
-      url = '<%= uploads_base64_path %>'
-    $.ajax
-      type: 'POST'
-      dataType: 'script'
-      url: url
-      data: data
+      Storage.Model.instance().savePoiNote64 data, afterUploadPhoto
+
+  window.afterUploadPhoto = (poi) ->
+    # @see upload_comments.js.coffee
+    if $.mobile
+#     if $('#upload_comment_conrols').hasClass('ui-popup-active')
+#       $('#upload_comment_conrols').removeClass('ui-popup-active').addClass('ui-popup-hidden')
+#     $('#upload_comment_cancel').click()
+      $("#upload_data_panel").panel("close")
+    else
+      uploadDataDialog.dialog("close")
+    APP.panPosition poi.lat, poi.lng, poi.address
+    VoyageX.View.addPoiNotes poi
+    
 
 #  $('#add_upload_comment_btn').on 'click', (event) ->
 #    upload_id = $('#add_upload_comment_upload_id').val()

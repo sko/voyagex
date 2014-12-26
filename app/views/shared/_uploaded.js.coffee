@@ -1,16 +1,11 @@
-<% if resource.errors.empty? -%>
-$("#upload_message").html('upload ok')
-<% else -%>
-$("#upload_error").html("<ul><%= escape_javascript(resource.errors.full_messages.map { |msg| content_tag(:li, msg) }.join.html_safe) %></ul>")
-<% end -%>
-<% if is_mobile %>
-$.mobile.loading("hide")
+<% if resource.errors.empty? %>
+poi = eval('(' + '<%= poi_note_json[:poi].to_json.html_safe -%>' + ')')
+poiNote = eval('(' + '<%= poi_note_json.to_json.html_safe -%>' + ')')
+<%= window_prefix -%>Storage.Model._syncWithStorage { poi: poi }, <%= window_prefix -%>afterUploadPhoto, poiNote, 0
+<%= window_prefix -%>$("#upload_message").html('upload ok')
+<% else %>
+<%= window_prefix -%>$("#upload_error").html("<ul><%= escape_javascript(resource.errors.full_messages.map { |msg| content_tag(:li, msg) }.join.html_safe) %></ul>")
 <% end %>
-<%
-#max_width = 100.0
-#geometry = Paperclip::Geometry.from_file(@upload.file)
-#width = geometry.width.to_i
-#tag = image_tag(@upload.file.url, style: "width:#{(width*(max_width/width)).to_i}px;")
-%>
-#$("#upload_preview").prepend("<%= tag.gsub(/"/, '\'').html_safe -%>");
-$('#media_input_container').css('display', 'none')
+<% if is_mobile %>
+<%= window_prefix -%>$.mobile.loading("hide")
+<% end %>

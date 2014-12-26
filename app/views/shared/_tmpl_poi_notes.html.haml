@@ -7,7 +7,7 @@
       /= link_to t('uploads.add_comment'), '#upload_comment_conrols', popup_params
       = link_to t('uploads.add_comment'), '#', onclick: 'javascript:openUploadCommentControls({base_poi_note_id})'
     - else
-      .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: 'upload_comment_btn_{base_poi_note_id}'}
+      .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: 'upload_comment_btn_{base_poi_note_id}', onclick: 'openUploadCommentControls({base_poi_note_id})'}
         .ui-button-text
           #{t('uploads.add_comment')}
 

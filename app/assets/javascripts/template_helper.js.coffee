@@ -24,7 +24,7 @@ class window.VoyageX.TemplateHelper
       popupHtml = TemplateHelper._updateIds 'tmpl_poi_notes_container'
       popupHtml = popupHtml.
                   replace(/\{poi_notes\}/, poiNotesHtml).
-                  replace(/\{base_poi_note_id\}/, poiNote.id)
+                  replace(/\{base_poi_note_id\}/g, poiNote.id)
     else
       poiNotesHtml
 
@@ -43,7 +43,7 @@ class window.VoyageX.TemplateHelper
       poiNotesHtml += TemplateHelper.poiNotePopupEntryHtml(poiNote, poiNoteTmpl, i, meta)
     popupHtml = popupHtml.
                 replace(/\{poi_notes\}/, poiNotesHtml).
-                replace(/\{base_poi_note_id\}/, poi.notes[0].id)
+                replace(/\{base_poi_note_id\}/g, poi.notes[0].id)
 
   @openPOINotePopup: (poi) ->
     meta = {height: 0}
@@ -61,19 +61,20 @@ class window.VoyageX.TemplateHelper
     $('.leaflet-popup-close-button').on 'click', (event) ->
       VoyageX.Main.markerManager().get().unbindPopup()
       $('.leaflet-popup').remove()
-    $('#upload_comment_btn_'+poi.notes[0].id).on 'click', (event) ->
-      openUploadCommentControls(poi.notes[0].id)
+    #$('#upload_comment_btn_'+poi.notes[0].id).on 'click', (event) ->
+    #  openUploadCommentControls(poi.notes[0].id)
       #$('#upload_comment_conrols').dialog('open')
       #if ! $('#upload_comment_conrols').parent().hasClass('seethrough_panel')
       #  $('#upload_comment_conrols').parent().addClass('seethrough_panel')
+    $('#poi_note_input').html('')
     TemplateHelper.poiNoteInputHtml('poi_note_input', poi.notes[0])
 
-  @swiperSlideHtml: (poi_note) ->
+  @swiperSlideHtml: (poiNote) ->
     swiperSlideTmpl = TemplateHelper._updateAttributes('tmpl_swiper_slide', ['src'], TemplateHelper._updateIds('tmpl_swiper_slide')).
-    replace(/\{poiId\}/g, poi_note.poi.id).
-    replace(/\{poiNoteId\}/g, poi_note.id).
-    replace(/\{address\}/g, poi_note.poi.address).
-    replace(/\{attachment_url\}/g, poi_note.attachment.url)
+    replace(/\{poiId\}/g, poiNote.poi.id).
+    replace(/\{poiNoteId\}/g, poiNote.id).
+    replace(/\{address\}/g, poiNote.poi.address).
+    replace(/\{attachment_url\}/g, poiNote.attachment.url)
 
   @_updateIds: (rootElementId, callback = null) ->
     html = $('#'+rootElementId).html()

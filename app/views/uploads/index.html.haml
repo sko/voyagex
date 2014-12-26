@@ -1,0 +1,7 @@
+- Upload.order('id desc').each do |upload|
+  %div{style: 'float: left;'}
+    = upload_entity_to_view upload
+  %div{style: 'vertical-align: top; padding-left: 10px;'}
+    = upload.id
+  %div{style: 'clear: both;'}
+    &nbsp;

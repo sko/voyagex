@@ -7,6 +7,9 @@ class window.Storage.Model
   constructor: () ->
     Model._SINGLETON = this
 
+  savePoiNote: (formId, callback) ->
+    $("#"+formId).submit()
+
 # {"poi":{"id":2,"lat":51.3767,"lng":7.49389,"address":"Germany, North-Rhine-Westphalia, L704",
 # "notes":[
 # {"id":97,"user":{"id":101,"username":"tomas"},"text":"frohes fest","attachment":{"content_type":"image/jpeg","id":265,"url":"/assets/files/84/original/hagen_feu-campus.jpg?1419236682","width":500,"height":334}},
@@ -20,6 +23,40 @@ class window.Storage.Model
   # if id == id - modified
   # else inserted / removed
   #
+  savePoiNote64: (data, callback, poiId = null) ->
+    # TODO save before sending - if offline send later
+    if poiId != null
+      url = '<%= upload_base64_path(id: ':id') %>'.replace(/:id/, poiId)
+      data._method = 'put'
+    else
+      url = '<%= uploads_base64_path %>'
+    $.ajax
+      type: 'POST'
+      dataType: 'json'
+      url: url
+      data: data
+    .done (poiNote) ->
+        # TODO: unify json-format, until then avoid circular structure
+        poi = poiNote.poi
+        #unless poi.notes?
+        #  poi.notes = [note]
+        #poiClone = eval("("+JSON.stringify(poi)+")")
+        #delete poiNote.poi
+        #poi.notes = [eval("("+JSON.stringify(poiNote)+")")]
+        #poi.notes[0].poi = poiClone
+        #poiNote.poi = poi
+        #msg = { poi: poiNote.poi }
+        ##poi = eval("("+JSON.stringify(poiNote.poi)+")")
+        ##poi.notes = [poiNote]
+        ##poiNote.poi.notes = [eval("("+JSON.stringify(poiNote)+")")]
+        msg = { poi: poi }
+        Model._syncWithStorage msg, callback, poiNote, 0
+    .fail (jqXHR, textStatus) ->
+        #$("#upload_error").html("<ul><-%= escape_javascript(@upload.errors.full_messages.map { |msg| content_tag(:li, msg) }.join.html_safe) %></ul>")
+        # get from localStorage
+        console.log('TODO: maybe get from local storage')
+        #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
+
   loadPoiNotes: (poiId, poiNoteId, callback) ->
     $.ajax
       type: 'GET'
@@ -28,7 +65,6 @@ class window.Storage.Model
     .done (msg) ->
         for note, i in msg.poi.notes
           Model._syncWithStorage msg, callback, note, i
-        #callback msg.poi
     .fail (jqXHR, textStatus) ->
         # get from localStorage
         console.log('TODO: maybe get from local storage')
@@ -40,25 +76,73 @@ class window.Storage.Model
     # @see leaflet-funbctionaltilelayer _loadTile: function / MapControl - drawTile
     if (typeof attachmentUrl == 'string') 
       console.log '_syncWithStorage - attachmentUrl-string = '+attachmentUrl
-      if i == (msg.poi.notes.length - 1)
-        #console.log '_syncWithStorage - saving poiNotes ...'
+      #if i == (msg.poi.notes.length - 1)
+      unless msg.poi.notes? &&  i != (msg.poi.notes.length - 1)
         existingPoiData = Comm.StorageController.instance().get Comm.StorageController.poiKey(msg.poi)
-        unless existingPoiData?
-          Comm.StorageController.instance().addToList Comm.StorageController.poiKey(msg.poi), 'push', msg.poi.notes
-        #console.log '_syncWithStorage - calling back ...'
+        if existingPoiData?
+          unless Model._findPoiNote note, existingPoiData.notes
+            Model._storeWithoutPoi Comm.StorageController.poiKey(msg.poi), note
+        else
+          Model._storeWithoutPoi Comm.StorageController.poiKey(msg.poi), note
+        unless msg.poi.notes?
+          msg.poi.notes = [note]
         callback msg.poi
     else if (typeof attachmentUrl.then == 'function') 
       # Assume we are dealing with a promise.
       attachmentUrl.then (url) ->
           console.log '_syncWithStorage - attachmentUrl-promise resolved to: '+url
           note.attachment.url = url
-          if i == (msg.poi.notes.length - 1)
-            #console.log '_syncWithStorage - saving poiNotes ...'
+          #if i == (msg.poi.notes.length - 1)
+          unless msg.poi.notes? &&  i != (msg.poi.notes.length - 1)
             existingPoiData = Comm.StorageController.instance().get Comm.StorageController.poiKey(msg.poi)
-            unless existingPoiData?
-              Comm.StorageController.instance().addToList Comm.StorageController.poiKey(msg.poi), 'push', msg.poi.notes
-            #console.log '_syncWithStorage - calling back ...'
+            if existingPoiData?
+              unless Model._findPoiNote note, existingPoiData.notes
+                Model._storeWithoutPoi Comm.StorageController.poiKey(msg.poi), note
+            else
+              Model._storeWithoutPoi Comm.StorageController.poiKey(msg.poi), note
+            unless msg.poi.notes?
+              msg.poi.notes = [note]
             callback msg.poi
+  
+  @_storeWithoutPoi: (poiKey, note) ->
+    if note.poi?
+      notePoi = note.poi
+      delete note.poi
+      poiNoteClone = eval("("+JSON.stringify(note)+")")
+      Comm.StorageController.instance().addToList poiKey, 'notes', poiNoteClone
+      note.poi = notePoi
+    else
+      Comm.StorageController.instance().addToList poiKey, 'notes', note
+  
+  @_findPoiNote: (note, notes) ->
+    for n in notes
+      if n.id == note.id
+        return true
+    false
+
+#  @poiNotes: (newPoiNotes, storedPoiNotes) ->
+#    # poinotes must always be sorted by id, also indicating their age-relation
+#    merged = []
+#    sIdx = 0
+#    for nIdx in [0..newPoiNotes.length-1] by 1
+#      for i in [sIdx..storedPoiNotes.length-1] by 1
+#        sIdx = i+1
+#        if newPoiNotes[nIdx].id < storedPoiNotes[i].id
+#          merged.push newPoiNotes[nIdx]
+#          for j in [nIdx..newPoiNotes.length-1] by 1
+#            if newPoiNotes[j].id < storedPoiNotes[i].id
+#              merged.push newPoiNotes[nIdx]
+#            break
+#        else
+#          merged.push storedPoiNotes[i]
+#      if i >= storedPoiNotes.length
+#        break
+#    # TODO add remaining poiNotes - only one of the following will continue
+#    for i in [nIdx..newPoiNotes.length-1] by 1
+#      merged.push newPoiNotes[i]
+#    for i in [sIdx..storedPoiNotes.length-1] by 1
+#      merged.push storedPoiNotes[i]
+#    merged
 
   @_viewPoiNoteAttachment: (poiNote) ->
     storeKey = Comm.StorageController.poiNoteAttachmentKey poiNote

@@ -3,6 +3,10 @@ class UploadsController < ApplicationController
 
   skip_before_filter :verify_authenticity_token, only: [:create, :update]
 
+  def index
+    render layout: 'uploads'
+  end
+
   def create
     user = current_user || tmp_user
     poi = nearby user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
@@ -12,6 +16,7 @@ class UploadsController < ApplicationController
     @upload.build_entity params[:poi_note][:file].content_type, file: params[:poi_note][:file]
     
     if @upload.save
+      @poi_note_json = poi_note_json(@upload.attached_to)
       render "shared/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
     else
       render "shared/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
@@ -31,6 +36,7 @@ class UploadsController < ApplicationController
     comment.save
     
     @upload = comment.attachment
+    @poi_note_json = poi_note_json(@upload.attached_to)
     
     render "shared/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
     after_save
@@ -50,9 +56,12 @@ class UploadsController < ApplicationController
         File.rename(@upload.entity.file.path, @upload.entity.file.path.sub(/\.[^.]+$/, suffix))
         @upload.entity.update_attributes(file_file_name: @upload.entity.file_file_name.sub(/\.[^.]+$/, suffix), file_content_type: params[:file_content_type])
       end
-      render "uploads/uploaded_base64", formats: [:js]
+      #render "uploads/uploaded_base64", formats: [:js]
+      poi_note_json = poi_note_json(@upload.attached_to)
+      render json: poi_note_json
     else
-      render "uploads/uploaded_base64", formats: [:js]
+      #render "uploads/uploaded_base64", formats: [:js]
+      render json: { error: 'failed' }, status: 401
     end
     after_save
   end
@@ -75,7 +84,10 @@ class UploadsController < ApplicationController
       @upload.entity.update_attributes(file_file_name: @upload.entity.file_file_name.sub(/\.[^.]+$/, suffix), file_content_type: params[:file_content_type])
     end
     
-    render "uploads/uploaded_base64", formats: [:js]
+    #render "uploads/uploaded_base64", formats: [:js]
+    poi_note_json = poi_note_json(@upload.attached_to)
+    render json: poi_note_json
+
     after_save
   end
 
@@ -168,6 +180,19 @@ class UploadsController < ApplicationController
     poi
   end
   
+  def poi_note_json poi_note
+    poi_note_json = { poi: { id: poi_note.poi.id,
+                             lat: poi_note.poi.location.latitude,
+                             lng: poi_note.poi.location.longitude,
+                             address: poi_note.poi.location.address },
+                      id: poi_note.id,
+                      user: { id: poi_note.user.id,
+                              username: poi_note.user.username },
+                      text: poi_note.text } 
+    add_attachment_to_poi_note_json poi_note.attachment, poi_note_json
+    poi_note_json
+  end
+
   def after_save
     #geometry = Paperclip::Geometry.from_file(@upload.file)
     #file_data = { type: 'image', url: @upload.file.url, width: geometry.width.to_i, height: geometry.height.to_i }
@@ -175,15 +200,7 @@ class UploadsController < ApplicationController
     #upload_msg = { id: @upload.id, file: file_data, location: location_data }
     poi_note = @upload.attached_to
     upload_msg = { type: 'poi_note_upload',
-                   poi_note: { poi: { id: poi_note.poi.id,
-                                      lat: poi_note.poi.location.latitude,
-                                      lng: poi_note.poi.location.longitude,
-                                      address: poi_note.poi.location.address },
-                               id: poi_note.id,
-                               user: { id: poi_note.user.id,
-                                       username: poi_note.user.username },
-                               text: poi_note.text } }
-    add_attachment_to_poi_note_json @upload, upload_msg[:poi_note]
+                   poi_note: poi_note_json(poi_note) }
 
     channel_path = '/uploads'
     channel_path += "#{PEER_CHANNEL_PREFIX}#{@upload.attached_to.user.comm_setting.channel_enc_key}" unless USE_GLOBAL_SUBSCRIBE

@@ -519,10 +519,12 @@ class window.Comm.StorageController
       else
         listEntries = {}
         @_jsonObjects[storeKey] = listEntries
-        listEntries[listKey] = data
+        listEntries[listKey] = if data instanceof Array then data else [data]
       localStorage.setItem(storeKey, JSON.stringify(listEntries))
     else
-      if stored.trim().match(/^\[/) == null
+      # listKey == null: ^[
+      # listKey != null: ^[^:]+:
+      if stored.trim().match(/^(|[^:]+:\s*)\[/) == null
         alert('expected Object/List - change of EntryType not implemented')
       else
         storedJSON = @_jsonObjects[storeKey]
@@ -538,7 +540,8 @@ class window.Comm.StorageController
            #storedJSON.push(data)         # LIFO with push
             storedJSON.splice(0, 0, data) # FIFO with push
         else
-          storedJSON[listKey] = data
+         #storedJSON[listKey].push(data)           # LIFO with push
+          storedJSON[listKey].splice(0, 0, data) # FIFO with push
         localStorage.setItem(storeKey, JSON.stringify(storedJSON));
 
   get: (storeKey, listKey = null) ->
