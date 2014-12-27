@@ -37,19 +37,7 @@ class window.Storage.Model
       data: data
     .done (poiNote) ->
         # TODO: unify json-format, until then avoid circular structure
-        poi = poiNote.poi
-        #unless poi.notes?
-        #  poi.notes = [note]
-        #poiClone = eval("("+JSON.stringify(poi)+")")
-        #delete poiNote.poi
-        #poi.notes = [eval("("+JSON.stringify(poiNote)+")")]
-        #poi.notes[0].poi = poiClone
-        #poiNote.poi = poi
-        #msg = { poi: poiNote.poi }
-        ##poi = eval("("+JSON.stringify(poiNote.poi)+")")
-        ##poi.notes = [poiNote]
-        ##poiNote.poi.notes = [eval("("+JSON.stringify(poiNote)+")")]
-        msg = { poi: poi }
+        msg = { poi: poiNote.poi }
         Model._syncWithStorage msg, callback, poiNote, 0
     .fail (jqXHR, textStatus) ->
         #$("#upload_error").html("<ul><-%= escape_javascript(@upload.errors.full_messages.map { |msg| content_tag(:li, msg) }.join.html_safe) %></ul>")

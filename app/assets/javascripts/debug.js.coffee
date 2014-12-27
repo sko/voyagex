@@ -21,7 +21,7 @@ class window.VoyageX.Debug
       if record.target.id == 'map'
         for element in record.addedNodes
           if element.getAttribute('class') == 'leaflet-map-pane'
-            tileContainers = $(element).find('.leaflet-tile-container')
+            tileContainers = $(element).find('.leaflet-tile-container:parent')
             for tC in tileContainers
               if $(tC).children().length >= 1
                 DEBUG._tileContainer = tC

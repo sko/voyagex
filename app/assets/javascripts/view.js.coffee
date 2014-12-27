@@ -131,7 +131,7 @@ class window.VoyageX.View
       #popup.update()
       #popupHtml = $('#poi_notes_container').parent().html().replace(/(<div[^>].+?upload_comment_btn_)/, popupEntryHtml+'$1')
       popupHtml = popup.getContent().replace(/(<div[^>].+?upload_comment_btn_)/, popupEntryHtml+'$1')
-      $('#poi_notes_container').parent().html('')
+      #$('#poi_notes_container').parent().html('')
       popup.setContent(popupHtml)
       popup.update()
       #$('#upload_comment_btn_'+poi.notes[0].id).on 'click', (event) ->

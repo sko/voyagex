@@ -1,6 +1,6 @@
 = javascript_tag do
   window.Comm = { StorageController: {} };
-  window.VoyageX = { NavBar: {}, StorageStrategy: {}, MapControl: {}, MarkerManager: {}, MediaManager: {}, View: {} };
+  window.VoyageX = { NavBar: {}, StorageStrategy: {}, MapControl: {}, MarkerManager: {}, MediaManager: {}, View: {}, Version: {} };
   window.VoyageX['PEER_CHANNEL_PREFIX'] = '#{PEER_CHANNEL_PREFIX}';
   window.VoyageX.TILE_URL_TEMPLATE = '#{Leaflet.tile_layer}';
   window.VoyageX.USE_GLOBAL_SUBSCRIBE = #{USE_GLOBAL_SUBSCRIBE};
@@ -12,3 +12,7 @@
   - else
     window.VoyageX.CHANNEL_ENC_KEY = null;
     window.VoyageX.SYS_CHANNEL_ENC_KEY = null;
+  window.subscribeTo = [];
+  window.unsubscribeFrom = [];
+  window.pois = [];
+  = render partial: '/shared/pois', formats: [:js]

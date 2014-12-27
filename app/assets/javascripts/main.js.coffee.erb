@@ -12,6 +12,7 @@ class window.VoyageX.Main
   constructor: (user, cacheStrategy, view, mapOptions, offlineZooms, online) ->
     Main._SINGLETON = this
     window.APP = this
+    @_version = new VoyageX.Version [0, 1]
     @_user = user
     @_initState = 0
     @_online = online
@@ -51,19 +52,14 @@ class window.VoyageX.Main
 #      #APP.map().on('locationerror', (e) ->
 #      #    alert('geolocation timed out - manual selection required.\nsetting default location...')
 #      #  )
-        APP.map().on 'click', (event) ->
-          address = null
-          APP._setSelectedPositionLatLng Main.markerManager().get()||Main.markerManager().add(event.latlng.lat, event.latlng.lng, Main._markerEventsCB), event.latlng.lat, event.latlng.lng, address
-          APP.publishPosition()
-        APP.map().on('zoomend', (e) ->
-            APP._zoomEnd(e);
-          )
         if window.isMobile()
           APP.map().invalidateSize({
               reset: true,
               pan: false,
               animate: false
             })
+        for poi in pois
+          Main.markerManager().add(poi, Main._markerEventsCB, false)
         APP._initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
         $('#zoom_level').html('<span style="color:white;">zoom: '+APP.map().getZoom()+'</span>')
         # next statement removes value from inputs!!
@@ -116,8 +112,9 @@ class window.VoyageX.Main
     return [@_selectedPositionLatLng[0], @_selectedPositionLatLng[1]]
 
   _setSelectedPositionLatLng: (marker, lat, lng, address) ->
+    poi = {lat: lat, lng: lng}
     if marker == null
-      marker = VoyageX.Main.markerManager().add lat, lng, Main._markerEventsCB
+      marker = VoyageX.Main.markerManager().add poi, Main._markerEventsCB
     else
       marker = VoyageX.Main.markerManager().sel marker, lat, lng, Main._markerEventsCB
     @_selectedPositionLatLng[0] = lat

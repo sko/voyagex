@@ -15,6 +15,7 @@ class window.Comm.StorageController
     @_tileMeta = null
     @_tileLoadQueue = {}
     @_tileImageContentType = 'image/webp'
+    @_storedFilesAreBase64 = false
     @_attachmentMeta = null
     @_grantedBytes = 0
     @_dirReaders = {}
@@ -106,6 +107,8 @@ class window.Comm.StorageController
                 fileEntry.createWriter((fileWriter) ->
                   fileWriter.onwriteend = (e) ->
                       console.log('Write completed.')
+                      if deferredModeParams.fileStatusCB?
+                        deferredModeParams.fileStatusCB deferredModeParams, true
                       deferredModeParams.deferred.resolve fileEntry.toURL(StorageController.instance()._tileImageContentType)
                       storeKey = StorageController.tileKey(xYZ)
                       delete sC._tileLoadQueue[storeKey]
@@ -121,6 +124,8 @@ class window.Comm.StorageController
                       showCacheStats(sC._tileMeta.numTiles, sC._tileMeta.tilesByteSize)
                   fileWriter.onerror = (e) ->
                       console.log('Write failed: ' + e.toString())
+                      if deferredModeParams.fileStatusCB?
+                        deferredModeParams.fileStatusCB deferredModeParams, true
                       #deferredModeParams.deferred.resolve deferredModeParams.tileUrl
                       deferredModeParams.deferred.resolve VoyageX.MapControl.notInCacheImage(xYZ[0], xYZ[1], xYZ[2])
                       delete sC._tileLoadQueue[StorageController.tileKey(xYZ)]
@@ -186,22 +191,24 @@ class window.Comm.StorageController
     path = '/'+xYZ[2]+'/'+xYZ[0]+'/'+xYZ[1]
     @_dirReaders.entry.getFile(path, {}, (fileEntry) ->
         console.log('_getTileFile - found file: '+path)
-        # if binary:
-        deferredModeParams.deferred.resolve fileEntry.toURL(StorageController.instance()._tileImageContentType)
-#        # if text (base64):
-#        fileEntry.file (file) ->
-#            #@_dirReaders.entries[xYZ[2]].entries[xYZ[0].reader
-#            reader = new FileReader()
-#            reader.onabort = (e) ->
-#                console.log('aborted '+path+": "+e)
-#            reader.onerror = (e) ->
-#                console.log('failed '+path+": "+e)
-#            reader.onload = (e) ->
-#                if this.result == ''
-#                  console.log('bad read on '+path)
-#                deferredModeParams.deferred.resolve this.result
-#            reader.readAsText(file)
-#            #reader.readAsDataURL(file, StorageController.instance()._tileImageContentType)
+        if deferredModeParams.fileStatusCB?
+          deferredModeParams.fileStatusCB deferredModeParams, false
+        if @_storedFilesAreBase64
+          fileEntry.file (file) ->
+              #@_dirReaders.entries[xYZ[2]].entries[xYZ[0].reader
+              reader = new FileReader()
+              reader.onabort = (e) ->
+                  console.log('aborted '+path+": "+e)
+              reader.onerror = (e) ->
+                  console.log('failed '+path+": "+e)
+              reader.onload = (e) ->
+                  if this.result == ''
+                    console.log('bad read on '+path)
+                  deferredModeParams.deferred.resolve this.result
+          reader.readAsText(file)
+          #reader.readAsDataURL(file, StorageController.instance()._tileImageContentType)
+        else
+          deferredModeParams.deferred.resolve fileEntry.toURL(StorageController.instance()._tileImageContentType)
         delete StorageController.instance()._tileLoadQueue[StorageController.tileKey(xYZ)]
       , (e) ->
         if (e.code == FileError.NOT_FOUND_ERR) 
@@ -225,7 +232,7 @@ class window.Comm.StorageController
           if prefetchMode == 1
             VoyageX.MapControl.loadAndPrefetch deferredModeParams.mC, xYZ, deferredModeParams.view.subdomain, deferredModeParams
           else
-            deferredModeParams.mC._loadReadyImage deferredModeParams.tileUrl, xYZ, deferredModeParams
+            deferredModeParams.mC.loadReadyImage deferredModeParams.tileUrl, xYZ, deferredModeParams
       )
 
   _checkedTileLoadQueue: (xYZ, checkStoreFile, callback) ->
@@ -511,7 +518,7 @@ class window.Comm.StorageController
   # reserved listKeys:
   # push: creates/uses an array for entries stored with storeKey
   # if an array is defined for a storeKey then there can't be any other objects defined aside (@see this.pop())
-  addToList: (storeKey, listKey, data) ->
+  addToList: (storeKey, listKey, data, fifo = true) ->
     stored = localStorage.getItem(storeKey)
     if stored == null
       if listKey == 'push'
@@ -534,14 +541,20 @@ class window.Comm.StorageController
         if listKey == 'push'
           if data instanceof Array
             for entry, i in data
-             #storedJSON.push(data)                          # LIFO with push
-              storedJSON.splice(0, 0, data[data.length-1-i]) # FIFO with push
+              if fifo
+                storedJSON.splice(0, 0, data[data.length-1-i])
+              else
+                storedJSON.push(data)
           else
-           #storedJSON.push(data)         # LIFO with push
-            storedJSON.splice(0, 0, data) # FIFO with push
+            if fifo
+              storedJSON.splice(0, 0, data)
+            else
+              storedJSON.push(data)
         else
-         #storedJSON[listKey].push(data)           # LIFO with push
-          storedJSON[listKey].splice(0, 0, data) # FIFO with push
+          if fifo
+            storedJSON[listKey].splice(0, 0, data)
+          else
+            storedJSON[listKey].push(data)
         localStorage.setItem(storeKey, JSON.stringify(storedJSON));
 
   get: (storeKey, listKey = null) ->

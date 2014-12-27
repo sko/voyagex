@@ -1,8 +1,5 @@
 <% environment.context_class.instance_eval { include Rails.application.routes.url_helpers } %>
 
-window.subscribeTo = []
-window.unsubscribeFrom = []
-
 window.isMobile = () ->
   navigator.userAgent.match(/Mobile|webOS/) != null
   

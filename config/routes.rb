@@ -8,7 +8,7 @@ VoyageX::Application.routes.draw do
   resources :users, only: [:update] do
   end
 
-  resources :uploads, only: [:index, :create, :update] do
+  resources :uploads, only: [:index, :create, :update, :destroy] do
   end
   post '/uploads_base64', to: 'uploads#create_from_base64', as: :uploads_base64
   put '/upload_base64/:id', to: 'uploads#update_from_base64', as: :upload_base64

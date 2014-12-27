@@ -22,6 +22,8 @@ Concept
 +) Objekt-basierte Versionierung
 +) rebase!!!!!
 
++) fast alles was in javascript initial geladen werden soll kommt in layouts/_init_js
+  es sei denn es gibtspzialfall (peers/subscriptions)
 
 flacher baum.
 

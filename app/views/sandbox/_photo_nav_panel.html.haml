@@ -26,5 +26,5 @@
     %img{tmpl: {src: '{attachment_url}'}, style: "height: #{max_height.to_i}px;"}
 
 - swiper_style = "width: #{max_width}px; height: #{max_height.to_i}px;"
-%script
+= javascript_tag do
   $("head").append("<style type='text/css'>#swipe_panel, .swiper-container, .swiper-slide { #{swiper_style} }</style>");

@@ -70,6 +70,6 @@
       :javascript
         showLoginDialog(#{email_arg});
     - if params[:c].present?
-      %script
+      = javascript_tag do
         VoyageX.NavBar.menuNavClick('#{params[:c]}');
         /window.location.href.replace(/\??c=[^&]*/, '')

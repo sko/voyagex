@@ -7,24 +7,30 @@ class window.VoyageX.MarkerManager
     @_showSearchRadius = false
     @_selectedSearchRadius = null
 
-  add: (lat, lng, callBack) ->
-    marker = L.marker([lat, lng], { draggable: true,\
-                                    riseOnHover: true })
-    @_markers.push new VoyageX.Marker(marker)
+  add: (poi, callBack, isUserMarker = false) ->
+    markerOps = { draggable: isUserMarker,\
+                  riseOnHover: true }
+    unless isUserMarker
+      markerOps.icon = new L.Icon.Default({iconUrl: '/assets/marker-icon-red.png'})
+    marker = L.marker([poi.lat, poi.lng], markerOps)
+    @_markers.push new VoyageX.Marker(marker, isUserMarker)
     if callBack != null
       marker.on 'click', callBack#, marker
       marker.on 'dblclick', callBack
       marker.on 'dragend', callBack
     marker.addTo(@_map)
-    # FIXME _icon not ready if no initial map-center is set
-    marker._icon.title = marker._leaflet_id
+    if isUserMarker
+      marker._icon.title = marker._leaflet_id
+    else
+      marker._icon.title = poi.address
     marker
 
   sel: (replaceMarker, lat, lng, callBack) ->
     # if @_selectedMarker != null && replaceMarker == @_selectedMarker.target()
     #   @_map.removeLayer @_selectedMarker.target()
+    poi = {lat: lat, lng: lng}
     if replaceMarker == null
-      this.add lat, lng, callBack
+      this.add poi, callBack, true
     @_selectedMarker = @_markers[@_markers.length - 1]
     @_selectedMarker.setLatLng(lat, lng)
     @_selectedMarker.target()
@@ -74,11 +80,15 @@ class window.VoyageX.MarkerManager
 
 class VoyageX.Marker
 
-  constructor: (marker) ->
+  constructor: (marker, isUserMarker = false) ->
     @_target = marker
+    @_isUserMarker = isUserMarker
 
   target: ->
     @_target
+
+  isUserMarker: ->
+    @_isUserMarker
 
   setLatLng: (lat, lng) ->
    @_target.setLatLng(L.latLng(lat, lng))

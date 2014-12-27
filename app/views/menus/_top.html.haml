@@ -50,8 +50,14 @@
             %div{style: 'height: 15px; font-size: 9px;'}
               = radio_button_tag 'search_radius_display', 'hide', true, onclick: 'toggleSearchRadiusDisplay(this)'
               = label_tag 'search_radius_display_hide', 'off'
-        %span#zoom_level{style: 'margin-left: 20px;'}
-        %span#cache_stats{style: 'margin-left: 10px;'}
+        #cache_info{style: 'float: left; margin: -8px 0px 0px 20px; font-size: 11px; padding: 0px; color: #ffffff;'}
+          %div
+            [
+            = link_to 'tile-info', '#', onclick: "javascript:VoyageX.Main.mapControl().showTileInfo();", :style => "color:#00dd;"
+            ]
+          %div
+            %span#zoom_level
+            %span#cache_stats{style: 'margin-left: 10px;'}
         %span#cache_ctrls{style: 'margin-left: 10px;'}
           %button{id: 'clear_cache'}
             Clear Cache

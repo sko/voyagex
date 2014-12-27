@@ -11,6 +11,7 @@
 //= require canvas-toBlob
 //= require buffer-loader
 //= require preload/util
+//= require version
 //= require storage_strategy
 //= require storage/model
 //= require template_helper

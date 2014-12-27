@@ -91,6 +91,12 @@ class UploadsController < ApplicationController
     after_save
   end
 
+  def destroy
+    @upload = Upload.find(params[:id])
+    @upload.attached_to.destroy
+    render "uploads/deleted", formats: [:js]
+  end
+
   def comments
     user = current_user || tmp_user
     poi_note = PoiNote.find(params[:upload_id])
