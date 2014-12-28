@@ -26,10 +26,11 @@ class window.VoyageX.MapControl
     #@_tileLoadQueue = []
     @_tileLoadQueue = {}
     @_saveCallsToFlushCount = 0
+    @_showTileInfo = false
     @_map = new L.Map('map', mapOptions)
     @_map.whenReady () ->
         console.log '### map-event: ready ...'
-        #MapControl.instance().showTileInfo()
+        #MapControl.instance().showTileInfo false
         if APP.isOnline()
           mC = VoyageX.MapControl.instance()
           unless Comm.StorageController.isFileBased()
@@ -37,15 +38,10 @@ class window.VoyageX.MapControl
             y = parseInt(mC._map.project(mC._map.getCenter()).y/256)
             view = {zoom: mC._map.getZoom(), tile: {column: x, row: y}, subdomain: mC._mapOptions.subdomains[0]}
             mC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS
-#        #for e, idx in mC._tileLoadQueue
-#        for xY in Object.keys(mC._tileLoadQueue)
-#        #while (e = mC._tileLoadQueue.pop())?
-#          console.log '### map-event: tileKey = '+mC._tileLoadQueue[xY].xYZ
-#          #view = {zoom: e.xYZ[2], tile: {column: e.xYZ[0], row: e.xYZ[1]}, subdomain: e.viewSubdomain}
-#          #mC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS, e.deferredModeParams
     @_map.on 'moveend', (event) ->
         console.log '### map-event: moveend ...'
-        #MapControl.instance().showTileInfo()
+        if MapControl.instance()._showTileInfo
+          MapControl.instance().showTileInfo false
         if APP.isOnline()
           mC = VoyageX.MapControl.instance()
           unless Comm.StorageController.isFileBased()
@@ -53,12 +49,6 @@ class window.VoyageX.MapControl
             y = parseInt(mC._map.project(mC._map.getCenter()).y/256)
             view = {zoom: mC._map.getZoom(), tile: {column: x, row: y}, subdomain: mC._mapOptions.subdomains[0]}
             mC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS
-#        #for e, idx in mC._tileLoadQueue
-#        for xY in Object.keys(mC._tileLoadQueue)
-#        #while (e = mC._tileLoadQueue.pop())?
-#          console.log '### map-event: tileKey = '+mC._tileLoadQueue[xY].xYZ
-#          #view = {zoom: e.xYZ[2], tile: {column: e.xYZ[0], row: e.xYZ[1]}, subdomain: e.viewSubdomain}
-#          #mC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS, e.deferredModeParams
     @_map.on('zoomend', (e) ->
         console.log '### map-event: zoomend ...'
         APP._zoomEnd(e);
@@ -101,12 +91,14 @@ class window.VoyageX.MapControl
   curTileWidthToMeters: () ->
     this.tileWidthToMeters(@_map.getZoom())
   
-  showTileInfo: () ->
+  showTileInfo: (set = true) ->
+    if set
+      @_showTileInfo = !@_showTileInfo
+
     tiles = $('#map > .leaflet-map-pane > .leaflet-tile-pane .leaflet-tile-container:parent > .leaflet-tile')
     remove = tiles.first().parent().children('div[data-role=tileInfo]')
-    if remove.length >= 1
-      remove.remove()
-    else
+    remove.remove()
+    if @_showTileInfo
       for tile, idx in tiles
         style = $(tile).attr('style')
         #key = $(tile).attr('src').match(/[0-9]+\/[0-9]+\/[0-9]+$/)

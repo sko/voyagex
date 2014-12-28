@@ -1,6 +1,7 @@
 #require_dependency "comm/application_controller"
 
 # curl -X POST http://192.168.1.4:3005/comm -H 'Content-Type: application/json' -d '{"channel":"/talk@rxbcin9nc","data":{"type":"chat", "text":"hello world"}}'
+include ::GeoUtils
 module Comm
   class ChannelsController < FayeRails::Controller
 
@@ -136,10 +137,12 @@ module Comm
         begin
           case data['type']
           when 'click'
-            user = User.where(id: data['userId']).first
             location = Location.new(latitude: data['lat'], longitude: data['lng'])
-            # TODO maybe select existing location if exists instead of creating new - l.nearbys(5)
-            # NO_SAVE_ON_ALL_CLICKS ls_u = user.locations_users.create(location: location)
+            if data['saveLocation']
+              user = User.where(id: data['userId']).first
+              location = nearby_poi(user, location, 10).location
+              #ls_u = user.locations_users.create(location: location)
+            end
             # provide reverse lookup
             unless data['address'].present?
               Rails.logger.debug "###### providing reverse-geocoding-service: #{location.address}"

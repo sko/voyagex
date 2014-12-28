@@ -7,6 +7,19 @@ class window.Storage.Model
   constructor: () ->
     Model._SINGLETON = this
 
+  loadPois: (lat, lng, callback) ->
+    $.ajax
+      type: 'GET'
+      dataType: 'json'
+      url: '<%= pois_path(lat: ':lat', lng: ':lng') %>'.replace(/:lat/, lat).replace(/:lng/, lng)
+    .done (msg) ->
+        for poi, i in msg.pois
+          Model._syncPois poi, callback, i
+    .fail (jqXHR, textStatus) ->
+        # get from localStorage
+        console.log('TODO: maybe get from local storage')
+        #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
+
   savePoiNote: (formId, callback) ->
     $("#"+formId).submit()
 
@@ -59,6 +72,25 @@ class window.Storage.Model
         # get from localStorage
         console.log('TODO: maybe get from local storage')
         #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
+
+  @_syncPois: (poi, callback, i) ->
+    storeKey = Comm.StorageController.poiKey poi
+    localPoiData = Comm.StorageController.instance().get storeKey
+    if localPoiData?
+      # TODO attributes / structure will not change. 
+      # currently: take all from remote, only add local which are not part of response-poi
+      for key in Object.keys(localPoiData)
+        if poi[key]?
+          if key == 'notes'
+            # TODO compare and clean up attachments; currently notes are not part of the response - they are handled separately
+            console.log('TODO: Model - _syncPois: compare and clean up attachments')
+        else
+          poi[key] = localPoiData[key]
+    else
+      unless poi.notes?
+        poi.notes = []
+    localStorage.setItem(storeKey, JSON.stringify(poi))
+    callback poi
 
   @_syncWithStorage: (msg, callback, note, i) ->
     # store image

@@ -77,3 +77,8 @@
     max_zoom: 30 }
     new VoyageX.Main(currentUser, VoyageX.StorageStrategy.instance(), view, mapOptions, offlineZooms, true) 
 
+#tmpl_marker_controls{style: 'display: none;'}
+  %div{tmpl: {id: 'marker_controls'}}
+    = link_to 'Add POI', '#', onclick: "javascript:APP.poiNoteInput();"
+    %br
+    = link_to 'Set Current Location', '#', onclick: "javascript:APP.publishPosition(true);"

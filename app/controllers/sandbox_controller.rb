@@ -12,7 +12,7 @@ class SandboxController < ApplicationController
     location = tmp_user.last_location
     if location.present?
       #@uploads = location.nearbys((nearby_km.to_f/1.609344).round).inject([]){|res,l|l.uploads.where('uploads.location_id is not null')}
-      limits = latLngLimits location.latitude, location.longitude, nearby_m
+      limits = lat_lng_limits location.latitude, location.longitude, nearby_m
       limits_lat = limits[:lat_south] > limits[:lat_north] ? limits[:lat_north]..limits[:lat_south] : limits[:lat_south]..limits[:lat_north]
       limits_lng = limits[:lng_east] > limits[:lng_west] ? limits[:lng_west]..limits[:lng_east] : limits[:lng_east]..limits[:lng_west]
       @pois = Poi.joins(:location).where(locations: {latitude: limits_lat, longitude: limits_lng})
@@ -46,7 +46,7 @@ class SandboxController < ApplicationController
     location = Location.new latitude: params[:lat], longitude: params[:lng]
 #    if location.present?
       #@uploads = location.nearbys((nearby_km.to_f/1.609344).round).inject([]){|res,l|l.uploads.where('uploads.location_id is not null')}
-      limits = latLngLimits location.latitude, location.longitude, nearby_m
+      limits = lat_lng_limits location.latitude, location.longitude, nearby_m
       limits_lat = limits[:lat_south] > limits[:lat_north] ? limits[:lat_north]..limits[:lat_south] : limits[:lat_south]..limits[:lat_north]
       limits_lng = limits[:lng_east] > limits[:lng_west] ? limits[:lng_west]..limits[:lng_east] : limits[:lng_east]..limits[:lng_west]
       @uploads = Upload.joins(attached_to: { poi: :location }).where(locations: {latitude: limits_lat, longitude: limits_lng})

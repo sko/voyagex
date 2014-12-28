@@ -8,6 +8,9 @@ VoyageX::Application.routes.draw do
   resources :users, only: [:update] do
   end
 
+  get '/pois/:lat/:lng', to: 'uploads#pois', as: :pois, :constraints => { :lat => /([0-9]+\.[0-9]+|:[a-z]+)/,
+                                                                          :lng => /([0-9]+\.[0-9]+|:[a-z]+)/ }
+
   resources :uploads, only: [:index, :create, :update, :destroy] do
   end
   post '/uploads_base64', to: 'uploads#create_from_base64', as: :uploads_base64

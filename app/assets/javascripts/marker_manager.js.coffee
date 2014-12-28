@@ -6,6 +6,7 @@ class window.VoyageX.MarkerManager
     @_markers = []
     @_showSearchRadius = false
     @_selectedSearchRadius = null
+    @_maxZIndex = 0
 
   add: (poi, callBack, isUserMarker = false) ->
     markerOps = { draggable: isUserMarker,\
@@ -15,10 +16,16 @@ class window.VoyageX.MarkerManager
     marker = L.marker([poi.lat, poi.lng], markerOps)
     @_markers.push new VoyageX.Marker(marker, poi, isUserMarker)
     if callBack != null
-      marker.on 'dblclick', callBack
-      marker.on 'click', callBack#, marker
-      marker.on 'dragend', callBack
+      marker.on 'click', callBack
+      if isUserMarker
+        marker.on 'dblclick', callBack
+        marker.on 'dragend', callBack
+        marker.on 'mouseover', callBack
     marker.addTo(@_map)
+    if marker._zIndex > @_maxZIndex
+      @_maxZIndex = marker._zIndex+1
+      if @_selectedMarker != null
+        @_selectedMarker.target().setZIndexOffset @_maxZIndex
     if isUserMarker
       marker._icon.title = marker._leaflet_id
     else
@@ -47,7 +54,8 @@ class window.VoyageX.MarkerManager
         @_selectedMarker = new VoyageX.Marker(replaceMarker, poi, true)
         @_markers.push @_selectedMarker
 
-    @_selectedMarker.setLatLng(lat, lng)
+    @_selectedMarker.target().setZIndexOffset @_maxZIndex        
+    @_selectedMarker.setLatLng lat, lng
     @_selectedMarker.target()
 
   get: () ->
@@ -62,7 +70,7 @@ class window.VoyageX.MarkerManager
   forPoi: (poiId) ->
     for m in @_markers
       if m.poi().id == poiId
-        return {marker: m, poi: m.poi(), isUserMarker: m.isUserMarker()}
+        return {marker: m.target(), poi: m.poi(), isUserMarker: m.isUserMarker()}
     null
 
   searchBounds: (radiusMeters, map) ->

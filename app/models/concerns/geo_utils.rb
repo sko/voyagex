@@ -1,15 +1,15 @@
-module GeoUtils
+module ::GeoUtils
   extend ActiveSupport::Concern
 
   #included do
   #end
   
-  # l = User.first.last_location; b = latLngLimits l.latitude, l.longitude, 10
+  # l = User.first.last_location; b = lat_lng_limits l.latitude, l.longitude, 10
   # "L.rectangle(#{[[b[:lat_north], b[:lng_west]], [b[:lat_south], b[:lng_east]]]}, {color: '#ff7800', weight: 1}).addTo(map);"
   # map.removeLayer(l)
   #
   # http://www.csgnetwork.com/degreelenllavcalc.html
-  def latLngLimits lat, lng, radius_meters
+  def lat_lng_limits lat, lng, radius_meters
     latRAD = lat/180 * Math::PI
     m1 = 111132.92
     m2 = -559.82
@@ -37,9 +37,47 @@ module GeoUtils
      :lat_north => lat+inner_square_half_side_length_lat}
   end
 
+  # this will save the location or a nearby poi-location with the user
+  def nearby_pois user, location, radius_meters = 10, limits_lat_lng = {}
+    limits = lat_lng_limits location.latitude, location.longitude, radius_meters
+    limits_lat = limits[:lat_south] > limits[:lat_north] ? limits[:lat_north]..limits[:lat_south] : limits[:lat_south]..limits[:lat_north]
+    limits_lng = limits[:lng_east] > limits[:lng_west] ? limits[:lng_west]..limits[:lng_east] : limits[:lng_east]..limits[:lng_west]
+    limits_lat_lng[:limits_lat] = limits_lat
+    limits_lat_lng[:limits_lng] = limits_lng
+    nearbys = Poi.joins(:location).where(locations: { latitude: limits_lat, longitude: limits_lng })
+  end
 
+  # this will save the location or a nearby poi-location with the user
+  def nearby_poi user, location, radius_meters = 10
+    # FIXME:
+    # 1) when address is available check same address
+    # 2) otherwise range
+   #nearbys = location.nearbys(0.01)
+    limits_lat_lng = {}
+    nearbys = nearby_pois user, location, radius_meters, limits_lat_lng
+    if nearbys.present?
+      # TODO check address, then get closest - not first
+      poi = nearbys.first
+      user.locations_users.create(location: poi.location) unless user.locations.where(id: poi.location.id).present?
+    else
+      nearbys = Location.where(locations: { latitude: limits_lat_lng[:limits_lat], longitude: limits_lat_lng[:limits_lng] })
+      if nearbys.present?
+        # TODO check address, then get closest - not first
+        location = nearbys.first
+        user.locations_users.create(location: location) unless user.locations.where(id: location.id).present?
+      else
+        user.locations_users.create(location: location)
+        location.reload
+      end
+      # caller can save it if required
+      poi = Poi.new location: location
+    end
+    poi
+  end
 
-  def tileYZ latLngLimits, zoomLevel
+  private
+
+  def setNewLocation
   end
 
 end

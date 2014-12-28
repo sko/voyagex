@@ -94,21 +94,13 @@ class window.VoyageX.View
     #
     # TODO: close uploads - this should go to the user who uploaded - not as a callback via faye
     #                       though lots of logic is the same
-    if window.isMobile()
-      $("#upload_data_panel").panel("close");
-    else
-      uploadDataDialog.dialog('close')
-    
-    popup = VoyageX.Main.markerManager().get().getPopup()
-    if popup?
-      i = $('.leaflet-popup .upload_comment').length
-      popupEntryHtml = VoyageX.TemplateHelper.poiNotePopupHtmlFromTmpl(poi.notes[0], i)
-      popupHtml = popup.getContent().replace(/(<div[^>].+?upload_comment_btn_)/, popupEntryHtml+'$1')
-      popup.setContent(popupHtml)
-      popup.update()
-    else
-      APP.panPosition(poi.lat, poi.lng, poi.address)
-      VoyageX.TemplateHelper.openPOINotePopup poi
+    #if window.isMobile()
+    #  $("#upload_data_panel").panel("close");
+    #else
+    #  uploadDataDialog.dialog('close')
+
+    VoyageX.TemplateHelper.addPoiNotes poi, APP.getMarker(poi)
+    #APP.panPosition(poi.lat, poi.lng, poi.address)
 
   @instance: () ->
     @_SINGLETON

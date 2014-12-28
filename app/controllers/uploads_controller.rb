@@ -9,7 +9,7 @@ class UploadsController < ApplicationController
 
   def create
     user = current_user || tmp_user
-    poi = nearby user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
+    poi = nearby_poi user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
     
     @upload = Upload.new(attached_to: PoiNote.new(poi: poi, user: user, text: params[:poi_note][:text]))
     @upload.attached_to.attachment = @upload
@@ -44,7 +44,7 @@ class UploadsController < ApplicationController
 
   def create_from_base64
     user = current_user || tmp_user
-    poi = nearby user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
+    poi = nearby_poi user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
     
     attachment_mapping = Upload.get_attachment_mapping params[:file_content_type]
     @upload = build_upload_base64 user, poi, attachment_mapping
@@ -95,6 +95,18 @@ class UploadsController < ApplicationController
     @upload = Upload.find(params[:id])
     @upload.attached_to.destroy
     render "uploads/deleted", formats: [:js]
+  end
+
+  def pois
+    user = current_user || tmp_user
+
+    pois_json = []
+    @pois = nearby_pois user, Location.new(latitude: params[:lat], longitude: params[:lng])
+    @pois.each do |poi|
+      pois_json << poi_json(poi)
+    end
+    
+    render json: {pois: pois_json}.to_json
   end
 
   def comments
@@ -160,28 +172,6 @@ class UploadsController < ApplicationController
     upload.entity.set_base64_file params[:file_data], attachment_mapping[0], file_name
     upload.attached_to.attachment = upload
     upload
-  end
-
-  def nearby user, location
-    # FIXME:
-    # 1) when address is available check same address
-    # 2) otherwise range
-   #nearbys = location.nearbys(0.01)
-    limits = latLngLimits(location.latitude, location.longitude, 10)
-    limits_lat = limits[:lat_south] > limits[:lat_north] ? limits[:lat_north]..limits[:lat_south] : limits[:lat_south]..limits[:lat_north]
-    limits_lng = limits[:lng_east] > limits[:lng_west] ? limits[:lng_west]..limits[:lng_east] : limits[:lng_east]..limits[:lng_west]
-    nearbys = Poi.joins(:location).where(locations: { latitude: limits_lat, longitude: limits_lng })
-    if nearbys.present?
-      poi = nearbys.first
-      unless user.locations.where(id: poi.location.id).present?
-        user.locations_users.create(location: poi.location)
-      end
-    else
-      location.save
-      poi = Poi.new location: location
-      user.locations_users.create(location: location)
-    end
-    poi
   end
   
   def poi_json poi

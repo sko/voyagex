@@ -52,11 +52,10 @@ class window.VoyageX.TemplateHelper
     if marker == null
       #marker = VoyageX.Main.markerManager().get()
       marker = APP.getMarker poi
-      selMarker = VoyageX.Main.markerManager().get()
-      if marker._zIndex >= selMarker._zIndex
-        selMarker.setZIndexOffset marker._zIndex+1
-        console.log('TODO: TemplateHelper - openPOINotePopup: set z-index ...')
-    popup = marker.getPopup()
+      #selMarker = VoyageX.Main.markerManager().get()
+      #if marker._zIndex >= selMarker._zIndex
+      #  selMarker.setZIndexOffset marker._zIndex+1
+    popup = TemplateHelper._verifyPopup marker, 'poi_notes_container'
     unless popup?
       popup = L.popup {minWidth: 100, maxHeight: 300}
       marker.bindPopup(popup)
@@ -64,9 +63,16 @@ class window.VoyageX.TemplateHelper
     else
       popup.setContent(popupHtml)
     marker.openPopup()
-    $('.leaflet-popup-close-button').on 'click', (event) ->
-      VoyageX.Main.markerManager().get().unbindPopup()
-      $('.leaflet-popup').remove()
+#    $('.leaflet-popup-close-button').on 'click', (event) ->
+#      poiIdElement = $(event.target).closest('.leaflet-popup').find('div[id^="upload_comment_btn_"]').attr('id')
+#      if poiIdElement?
+#        markerMeta = VoyageX.Main.markerManager().forPoi parseInt(poiIdElement.match(/[0-9]+$/))
+#        markerMeta.marker.unbindPopup()
+#      else
+#        VoyageX.Main.markerManager().get().unbindPopup()
+    $('.leaflet-popup-close-button').on 'click', TemplateHelper._closePopupCB(marker)
+
+      #$(event.target).closest('.leaflet-popup').remove()
     #$('#upload_comment_btn_'+poi.notes[0].id).on 'click', (event) ->
     #  openUploadCommentControls(poi.notes[0].id)
       #$('#upload_comment_conrols').dialog('open')
@@ -75,12 +81,53 @@ class window.VoyageX.TemplateHelper
     $('#poi_note_input').html('')
     TemplateHelper.poiNoteInputHtml('poi_note_input', poi.notes[0])
 
+  @addPoiNotes: (poi, marker) ->
+    popup = TemplateHelper._verifyPopup marker, 'poi_notes_container'
+    if popup?
+      i = $('.leaflet-popup .upload_comment').length
+      # TODO allow poi.notes to have more elements -> loop
+      popupEntryHtml = TemplateHelper.poiNotePopupHtmlFromTmpl(poi.notes[0], i)
+      popupHtml = popup.getContent().replace(/(<div[^>].+?upload_comment_btn_)/, popupEntryHtml+'$1')
+      popup.setContent(popupHtml)
+      #popup.update()
+    else
+      TemplateHelper.openPOINotePopup poi, marker
+
+  @openMarkerControlsPopup: () ->
+    marker = VoyageX.Main.markerManager().get()
+    #popupHtml = $('#tmpl_marker_controls').html()
+    popupHtml = TemplateHelper._updateIds 'tmpl_marker_controls'
+    popup = TemplateHelper._verifyPopup marker, 'marker_controls'
+    unless popup?
+      marker.bindPopup popupHtml
+    else
+      popup.setContent popupHtml
+    marker.openPopup()
+    #$('.leaflet-popup-close-button').on 'click', (event) ->
+    $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').on 'click', (event) ->
+      VoyageX.Main.markerManager().get().unbindPopup()
+      #$(event.target).closest('.leaflet-popup').remove()
+
   @swiperSlideHtml: (poiNote) ->
     swiperSlideTmpl = TemplateHelper._updateAttributes('tmpl_swiper_slide', ['src'], TemplateHelper._updateIds('tmpl_swiper_slide')).
     replace(/\{poiId\}/g, poiNote.poi.id).
     replace(/\{poiNoteId\}/g, poiNote.id).
     replace(/\{address\}/g, poiNote.poi.address).
     replace(/\{attachment_url\}/g, poiNote.attachment.url)
+
+  @_closePopupCB: (marker) ->
+    (event) ->
+        marker.unbindPopup()
+
+
+  @_verifyPopup: (marker, containerId) ->
+    popup = marker.getPopup()
+    if popup?
+      if $(popup._container).has('#'+containerId).length == 0
+        marker.unbindPopup()
+        #$(popup._container, $('.leaflet-popup')).remove()
+        popup = null
+    popup
 
   @_updateIds: (rootElementId, callback = null) ->
     html = $('#'+rootElementId).html()

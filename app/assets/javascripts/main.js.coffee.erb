@@ -41,26 +41,24 @@ class window.VoyageX.Main
                                    APP._systemCB)
         Main._MAP_CONTROL = new VoyageX.MapControl cacheStrategy, mapOptions, offlineZooms
         Main._MARKER_MANAGER = new VoyageX.MarkerManager(APP.map())
-#      if navigator.geolocation 
-#        navigator.geolocation.getCurrentPosition(initPositionCB, (error) ->
-#            alert('geolocation timed out - manual selection required.\nsetting default location...')
-#            initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
-#        , { enableHighAccuracy: true, timeout : 10000 })
-#      #APP.map().on('locationfound', (e) ->
-#      #    alert('found location...')
-#      #  )
-#      #APP.map().on('locationerror', (e) ->
-#      #    alert('geolocation timed out - manual selection required.\nsetting default location...')
-#      #  )
+        if navigator.geolocation 
+          navigator.geolocation.getCurrentPosition(APP._initPositionCB, (error) ->
+              #alert('geolocation timed out - manual selection required.\nsetting default location...')
+              APP._initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
+          , { enableHighAccuracy: true, timeout : 5000 })
+#       #APP.map().on('locationfound', (e) ->
+#       #    alert('found location...')
+#       #  )
+#       #APP.map().on('locationerror', (e) ->
+#       #    alert('geolocation timed out - manual selection required.\nsetting default location...')
+#       #  )
+        #APP._initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
         if window.isMobile()
           APP.map().invalidateSize({
               reset: true,
               pan: false,
               animate: false
             })
-        for poi in pois
-          Main.markerManager().add(poi, Main._markerEventsCB, false)
-        APP._initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
         $('#zoom_level').html('<span style="color:white;">zoom: '+APP.map().getZoom()+'</span>')
         # next statement removes value from inputs!!
         #$("#network_state").buttonset()
@@ -89,11 +87,13 @@ class window.VoyageX.Main
     for n in Main._MAP_CONTROL._offlineZooms
       Main._MAP_CONTROL._zooms.push n
     
-  publishPosition: () ->
+  publishPosition: (saveLocation = false) ->
     @_comm.send('/map_events', {type: 'click',\
                                 userId: APP.userId(),\
                                 lat: @_selectedPositionLatLng[0],\
-                                lng: @_selectedPositionLatLng[1]})
+                                lng: @_selectedPositionLatLng[1],\
+                                saveLocation: saveLocation})
+    $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').click()
 
   publishMessage: (publishText) ->
     @_comm.send('/talk', {type: 'message',\
@@ -109,13 +109,13 @@ class window.VoyageX.Main
 
   showPOI: (poiId, poiNoteId) ->
     Storage.Model.instance().loadPoiNotes poiId, poiNoteId, (poi) ->
-        markerMeta = Main.markerManager().forPoi poiId
-        if markerMeta?
-          marker = markerMeta.marker
-        else
-          marker = Main.markerManager().add(poi, Main._markerEventsCB, false)
+        #markerMeta = Main.markerManager().forPoi poiId
+        #if markerMeta?
+        #  marker = markerMeta.marker
+        #else
+        #  marker = Main.markerManager().add(poi, Main._markerEventsCB, false)
         #APP.panPosition(poi.lat, poi.lng, poi.address)
-        VoyageX.TemplateHelper.openPOINotePopup poi, marker
+        VoyageX.TemplateHelper.openPOINotePopup poi#, marker
         poiNoteDiv = $('#poi_notes_container').children('[data-id='+poiNoteId+']').first()
         poiNoteOff = poiNoteDiv.offset()
         scrollPane = poiNoteDiv.closest('.leaflet-popup-content').first()
@@ -153,6 +153,12 @@ class window.VoyageX.Main
     APP.map().panTo([position.coords.latitude, position.coords.longitude])
     #APP.map().setView [position.coords.latitude, position.coords.longitude], 16
     APP.publishPosition()
+    # this should be done with init position cb
+    #for poi in pois
+    #  Main.markerManager().add(poi, Main._markerEventsCB, false)
+    Storage.Model.instance().loadPois poi.lat, poi.lng, (poi) ->
+      #VoyageX.TemplateHelper.openPOINotePopup poi, event.target
+      Main.markerManager().add poi, Main._markerEventsCB, false
 
   _systemCB: (message) ->
     console.log 'got a system - message: ' + message.type
@@ -199,28 +205,41 @@ class window.VoyageX.Main
            .replace(/:lat/, @_selectedPositionLatLng[0])
            .replace(/:lng/, @_selectedPositionLatLng[1])
 
+  markerControls: () ->
+    marker = Main.markerManager().get()
+    address = null
+    APP._setSelectedPositionLatLng marker, marker._latlng.lat, marker._latlng.lng, address
+    VoyageX.TemplateHelper.openMarkerControlsPopup()
+
+  poiNoteInput: () ->
+    $('#poi_note_input').html('')
+    VoyageX.TemplateHelper.poiNoteInputHtml('poi_note_input')
+    if window.isMobile()
+      $('#open_upload_data_btn').click()
+    else
+      #$('#poi_note_input').css('display', 'block')
+      $('#upload_data_conrols').dialog('open')
+      if ! $('#upload_data_conrols').parent().hasClass('seethrough_panel')
+        $('#upload_data_conrols').parent().addClass('seethrough_panel')
+
   @_markerEventsCB: (event) ->
     address = null
     switch event.type
       when 'click'
         markerMeta = Main.markerManager().meta event.target
+        #if markerMeta.isUserMarker
+        #  APP.markerControls()
+        #else
         unless markerMeta.isUserMarker
           Storage.Model.instance().loadPoiNotes markerMeta.poi.id, null, (poi) ->
               VoyageX.TemplateHelper.openPOINotePopup poi, event.target
-        else
-          return false;
+      when 'mouseover'
+        markerMeta = Main.markerManager().meta event.target
+        if markerMeta.isUserMarker
+          APP.markerControls()
       when 'dblclick'
         APP._setSelectedPositionLatLng event.target, event.target._latlng.lat, event.target._latlng.lng, address
-        #Main.markerManager().get().bindPopup("").openPopup({minWidth: '100px'});
-        $('#poi_note_input').html('')
-        VoyageX.TemplateHelper.poiNoteInputHtml('poi_note_input')
-        if window.isMobile()
-          $('#open_upload_data_btn').click()
-        else
-          #$('#poi_note_input').css('display', 'block')
-          $('#upload_data_conrols').dialog('open')
-          if ! $('#upload_data_conrols').parent().hasClass('seethrough_panel')
-            $('#upload_data_conrols').parent().addClass('seethrough_panel')
+        APP.poiNoteInput()
       else
         APP._setSelectedPositionLatLng event.target, event.target._latlng.lat, event.target._latlng.lng, address
         APP.publishPosition()
