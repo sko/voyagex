@@ -51,25 +51,6 @@ jQuery ->
     APP.panPosition poi.lat, poi.lng, poi.address
     VoyageX.View.addPoiNotes poi
     
-
-#  $('#add_upload_comment_btn').on 'click', (event) ->
-#    upload_id = $('#add_upload_comment_upload_id').val()
-#    $.ajax
-#      type: 'POST'
-#      dataType: 'script'
-#      url: '<-%= create_upload_comment_path(upload_id: '') %>'+upload_id
-#      data: { _method: 'put',\
-#              user_id: APP.userId(),\
-#              text: $('#add_upload_comment_text').val() }
-#    $('#add_upload_comment_text').val('')
-#    #$("#upload_comment_conrols").css('display', 'none')
-#    if window.isMobile()
-#      #if $('#upload_comment_conrols').hasClass('ui-popup-active')
-#      #  $('#upload_comment_conrols').removeClass('ui-popup-active').addClass('ui-popup-hidden')
-#      $('#upload_comment_cancel').click()
-#    else
-#      uploadCommentDialog.dialog("close")
-    
   $(document).on 'click', '#upload_button', (event) ->
     uploadPhoto()
     

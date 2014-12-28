@@ -139,6 +139,7 @@ class window.VoyageX.MapControl
                              fileStatusCB: MapControl._fileStatusDeferred,\
                              deferred: $.Deferred(),\
                              promise: null }
+      deferredModeParams.promise = deferredModeParams.deferred.promise()
       Comm.StorageController.instance().getTile [view.tile.column, view.tile.row, view.zoom], deferredModeParams
       deferredModeParams.promise
     else
@@ -281,8 +282,11 @@ class window.VoyageX.MapControl
                                tileUrl: MapControl.toUrl(curXYZ, view.subdomain),\
                                prefetchZoomLevels: true,\
                                save: true,\
-                               deferred: deferredModeParams.deferred,\
-                               promise: deferredModeParams.promise }
+                               #deferred: deferredModeParams.deferred,\
+                               #promise: deferredModeParams.promise }
+                               deferred: $.Deferred(),\
+                               promise: null }
+            prefetchParams.promise = prefetchParams.deferred.promise()
             if addToX == 0 and addToY == 0
               Comm.StorageController.instance().loadAndPrefetchTile prefetchParams
             else
@@ -332,7 +336,9 @@ class window.VoyageX.MapControl
                              view: deferredModeParams.view,\
                              xYZ: curXYZ,\
                              tileUrl: MapControl.toUrl(curXYZ, viewSubdomain),\
-                             deferred: $.Deferred() }
+                             deferred: $.Deferred(),\
+                             promise: null }
+          prefetchParams.promise = prefetchParams.deferred.promise()
           Comm.StorageController.instance().prefetchTile prefetchParams
         else
           stored = Comm.StorageController.instance().getTile curXYZ, deferredModeParams

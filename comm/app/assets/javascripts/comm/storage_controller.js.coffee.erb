@@ -235,7 +235,7 @@ class window.Comm.StorageController
             deferredModeParams.mC.loadReadyImage deferredModeParams.tileUrl, xYZ, deferredModeParams
       )
 
-  _checkedTileLoadQueue: (xYZ, checkStoreFile, callback) ->
+  _checkedTileLoadQueue: (xYZ, promise, checkStoreFile, storeFile, callback) ->
     storeKey = StorageController.tileKey(xYZ)
     stored = @_tileLoadQueue[storeKey]
     if stored?
@@ -244,25 +244,27 @@ class window.Comm.StorageController
         stored.storeFile = false
       #console.log('_checkedTileLoadQueue - stored in queue: '+storeKey); 
       return stored.promise
-    queueEntry = { promise: null, deferred: false, storeFile: true }
-    callback(queueEntry)
+    queueEntry = { promise: promise, deferred: false, storeFile: storeFile }
     # @see storeTile
     @_tileLoadQueue[storeKey] = queueEntry
+    callback(queueEntry)
 
   loadAndPrefetchTile: (prefetchParams) ->
     sC = this
-    this._checkedTileLoadQueue prefetchParams.xYZ, true, (queueEntry) ->
+    this._checkedTileLoadQueue prefetchParams.xYZ, prefetchParams.promise, true, true, (queueEntry) ->
+        console.log('StorageController - loadAndPrefetchTile: '+StorageController.tileKey(prefetchParams.xYZ))
         sC._getTileFile prefetchParams.xYZ, 1, prefetchParams
-        prefetchParams.promise = prefetchParams.deferred.promise()
-        queueEntry.promise = prefetchParams.promise
+        #prefetchParams.promise = prefetchParams.deferred.promise()
+        #queueEntry.promise = prefetchParams.promise
 
   prefetchTile: (prefetchParams) ->
     sC = this
-    this._checkedTileLoadQueue prefetchParams.xYZ, true, (queueEntry) ->
+    this._checkedTileLoadQueue prefetchParams.xYZ, prefetchParams.promise, true, false, (queueEntry) ->
+        console.log('StorageController - prefetchTile: '+StorageController.tileKey(prefetchParams.xYZ))
         sC._getTileFile prefetchParams.xYZ, 2, prefetchParams
-        prefetchParams.promise = prefetchParams.deferred.promise()
-        queueEntry.promise = prefetchParams.promise
-        queueEntry.storeFile = false
+        #prefetchParams.promise = prefetchParams.deferred.promise()
+        #queueEntry.promise = prefetchParams.promise
+        #queueEntry.storeFile = false
   
   resolveOnlineNotInOfflineZooms: (tileUrl, deferredModeParams) ->
     #deferredModeParams.tileUrl = readyImage
@@ -315,14 +317,12 @@ class window.Comm.StorageController
   getTile: (xYZ, deferredModeParams = null) ->
     if StorageController.isFileBased()
       sC = this
-      if deferredModeParams.promise == null
-        deferredModeParams.promise = deferredModeParams.deferred.promise()
-      this._checkedTileLoadQueue xYZ, false, (queueEntry) ->
-          console.log('getTile - '+StorageController.tileKey(xYZ)); 
-          # for file-API works asynchronously we have to always promise the file - that given,
-          # tile-loading-logic is also handled here
+      #if deferredModeParams.promise == null
+      #  deferredModeParams.promise = deferredModeParams.deferred.promise()
+      this._checkedTileLoadQueue xYZ, deferredModeParams.promise, false, true, (queueEntry) ->
+          console.log('StorageController - getTile: '+StorageController.tileKey(xYZ))
           sC._getTileFile xYZ, 0, deferredModeParams
-          queueEntry.promise = deferredModeParams.promise
+          #queueEntry.promise = deferredModeParams.promise
       deferredModeParams.promise
     else
       storeKey = StorageController.tileKey(xYZ)
@@ -488,8 +488,8 @@ class window.Comm.StorageController
   getPoiNoteAttachment: (poiNote, deferredModeParams = null) ->
     storeKey = StorageController.poiNoteAttachmentKey poiNote
     if StorageController.isFileBased()
-      if deferredModeParams.promise == null
-        deferredModeParams.promise = deferredModeParams.deferred.promise()
+      #if deferredModeParams.promise == null
+      #  deferredModeParams.promise = deferredModeParams.deferred.promise()
       console.log('getPoiNoteAttachment - '+storeKey)
       this._getPoiNoteAttachmentFile deferredModeParams.poiNote, 0, deferredModeParams
       deferredModeParams.promise

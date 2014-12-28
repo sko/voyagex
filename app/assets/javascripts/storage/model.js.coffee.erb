@@ -178,6 +178,7 @@ class window.Storage.Model
                              save: true,\
                              deferred: $.Deferred(),\
                              promise: null }
+      deferredModeParams.promise = deferredModeParams.deferred.promise()
       Comm.StorageController.instance().getPoiNoteAttachment poiNote, deferredModeParams
       deferredModeParams.promise
     else
