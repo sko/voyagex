@@ -50,7 +50,12 @@ class window.VoyageX.TemplateHelper
     meta = {height: 0}
     popupHtml = TemplateHelper.poiNotePopupHtml(poi, meta)
     if marker == null
-      marker = VoyageX.Main.markerManager().get()
+      #marker = VoyageX.Main.markerManager().get()
+      marker = APP.getMarker poi
+      selMarker = VoyageX.Main.markerManager().get()
+      if marker._zIndex >= selMarker._zIndex
+        selMarker.setZIndexOffset marker._zIndex+1
+        console.log('TODO: TemplateHelper - openPOINotePopup: set z-index ...')
     popup = marker.getPopup()
     unless popup?
       popup = L.popup {minWidth: 100, maxHeight: 300}

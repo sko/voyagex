@@ -79,17 +79,6 @@ class window.VoyageX.View
       window.stopSound = VoyageX.MediaManager.instance().playSound('/Treat.mp3')
       # TODO: unify json-format, until then avoid circular structure
       poi = upload.poi_note.poi
-      #unless poi.notes?
-      #  poi.notes = [note]
-      #poiClone = eval("("+JSON.stringify(poi)+")")
-      #delete upload.poi_note.poi
-      #poi.notes = [eval("("+JSON.stringify(upload.poi_note)+")")]
-      #poi.notes[0].poi = poiClone
-      #upload.poi_note.poi = poi
-      #msg = { poi: upload.poi_note.poi }
-      ##poi = eval("("+JSON.stringify(upload.poi_note.poi)+")")
-      ##poi.notes = [upload.poi_note]
-      ##upload.poiNote.poi.notes = [eval("("+JSON.stringify(upload.poiNote)+")")]
       msg = { poi: poi }
       Storage.Model._syncWithStorage msg, View.addPoiNotes, upload.poi_note, 0
 
@@ -105,49 +94,21 @@ class window.VoyageX.View
     #
     # TODO: close uploads - this should go to the user who uploaded - not as a callback via faye
     #                       though lots of logic is the same
-    #
     if window.isMobile()
-#      #if $('#upload_comment_conrols').hasClass('ui-popup-active')
-#      #  $('#upload_comment_conrols').removeClass('ui-popup-active').addClass('ui-popup-hidden')
-#      $('#upload_comment_cancel').click()
       $("#upload_data_panel").panel("close");
     else
       uploadDataDialog.dialog('close')
-      #uploadCommentDialog.dialog('close')
-    # ??? $('#poi_note_input').html('')
-
-#    unless poi.notes[0].poi?
-#      poi.notes[0].poi = poi
-    #else
-    #  $('#photo_nav_panel').dialog('open')
-    #  if ! $('#photo_nav_panel').parent().hasClass('seethrough_panel')
-    #    $('#photo_nav_panel').parent().addClass('seethrough_panel')
-
+    
     popup = VoyageX.Main.markerManager().get().getPopup()
     if popup?
       i = $('.leaflet-popup .upload_comment').length
       popupEntryHtml = VoyageX.TemplateHelper.poiNotePopupHtmlFromTmpl(poi.notes[0], i)
-      #$('.leaflet-popup .upload_comment').last().after(popupEntryHtml)
-      #popup.update()
-      #popupHtml = $('#poi_notes_container').parent().html().replace(/(<div[^>].+?upload_comment_btn_)/, popupEntryHtml+'$1')
       popupHtml = popup.getContent().replace(/(<div[^>].+?upload_comment_btn_)/, popupEntryHtml+'$1')
-      #$('#poi_notes_container').parent().html('')
       popup.setContent(popupHtml)
       popup.update()
-      #$('#upload_comment_btn_'+poi.notes[0].id).on 'click', (event) ->
-      #  openUploadCommentControls(poi.notes[0].id)
     else
       APP.panPosition(poi.lat, poi.lng, poi.address)
       VoyageX.TemplateHelper.openPOINotePopup poi
-      # @see TemplateHelper - openPOINotePopup for the following logic. it's also called from Model
-      #$('.leaflet-popup-close-button').on 'click', (event) ->
-      #    VoyageX.Main.markerManager().get().unbindPopup()
-      #    $('.leaflet-popup').remove()
-      #$('#upload_comment_btn_'+poiNote.id).on 'click', (event) ->
-      #    openUploadCommentControls(poiNote.id);
-      #    #$('#upload_comment_conrols').dialog('open')
-      #    #if ! $('#upload_comment_conrols').parent().hasClass('seethrough_panel')
-      #    #  $('#upload_comment_conrols').parent().addClass('seethrough_panel')
 
   @instance: () ->
     @_SINGLETON
