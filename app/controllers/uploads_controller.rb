@@ -101,7 +101,7 @@ class UploadsController < ApplicationController
     user = current_user || tmp_user
 
     pois_json = []
-    @pois = nearby_pois user, Location.new(latitude: params[:lat], longitude: params[:lng])
+    @pois = nearby_pois user, Location.new(latitude: params[:lat], longitude: params[:lng]), (user.search_radius_meters||1000)
     @pois.each do |poi|
       pois_json << poi_json(poi)
     end

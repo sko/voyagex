@@ -95,44 +95,39 @@ class window.Storage.Model
   @_syncWithStorage: (msg, callback, note, i) ->
     # store image
     attachmentUrl = Model._viewPoiNoteAttachment note
-    # @see leaflet-funbctionaltilelayer _loadTile: function / MapControl - drawTile
+    # @see leaflet-functionaltilelayer _loadTile: function / MapControl - drawTile
     if (typeof attachmentUrl == 'string') 
       console.log '_syncWithStorage - attachmentUrl-string = '+attachmentUrl
-      #if i == (msg.poi.notes.length - 1)
-      unless msg.poi.notes? &&  i != (msg.poi.notes.length - 1)
-        existingPoiData = Comm.StorageController.instance().get Comm.StorageController.poiKey(msg.poi)
-        if existingPoiData?
-          unless Model._findPoiNote note, existingPoiData.notes
-            Model._storeWithoutPoi Comm.StorageController.poiKey(msg.poi), note
-        else
-          Model._storeWithoutPoi Comm.StorageController.poiKey(msg.poi), note
-        unless msg.poi.notes?
-          msg.poi.notes = [note]
-        callback msg.poi
+      Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, i, callback
     else if (typeof attachmentUrl.then == 'function') 
       # Assume we are dealing with a promise.
       attachmentUrl.then (url) ->
           console.log '_syncWithStorage - attachmentUrl-promise resolved to: '+url
           note.attachment.url = url
-          #if i == (msg.poi.notes.length - 1)
-          unless msg.poi.notes? &&  i != (msg.poi.notes.length - 1)
-            existingPoiData = Comm.StorageController.instance().get Comm.StorageController.poiKey(msg.poi)
-            if existingPoiData?
-              unless Model._findPoiNote note, existingPoiData.notes
-                Model._storeWithoutPoi Comm.StorageController.poiKey(msg.poi), note
-            else
-              Model._storeWithoutPoi Comm.StorageController.poiKey(msg.poi), note
-            unless msg.poi.notes?
-              msg.poi.notes = [note]
-            callback msg.poi
-  
+          Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, i, callback
+
+  @_syncPoiNotes: (poi, poiKey, note, i, callback) ->
+    poiKey = Comm.StorageController.poiKey(poi)
+    existingPoiData = Comm.StorageController.instance().get poiKey
+    if existingPoiData?
+      unless Model._findPoiNote note, existingPoiData.notes
+        existingPoiData = Model._storeWithoutPoi poiKey, note
+    else
+      existingPoiData = Model._storeWithoutPoi poiKey, note
+    #if i == (poi.notes.length - 1)
+    unless poi.notes? &&  i != (poi.notes.length - 1)
+      unless poi.notes?
+        poi.notes = existingPoiData.notes # [note]
+      callback poi
+
   @_storeWithoutPoi: (poiKey, note) ->
     if note.poi?
       notePoi = note.poi
       delete note.poi
       poiNoteClone = eval("("+JSON.stringify(note)+")")
-      Comm.StorageController.instance().addToList poiKey, 'notes', poiNoteClone, false
+      storedJSON = Comm.StorageController.instance().addToList poiKey, 'notes', poiNoteClone, false
       note.poi = notePoi
+      storedJSON
     else
       Comm.StorageController.instance().addToList poiKey, 'notes', note, false
   

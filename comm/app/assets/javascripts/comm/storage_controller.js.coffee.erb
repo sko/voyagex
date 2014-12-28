@@ -164,7 +164,7 @@ class window.Comm.StorageController
               if (e.code == FileError.NOT_FOUND_ERR) 
                 console.log('_getDirectory - No such file: '+path)
               else
-                # it's likely that directory has been created by other request
+                # it's likely that directory has been created meanwhile by other request
                 if firstCall
                   #console.log('_getDirectory - '+e+' when trying to CREATE directory / trying one more READ: '+path)
                   return sC._getDirectory xYZ, nextDirIdx, dirReader, data, deferredModeParams, false
@@ -221,7 +221,7 @@ class window.Comm.StorageController
         else
           console.log('error: '+e+' for '+path)
         if prefetchMode == 0
-          # one mor check for asynchronous request
+          # one mor check for asynchronous request - that's because of prefetch mit compete
           loadQueueEntry = StorageController.instance()._tileLoadQueue[StorageController.tileKey(xYZ)]
           unless loadQueueEntry? && (!loadQueueEntry.storeFile)
             VoyageX.MapControl.tileUrl deferredModeParams.mC, deferredModeParams.view, deferredModeParams
@@ -410,7 +410,7 @@ class window.Comm.StorageController
 
   # '/poiNotes/attachments/'+poiNote.id
   # path ... ['poiNotes', 'attachments']
-  _getPoiNoteDirectory: (nextDirIdx, dirReader, poiNote, data, deferredModeParams) ->
+  _getPoiNoteDirectory: (nextDirIdx, dirReader, poiNote, data, deferredModeParams, firstCall = true) ->
     sC = StorageController.instance()
     path = StorageController.poiNoteAttachmentPath poiNote
     curPathDir = path[nextDirIdx]
@@ -431,7 +431,12 @@ class window.Comm.StorageController
               if (e.code == FileError.NOT_FOUND_ERR) 
                 console.log('_getPoiNoteDirectory - No such file: '+path)
               else
-                console.log('_getPoiNoteDirectory - '+e+' when trying to CREATE directory '+path)
+                # it's likely that directory has been created meanwhile by other request
+                if firstCall
+                  #console.log('_getDirectory - '+e+' when trying to CREATE directory / trying one more READ: '+path)
+                  return sC._getPoiNoteDirectory nextDirIdx, dirReader, poiNote, data, deferredModeParams, false
+                else
+                  console.log('_getPoiNoteDirectory - '+e+' when trying to CREATE directory '+path)
               sC._storePoiNoteAttachmentAsFile poiNote, dirReader, data, deferredModeParams, nextDirIdx
             )
         else
@@ -491,7 +496,7 @@ class window.Comm.StorageController
       #if deferredModeParams.promise == null
       #  deferredModeParams.promise = deferredModeParams.deferred.promise()
       console.log('getPoiNoteAttachment - '+storeKey)
-      this._getPoiNoteAttachmentFile deferredModeParams.poiNote, 0, deferredModeParams
+      this._getPoiNoteAttachmentFile poiNote, 0, deferredModeParams
       deferredModeParams.promise
     else
       stored = localStorage.getItem storeKey
@@ -528,10 +533,12 @@ class window.Comm.StorageController
         @_jsonObjects[storeKey] = listEntries
         listEntries[listKey] = if data instanceof Array then data else [data]
       localStorage.setItem(storeKey, JSON.stringify(listEntries))
+      listEntries
     else
       # listKey == null: ^[
-      # listKey != null: ^[^:]+:
-      if stored.trim().match(/^(|[^:]+:\s*)\[/) == null
+      # listKey != null: ^.+?__listKey__:\s*[
+      listDetection = new RegExp('^(|.*?"'+listKey+'":\\s*)\\[')
+      if stored.trim().match(listDetection) == null
         alert('expected Object/List - change of EntryType not implemented')
       else
         storedJSON = @_jsonObjects[storeKey]
@@ -556,6 +563,7 @@ class window.Comm.StorageController
           else
             storedJSON[listKey].push data
         localStorage.setItem(storeKey, JSON.stringify(storedJSON));
+      storedJSON
 
   get: (storeKey, listKey = null) ->
     # FIXME @_jsonObjects is an internal cache-object and should not be exposed to concurrent access
