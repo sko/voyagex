@@ -66,12 +66,6 @@ jQuery ->
       if ! $('#upload_data_conrols').parent().hasClass('seethrough_panel')
         $('#upload_data_conrols').parent().addClass('seethrough_panel')
 
-#  getUploadComments = (upload_id) ->
-#    $.ajax
-#      type: 'GET'
-#      dataType: 'script'
-#      url: '<%= upload_comments_path(upload_id: '') %>'+upload_id
-
   $('#message').on 'keyup', (event) ->
     if (event.which == 13 || event.keyCode == 13)
       event.preventDefault()

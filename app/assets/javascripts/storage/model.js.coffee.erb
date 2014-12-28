@@ -46,10 +46,12 @@ class window.Storage.Model
         #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
 
   loadPoiNotes: (poiId, poiNoteId, callback) ->
+    unless poiNoteId?
+      poiNoteId = -1
     $.ajax
       type: 'GET'
       dataType: 'json'
-      url: '<%= upload_comments_path(upload_id: '') %>'+poiNoteId
+      url: '<%= upload_comments_path(poi_id: ':poi_id', poi_note_id: '') %>'.replace(/:poi_id/, poiId)+poiNoteId
     .done (msg) ->
         for note, i in msg.poi.notes
           Model._syncWithStorage msg, callback, note, i
@@ -97,10 +99,10 @@ class window.Storage.Model
       notePoi = note.poi
       delete note.poi
       poiNoteClone = eval("("+JSON.stringify(note)+")")
-      Comm.StorageController.instance().addToList poiKey, 'notes', poiNoteClone
+      Comm.StorageController.instance().addToList poiKey, 'notes', poiNoteClone, false
       note.poi = notePoi
     else
-      Comm.StorageController.instance().addToList poiKey, 'notes', note
+      Comm.StorageController.instance().addToList poiKey, 'notes', note, false
   
   @_findPoiNote: (note, notes) ->
     for n in notes

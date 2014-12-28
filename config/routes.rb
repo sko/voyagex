@@ -20,7 +20,7 @@ VoyageX::Application.routes.draw do
                                                                                          :lng => /([0-9]+\.[0-9]+|:[a-z]+)/ }
   match '/change_username', to: 'users#change_details', as: :change_username, via: [:get, :post]
   get '/csrf', to: 'uploads#csrf', as: :csrf
-  get '/upload_comments/:upload_id', to: 'uploads#comments', as: :upload_comments
+  get '/upload_comments/:poi_id/:poi_note_id', to: 'uploads#comments', as: :upload_comments
   #put '/upload_comments/:upload_id', to: 'uploads#comments', as: :create_upload_comment
   #put '/upload_file', to: 'uploads#create'
   #post '/upload_file', to: 'uploads#update'

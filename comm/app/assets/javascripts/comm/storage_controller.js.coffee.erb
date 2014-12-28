@@ -542,19 +542,19 @@ class window.Comm.StorageController
           if data instanceof Array
             for entry, i in data
               if fifo
-                storedJSON.splice(0, 0, data[data.length-1-i])
+                storedJSON.splice 0, 0, data[data.length-1-i]
               else
-                storedJSON.push(data)
+                storedJSON.push data
           else
             if fifo
-              storedJSON.splice(0, 0, data)
+              storedJSON.splice 0, 0, data
             else
-              storedJSON.push(data)
+              storedJSON.push data
         else
           if fifo
-            storedJSON[listKey].splice(0, 0, data)
+            storedJSON[listKey].splice 0, 0, data
           else
-            storedJSON[listKey].push(data)
+            storedJSON[listKey].push data
         localStorage.setItem(storeKey, JSON.stringify(storedJSON));
 
   get: (storeKey, listKey = null) ->

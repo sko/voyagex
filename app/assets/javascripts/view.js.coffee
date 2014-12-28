@@ -116,8 +116,8 @@ class window.VoyageX.View
       #uploadCommentDialog.dialog('close')
     # ??? $('#poi_note_input').html('')
 
-    unless poi.notes[0].poi?
-      poi.notes[0].poi = poi
+#    unless poi.notes[0].poi?
+#      poi.notes[0].poi = poi
     #else
     #  $('#photo_nav_panel').dialog('open')
     #  if ! $('#photo_nav_panel').parent().hasClass('seethrough_panel')
@@ -137,6 +137,7 @@ class window.VoyageX.View
       #$('#upload_comment_btn_'+poi.notes[0].id).on 'click', (event) ->
       #  openUploadCommentControls(poi.notes[0].id)
     else
+      APP.panPosition(poi.lat, poi.lng, poi.address)
       VoyageX.TemplateHelper.openPOINotePopup poi
       # @see TemplateHelper - openPOINotePopup for the following logic. it's also called from Model
       #$('.leaflet-popup-close-button').on 'click', (event) ->

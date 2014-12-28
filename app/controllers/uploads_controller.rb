@@ -16,10 +16,10 @@ class UploadsController < ApplicationController
     @upload.build_entity params[:poi_note][:file].content_type, file: params[:poi_note][:file]
     
     if @upload.save
-      @poi_note_json = poi_note_json(@upload.attached_to)
-      render "shared/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
+      @poi_note_json = poi_note_json @upload.attached_to
+      render "uploads/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
     else
-      render "shared/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
+      render "uploads/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
     end
     after_save
   end
@@ -36,9 +36,9 @@ class UploadsController < ApplicationController
     comment.save
     
     @upload = comment.attachment
-    @poi_note_json = poi_note_json(@upload.attached_to)
+    @poi_note_json = poi_note_json @upload.attached_to
     
-    render "shared/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
+    render "uploads/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
     after_save
   end
 
@@ -57,8 +57,8 @@ class UploadsController < ApplicationController
         @upload.entity.update_attributes(file_file_name: @upload.entity.file_file_name.sub(/\.[^.]+$/, suffix), file_content_type: params[:file_content_type])
       end
       #render "uploads/uploaded_base64", formats: [:js]
-      poi_note_json = poi_note_json(@upload.attached_to)
-      render json: poi_note_json
+      poi_note_json = poi_note_json @upload.attached_to
+      render json: poi_note_json.to_json
     else
       #render "uploads/uploaded_base64", formats: [:js]
       render json: { error: 'failed' }, status: 401
@@ -85,8 +85,8 @@ class UploadsController < ApplicationController
     end
     
     #render "uploads/uploaded_base64", formats: [:js]
-    poi_note_json = poi_note_json(@upload.attached_to)
-    render json: poi_note_json
+    poi_note_json = poi_note_json @upload.attached_to
+    render json: poi_note_json.to_json
 
     after_save
   end
@@ -99,31 +99,29 @@ class UploadsController < ApplicationController
 
   def comments
     user = current_user || tmp_user
-    poi_note = PoiNote.find(params[:upload_id])
-    @upload = poi_note.attachment
-    
-    poi_notes = []
-    cur_poi_note = @upload.attached_to
-    cur_poi_note_json = { id: cur_poi_note.id,
-                          user: { id: cur_poi_note.user.id,
-                                  username: cur_poi_note.user.username },
-                          text: cur_poi_note.text }
-    add_attachment_to_poi_note_json @upload, cur_poi_note_json
-    poi_notes << cur_poi_note_json
-    @upload.attached_to.comments.each do |cur_poi_note|
-      cur_poi_note_json = { id: cur_poi_note.id,
-                            user: { id: cur_poi_note.user.id,
-                                    username: cur_poi_note.user.username },
-                            text: cur_poi_note.text }
-      add_attachment_to_poi_note_json cur_poi_note.attachment, cur_poi_note_json
-      poi_notes << cur_poi_note_json
+    if params[:poi_note_id] != '-1'
+      poi_note = PoiNote.find(params[:poi_note_id])
+      poi = poi_note.poi
+    else
+      poi_note = nil
+      poi = Poi.find(params[:poi_id]) if params[:poi_id].present?
     end
-    json = { poi: { id: @upload.attached_to.poi.id,
-                    lat: @upload.attached_to.poi.location.latitude,
-                    lng: @upload.attached_to.poi.location.longitude,
-                    address: @upload.attached_to.poi.location.address,
-                    notes: poi_notes } }
-    render json: json
+
+    poi_notes = []
+    poi.notes.where('comments_on_id is null').each do |p_n|
+      poi_notes << poi_note_json(p_n, false)
+      p_n.comments.each do |p_n_2|
+        poi_notes << poi_note_json(p_n_2, false)
+        if poi_note.present? && p_n_2 == poi_note
+          # only recurse for requested
+          addToThread poi_note, poi_notes
+        end
+      end
+    end
+    poi_json = poi_json poi
+    poi_json[:notes] = poi_notes
+
+    render json: {poi: poi_json}.to_json
   end
 
   def csrf
@@ -186,17 +184,28 @@ class UploadsController < ApplicationController
     poi
   end
   
-  def poi_note_json poi_note
-    poi_note_json = { poi: { id: poi_note.poi.id,
-                             lat: poi_note.poi.location.latitude,
-                             lng: poi_note.poi.location.longitude,
-                             address: poi_note.poi.location.address },
-                      id: poi_note.id,
+  def poi_json poi
+    poi_json = { id: poi.id,
+                 lat: poi.location.latitude,
+                 lng: poi.location.longitude,
+                 address: poi.location.address }
+  end
+  
+  def poi_note_json poi_note, with_poi = true
+    poi_note_json = { id: poi_note.id,
                       user: { id: poi_note.user.id,
                               username: poi_note.user.username },
-                      text: poi_note.text } 
+                      text: poi_note.text }
+    poi_note_json[:poi] = poi_json poi_note.poi if with_poi
     add_attachment_to_poi_note_json poi_note.attachment, poi_note_json
     poi_note_json
+  end
+
+  def addToThread poi_note, comments
+    poi_note.comments.each do |p_n|
+      comments << poi_note_json(p_n, false)
+      addToThread p_n, comments
+    end
   end
 
   def after_save

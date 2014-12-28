@@ -13,10 +13,10 @@ class window.VoyageX.MarkerManager
     unless isUserMarker
       markerOps.icon = new L.Icon.Default({iconUrl: '/assets/marker-icon-red.png'})
     marker = L.marker([poi.lat, poi.lng], markerOps)
-    @_markers.push new VoyageX.Marker(marker, isUserMarker)
+    @_markers.push new VoyageX.Marker(marker, poi, isUserMarker)
     if callBack != null
-      marker.on 'click', callBack#, marker
       marker.on 'dblclick', callBack
+      marker.on 'click', callBack#, marker
       marker.on 'dragend', callBack
     marker.addTo(@_map)
     if isUserMarker
@@ -28,15 +28,42 @@ class window.VoyageX.MarkerManager
   sel: (replaceMarker, lat, lng, callBack) ->
     # if @_selectedMarker != null && replaceMarker == @_selectedMarker.target()
     #   @_map.removeLayer @_selectedMarker.target()
-    poi = {lat: lat, lng: lng}
     if replaceMarker == null
-      this.add poi, callBack, true
-    @_selectedMarker = @_markers[@_markers.length - 1]
+      poi = {lat: lat, lng: lng}
+      marker = this.add poi, callBack, true
+      @_selectedMarker = @_markers[@_markers.length - 1]
+    else
+      for m in @_markers
+        if m.target() == replaceMarker
+          @_selectedMarker = m
+          break
+      unless @_selectedMarker?
+        for m, idx in @_markers
+          if m.isUserMarker()
+            # TODO clean up
+            @_markers.splice idx, 1
+            break
+        poi = {lat: lat, lng: lng}
+        @_selectedMarker = new VoyageX.Marker(replaceMarker, poi, true)
+        @_markers.push @_selectedMarker
+
     @_selectedMarker.setLatLng(lat, lng)
     @_selectedMarker.target()
 
   get: () ->
     if @_selectedMarker != null then @_selectedMarker.target() else null
+
+  meta: (marker) ->
+    for m in @_markers
+      if m.target() == marker
+        return {poi: m.poi(), isUserMarker: m.isUserMarker()}
+    null
+
+  forPoi: (poiId) ->
+    for m in @_markers
+      if m.poi().id == poiId
+        return {marker: m, poi: m.poi(), isUserMarker: m.isUserMarker()}
+    null
 
   searchBounds: (radiusMeters, map) ->
     if @_selectedSearchRadius != null
@@ -80,12 +107,16 @@ class window.VoyageX.MarkerManager
 
 class VoyageX.Marker
 
-  constructor: (marker, isUserMarker = false) ->
+  constructor: (marker, poi, isUserMarker = false) ->
     @_target = marker
+    @_poi = poi
     @_isUserMarker = isUserMarker
 
   target: ->
     @_target
+
+  poi: ->
+    @_poi
 
   isUserMarker: ->
     @_isUserMarker

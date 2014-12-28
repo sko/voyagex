@@ -103,20 +103,20 @@ class window.VoyageX.MapControl
   
   showTileInfo: () ->
     tiles = $('#map > .leaflet-map-pane > .leaflet-tile-pane .leaflet-tile-container:parent > .leaflet-tile')
-    for tile in tiles
-      style = $(tile).attr('style')
-      #key = $(tile).attr('src').match(/[0-9]+\/[0-9]+\/[0-9]+$/)
-      xOff = parseInt(style.match(/left:(.+?)px/)[1].trim())
-      yOff = parseInt(style.match(/top:(.+?)px/)[1].trim())
-      remove = $(tile).parent().children('div[style*="left: '+xOff+'px"][style*="top: '+yOff+'px"]')
-      if remove.length >= 1
-        remove.remove()
-      else
+    remove = tiles.first().parent().children('div[data-role=tileInfo]')
+    if remove.length >= 1
+      remove.remove()
+    else
+      for tile, idx in tiles
+        style = $(tile).attr('style')
+        #key = $(tile).attr('src').match(/[0-9]+\/[0-9]+\/[0-9]+$/)
+        xOff = parseInt(style.match(/left:(.+?)px/)[1].trim())+1
+        yOff = parseInt(style.match(/top:(.+?)px/)[1].trim())+1
         latLngOff = @_map.unproject L.point((@_map.getPixelOrigin().x+xOff), (@_map.getPixelOrigin().y+yOff))
         x = parseInt(@_map.project(latLngOff).x/256)
         y = parseInt(@_map.project(latLngOff).y/256)
         key = @_map.getZoom()+' / '+x+' / '+y
-        $(tile).after('<div style="position: absolute; '+style+' z-index: 9999; opacity: 0.8; text-align: center; vertical-align: middle; border: 1px solid red; color: red; font-weight: bold;">'+key+'</div>')
+        $(tile).after('<div data-role="tileInfo" style="position: absolute; '+style+' z-index: 9999; opacity: 0.8; text-align: center; vertical-align: middle; border: 1px solid red; color: red; font-weight: bold;">'+key+'</div>')
 
   @instance: () ->
     @_SINGLETON

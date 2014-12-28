@@ -15,21 +15,22 @@ class window.VoyageX.TemplateHelper
       methodDiv.append('<input type="hidden" name="_method" value="put">')
       $('#'+formId).attr('action', updateActionPathTmpl.replace(/:id/, poiNote.id))
 
-  @poiNotePopupHtmlFromTmpl: (poiNote, i, addContainer = false, meta = null) ->
+  @poiNotePopupHtmlFromTmpl: (poiNote, i, poi = null, meta = null) ->
     unless meta?
       meta = {height: 0}
     html = TemplateHelper._updateIds 'tmpl_poi_note'
     poiNotesHtml = TemplateHelper.poiNotePopupEntryHtml(poiNote, html, i, meta)
-    if addContainer
+    if poi != null
       popupHtml = TemplateHelper._updateIds 'tmpl_poi_notes_container'
       popupHtml = popupHtml.
                   replace(/\{poi_notes\}/, poiNotesHtml).
-                  replace(/\{base_poi_note_id\}/g, poiNote.id)
+                  replace(/\{poi_id\}/g, poiNote.poi.id)
     else
       poiNotesHtml
 
   @poiNotePopupEntryHtml: (poiNote, poiNoteTmpl, i, meta) ->
     poiNoteTmpl.
+    replace(/\{poi_note_id\}/g, poiNote.id).
     replace(/\{i\}/g, i).
     replace(/\{media_file_tag\}/, TemplateHelper._mediaFileTag(poiNote.attachment, meta)).
     replace(/\{username\}/, poiNote.user.username).
@@ -43,13 +44,13 @@ class window.VoyageX.TemplateHelper
       poiNotesHtml += TemplateHelper.poiNotePopupEntryHtml(poiNote, poiNoteTmpl, i, meta)
     popupHtml = popupHtml.
                 replace(/\{poi_notes\}/, poiNotesHtml).
-                replace(/\{base_poi_note_id\}/g, poi.notes[0].id)
+                replace(/\{poi_id\}/g, poi.id)
 
-  @openPOINotePopup: (poi) ->
+  @openPOINotePopup: (poi, marker = null) ->
     meta = {height: 0}
-    APP.panPosition(poi.lat, poi.lng, poi.address)
     popupHtml = TemplateHelper.poiNotePopupHtml(poi, meta)
-    marker = VoyageX.Main.markerManager().get()
+    if marker == null
+      marker = VoyageX.Main.markerManager().get()
     popup = marker.getPopup()
     unless popup?
       popup = L.popup {minWidth: 100, maxHeight: 300}

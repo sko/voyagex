@@ -39,6 +39,8 @@ jQuery ->
 
   window.afterUploadPhoto = (poi) ->
     # @see upload_comments.js.coffee
+    $('#media_input_current').attr('src', '')
+    $('#upload_comment').val('')
     if $.mobile
 #     if $('#upload_comment_conrols').hasClass('ui-popup-active')
 #       $('#upload_comment_conrols').removeClass('ui-popup-active').addClass('ui-popup-hidden')

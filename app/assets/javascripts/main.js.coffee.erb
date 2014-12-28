@@ -101,8 +101,18 @@ class window.VoyageX.Main
                           text: APP.userName()+': '+publishText})
 
   showPOI: (poiId, poiNoteId) ->
-    #getUploadComments(upload_id)
-    Storage.Model.instance().loadPoiNotes poiId, poiNoteId, VoyageX.TemplateHelper.openPOINotePopup
+    Storage.Model.instance().loadPoiNotes poiId, poiNoteId, (poi) ->
+        #APP.panPosition(poi.lat, poi.lng, poi.address)
+        markerMeta = Main.markerManager().forPoi poiId
+        if markerMeta?
+          marker = markerMeta.marker
+        else
+          marker = Main.markerManager().add(poi, Main._markerEventsCB, false)
+        VoyageX.TemplateHelper.openPOINotePopup poi, marker
+        poiNoteDiv = $('#poi_notes_container').children('[data-id='+poiNoteId+']').first()
+        poiNoteOff = poiNoteDiv.offset()
+        scrollPane = poiNoteDiv.closest('.leaflet-popup-content').first()
+        scrollPane.scrollTop(poiNoteOff.top)
     if window.isMobile()
       $("#photo_nav_panel").panel("close")
     else
@@ -129,7 +139,9 @@ class window.VoyageX.Main
 
   _initPositionCB: (position) ->
     address = null
-    marker = VoyageX.Main.markerManager().sel null, position.coords.latitude, position.coords.longitude, Main._markerEventsCB
+    #marker = VoyageX.Main.markerManager().sel null, position.coords.latitude, position.coords.longitude, Main._markerEventsCB
+    poi = {lat: position.coords.latitude, lng: position.coords.longitude}
+    marker = VoyageX.Main.markerManager().add poi, Main._markerEventsCB, true
     APP._setSelectedPositionLatLng marker, position.coords.latitude, position.coords.longitude, address
     APP.map().panTo([position.coords.latitude, position.coords.longitude])
     #APP.map().setView [position.coords.latitude, position.coords.longitude], 16
@@ -171,6 +183,7 @@ class window.VoyageX.Main
     #APP.map().setView([lat, lng], 16)
     #VoyageX.NavBar.menuNavClick('map')
 
+  # TODO: this is load-uploads -> move to model
   photoNav: () ->
     $.ajax
       type: 'GET'
@@ -181,11 +194,16 @@ class window.VoyageX.Main
 
   @_markerEventsCB: (event) ->
     address = null
-    APP._setSelectedPositionLatLng event.target, event.target._latlng.lat, event.target._latlng.lng, address
     switch event.type
       when 'click'
-        `;`
+        markerMeta = Main.markerManager().meta event.target
+        unless markerMeta.isUserMarker
+          Storage.Model.instance().loadPoiNotes markerMeta.poi.id, null, (poi) ->
+              VoyageX.TemplateHelper.openPOINotePopup poi, event.target
+        else
+          return false;
       when 'dblclick'
+        APP._setSelectedPositionLatLng event.target, event.target._latlng.lat, event.target._latlng.lng, address
         #VoyageX.Main.markerManager().get().bindPopup("").openPopup({minWidth: '100px'});
         $('#poi_note_input').html('')
         VoyageX.TemplateHelper.poiNoteInputHtml('poi_note_input')
@@ -197,7 +215,7 @@ class window.VoyageX.Main
           if ! $('#upload_data_conrols').parent().hasClass('seethrough_panel')
             $('#upload_data_conrols').parent().addClass('seethrough_panel')
       else
-        # click is handled by mapclick
+        APP._setSelectedPositionLatLng event.target, event.target._latlng.lat, event.target._latlng.lng, address
         APP.publishPosition()
 
   @commChannels: () ->
