@@ -31,6 +31,8 @@ class window.VoyageX.MapControl
     @_map.whenReady () ->
         console.log '### map-event: ready ...'
         #MapControl.instance().showTileInfo false
+        #for poi in APP._initPoisOnMap
+        #  marker = Main.markerManager().add poi, VoyageX.Main._markerEventsCB, false
         if APP.isOnline()
           mC = VoyageX.MapControl.instance()
           unless Comm.StorageController.isFileBased()

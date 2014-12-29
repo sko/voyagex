@@ -12,7 +12,7 @@
           #{t('uploads.add_comment')}
 
 #tmpl_poi_note{style: 'display: none;'}
-  .upload_comment{style: 'vertical-align: top;', data: {id: '{poi_note_id}', index: '{i}'}}
+  .triangle-border.upload_comment{class: '{toggle}', tmpl: {toggle: 'left|right'}, style: 'vertical-align: top;', data: {id: '{poi_note_id}', index: '{i}'}}
     %tr
       %td{style: 'vertical-align: top;'}
         {media_file_tag}

@@ -29,9 +29,12 @@ class window.VoyageX.TemplateHelper
       poiNotesHtml
 
   @poiNotePopupEntryHtml: (poiNote, poiNoteTmpl, i, meta) ->
+    toggle = if i%2==0 then 'left' else 'right'
     poiNoteTmpl.
     replace(/\{poi_note_id\}/g, poiNote.id).
     replace(/\{i\}/g, i).
+    replace(/\{toggle\}/g, toggle).
+    replace(/\stmpl-toggle=['"]?[^'" >]+/g, '').
     replace(/\{media_file_tag\}/, TemplateHelper._mediaFileTag(poiNote.attachment, meta)).
     replace(/\{username\}/, poiNote.user.username).
     replace(/\{comment\}/, poiNote.text)
@@ -108,11 +111,11 @@ class window.VoyageX.TemplateHelper
       VoyageX.Main.markerManager().get().unbindPopup()
       #$(event.target).closest('.leaflet-popup').remove()
 
-  @swiperSlideHtml: (poiNote) ->
+  @swiperSlideHtml: (poi, poiNote) ->
     swiperSlideTmpl = TemplateHelper._updateAttributes('tmpl_swiper_slide', ['src'], TemplateHelper._updateIds('tmpl_swiper_slide')).
-    replace(/\{poiId\}/g, poiNote.poi.id).
+    replace(/\{poiId\}/g, poi.id).
     replace(/\{poiNoteId\}/g, poiNote.id).
-    replace(/\{address\}/g, poiNote.poi.address).
+    replace(/\{address\}/g, poi.address).
     replace(/\{attachment_url\}/g, poiNote.attachment.url)
 
   @_closePopupCB: (marker) ->

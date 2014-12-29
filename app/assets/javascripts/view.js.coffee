@@ -84,7 +84,7 @@ class window.VoyageX.View
 
   @addPoiNotes: (poi) ->
     if poi.notes[0].attachment.content_type.match(/^[^\/]+/)[0] == 'image'
-      swiperSlideHtml = VoyageX.TemplateHelper.swiperSlideHtml poi.notes[0]
+      swiperSlideHtml = VoyageX.TemplateHelper.swiperSlideHtml poi, poi.notes[0]
     $("#upload_preview").prepend(swiperSlideHtml)
     mySwiper.reInit()
     #mySwiper.resizeFix()

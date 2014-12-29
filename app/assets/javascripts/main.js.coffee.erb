@@ -20,6 +20,7 @@ class window.VoyageX.Main
     @_comm = null
     @_selectedPositionLatLng = [-1, -1]
     @_curPOI = null
+    #@_initPoisOnMap = []
     @_STORAGE_MODEL = new Storage.Model()
     $(window.document).ready () ->
         APP._init cacheStrategy, view, mapOptions, offlineZooms
@@ -158,7 +159,12 @@ class window.VoyageX.Main
     #  Main.markerManager().add(poi, Main._markerEventsCB, false)
     Storage.Model.instance().loadPois poi.lat, poi.lng, (poi) ->
       #VoyageX.TemplateHelper.openPOINotePopup poi, event.target
-      Main.markerManager().add poi, Main._markerEventsCB, false
+      marker = Main.markerManager().add poi, Main._markerEventsCB, false
+      #marker.bindPopup ''
+      #marker.openPopup()
+      #marker.closePopup()
+      #marker.unbindPopup()
+      #APP._initPoisOnMap.push poi
 
   _systemCB: (message) ->
     console.log 'got a system - message: ' + message.type
