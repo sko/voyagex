@@ -1,7 +1,6 @@
 #tmpl_poi_notes_container{style: 'display: none;'}
   %div{tmpl: {id: 'poi_notes_container'}}
-    %table
-      {poi_notes}
+    {poi_notes}
     - if is_mobile
       /- popup_params = { data: { rel: 'popup', 'position-to' => 'window', 'data-role' => 'button' } }
       /= link_to t('uploads.add_comment'), '#upload_comment_conrols', popup_params
@@ -13,9 +12,12 @@
 
 #tmpl_poi_note{style: 'display: none;'}
   .triangle-border.upload_comment{class: '{toggle}', tmpl: {toggle: 'left|right'}, style: 'vertical-align: top;', data: {id: '{poi_note_id}', index: '{i}'}}
-    %tr
-      %td{style: 'vertical-align: top;'}
-        {media_file_tag}
-      %td{style: 'width: 10px;'}
-      %td{style: 'vertical-align: top;'}
-        {username}: {comment}
+    %table
+      %tr
+        %td
+          %div{style: 'float: left; padding: 0px 10px 0px 0px;'}
+            %a{href: '#', onclick: 'javascript:APP.view().viewAttachment({poi_note_id});'}><
+              {media_file_tag}
+          %div{style: 'float: left !important; text-decoration: underline; font-weight: bold; padding-right: 10px;'}><
+            {username}:
+          {comment}

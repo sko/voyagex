@@ -80,26 +80,41 @@ class window.VoyageX.View
       # TODO: unify json-format, until then avoid circular structure
       poi = upload.poi_note.poi
       msg = { poi: poi }
-      Storage.Model._syncWithStorage msg, View.addPoiNotes, upload.poi_note, 0
+      Storage.Model.instance().syncWithStorage msg, View.addPoiNotes, upload.poi_note, 0
+
+  viewAttachment: (poiNoteId) ->
+    #poiId = $('#poi_notes_container > div[id^=upload_comment_btn_]').attr('id').match(/upload_comment_btn_([0-9]+)/)[1]
+    imgUrl = $('#poi_notes_container .upload_comment[data-id='+poiNoteId+'] img').attr('src')
+    #height = attachmentViewPanel.height()
+    if window.isMobile()
+      maxWidth = Math.abs($(window).width() * 0.8)-10
+      maxHeight = Math.abs($(window).height() * 0.8)-10
+      $('#attachment_view_panel').html('<div><img src="'+imgUrl+'" style="max-width:'+maxWidth+'px;max-height:'+maxHeight+'px;"></div>')
+      $('#open_attachment_view_btn').click()
+    else
+      maxWidth = Math.abs($(window).width() * 0.5)-10
+      maxHeight = Math.abs($(window).height() * 0.8)-10
+      $('#attachment_view_panel').html('<div><img src="'+imgUrl+'" style="max-width:'+maxWidth+'px;max-height:'+maxHeight+'px;"></div>')
+      $('#attachment_view_panel').dialog('open')
+
+  scrollToPoiNote: (poiNoteId) ->
+    poiNoteDiv = $('#poi_notes_container').children('[data-id='+poiNoteId+']').first()
+    poiNoteOff = poiNoteDiv.offset()
+    scrollPane = poiNoteDiv.closest('.leaflet-popup-content').first()
+    scrollPane.scrollTop(poiNoteOff.top)
 
   @addPoiNotes: (poi) ->
     if poi.notes[0].attachment.content_type.match(/^[^\/]+/)[0] == 'image'
       swiperSlideHtml = VoyageX.TemplateHelper.swiperSlideHtml poi, poi.notes[0]
-    $("#upload_preview").prepend(swiperSlideHtml)
-    mySwiper.reInit()
-    #mySwiper.resizeFix()
+      $('#poi_swiper_'+poi.id+' .swiper-wrapper').prepend(swiperSlideHtml)
+      mySwiper = window['myPoiSwiper'+poi.id]
+      mySwiper.reInit()
+      #mySwiper.resizeFix()
     for listener in View.instance()._commListeners.uploads
       listener(poi.notes[0])
 
-    #
-    # TODO: close uploads - this should go to the user who uploaded - not as a callback via faye
-    #                       though lots of logic is the same
-    #if window.isMobile()
-    #  $("#upload_data_panel").panel("close");
-    #else
-    #  uploadDataDialog.dialog('close')
-
     VoyageX.TemplateHelper.addPoiNotes poi, APP.getMarker(poi)
+    View.instance().scrollToPoiNote poi.notes[0].id
     #APP.panPosition(poi.lat, poi.lng, poi.address)
 
   @instance: () ->

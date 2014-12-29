@@ -84,3 +84,12 @@ window.uploadDataDialog = $("#upload_data_conrols").dialog({
       modal: true
     })
 #$("head").append("<style type='text/css'>#sign_in_modal {width:"+Math.abs($(window).width() * 0.3)+"px;}</style>");
+
+window.attachmentViewPanel = $("#attachment_view_panel").dialog({
+      autoOpen: false,
+      height: Math.abs($(window).height() * 0.8),
+      width: Math.abs($(window).width() * 0.5),
+      modal: true
+    })
+
+$("#photo_nav_panel").tabs()

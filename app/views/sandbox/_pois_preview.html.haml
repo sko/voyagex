@@ -1,0 +1,15 @@
+%table
+  - @pois.each_with_index do |poi, idx|
+    %tbody.poi-preview-container{data: {id: poi.id, address: poi.location.address}}
+      %tr
+        %td
+          .poi-preview{style: 'float: left; text-align: center;'}
+            .swiper-container{id: "poi_swiper_#{poi.id}"}
+              .swiper-wrapper
+                = render partial: 'swipe_panel', locals: { uploads: poi.notes.collect{|p_n|p_n.attachment} }
+              .pagination
+            - if idx == 0
+              %img{src: '/assets/swipe.jpg', style: 'width: 35px; height: 35px;'}
+        %td{style: 'padding-left: 10px; vertical-align: top;'}
+          .poi-info
+            = poi.location.address

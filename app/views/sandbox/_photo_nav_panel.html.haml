@@ -1,15 +1,15 @@
 .modal
   .modal-dialog#photo_nav_panel
     .modal-body
-      %span#current_address
-        - if @uploads.present?
-          #{@uploads.first.attached_to.poi.location.address}
-      #swipe_panel{style: 'text-align: center;'}
-        .swiper-container
-          .swiper-wrapper#upload_preview
-            = render partial: 'swipe_panel'
-    
-        %img{src: '/assets/swipe.jpg', style: 'width: 35px; height: 35px;'}
+      %ul
+        %li
+          = link_to 'Points of Interest', '#pois_preview'
+        %li
+          = link_to 'People of Interest', '#people_of_interest'
+      #pois_preview
+        -#= render partial: 'pois_preview'
+      #people_of_interest
+        = render partial: 'people_of_interest'
   %br
   %br
   %br
@@ -18,13 +18,13 @@
     .ui-button-text
       Close Panel
 
+#tmpl_swiper_slide{style: 'display: none;'}
+  %span.swiper-slide{data: {poiId: '{poiId}', poiNoteId: '{poiNoteId}', address: '{address}'}, style: 'width: {width}px;'}
+    %img{tmpl: {src: '{attachment_url}'}, style: "width: {width}px; height: {height}px;"}
+
 - max_height = 100.0
 - max_width = 300
 
-#tmpl_swiper_slide{style: 'display: none;'}
-  %span.swiper-slide{onclick: 'photoClicked({clickedSlide: this})', data: {poiId: '{poiId}', poiNoteId: '{poiNoteId}', address: '{address}'}}
-    %img{tmpl: {src: '{attachment_url}'}, style: "height: #{max_height.to_i}px;"}
-
 - swiper_style = "width: #{max_width}px; height: #{max_height.to_i}px;"
 = javascript_tag do
-  $("head").append("<style type='text/css'>#swipe_panel, .swiper-container, .swiper-slide { #{swiper_style} }</style>");
+  $("head").append("<style type='text/css'>.swiper-container { #{swiper_style} }</style>");

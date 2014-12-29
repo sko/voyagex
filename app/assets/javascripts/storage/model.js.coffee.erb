@@ -51,7 +51,7 @@ class window.Storage.Model
     .done (poiNote) ->
         # TODO: unify json-format, until then avoid circular structure
         msg = { poi: poiNote.poi }
-        Model._syncWithStorage msg, callback, poiNote, 0
+        Model.instance().syncWithStorage msg, callback, poiNote, 0
     .fail (jqXHR, textStatus) ->
         #$("#upload_error").html("<ul><-%= escape_javascript(@upload.errors.full_messages.map { |msg| content_tag(:li, msg) }.join.html_safe) %></ul>")
         # get from localStorage
@@ -67,11 +67,25 @@ class window.Storage.Model
       url: '<%= upload_comments_path(poi_id: ':poi_id', poi_note_id: '') %>'.replace(/:poi_id/, poiId)+poiNoteId
     .done (msg) ->
         for note, i in msg.poi.notes
-          Model._syncWithStorage msg, callback, note, i
+          Model.instance().syncWithStorage msg, callback, note, i
     .fail (jqXHR, textStatus) ->
         # get from localStorage
         console.log('TODO: maybe get from local storage')
         #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
+
+  syncWithStorage: (msg, callback, note, i) ->
+    # store image
+    attachmentUrl = Model._viewPoiNoteAttachment note
+    # @see leaflet-functionaltilelayer _loadTile: function / MapControl - drawTile
+    if (typeof attachmentUrl == 'string') 
+      console.log 'Model - syncWithStorage: attachmentUrl-string = '+attachmentUrl
+      Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, i, callback
+    else if (typeof attachmentUrl.then == 'function') 
+      # Assume we are dealing with a promise.
+      attachmentUrl.then (url) ->
+          console.log 'Model - syncWithStorage: attachmentUrl-promise resolved to: '+url
+          note.attachment.url = url
+          Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, i, callback
 
   @_syncPois: (poi, callback, i) ->
     storeKey = Comm.StorageController.poiKey poi
@@ -92,20 +106,6 @@ class window.Storage.Model
     localStorage.setItem(storeKey, JSON.stringify(poi))
     callback poi
 
-  @_syncWithStorage: (msg, callback, note, i) ->
-    # store image
-    attachmentUrl = Model._viewPoiNoteAttachment note
-    # @see leaflet-functionaltilelayer _loadTile: function / MapControl - drawTile
-    if (typeof attachmentUrl == 'string') 
-      console.log '_syncWithStorage - attachmentUrl-string = '+attachmentUrl
-      Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, i, callback
-    else if (typeof attachmentUrl.then == 'function') 
-      # Assume we are dealing with a promise.
-      attachmentUrl.then (url) ->
-          console.log '_syncWithStorage - attachmentUrl-promise resolved to: '+url
-          note.attachment.url = url
-          Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, i, callback
-
   @_syncPoiNotes: (poi, poiKey, note, i, callback) ->
     poiKey = Comm.StorageController.poiKey(poi)
     existingPoiData = Comm.StorageController.instance().get poiKey
@@ -114,10 +114,10 @@ class window.Storage.Model
         existingPoiData = Model._storeWithoutPoi poiKey, note
     else
       existingPoiData = Model._storeWithoutPoi poiKey, note
-    #if i == (poi.notes.length - 1)
     unless poi.notes? &&  i != (poi.notes.length - 1)
       unless poi.notes?
-        poi.notes = existingPoiData.notes # [note]
+        #poi.notes = existingPoiData.notes
+        poi.notes = [note]
       callback poi
 
   @_storeWithoutPoi: (poiKey, note) ->

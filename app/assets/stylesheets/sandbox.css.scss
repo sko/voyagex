@@ -9,6 +9,44 @@
 .talk_message_label {
 }
 
+#photo_nav_panel {
+  margin: 0px !important;
+  padding: 0px !important;
+}
+
+.swiper-slide {
+  height:100%;
+  opacity:0.4;
+  -webkit-transition:300ms;
+  -moz-transition:300ms;
+  -ms-transition:300ms;
+  -o-transition:300ms;
+  transition:300ms;
+}
+.swiper-slide-active {
+  opacity:1;
+}
+.pagination {
+  position:absolute;z-index:20;left:10px;bottom:10px;
+}
+.swiper-pagination-switch {
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-radius:8px;
+  background:#222;
+  margin-right:8px;
+  opacity:0.8;
+  border:1px solid #fff;
+  cursor:pointer;
+}
+.swiper-visible-switch {
+  background:#aaa;
+}
+.swiper-active-switch {
+  background:#fff;
+}
+
 #content_uploads {
   padding: 10px 0px 0px 0px;
 }

@@ -15,6 +15,39 @@
   filter: alpha(opacity=90); /* For IE8 and earlier */
 }
 
+.swiper-slide {
+  height:100%;
+  opacity:0.4;
+  -webkit-transition:300ms;
+  -moz-transition:300ms;
+  -ms-transition:300ms;
+  -o-transition:300ms;
+  transition:300ms;
+}
+.swiper-slide-active {
+  opacity:1;
+}
+.pagination {
+  position:absolute;z-index:20;left:10px;bottom:10px;
+}
+.swiper-pagination-switch {
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-radius:8px;
+  background:#222;
+  margin-right:8px;
+  opacity:0.8;
+  border:1px solid #fff;
+  cursor:pointer;
+}
+.swiper-visible-switch {
+  background:#aaa;
+}
+.swiper-active-switch {
+  background:#fff;
+}
+
 #upload_data_panel {
   opacity: 0.9;
   filter: alpha(opacity=90); /* For IE8 and earlier */

@@ -22,7 +22,7 @@ class window.VoyageX.Main
     @_curPOI = null
     #@_initPoisOnMap = []
     @_STORAGE_MODEL = new Storage.Model()
-    $(window.document).ready () ->
+    $(document).ready () ->
         APP._init cacheStrategy, view, mapOptions, offlineZooms
 
   _init: (cacheStrategy, view, mapOptions, offlineZooms) ->
@@ -35,17 +35,20 @@ class window.VoyageX.Main
           )
       when 2
         APP._comm = new Comm.Comm(APP.userId(),
-                                  [['/talk', view._talkCB, window.VoyageX.CHANNEL_ENC_KEY],
-                                   ['/map_events', view._mapEventsCB, window.VoyageX.CHANNEL_ENC_KEY],
-                                   ['/uploads', view._uploadsCB, window.VoyageX.CHANNEL_ENC_KEY]],
-                                   window.VoyageX.SYS_CHANNEL_ENC_KEY,
+                                  [['/talk', view._talkCB, VoyageX.CHANNEL_ENC_KEY],
+                                   ['/map_events', view._mapEventsCB, VoyageX.CHANNEL_ENC_KEY],
+                                   ['/uploads', view._uploadsCB, VoyageX.CHANNEL_ENC_KEY]],
+                                   VoyageX.SYS_CHANNEL_ENC_KEY,
                                    APP._systemCB)
         Main._MAP_CONTROL = new VoyageX.MapControl cacheStrategy, mapOptions, offlineZooms
         Main._MARKER_MANAGER = new VoyageX.MarkerManager(APP.map())
         if navigator.geolocation 
           navigator.geolocation.getCurrentPosition(APP._initPositionCB, (error) ->
               #alert('geolocation timed out - manual selection required.\nsetting default location...')
-              APP._initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
+              if lastLocationLatLng?
+                APP._initPositionCB { coords: { latitude: lastLocationLatLng[0], longitude: lastLocationLatLng[1] } }
+              else
+                APP._initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
           , { enableHighAccuracy: true, timeout : 5000 })
 #       #APP.map().on('locationfound', (e) ->
 #       #    alert('found location...')
@@ -54,7 +57,7 @@ class window.VoyageX.Main
 #       #    alert('geolocation timed out - manual selection required.\nsetting default location...')
 #       #  )
         #APP._initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
-        if window.isMobile()
+        if isMobile()
           APP.map().invalidateSize({
               reset: true,
               pan: false,
@@ -88,6 +91,9 @@ class window.VoyageX.Main
     for n in Main._MAP_CONTROL._offlineZooms
       Main._MAP_CONTROL._zooms.push n
     
+  setCurrentLocation: () ->
+    APP.publishPosition(true)
+    
   publishPosition: (saveLocation = false) ->
     @_comm.send('/map_events', {type: 'click',\
                                 userId: APP.userId(),\
@@ -110,18 +116,10 @@ class window.VoyageX.Main
 
   showPOI: (poiId, poiNoteId) ->
     Storage.Model.instance().loadPoiNotes poiId, poiNoteId, (poi) ->
-        #markerMeta = Main.markerManager().forPoi poiId
-        #if markerMeta?
-        #  marker = markerMeta.marker
-        #else
-        #  marker = Main.markerManager().add(poi, Main._markerEventsCB, false)
         #APP.panPosition(poi.lat, poi.lng, poi.address)
-        VoyageX.TemplateHelper.openPOINotePopup poi#, marker
-        poiNoteDiv = $('#poi_notes_container').children('[data-id='+poiNoteId+']').first()
-        poiNoteOff = poiNoteDiv.offset()
-        scrollPane = poiNoteDiv.closest('.leaflet-popup-content').first()
-        scrollPane.scrollTop(poiNoteOff.top)
-    if window.isMobile()
+        VoyageX.TemplateHelper.openPOINotePopup poi
+        APP.view().scrollToPoiNote poiNoteId
+    if isMobile()
       $("#photo_nav_panel").panel("close")
     else
       photoNavPanel.dialog("close")
@@ -169,8 +167,8 @@ class window.VoyageX.Main
   _systemCB: (message) ->
     console.log 'got a system - message: ' + message.type
     if message.type == 'ready_notification'
-      # subscribe to all channels stored in window.subscribeTo-buffer
-      while (channelPath = window.subscribeTo.pop())
+      # subscribe to all channels stored in subscribeTo-buffer
+      while (channelPath = subscribeTo.pop())
         i = channelPath.indexOf(VoyageX.PEER_CHANNEL_PREFIX)
         channel = (if i == -1 then channelPath else channelPath.substr(0, i)).substr(1)
         Comm.Comm.subscribeTo channelPath, Comm.Comm.channelCallBacksJSON[channel].callback # eval(channel+'CB')
@@ -180,7 +178,7 @@ class window.VoyageX.Main
         if channel == 'system'
           continue
         channelPath = '/'+channel
-        unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
+        unless VoyageX.USE_GLOBAL_SUBSCRIBE
           channelPath += VoyageX.PEER_CHANNEL_PREFIX+message.peer.channel_enc_key
         Comm.Comm.subscribeTo channelPath, Comm.Comm.channelCallBacksJSON[channel].callback # eval(channel+'CB')
     else if message.type == 'subscription_denied'
@@ -189,7 +187,7 @@ class window.VoyageX.Main
         if channel == 'system'
           continue
         channelPath = '/'+channel
-        unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
+        unless VoyageX.USE_GLOBAL_SUBSCRIBE
           channelPath += VoyageX.PEER_CHANNEL_PREFIX+message.peer.channel_enc_key
         Comm.Comm.unsubscribeFrom channelPath
     else if message.type == 'quit_subscription'
@@ -220,7 +218,7 @@ class window.VoyageX.Main
   poiNoteInput: () ->
     $('#poi_note_input').html('')
     VoyageX.TemplateHelper.poiNoteInputHtml('poi_note_input')
-    if window.isMobile()
+    if isMobile()
       $('#open_upload_data_btn').click()
     else
       #$('#poi_note_input').css('display', 'block')
@@ -270,3 +268,6 @@ class window.VoyageX.Main
 
   @instance: () ->
     Main._SINGLETON
+
+  view: () ->
+    @_view

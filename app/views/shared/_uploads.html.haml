@@ -4,18 +4,11 @@
       %h4.modal-title #{t('uploads.upload').html_safe}
     .modal-body
       #poi_note_input
-      /= render partial: '/shared/upload_data', locals: {resource: Upload.new}
 
-/.modal
-/  .modal-dialog#upload_comment_conrols
-/    .modal-header
-/      %h4.modal-title #{t('uploads.add_comment').html_safe}
-/    .modal-body
-/      #upload_comment_container
-      
 = render partial: '/uploads/form/tmpl', locals: {poi_note: PoiNote.new}
 = render partial: '/shared/tmpl_poi_notes'
 
 %iframe{id: "upload_target", src: csrf_path, name: "upload_target", style: "display:none;"}
 
-
+.modal
+  .modal-dialog#attachment_view_panel{style: 'text-align: center; vertical-align: middle; margin: 0px !important; padding: 0px !important;'}

@@ -1,4 +1,18 @@
-$('#upload_preview').html("<%= j render(partial: 'sandbox/swipe_panel') -%>");
+poisPreview = "<%= j render(partial: 'sandbox/pois_preview') -%>"
+$('#pois_preview').html(poisPreview)
+<% @pois.each do |poi| %>
+#  freeModeFluid: true,
+#  mode:'horizontal',
+#  loop: false,
+#  onSlideChangeEnd: window.photoChanged,
+window.myPoiSwiper<%= poi.id -%> = $('#poi_swiper_<%= poi.id -%>').swiper({
+  pagination: '.pagination',
+  paginationClickable: true,
+  centeredSlides: true,
+  slidesPerView: 'auto',
+  onSlideClick: photoClicked
+})
+<% end %>
 <% if is_mobile %>
 $('#open_photo_nav_btn').click()
 <% else %>

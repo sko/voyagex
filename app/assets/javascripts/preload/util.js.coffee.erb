@@ -25,6 +25,13 @@ $(document).on 'keyup', '.edit_detail', (event) ->
     event.preventDefault()
     $(this).closest('form').submit()
 
+window.padTextHtml = (text, minLength) ->
+  count = 0
+  while text.length < minLength
+    count += 1
+    text += if count%5==0 then ' ' else '.'
+  text.replace(/([ .]+)$/, ' <span style="color:white;">$1</span>')
+
 window.cacheStats = () ->
   tilesSize = Comm.StorageController.instance().getByteSize('tiles')
   numTiles = Comm.StorageController.instance().getNumElements('tiles')

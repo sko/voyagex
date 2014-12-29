@@ -24,19 +24,20 @@ jQuery ->
       $('#stats').css('display', 'block')
 
   window.photoClicked = (swiper) ->
-    $('#current_address').html($(swiper.clickedSlide).attr('data-address'))
+    #$('#current_address').html($(swiper.clickedSlide).attr('data-address'))
     APP.showPOI $(swiper.clickedSlide).attr('data-poiId'), $(swiper.clickedSlide).attr('data-poiNoteId')
 
   window.photoChanged = (swiper) ->
-    $('#current_address').html($(swiper.activeSlide()).attr('data-address'))
-
+    #$('#current_address').html($(swiper.activeSlide()).attr('data-address'))
+    `;` 
   #  onSlideClick: window.photoClicked,
-  window.mySwiper = $('.swiper-container').swiper({
-    mode:'horizontal',
-    loop: false,
-    freeModeFluid: true,
-    onSlideChangeEnd: window.photoChanged
-  })
+#  window.mySwiper = $('#upload_preview_swiper').swiper({
+#    mode:'horizontal',
+#    loop: false,
+#    freeModeFluid: true,
+#    #onSlideClick: photoClicked,
+#    onSlideChangeEnd: photoChanged
+#  })
 
   window.toggleSearchRadiusDisplay = (selected) ->
     if selected.id == 'search_radius_display_show'

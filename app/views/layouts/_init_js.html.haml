@@ -12,6 +12,8 @@
   - else
     window.VoyageX.CHANNEL_ENC_KEY = null;
     window.VoyageX.SYS_CHANNEL_ENC_KEY = null;
+  - if tmp_user.last_location.present?
+    window.lastLocationLatLng = [#{tmp_user.last_location.latitude}, #{tmp_user.last_location.longitude}];
   window.subscribeTo = [];
   window.unsubscribeFrom = [];
   -#

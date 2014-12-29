@@ -37,7 +37,7 @@ class window.VoyageX.TemplateHelper
     replace(/\stmpl-toggle=['"]?[^'" >]+/g, '').
     replace(/\{media_file_tag\}/, TemplateHelper._mediaFileTag(poiNote.attachment, meta)).
     replace(/\{username\}/, poiNote.user.username).
-    replace(/\{comment\}/, poiNote.text)
+    replace(/\{comment\}/, padTextHtml(poiNote.text, 80))
 
   @poiNotePopupHtml: (poi, meta) ->
     popupHtml = TemplateHelper._updateIds 'tmpl_poi_notes_container'
@@ -60,7 +60,7 @@ class window.VoyageX.TemplateHelper
       #  selMarker.setZIndexOffset marker._zIndex+1
     popup = TemplateHelper._verifyPopup marker, 'poi_notes_container'
     unless popup?
-      popup = L.popup {minWidth: 100, maxHeight: 300}
+      popup = L.popup {minWidth: 200, maxHeight: 300}
       marker.bindPopup(popup)
       popup.setContent(popupHtml)
     else
@@ -112,11 +112,17 @@ class window.VoyageX.TemplateHelper
       #$(event.target).closest('.leaflet-popup').remove()
 
   @swiperSlideHtml: (poi, poiNote) ->
+    maxHeight = 100.0
+    maxWidth = 300
+    scale = maxHeight / poiNote.attachment.height
+    width = Math.round(poiNote.attachment.width * scale + 0.49)
     swiperSlideTmpl = TemplateHelper._updateAttributes('tmpl_swiper_slide', ['src'], TemplateHelper._updateIds('tmpl_swiper_slide')).
     replace(/\{poiId\}/g, poi.id).
     replace(/\{poiNoteId\}/g, poiNote.id).
     replace(/\{address\}/g, poi.address).
-    replace(/\{attachment_url\}/g, poiNote.attachment.url)
+    replace(/\{attachment_url\}/g, poiNote.attachment.url).
+    replace(/\{width\}/g, width).
+    replace(/\{height\}/g, maxHeight)
 
   @_closePopupCB: (marker) ->
     (event) ->

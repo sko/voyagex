@@ -37,6 +37,7 @@ jQuery ->
     else
       Storage.Model.instance().savePoiNote64 data, afterUploadPhoto
 
+  # also called from iframe - that's why window.
   window.afterUploadPhoto = (poi) ->
     # @see upload_comments.js.coffee
     $('#media_input_current').attr('src', '')

@@ -21,6 +21,7 @@ Concept
    die bas sind alle einträge. also versionskontrolle pro eintrag, ein eintrag ist ein file. jsoon kan man aber zerschiesen+
 +) Objekt-basierte Versionierung
 +) rebase!!!!!
++) friends-panel neben pois-preview (photo-upload): freunde in der nähe
 
 +) fast alles was in javascript initial geladen werden soll kommt in layouts/_init_js
   es sei denn es gibtspzialfall (peers/subscriptions)
