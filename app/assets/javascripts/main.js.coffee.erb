@@ -143,25 +143,18 @@ class window.VoyageX.Main
   _zoomEnd: (e) ->
     $('#zoom_level').html('<span style="color:white;">zoom: '+APP.map().getZoom()+'</span>')
 
-  _initPositionCB: (position) ->
-    address = null
+  _initPositionCB: (position, address = null, isReInit = false) ->
     #marker = Main.markerManager().sel null, position.coords.latitude, position.coords.longitude, Main._markerEventsCB
     poi = {lat: position.coords.latitude, lng: position.coords.longitude}
-    marker = Main.markerManager().add poi, Main._markerEventsCB, true
+    unless isReInit
+      marker = Main.markerManager().add poi, Main._markerEventsCB, true
     APP._setSelectedPositionLatLng marker, position.coords.latitude, position.coords.longitude, address
     APP.map().panTo([position.coords.latitude, position.coords.longitude])
     #APP.map().setView [position.coords.latitude, position.coords.longitude], 16
-    APP.publishPosition()
-    # this should be done with init position cb
-    #for poi in pois
-    #  Main.markerManager().add(poi, Main._markerEventsCB, false)
+    unless isReInit
+      APP.publishPosition()
     Storage.Model.instance().loadPois poi.lat, poi.lng, (poi) ->
-      #VoyageX.TemplateHelper.openPOINotePopup poi, event.target
       marker = Main.markerManager().add poi, Main._markerEventsCB, false
-      #marker.bindPopup ''
-      #marker.openPopup()
-      #marker.closePopup()
-      #marker.unbindPopup()
       #APP._initPoisOnMap.push poi
 
   _systemCB: (message) ->

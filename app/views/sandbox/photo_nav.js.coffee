@@ -1,5 +1,9 @@
 poisPreview = "<%= j render(partial: 'sandbox/pois_preview') -%>"
+locationBookmarks = "<%= j render(partial: 'sandbox/location_bookmarks') -%>"
+peopleOfInterest = "<%= j render(partial: 'sandbox/people_of_interest') -%>"
 $('#pois_preview').html(poisPreview)
+$('#location_bookmarks').html(locationBookmarks)
+$('#people_of_interest').html(peopleOfInterest)
 <% @pois.each do |poi| %>
 #  freeModeFluid: true,
 #  mode:'horizontal',

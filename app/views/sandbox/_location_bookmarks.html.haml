@@ -1,0 +1,27 @@
+3 Arten:
+%ul
+  %li
+    mit poi - von mir kommentiert
+  %li
+    mit poi - ohne kommentar von mir
+  %li
+    ohne poi
+%table
+  - locations = tmp_user.locations.order('created_at desc')
+  - locations.each do |location|
+    %tbody.bookmark-container{data: {id: location.id, address: location.address, lat: location.latitude, lng: location.longitude}}
+    %tr
+      %td
+        - current_user_note = nil
+        - if location.poi.present?
+          / there should only be 1 poi per location, a poi always has an upload
+          - poi_notes = location.poi.notes
+          - current_user_note = poi_notes.find{|p_n|p_n.user_id == tmp_user.id}
+          - if current_user_note.present?
+            = link_to image_tag(current_user_note.attachment.file.url, style: 'max-width: 300px; max-height: 100px;'), location_path(location_id: location.id), data: { remote: 'true', format: :js }
+          - else
+            = link_to image_tag(image_tag poi_notes[0].attachment.file.url, style: 'max-width: 300px; max-height: 100px;'), location_path(location_id: location.id), data: { remote: 'true', format: :js }
+      %td
+        = current_user_note.present?.to_s
+      %td
+        = link_to location.address, location_path(location_id: location.id), data: { remote: 'true', format: :js }
