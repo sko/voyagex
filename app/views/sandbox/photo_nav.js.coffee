@@ -9,6 +9,7 @@ $('#people_of_interest').html(peopleOfInterest)
 #  mode:'horizontal',
 #  loop: false,
 #  onSlideChangeEnd: window.photoChanged,
+#  pagination: 'pagination_<%= poi.id -%>',
 window.myPoiSwiper<%= poi.id -%> = $('#poi_swiper_<%= poi.id -%>').swiper({
   pagination: '.pagination',
   paginationClickable: true,
@@ -16,6 +17,8 @@ window.myPoiSwiper<%= poi.id -%> = $('#poi_swiper_<%= poi.id -%>').swiper({
   slidesPerView: 'auto',
   onSlideClick: photoClicked
 })
+# if first image is swipe-icon
+#window.myPoiSwiper<%= poi.id -%>.swipeNext()
 <% end %>
 <% if is_mobile %>
 $('#open_photo_nav_btn').click()
@@ -24,4 +27,4 @@ $('#photo_nav_panel').dialog('open')
 if ! $('#photo_nav_panel').parent().hasClass('seethrough_panel')
   $('#photo_nav_panel').parent().addClass('seethrough_panel')
 <% end %>
-window.mySwiper.reInit()
+$('#pois_preview_btn').click()

@@ -24,6 +24,10 @@ class window.VoyageX.Main
     @_STORAGE_MODEL = new Storage.Model()
     $(document).ready () ->
         APP._init cacheStrategy, view, mapOptions, offlineZooms
+        # test for address-bar removal / fullscreen @see application.mobile as well
+#        if isMobile()
+#          if !window.pageYOffset
+#            hideAddressBar()
 
   _init: (cacheStrategy, view, mapOptions, offlineZooms) ->
     APP._initState += 1

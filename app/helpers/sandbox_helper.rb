@@ -1,5 +1,15 @@
 module SandboxHelper
-
+  include ApplicationHelper
+  
+  def shorten_address address
+    parts = address.split(',')
+    if parts.size >= 3
+      parts.drop([parts.size - 2, 2].min).join(',')
+    else
+      address
+    end
+  end
+  
   def comment_attachment_to_view poi_note
     upload_entity_to_view poi_note.attachment
   end

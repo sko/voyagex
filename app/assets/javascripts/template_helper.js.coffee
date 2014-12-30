@@ -116,7 +116,7 @@ class window.VoyageX.TemplateHelper
     swiperSlideTmpl = TemplateHelper._updateAttributes('tmpl_swiper_slide', ['src'], TemplateHelper._updateIds('tmpl_swiper_slide')).
     replace(/\{poiId\}/g, poi.id).
     replace(/\{poiNoteId\}/g, poiNote.id).
-    replace(/\{address\}/g, poi.address).
+    #replace(/\{address\}/g, poi.address).
     replace(/\{attachment_url\}/g, poiNote.attachment.url).
     replace(/\{width\}/g, width).
     replace(/\{height\}/g, maxHeight)

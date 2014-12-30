@@ -6,12 +6,23 @@
     mit poi - ohne kommentar von mir
   %li
     ohne poi
-%table
-  - locations = tmp_user.locations.order('created_at desc')
-  - locations.each do |location|
+%table{style: 'border-spacing: 5px;'}
+  %tr
+    %th
+      Mediafile
+    %th
+      Last Bookmark
+    %th
+      Kommentiert
+    %th
+      Addresse
+  -# locations = tmp_user.locations.order('updated_at desc')
+  - locations = tmp_user.locations_users.joins(:location).order('updated_at desc')
+  - locations.each do |locations_user|
+    - location = locations_user.location
     %tbody.bookmark-container{data: {id: location.id, address: location.address, lat: location.latitude, lng: location.longitude}}
     %tr
-      %td
+      %td{style: 'text-align: center;'}
         - current_user_note = nil
         - if location.poi.present?
           / there should only be 1 poi per location, a poi always has an upload
@@ -21,7 +32,12 @@
             = link_to image_tag(current_user_note.attachment.file.url, style: 'max-width: 300px; max-height: 100px;'), location_path(location_id: location.id), data: { remote: 'true', format: :js }
           - else
             = link_to image_tag(poi_notes[0].attachment.file.url, style: 'max-width: 300px; max-height: 100px;'), location_path(location_id: location.id), data: { remote: 'true', format: :js }
-      %td
+        - else
+          kein POI
+      %td{style: 'text-align: center;'}
+        -#= locations_user.updated_at.strftime("%Y%m%d%H%M%S")
+        = locations_user.updated_at.strftime("%d.%m.%Y %H:%M")
+      %td{style: 'text-align: center;'}
         = current_user_note.present?.to_s
       %td
-        = link_to location.address, location_path(location_id: location.id), data: { remote: 'true', format: :js }
+        = link_to shorten_address(location.address), location_path(location_id: location.id), data: { remote: 'true', format: :js }

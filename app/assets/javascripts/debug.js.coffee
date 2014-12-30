@@ -8,7 +8,7 @@ class window.VoyageX.Debug
     @_mapObserver = null
     @_tilesObserver = null
     @_tileContainer = null
-    $(window.document).ready () ->
+    $(document).ready () ->
         try
           DEBUG._mapObserver = new Debug._MutationObserver(Debug.subTreeModifiedCB)
           #DEBUG._mapObserver.observe($('#map')[0], { childList: true })
@@ -42,4 +42,5 @@ class window.VoyageX.Debug
   @instance: () ->
     @_SINGLETON
 
-new VoyageX.Debug()
+if DEBUG
+  new VoyageX.Debug()

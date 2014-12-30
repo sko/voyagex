@@ -3,11 +3,11 @@
     .modal-body
       %ul
         %li
-          = link_to 'Points of Interest', '#pois_preview'
+          = link_to 'Points of Interest', '#pois_preview', id: 'pois_preview_btn'
         %li
-          = link_to 'Bookmarked Locations', '#location_bookmarks'
+          = link_to 'Bookmarked Locations', '#location_bookmarks', id: 'location_bookmarks_btn'
         %li
-          = link_to 'People of Interest', '#people_of_interest'
+          = link_to 'People of Interest', '#people_of_interest', id: 'people_of_interest_btn'
       #pois_preview
         -#= render partial: 'pois_preview'
       #location_bookmarks
@@ -16,7 +16,8 @@
         = render partial: 'people_of_interest'
 
 #tmpl_swiper_slide{style: 'display: none;'}
-  %span.swiper-slide{data: {poiId: '{poiId}', poiNoteId: '{poiNoteId}', address: '{address}'}, style: 'width: {width}px;'}
+  -#, address: '{address}'
+  %span.swiper-slide{data: {poiId: '{poiId}', poiNoteId: '{poiNoteId}'}, style: 'width: {width}px;'}
     %img{tmpl: {src: '{attachment_url}'}, style: "width: {width}px; height: {height}px;"}
 
 - max_height = 100.0

@@ -1,5 +1,5 @@
-- max_height = 100.0
-- max_width = 300
+-# max_height = 100.0
+-# max_width = 300
 -# scroll_width = 0
 -# max_width = 0
 -# uploads.joins(:mediafile).each do |upload|
@@ -12,7 +12,8 @@
   -# scroll_width += width
   -#%span.swiper-slide{data: {id: upload.id, address: upload.location.address}}
   -#onclick: 'photoClicked({clickedSlide: this})', 
-  %span.swiper-slide{data: {poiId: upload.attached_to.poi.id, poiNoteId: upload.attached_to.id, address: upload.attached_to.poi.location.address}, style: "width: #{width}px; height: #{max_height.to_i}px;"}
+  -#, address: upload.attached_to.poi.location.address
+  %span.swiper-slide{data: {poiId: upload.attached_to.poi.id, poiNoteId: upload.attached_to.id}, style: "width: #{width}px; height: #{max_height.to_i}px;"}
     -#= image_tag upload.file.url, style: "height: #{max_height.to_i}px;"
     = image_tag upload.file.url, style: "width: #{width}px; height: #{max_height.to_i}px;"
 -# swiper_style = "width: #{max_width}px; height: #{max_height.to_i}px;"
