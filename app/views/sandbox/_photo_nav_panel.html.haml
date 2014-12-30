@@ -14,13 +14,6 @@
         = render partial: 'location_bookmarks'
       #people_of_interest
         = render partial: 'people_of_interest'
-  %br
-  %br
-  %br
-  %br
-  .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{onclick: '$("#photo_nav_panel").panel("close");'}
-    .ui-button-text
-      Close Panel
 
 #tmpl_swiper_slide{style: 'display: none;'}
   %span.swiper-slide{data: {poiId: '{poiId}', poiNoteId: '{poiNoteId}', address: '{address}'}, style: 'width: {width}px;'}
@@ -28,7 +21,6 @@
 
 - max_height = 100.0
 - max_width = 300
-
 - swiper_style = "width: #{max_width}px; height: #{max_height.to_i}px;"
 = javascript_tag do
   $("head").append("<style type='text/css'>.swiper-container { #{swiper_style} }</style>");

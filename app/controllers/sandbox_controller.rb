@@ -43,14 +43,8 @@ class SandboxController < ApplicationController
 
   def photo_nav
     nearby_m = (tmp_user.search_radius_meters||20000)
-    #location = tmp_user.last_location
     location = Location.new latitude: params[:lat], longitude: params[:lng]
-#    if location.present?
-      load_location_data location, nearby_m
-#    else
-#      @uploads = []
-#    end
-    #@uploads = Upload.all.order('location_id, id desc')
+    load_location_data location, nearby_m
     render "sandbox/photo_nav", layout: false, formats: [:js]
   end
 

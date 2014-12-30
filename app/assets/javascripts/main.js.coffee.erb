@@ -91,15 +91,27 @@ class window.VoyageX.Main
     for n in Main._MAP_CONTROL._offlineZooms
       Main._MAP_CONTROL._zooms.push n
     
-  setCurrentLocation: () ->
-    APP.publishPosition(true)
+  # TODO store with model local
+  # TODO currently bookmarking is published - should it be?
+  bookmarkLocation: (poiId = -1) ->
+    if poiId == -1
+      posLatLng = this.getSelectedPositionLatLng()
+      #APP.panPosition(poi.lat, poi.lng, poi.address)
+      APP.map().panTo(this.getSelectedPositionLatLng())
+    else
+      #poiId = $('#poi_notes_container > div[id^=upload_comment_btn_]').attr('id').match(/upload_comment_btn_([0-9]+)/)[1]
+      poi = Main.storageController().get Comm.StorageController.poiKey({id: poiId})
+      posLatLng = [poi.lat, poi.lng]
+    this.publishPosition true, posLatLng
     
-  publishPosition: (saveLocation = false) ->
+  publishPosition: (bookmarkLocation = false, posLatLng = null) ->
+    unless posLatLng?
+      posLatLng = @_selectedPositionLatLng
     @_comm.send('/map_events', {type: 'click',\
                                 userId: APP.userId(),\
-                                lat: @_selectedPositionLatLng[0],\
-                                lng: @_selectedPositionLatLng[1],\
-                                saveLocation: saveLocation})
+                                lat: posLatLng[0],\
+                                lng: posLatLng[1],\
+                                bookmarkLocation: bookmarkLocation})
     $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').click()
 
   publishMessage: (publishText) ->
@@ -144,9 +156,10 @@ class window.VoyageX.Main
     $('#zoom_level').html('<span style="color:white;">zoom: '+APP.map().getZoom()+'</span>')
 
   _initPositionCB: (position, address = null, isReInit = false) ->
-    #marker = Main.markerManager().sel null, position.coords.latitude, position.coords.longitude, Main._markerEventsCB
     poi = {lat: position.coords.latitude, lng: position.coords.longitude}
-    unless isReInit
+    if isReInit
+      marker = Main.markerManager().get()
+    else
       marker = Main.markerManager().add poi, Main._markerEventsCB, true
     APP._setSelectedPositionLatLng marker, position.coords.latitude, position.coords.longitude, address
     APP.map().panTo([position.coords.latitude, position.coords.longitude])

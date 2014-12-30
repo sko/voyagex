@@ -3,12 +3,24 @@
     %span.ui-icon.ui-icon-circle-close{onclick: '$("#photo_nav_panel").panel("close");'}
   %h4
     Points of Interest:
-  #pois_preview
-    -#= render partial: 'pois_preview'
-  %br
-  .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{onclick: '$("#photo_nav_panel").panel("close");'}
-    .ui-button-text
-      Close Panel
+  %div{data: {role: 'tabs'}}
+    %div{data: {role: 'navbar'}}
+      %ul
+        %li
+          = link_to 'Points of Interest', '#pois_preview'
+        %li
+          = link_to 'Bookmarked Locations', '#location_bookmarks'
+        %li
+          = link_to 'People of Interest', '#people_of_interest'
+    #pois_preview
+      -#= render partial: 'pois_preview'
+    #location_bookmarks
+      = render partial: 'location_bookmarks'
+    #people_of_interest
+      = render partial: 'people_of_interest'
+  -#.ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{onclick: '$("#photo_nav_panel").panel("close");'}
+  -#  .ui-button-text
+  -#    Close Panel
 
 #tmpl_swiper_slide{style: 'display: none;'}
   %span.swiper-slide{data: {poiId: '{poiId}', poiNoteId: '{poiNoteId}', address: '{address}'}, style: 'width: {width}px;'}

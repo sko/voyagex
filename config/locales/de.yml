@@ -13,6 +13,9 @@ de:
     email_confirm_required: "
       email-bestätigung für %{email} für&apos;s einloggen erforderlich
       TODO: resend confirmation instructions"
+  pois:
+    add: POI eintragen
+    bookmark: Ort merken
   uploads:
     upload: Hochladen
     take_photo: Foto aufnehmen

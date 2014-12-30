@@ -14,7 +14,7 @@ class User < ActiveRecord::Base
          :confirmable
 
   def last_location
-    locations.where(locations: {id: locations.maximum(:id)}).first
+    locations.where(locations: {updated_at: locations.maximum(:updated_at)}).first
   end
 
   def follows

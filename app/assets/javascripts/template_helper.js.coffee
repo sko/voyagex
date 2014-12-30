@@ -98,7 +98,6 @@ class window.VoyageX.TemplateHelper
 
   @openMarkerControlsPopup: () ->
     marker = VoyageX.Main.markerManager().get()
-    #popupHtml = $('#tmpl_marker_controls').html()
     popupHtml = TemplateHelper._updateIds 'tmpl_marker_controls'
     popup = TemplateHelper._verifyPopup marker, 'marker_controls'
     unless popup?
@@ -106,10 +105,8 @@ class window.VoyageX.TemplateHelper
     else
       popup.setContent popupHtml
     marker.openPopup()
-    #$('.leaflet-popup-close-button').on 'click', (event) ->
     $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').on 'click', (event) ->
       VoyageX.Main.markerManager().get().unbindPopup()
-      #$(event.target).closest('.leaflet-popup').remove()
 
   @swiperSlideHtml: (poi, poiNote) ->
     maxHeight = 100.0

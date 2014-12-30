@@ -13,6 +13,9 @@ en:
     email_confirm_required: "
       email-confirmation for %{email} required before sign in
       TODO: resend confirmation instructions"
+  pois:
+    add: add POI
+    bookmark: bookmark Location
   uploads:
     upload: Upload
     take_photo: Take a Photo

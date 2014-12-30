@@ -21,6 +21,7 @@ class UploadsController < ApplicationController
     else
       render "uploads/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
     end
+    
     after_save
   end
 
@@ -39,6 +40,7 @@ class UploadsController < ApplicationController
     @poi_note_json = poi_note_json @upload.attached_to
     
     render "uploads/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
+    
     after_save
   end
 
@@ -63,6 +65,7 @@ class UploadsController < ApplicationController
       #render "uploads/uploaded_base64", formats: [:js]
       render json: { error: 'failed' }, status: 401
     end
+    
     after_save
   end
 

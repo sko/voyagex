@@ -2,6 +2,7 @@
 - max_width = 300
 -# scroll_width = 0
 -# max_width = 0
+-# uploads.joins(:mediafile).each do |upload|
 - uploads.each do |upload|
   - geometry = Paperclip::Geometry.from_file(upload.file)
   - scale = max_height.to_f / geometry.height

@@ -47,7 +47,6 @@
 
 #content_chat.talk_message
   = form_tag '#', method: :post, remote: true
-
   - if is_mobile
     .talk_message_data
       = text_area_tag :message, '', class: :talk_message_text, maxlength: 1500
@@ -79,6 +78,7 @@
 
 #tmpl_marker_controls{style: 'display: none;'}
   %div{tmpl: {id: 'marker_controls'}}
-    = link_to 'Add POI', '#', onclick: "javascript:APP.poiNoteInput();"
-    %br
-    = link_to 'Set Current Location', '#', onclick: "javascript:APP.setCurrentLocation();"
+    %div
+      = link_to t('pois.add'), '#', onclick: "javascript:APP.poiNoteInput()"
+    %div{style: 'padding: 5px 0px 5px 0px;'}
+      = link_to t('pois.bookmark'), '#', onclick: "javascript:APP.bookmarkLocation()"

@@ -57,14 +57,28 @@ module ::GeoUtils
     nearbys = nearby_pois user, location, radius_meters, limits_lat_lng
     if nearbys.present?
       # TODO check address, then get closest - not first
-      poi = nearbys.first
-      user.locations_users.create(location: poi.location) unless user.locations.where(id: poi.location.id).present?
+      #poi = nearbys.first
+      #user.locations_users.create(location: poi.location) unless user.locations.where(id: poi.location.id).present?
+      user_nearbys = user.locations.where(id: nearbys.collect{|poi|poi.location.id})
+      if user_nearbys.present?
+        poi = nearbys.find{|poi|poi.location.id==user_nearbys[0].id}
+        user_nearbys[0].touch 
+      else
+        poi = nearbys.first
+        user.locations_users.create(location: poi.location)
+      end
     else
       nearbys = Location.where(locations: { latitude: limits_lat_lng[:limits_lat], longitude: limits_lat_lng[:limits_lng] })
       if nearbys.present?
         # TODO check address, then get closest - not first
-        location = nearbys.first
-        user.locations_users.create(location: location) unless user.locations.where(id: location.id).present?
+        #location = nearbys.first
+        #user.locations_users.create(location: location) unless user.locations.where(id: location.id).present?
+        user_nearbys = user.locations.where(id: nearbys.collect{|location|location.id})
+        if user_nearbys.present?
+          user_nearbys[0].touch 
+        else
+          user.locations_users.create(location: location)
+        end
       else
         user.locations_users.create(location: location)
         location.reload

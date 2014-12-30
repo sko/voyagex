@@ -2,7 +2,8 @@ class UploadEntity::Mediafile < ActiveRecord::Base
   
   self.table_name = 'upload_entities_mediafiles'
   
-  belongs_to :upload, inverse_of: :entity
+  #belongs_to :upload, inverse_of: :entity
+  belongs_to :upload, inverse_of: :mediafile
   
   has_attached_file :file,
                     url: '/assets/:attachment/:id/:style/:filename'

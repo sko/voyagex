@@ -20,7 +20,7 @@
           - if current_user_note.present?
             = link_to image_tag(current_user_note.attachment.file.url, style: 'max-width: 300px; max-height: 100px;'), location_path(location_id: location.id), data: { remote: 'true', format: :js }
           - else
-            = link_to image_tag(image_tag poi_notes[0].attachment.file.url, style: 'max-width: 300px; max-height: 100px;'), location_path(location_id: location.id), data: { remote: 'true', format: :js }
+            = link_to image_tag(poi_notes[0].attachment.file.url, style: 'max-width: 300px; max-height: 100px;'), location_path(location_id: location.id), data: { remote: 'true', format: :js }
       %td
         = current_user_note.present?.to_s
       %td

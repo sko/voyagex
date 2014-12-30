@@ -138,7 +138,7 @@ module Comm
           case data['type']
           when 'click'
             location = Location.new(latitude: data['lat'], longitude: data['lng'])
-            if data['saveLocation']
+            if data['bookmarkLocation']
               user = User.where(id: data['userId']).first
               location = nearby_poi(user, location, 10).location
               #ls_u = user.locations_users.create(location: location)
