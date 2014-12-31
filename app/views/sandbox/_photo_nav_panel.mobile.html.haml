@@ -18,9 +18,23 @@
       = render partial: 'location_bookmarks'
     #people_of_interest
       = render partial: 'people_of_interest'
-  -#.ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{onclick: '$("#photo_nav_panel").panel("close");'}
-  -#  .ui-button-text
-  -#    Close Panel
+
+
+#tmpl_poi_preview{style: 'display: none;'}
+  .poi-preview-container{data: {id: '{poiId}'}}
+    .poi-info
+      -#= link_to '{address}', location_path(location_id: '{locationId}'), data: { remote: 'true', format: :js }
+      = link_to '{address}', '#', onclick: 'javascript:APP.loadLocation({locationId});'
+    .poi-preview{style: "width: {maxWidth}px; text-align: center;"}
+      .swiper-container{id: "poi_swiper_{poiId}"}
+        .swiper-wrapper
+          {swipePanel}
+      {swipeIcon}
+    %hr{style: 'margin: 2px 0px 2px 0px;'}
+
+#tmpl_swipe_icon{style: 'display: none;'}
+  %img{src: '/assets/swipe.jpg', style: 'width: 35px; height: 35px;'}
+
 
 #tmpl_swiper_slide{style: 'display: none;'}
   -#, address: '{address}'

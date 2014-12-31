@@ -8,6 +8,11 @@ class SandboxController < ApplicationController
     load_location_data @location, nearby_m
   end
 
+  def location_data
+    location = Location.find(params[:location_id])
+    render json: {lat: location.latitude, lng: location.longitude, address: location.address}.to_json
+  end
+
   def index
     unless tmp_user.comm_setting.present?
       comm_setting = CommSetting.create(user: tmp_user, channel_enc_key: enc_key, sys_channel_enc_key: enc_key)
@@ -44,7 +49,7 @@ class SandboxController < ApplicationController
   def photo_nav
     nearby_m = (tmp_user.search_radius_meters||20000)
     location = Location.new latitude: params[:lat], longitude: params[:lng]
-# GOOD but now from template ...     load_location_data location, nearby_m
+# GOOD but now from template ...  load_location_data location, nearby_m
     render "sandbox/photo_nav", layout: false, formats: [:js]
   end
 

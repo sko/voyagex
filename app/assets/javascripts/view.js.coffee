@@ -120,8 +120,9 @@ class window.VoyageX.View
   scrollToPoiNote: (poiNoteId) ->
     poiNoteDiv = $('#poi_notes_container').children('[data-id='+poiNoteId+']').first()
     poiNoteOff = poiNoteDiv.offset()
-    scrollPane = poiNoteDiv.closest('.leaflet-popup-content').first()
-    scrollPane.scrollTop(poiNoteOff.top)
+    if poiNoteOff?
+      scrollPane = poiNoteDiv.closest('.leaflet-popup-content').first()
+      scrollPane.scrollTop(poiNoteOff.top)
 
   @addPoiNotes: (poi) ->
     if poi.notes[0].attachment.content_type.match(/^[^\/]+/)[0] == 'image'

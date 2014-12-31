@@ -8,7 +8,17 @@ class window.Storage.Model
     Model._SINGLETON = this
 
   withLocation: (locationId, callback) ->
-    callback({lat: 'TODO', lng: 'TODO', address: 'TODO'})
+    $.ajax
+      type: 'GET'
+      dataType: 'json'
+      url: '<%= location_data_path(location_id: ':locationId') %>'.replace(/:locationId/, locationId)
+    .done (location) ->
+        # TODO store
+        callback(location)
+    .fail (jqXHR, textStatus) ->
+        # get from localStorage
+        console.log('TODO: maybe get from local storage')
+        #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
 
   loadPois: (lat, lng, callback) ->
     $.ajax

@@ -10,6 +10,7 @@ VoyageX::Application.routes.draw do
 
   get '/location_bookmarks', to: 'sandbox#index'
   get '/location/:location_id', to: 'sandbox#location', as: :location
+  get '/location_data/:location_id', to: 'sandbox#location_data', as: :location_data
   get '/pois/:lat/:lng', to: 'uploads#pois', as: :pois, :constraints => { :lat => /([0-9]+\.[0-9]+|:[a-z]+)/,
                                                                           :lng => /([0-9]+\.[0-9]+|:[a-z]+)/ }
 
