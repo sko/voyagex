@@ -58,4 +58,16 @@ module ApplicationHelper
     end
   end
 
+  #
+  #
+  #
+  def shorten_address address
+    parts = address.split(',')
+    if parts.size >= 3
+      parts.drop([parts.size - 2, 2].min).join(',')
+    else
+      address
+    end
+  end
+
 end

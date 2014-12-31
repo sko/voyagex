@@ -21,7 +21,8 @@ class window.VoyageX.Main
     @_selectedPositionLatLng = [-1, -1]
     @_curPOI = null
     #@_initPoisOnMap = []
-    @_STORAGE_MODEL = new Storage.Model()
+    Main._STORAGE_MODEL = new Storage.Model()
+    # at first the map need's to be initialized ...
     $(document).ready () ->
         APP._init cacheStrategy, view, mapOptions, offlineZooms
         # test for address-bar removal / fullscreen @see application.mobile as well
@@ -130,6 +131,15 @@ class window.VoyageX.Main
     else
       return Main.markerManager().add(poi, Main._markerEventsCB, false)
 
+  loadLocation: (locationId) ->
+    Storage.Model.instance().withLocation locationId, (location) ->
+        APP._initPositionCB { coords: { latitude: location.lat, longitude: location.lng } }, location.address, true
+        if isMobile()
+          $("#photo_nav_panel").panel("close")
+        else
+          photoNavPanel.dialog("close")
+        APP.photoNav()
+
   showPOI: (poiId, poiNoteId) ->
     Storage.Model.instance().loadPoiNotes poiId, poiNoteId, (poi) ->
         #APP.panPosition(poi.lat, poi.lng, poi.address)
@@ -210,14 +220,47 @@ class window.VoyageX.Main
     #APP.map().setView([lat, lng], 16)
     #VoyageX.NavBar.menuNavClick('map')
 
-  # TODO: this is load-uploads -> move to model
+  # TODO: provide callback
   photoNav: () ->
-    $.ajax
-      type: 'GET'
-      dataType: 'script'
-      url: '<%= photo_nav_path(lat: ':lat', lng: ':lng') %>'
-           .replace(/:lat/, @_selectedPositionLatLng[0])
-           .replace(/:lng/, @_selectedPositionLatLng[1])
+    selectedTab = $('#photo_nav_panel ul[role=tablist] [class~=ui-tabs-active]').attr('aria-controls')
+    switch selectedTab
+      when 'pois_preview'
+        # pois have already been loaded - when map got initialized - and are updated with the syncer
+        # @see _initPositionCB
+        # BUT! notes have not been loaded maybe
+        #searchBounds = Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, this.map())
+        searchBounds = window.searchBounds @_selectedPositionLatLng[0], @_selectedPositionLatLng[1], VoyageX.SEARCH_RADIUS_METERS
+        pois = Main.storageController().getPois (poi) ->
+            if poi.lat > searchBounds.lat_south && poi.lat < searchBounds.lat_north &&
+               poi.lng > searchBounds.lng_east && poi.lng < searchBounds.lng_west
+              unless poi.notes && poi.notes.length >= 1
+                # dummy-poiNote for swiper
+                poi.notes = [{id: -1, attachment: {url: '/assets/loading_200x100.png', width: 200, height: 100}}]
+                Storage.Model.instance().loadPoiNotes poi.id, null, (poiClone) ->
+                    # TODO maybe template isn't ready
+                    readyTemplate = $('#poi_swiper_'+poi.id+' [data-poiNoteId=-1]')
+                    if readyTemplate.length >= 1
+                      readyTemplate.remove()
+                      for note in poiClone.notes
+                        swiperSlideHtml = VoyageX.TemplateHelper.swiperSlideHtml poi, note
+                        $('#poi_swiper_'+poi.id+' .swiper-wrapper').append(swiperSlideHtml)
+                        mySwiper = window['myPoiSwiper'+poi.id]
+                        mySwiper.reInit()
+                    else
+                      poi.notes = poiClone.notes
+              return true
+            else
+              return false
+        this.view().previewPois pois
+      when 'location_bookmarks'
+        Main.storage().photoNav @_selectedPositionLatLng[0], @_selectedPositionLatLng[1], (pois) ->
+            console.log('TODO: APP.photonav for location_bookmarks ...')
+      when 'people_of_interest'
+        Main.storage().photoNav @_selectedPositionLatLng[0], @_selectedPositionLatLng[1], (pois) -> 
+            console.log('TODO: APP.photonav for people_of_interest ...')
+      else
+        alert('unknown photoNav-tab '+selectedTab)
+    #Main.storage().photoNav()
 
   markerControls: () ->
     marker = Main.markerManager().get()

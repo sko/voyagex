@@ -46,6 +46,7 @@ class window.VoyageX.TemplateHelper
     for poiNote, i in poi.notes
       poiNotesHtml += TemplateHelper.poiNotePopupEntryHtml(poiNote, poiNoteTmpl, i, meta)
     popupHtml = popupHtml.
+                #replace(/\{address\}/g, poi.address).
                 replace(/\{poi_notes\}/, poiNotesHtml).
                 replace(/\{poi_id\}/g, poi.id)
 
@@ -108,12 +109,29 @@ class window.VoyageX.TemplateHelper
     $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').on 'click', (event) ->
       VoyageX.Main.markerManager().get().unbindPopup()
 
+  @poisPreviewHTML: (pois) ->
+    html = ''
+    for poi, i in pois
+      poiPreviewHtml = $('#tmpl_poi_preview').html().
+      replace(/\{poiId\}/g, poi.id).
+      replace(/\{address\}/, poi.address).
+      replace(/\{locationId\}/, poi.locationId).
+      replace(/\{maxWidth\}/, '300').
+      replace(/\{swipeIcon\}/, if i==0 then $('#tmpl_swipe_icon').html() else '')
+      swipePanel = ''
+      for poiNote, j in poi.notes
+        swipePanel += TemplateHelper.swiperSlideHtml(poi, poiNote)
+      html += poiPreviewHtml.
+      replace(/\{swipePanel\}/, swipePanel)
+    html
+
   @swiperSlideHtml: (poi, poiNote) ->
     maxHeight = 100.0
     maxWidth = 300
     scale = maxHeight / poiNote.attachment.height
     width = Math.round(poiNote.attachment.width * scale + 0.49)
-    swiperSlideTmpl = TemplateHelper._updateAttributes('tmpl_swiper_slide', ['src'], TemplateHelper._updateIds('tmpl_swiper_slide')).
+   #swiperSlideTmpl = TemplateHelper._updateAttributes('tmpl_swiper_slide', ['src'], TemplateHelper._updateIds('tmpl_swiper_slide')).
+    swiperSlideTmpl = TemplateHelper._updateAttributes('tmpl_swiper_slide', ['src'], $('#tmpl_swiper_slide').html()).
     replace(/\{poiId\}/g, poi.id).
     replace(/\{poiNoteId\}/g, poiNote.id).
     #replace(/\{address\}/g, poi.address).
@@ -124,7 +142,6 @@ class window.VoyageX.TemplateHelper
   @_closePopupCB: (marker) ->
     (event) ->
         marker.unbindPopup()
-
 
   @_verifyPopup: (marker, containerId) ->
     popup = marker.getPopup()

@@ -83,6 +83,17 @@ class window.Comm.StorageController
               console.log('error when removing directory '+dirName+': ', e)
           )
 
+  getPois: (callback = null) ->
+    pois = []
+    for key, i in Object.keys(localStorage)
+      #console.log(key)
+      #document.writeln i+'. key = '+key+'<br>'
+      if key.match(/^comm\.poi\./)?
+        poi = this.get key
+        if callback == null or callback(poi)
+          pois.push poi
+    pois
+
   clearCache: () ->
     this.delete('tiles')
     if StorageController.isFileBased()
@@ -597,13 +608,13 @@ class window.Comm.StorageController
 
   delete: (storeKey, listKey = null) ->
     # TODO listKey != null
-    window.localStorage.clear()
-    @_tileDB = null
-    @_tileDB = {}
-    @_tileMeta = { tilesByteSize: 0, numTiles: 0 }
-    localStorage.removeItem 'comm.tiles.tileMeta'
+#    window.localStorage.clear()
+#    @_tileDB = null
+#    @_tileDB = {}
+#    @_tileMeta = { tilesByteSize: 0, numTiles: 0 }
+#    localStorage.removeItem 'comm.tiles.tileMeta'
 
-    localStorage.removeItem('tiles')
+    localStorage.removeItem(storeKey)
     if @_jsonObjects[storeKey]?
       @_jsonObjects[storeKey] = null
 

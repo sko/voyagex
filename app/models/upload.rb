@@ -1,6 +1,6 @@
 class Upload < ActiveRecord::Base
   #belongs_to :user
-  belongs_to :attached_to, class_name: 'PoiNote', counter_cache: true, foreign_key: :poi_note_id#, inverse_of: :attachment
+  belongs_to :attached_to, class_name: 'PoiNote', foreign_key: :poi_note_id#, inverse_of: :attachment
   belongs_to :entity, polymorphic: true
   belongs_to :mediafile, -> { where uploads: {entity_type: 'UploadEntity::Mediafile'} }, class_name: 'UploadEntity::Mediafile', foreign_key: :entity_id#, inverse_of: :attachment
   #has_many :comments, class_name: 'UploadComment', inverse_of: :upload

@@ -1,5 +1,6 @@
 class UploadsController < ApplicationController 
   include GeoUtils
+  include ApplicationHelper
 
   skip_before_filter :verify_authenticity_token, only: [:create, :update]
 
@@ -181,7 +182,8 @@ class UploadsController < ApplicationController
     poi_json = { id: poi.id,
                  lat: poi.location.latitude,
                  lng: poi.location.longitude,
-                 address: poi.location.address }
+                 address: shorten_address(poi.location.address),
+                 locationId: poi.location.id }
   end
   
   def poi_note_json poi_note, with_poi = true

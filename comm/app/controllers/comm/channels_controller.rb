@@ -2,6 +2,7 @@
 
 # curl -X POST http://192.168.1.4:3005/comm -H 'Content-Type: application/json' -d '{"channel":"/talk@rxbcin9nc","data":{"type":"chat", "text":"hello world"}}'
 include ::GeoUtils
+include ::ApplicationHelper
 module Comm
   class ChannelsController < FayeRails::Controller
 
@@ -117,7 +118,7 @@ module Comm
               if user.present? && user.locations.present?
                 location = user.locations.last
                 Rails.logger.debug "###### providing reverse-geocoding-service: #{location.address}"
-                publish_data['address'] = location.address
+                publish_data['address'] = shorten_address location.address
               end
             end
           rescue => e

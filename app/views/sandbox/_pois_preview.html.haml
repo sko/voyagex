@@ -1,3 +1,6 @@
+- if is_mobile
+  %h4
+    Points of Interest
 -#%table
 - max_height = 100.0
 - max_width = 300
@@ -5,8 +8,8 @@
   -#%tbody.poi-preview-container{data: {id: poi.id, address: poi.location.address}}
   .poi-preview-container{data: {id: poi.id}}
     .poi-info
-      = shorten_address poi.location.address
-    .poi-preview{style: 'text-align: center;'}
+      = link_to shorten_address(poi.location.address), location_path(location_id: poi.location.id), data: { remote: 'true', format: :js }
+    .poi-preview{style: "width: #{max_width}px; text-align: center;"}
       .swiper-container{id: "poi_swiper_#{poi.id}"}
         .swiper-wrapper
           -#{style: "background-image: url(/assets/swipe.jpg); background-repeat: no-repeat; background-position: 0px;"}
@@ -18,9 +21,9 @@
             -#%img{src: '/assets/swipe.jpg', style: "margin-top: #{(max_height/2-17.5).to_i}px; width: 35px; height: 35px;"}
           = render partial: 'swipe_panel', locals: { uploads: poi.notes.collect{|p_n|p_n.attachment}, max_width: max_width, max_height: max_height }
           -#= render partial: 'swipe_panel', locals: { uploads: @uploads.where(poi_notes: {poi_id: poi.id}) }
-        -#%div{id: "pagination_#{upload.attached_to.poi.id}"}
-        .pagination
+        -#.pagination
       - if idx == 0
         %img{src: '/assets/swipe.jpg', style: 'width: 35px; height: 35px;'}
+      %span{class: "pagination pagination_#{poi.id}", style: 'position: relative; background-color: black;'}
     -#%td{style: 'padding-left: 10px; vertical-align: top;'}
     %hr{style: 'margin: 2px 0px 2px 0px;'}

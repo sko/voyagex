@@ -34,5 +34,7 @@ VoyageX::Application.routes.draw do
   post '/subscribe/:channel', to: 'comm/comm#subscribe', as: :comm_subscribe
   post '/publish/:channel', to: 'comm/comm#publish', as: :comm_publish
 
+  get '/test/javascript', to: 'test#javascript', as: :test_javascript
+
   root to: 'sandbox#index'
 end

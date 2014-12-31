@@ -12,7 +12,7 @@ class window.VoyageX.View
     @_commListeners[channel].push(callBack)
 
   _systemCB: (message) ->
-    console.log 'got a system - message: ' + message.type
+    #console.log 'got a system - message: ' + message.type
     if message.type == 'ready_notification'
     else if message.type == 'subscription_grant_request'
       tr_template = $('#want_to_follow_me_template').html().
@@ -82,6 +82,26 @@ class window.VoyageX.View
       msg = { poi: poi }
       Storage.Model.instance().syncWithStorage msg, View.addPoiNotes, upload.poi_note, 0
 
+  previewPois: (pois) ->
+    poisPreviewHtml = VoyageX.TemplateHelper.poisPreviewHTML pois
+    $('#pois_preview').html(poisPreviewHtml)
+    # this has to be done after html is added ...
+    for poi in pois
+      window['myPoiSwiper'+poi.id] = $('#poi_swiper_'+poi.id).swiper({
+        createPagination: false,
+        centeredSlides: true,
+        slidesPerView: 'auto',
+        onSlideClick: photoClicked
+      })
+    if window.isMobile()
+      $('#open_photo_nav_btn').click()
+    else
+      $('#photo_nav_panel').dialog('open')
+      if ! $('#photo_nav_panel').parent().hasClass('seethrough_panel')
+        $('#photo_nav_panel').parent().addClass('seethrough_panel')
+    # select initial tab
+    $('#pois_preview_btn').click()
+
   viewAttachment: (poiNoteId) ->
     #poiId = $('#poi_notes_container > div[id^=upload_comment_btn_]').attr('id').match(/upload_comment_btn_([0-9]+)/)[1]
     imgUrl = $('#poi_notes_container .upload_comment[data-id='+poiNoteId+'] img').attr('src')
@@ -105,11 +125,12 @@ class window.VoyageX.View
 
   @addPoiNotes: (poi) ->
     if poi.notes[0].attachment.content_type.match(/^[^\/]+/)[0] == 'image'
-      swiperSlideHtml = VoyageX.TemplateHelper.swiperSlideHtml poi, poi.notes[0]
-      $('#poi_swiper_'+poi.id+' .swiper-wrapper').prepend(swiperSlideHtml)
       mySwiper = window['myPoiSwiper'+poi.id]
-      mySwiper.reInit()
-      #mySwiper.resizeFix()
+      if mySwiper?
+        swiperSlideHtml = VoyageX.TemplateHelper.swiperSlideHtml poi, poi.notes[0]
+        $('#poi_swiper_'+poi.id+' .swiper-wrapper').prepend(swiperSlideHtml)
+        mySwiper.reInit()
+        #mySwiper.resizeFix()
     for listener in View.instance()._commListeners.uploads
       listener(poi.notes[0])
 

@@ -1,3 +1,6 @@
+- if is_mobile
+  %h4
+    Bookmarked Locations
 3 Arten:
 %ul
   %li
@@ -14,13 +17,16 @@
       Last Bookmark
     %th
       Kommentiert
-    %th
-      Addresse
+    -#%th
+    -#  Addresse
   -# locations = tmp_user.locations.order('updated_at desc')
   - locations = tmp_user.locations_users.joins(:location).order('updated_at desc')
   - locations.each do |locations_user|
     - location = locations_user.location
     %tbody.bookmark-container{data: {id: location.id, address: location.address, lat: location.latitude, lng: location.longitude}}
+    %tr
+      %td{colspan: 3}
+        = link_to shorten_address(location.address), location_path(location_id: location.id), data: { remote: 'true', format: :js }
     %tr
       %td{style: 'text-align: center;'}
         - current_user_note = nil
@@ -39,5 +45,5 @@
         = locations_user.updated_at.strftime("%d.%m.%Y %H:%M")
       %td{style: 'text-align: center;'}
         = current_user_note.present?.to_s
-      %td
-        = link_to shorten_address(location.address), location_path(location_id: location.id), data: { remote: 'true', format: :js }
+      -#%td
+      -#  = link_to shorten_address(location.address), location_path(location_id: location.id), data: { remote: 'true', format: :js }

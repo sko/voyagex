@@ -7,6 +7,9 @@ class window.Storage.Model
   constructor: () ->
     Model._SINGLETON = this
 
+  withLocation: (locationId, callback) ->
+    callback({lat: 'TODO', lng: 'TODO', address: 'TODO'})
+
   loadPois: (lat, lng, callback) ->
     $.ajax
       type: 'GET'
@@ -72,6 +75,24 @@ class window.Storage.Model
         # get from localStorage
         console.log('TODO: maybe get from local storage')
         #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
+
+  # TODO: dataType: 'json' and callback impl
+  photoNav: (lat, lng, callback = null) ->
+    $.ajax
+      type: 'GET'
+      dataType: 'script'
+      url: '<%= photo_nav_path(lat: ':lat', lng: ':lng') %>'
+           .replace(/:lat/, lat)
+           .replace(/:lng/, lng)
+#    .done (msg) ->
+#        for note, i in msg.poi.notes
+#          Model.instance().syncWithStorage msg, callback, note, i
+#    .fail (jqXHR, textStatus) ->
+#        # get from localStorage
+#        console.log('TODO: maybe get from local storage')
+#        #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
+    if callback?
+      callback { pois: 'TODO' }
 
   syncWithStorage: (msg, callback, note, i) ->
     # store image

@@ -44,7 +44,7 @@ class SandboxController < ApplicationController
   def photo_nav
     nearby_m = (tmp_user.search_radius_meters||20000)
     location = Location.new latitude: params[:lat], longitude: params[:lng]
-    load_location_data location, nearby_m
+# GOOD but now from template ...     load_location_data location, nearby_m
     render "sandbox/photo_nav", layout: false, formats: [:js]
   end
 
