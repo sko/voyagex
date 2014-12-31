@@ -7,6 +7,7 @@ class window.VoyageX.MarkerManager
     @_showSearchRadius = false
     @_selectedSearchRadius = null
     @_maxZIndex = 0
+    @_userMarkerMouseOver = true
 
   add: (poi, callBack, isUserMarker = false) ->
     markerOps = { draggable: isUserMarker,\
@@ -66,6 +67,16 @@ class window.VoyageX.MarkerManager
       if m.target() == marker
         return {poi: m.poi(), isUserMarker: m.isUserMarker()}
     null
+
+  userMarkerMouseOver: (enable = null) ->
+    if enable == null
+      return @_userMarkerMouseOver
+    if enable
+      unless @_userMarkerMouseOver
+        @_userMarkerMouseOver = true
+    else
+      if @_userMarkerMouseOver
+        @_userMarkerMouseOver = false
 
   forPoi: (poiId) ->
     for m in @_markers

@@ -21,4 +21,25 @@ showPois = (searchBounds) ->
         document.writeln '<font color="red">IN poi = '+JSON.stringify(poi)+'</font><br>'
         return false
 
-sC = new Comm.StorageController(testStorageController)
+#sC = new Comm.StorageController(testStorageController)
+
+testLocation = (initError) ->
+  locationId = 1
+  location = sC.getLocation locationId
+  document.writeln 'location = '+JSON.stringify(location)+'<br>'
+  sC.saveLocation {id: locationId, lat: 0, lng: 0, address: 'nowhere'}
+  location = sC.getLocation locationId
+  document.writeln 'location = '+JSON.stringify(location)+'<br>'
+  location = sC.getLocation new String(locationId)
+  document.writeln 'location = '+JSON.stringify(location)+'<br>'
+  document.writeln 'bookmarks 1:<br>'
+  bookmarks = sC.bookmarks()
+  for location in bookmarks
+    document.writeln 'location = '+JSON.stringify(location)+'<br>'
+  document.writeln 'bookmarks 2:<br>'
+  sC.bookmark location.id
+  bookmarks = sC.bookmarks()
+  for location in bookmarks
+    document.writeln 'location = '+JSON.stringify(location)+'<br>'
+
+sC = new Comm.StorageController(testLocation)

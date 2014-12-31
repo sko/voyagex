@@ -138,14 +138,19 @@ class window.VoyageX.Main
           $("#photo_nav_panel").panel("close")
         else
           photoNavPanel.dialog("close")
-        # other 2 tabs will not change content - they are loaded from tsart on
-        selectedTab = $('#photo_nav_panel ul[role=tablist] [class~=ui-tabs-active]').attr('aria-controls')
-        if selectedTab != 'pois_preview'
-          #$('#pois_preview_btn').click()
-          APP.photoNav()
-          $('#'+selectedTab+'_btn').click()
+#        # other 2 tabs will not change content - they are loaded from tsart on
+#        selectedTab = $('#photo_nav_panel ul[role=tablist] [class~=ui-tabs-active]').attr('aria-controls')
+#        if selectedTab != 'pois_preview'
+#          #$('#pois_preview_btn').click()
+#          APP.photoNav()
+#          $('#'+selectedTab+'_btn').click()
+#        else
+#          APP.photoNav()
+        if location.poi_id
+          APP.showPOI location.poi_id, -1
+          Main.markerManager().get().setLatLng(L.latLng(lat+0.0005, lng))
         else
-          APP.photoNav()
+          Main.markerManager().get().setLatLng(L.latLng(lat, lng))
 
   showPOI: (poiId, poiNoteId) ->
     Storage.Model.instance().loadPoiNotes poiId, poiNoteId, (poi) ->
@@ -290,15 +295,23 @@ class window.VoyageX.Main
     switch event.type
       when 'click'
         markerMeta = Main.markerManager().meta event.target
-        #if markerMeta.isUserMarker
-        #  APP.markerControls()
-        #else
-        unless markerMeta.isUserMarker
-          Storage.Model.instance().loadPoiNotes markerMeta.poi.id, null, (poi) ->
-              VoyageX.TemplateHelper.openPOINotePopup poi, event.target
+        if markerMeta.isUserMarker
+          unless Main.markerManager().userMarkerMouseOver()
+            openPopup = $('#poi_notes_container')
+            if openPopup?
+              openPopup.closest('.leaflet-popup').children('.leaflet-popup-close-button').click()
+            Main.markerManager().userMarkerMouseOver true 
+            APP.markerControls()
+        else
+        #unless markerMeta.isUserMarker
+          if event.target.getPopup() && event.target.getPopup()._isOpen
+            $('#poi_notes_container').closest('.leaflet-popup').children('.leaflet-popup-close-button').click()
+          else
+            Storage.Model.instance().loadPoiNotes markerMeta.poi.id, null, (poi) ->
+                VoyageX.TemplateHelper.openPOINotePopup poi, event.target
       when 'mouseover'
         markerMeta = Main.markerManager().meta event.target
-        if markerMeta.isUserMarker
+        if markerMeta.isUserMarker && Main.markerManager().userMarkerMouseOver()
           APP.markerControls()
       when 'dblclick'
         APP._setSelectedPositionLatLng event.target, event.target._latlng.lat, event.target._latlng.lng, address

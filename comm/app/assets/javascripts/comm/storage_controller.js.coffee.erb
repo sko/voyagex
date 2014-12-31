@@ -64,7 +64,47 @@ class window.Comm.StorageController
   
   @poiNoteAttachmentKey: (poiNote) ->
     'comm.poiNoteAttachment.'+poiNote.id
+  
+  getLocation: (locationId) ->
+    storeKey = 'comm.locations'
+    locations = eval("(" + localStorage.getItem(storeKey) + ")")
+    if locations? then locations[locationId] else null
+  
+  saveLocation: (location) ->
+    storeKey = 'comm.locations'
+    locations = eval("(" + localStorage.getItem(storeKey) + ")")
+    unless locations
+      locations = {}
+    locations[location.id] = location
+    localStorage.setItem storeKey, JSON.stringify(locations)
+    location
+  
+  bookmark: (locationId) ->
+    storeKey = 'comm.locations'
+    locations = eval("(" + localStorage.getItem(storeKey) + ")")
+    location = locations[locationId]
+    if location?
+      if locations.bookmarks?
+        if locations.bookmarks.indexOf(locationId) == -1
+          locations.bookmarks.push locationId
+          localStorage.setItem storeKey, JSON.stringify(locations)
+      else
+        locations.bookmarks = [locationId]
+        localStorage.setItem storeKey, JSON.stringify(locations)
+    location
+  
+  bookmarks: () ->
+    storeKey = 'comm.locations'
+    locations = eval("(" + localStorage.getItem(storeKey) + ")")
+    if locations.bookmarks?
+      bookmarks = []
+      for locationId in locations.bookmarks
+        bookmarks.push locations[locationId]
+      bookmarks
+    else
+      []
 
+  # directory path for storing with file-api
   @poiNoteAttachmentPath: (poiNote) ->
     ['poiNotes', 'attachments', ''+poiNote.id]
 

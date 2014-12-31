@@ -8,17 +8,21 @@ class window.Storage.Model
     Model._SINGLETON = this
 
   withLocation: (locationId, callback) ->
-    $.ajax
-      type: 'GET'
-      dataType: 'json'
-      url: '<%= location_data_path(location_id: ':locationId') %>'.replace(/:locationId/, locationId)
-    .done (location) ->
-        # TODO store
-        callback(location)
-    .fail (jqXHR, textStatus) ->
-        # get from localStorage
-        console.log('TODO: maybe get from local storage')
-        #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
+    location = Comm.StorageController.instance().getLocation locationId
+    if location?
+      callback location
+    else
+      $.ajax
+        type: 'GET'
+        dataType: 'json'
+        url: '<%= location_data_path(location_id: ':locationId') %>'.replace(/:locationId/, locationId)
+      .done (location) ->
+          unless location.id
+            location.id = locationId
+          Comm.StorageController.instance().saveLocation location
+          callback location
+      .fail (jqXHR, textStatus) ->
+          console.log('TODO: errorhandling')
 
   loadPois: (lat, lng, callback) ->
     $.ajax
@@ -72,6 +76,16 @@ class window.Storage.Model
         #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
 
   loadPoiNotes: (poiId, poiNoteId, callback) ->
+    poi = Comm.StorageController.instance().get Comm.StorageController.poiKey {id: poiId}
+    if poi? && poi.notes && poi.notes.length >= 1
+      if poiNoteId?
+        for poiNote in poi.notes
+          if poiNote.id == poiNoteId
+            callback poi
+            return poi.notes
+      else
+        callback poi
+        return poi.notes
     unless poiNoteId?
       poiNoteId = -1
     $.ajax

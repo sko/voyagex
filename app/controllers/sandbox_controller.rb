@@ -10,7 +10,10 @@ class SandboxController < ApplicationController
 
   def location_data
     location = Location.find(params[:location_id])
-    render json: {lat: location.latitude, lng: location.longitude, address: location.address}.to_json
+    location_json = {lat: location.latitude, lng: location.longitude, address: location.address}
+    poi = Poi.where(location_id: location.id).first
+    location_json[:poi_id] = poi.id if poi.present?
+    render json: location_json.to_json
   end
 
   def index

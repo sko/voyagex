@@ -66,7 +66,10 @@ class window.VoyageX.TemplateHelper
       popup.setContent(popupHtml)
     else
       popup.setContent(popupHtml)
+    marker.on 'popupclose', (event) ->
+        console.log('popupclose for current marker ... TODO')
     marker.openPopup()
+    VoyageX.Main.markerManager().userMarkerMouseOver false
 #    $('.leaflet-popup-close-button').on 'click', (event) ->
 #      poiIdElement = $(event.target).closest('.leaflet-popup').find('div[id^="upload_comment_btn_"]').attr('id')
 #      if poiIdElement?
@@ -74,7 +77,8 @@ class window.VoyageX.TemplateHelper
 #        markerMeta.marker.unbindPopup()
 #      else
 #        VoyageX.Main.markerManager().get().unbindPopup()
-    $('.leaflet-popup-close-button').on 'click', TemplateHelper._closePopupCB(marker)
+    #$('.leaflet-popup-close-button').on 'click', TemplateHelper._closePopupCB(marker)
+    $('#poi_notes_container').closest('.leaflet-popup').children('.leaflet-popup-close-button').on 'click', TemplateHelper._closePopupCB(marker)
 
       #$(event.target).closest('.leaflet-popup').remove()
     #$('#upload_comment_btn_'+poi.notes[0].id).on 'click', (event) ->
@@ -142,6 +146,7 @@ class window.VoyageX.TemplateHelper
   @_closePopupCB: (marker) ->
     (event) ->
         marker.unbindPopup()
+        VoyageX.Main.markerManager().userMarkerMouseOver true
 
   @_verifyPopup: (marker, containerId) ->
     popup = marker.getPopup()
