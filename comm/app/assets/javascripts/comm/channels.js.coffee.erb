@@ -3,6 +3,12 @@
 <% environment.context_class.instance_eval { include Rails.application.routes.url_helpers } %>
 # Comm::Engine.routes.url_helpers
 
+# @unsubscribe on client:
+# https://github.com/faye/faye/issues/28
+# server might publish unsubscibe even if client didn't send - but the client will reconnect(resubscribe) then.
+# server does this because clients don't reliably disconnect and so server has timeout.
+# reproduce when setting breakpoint in client and wait
+
 # curl -X POST http://192.168.1.4:3005/comm -H 'Content-Type: application/json' -d '{"channel":"/system@0rg94cpmy","data":{"type":"handshake", "hello":"world"}}'
 class window.Comm.Comm
 
@@ -31,6 +37,8 @@ class window.Comm.Comm
     @_storageController = window.Comm.StorageController.instance()
 
     client = new Faye.Client(document.location.origin+'/comm')
+    # rather for debugging
+    client.addExtension({ incoming: Comm._incoming, outgoing: Comm._outgoing })
 
     # map callbacks to channels
     Comm.channelCallBacksJSON = new Object()
@@ -142,4 +150,21 @@ class window.Comm.Comm
       while (cacheEntry = Comm.instance()._storageController.pop('comm.publish'))
         console.log('sending cached-publish to '+cacheEntry.channel)
         Comm.instance().send cacheEntry.channel, cacheEntry.message
+    # since unsubscribed client will not receive anymore - but server will send this on next subscription
+    # before ready_notification
+    # if client disconnects by itself, then:
+    # ---------- ClientExtension - outgoing Object {channel: "/meta/disconnect", clientId: "aems9kiq4i4gedw80tgjqblw8qytfyu", id: "c"}
+    # ++++++++++ ClientExtension - incoming Object {id: "c", clientId: "aems9kiq4i4gedw80tgjqblw8qytfyu", channel: "/meta/disconnect", successful: true}
+    # on serverside it looks the same as timeout-unsubscribe
+    else if message.type == 'unsubscribed_notification'
+        console.log('_systemSubscriptionListener: client '+message.old_client_id+' unsubscribed '+message.seconds_ago+' seconds ago ... (probably timedout/disconnected by server)')
+        return null
     Comm.channelCallBacksJSON.system.callback message
+
+  @_incoming: (message, callback) ->
+      #console.log('++++++++++ ClientExtension - incoming', message);
+      callback message
+  
+  @_outgoing: (message, callback) ->
+      #console.log('---------- ClientExtension - outgoing', message);
+      callback message

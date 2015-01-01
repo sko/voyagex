@@ -148,9 +148,7 @@ class window.VoyageX.Main
 #          APP.photoNav()
         if location.poi_id
           APP.showPOI location.poi_id, -1
-          Main.markerManager().get().setLatLng(L.latLng(lat+0.0005, lng))
-        else
-          Main.markerManager().get().setLatLng(L.latLng(lat, lng))
+        Main.markerManager().get().setLatLng(L.latLng(location.lat, location.lng))
 
   showPOI: (poiId, poiNoteId) ->
     Storage.Model.instance().loadPoiNotes poiId, poiNoteId, (poi) ->

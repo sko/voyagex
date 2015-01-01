@@ -8,14 +8,14 @@
   -#%tbody.poi-preview-container{data: {id: poi.id, address: poi.location.address}}
   .poi-preview-container{data: {id: poi.id}}
     .poi-info
-      = link_to shorten_address(poi.location.address), location_path(location_id: poi.location.id), data: { remote: 'true', format: :js }
+      = link_to shorten_address(poi.location), location_path(location_id: poi.location.id), data: { remote: 'true', format: :js }
     .poi-preview{style: "width: #{max_width}px; text-align: center;"}
       .swiper-container{id: "poi_swiper_#{poi.id}"}
         .swiper-wrapper
           -#{style: "background-image: url(/assets/swipe.jpg); background-repeat: no-repeat; background-position: 0px;"}
           -#%span.swiper-slide{style: "width: #{(max_width/2).to_i}px; height: #{max_height.to_i}px;"}
           -#  %div{style: "width: #{(max_width/2).to_i}px; height: #{max_height.to_i}px;"}
-          -#    = shorten_address poi.location.address
+          -#    = shorten_address poi.location
             -#%div{style: "width: #{(max_width/2).to_i}px; height: #{max_height.to_i}px; background-image: url(/assets/swipe.jpg); background-repeat: no-repeat; background-position: -50px;"}
             -#  &nbsp;
             -#%img{src: '/assets/swipe.jpg', style: "margin-top: #{(max_height/2-17.5).to_i}px; width: 35px; height: 35px;"}

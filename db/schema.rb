@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20141216151016) do
+ActiveRecord::Schema.define(version: 20150101141802) do
 
   create_table "comm_peers", force: true do |t|
     t.integer  "comm_setting_id", null: false
@@ -30,6 +30,7 @@ ActiveRecord::Schema.define(version: 20141216151016) do
     t.datetime "updated_at"
     t.string   "sys_channel_enc_key"
     t.string   "current_faye_client_id"
+    t.datetime "unsubscribe_ts"
   end
 
   add_index "comm_settings", ["channel_enc_key"], name: "index_comm_settings_on_channel_enc_key", using: :btree

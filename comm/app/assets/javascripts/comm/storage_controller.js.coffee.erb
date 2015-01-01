@@ -135,11 +135,14 @@ class window.Comm.StorageController
     pois
 
   clearCache: () ->
-    this.delete('tiles')
+    #this.delete('tiles')
     if StorageController.isFileBased()
       for dirName in VoyageX.MapControl.instance()._offlineZooms
         this._removeDirectory dirName
       this._removeDirectory 'poiNotes'
+    for key, i in Object.keys(localStorage)
+      console.log('StorageController - clearCache: deleting \''+key+'\' ...')
+      this.delete(key)
 
   _saveTileFile: (xYZ, fileIdx, dirReader, data, deferredModeParams) ->
     `;`

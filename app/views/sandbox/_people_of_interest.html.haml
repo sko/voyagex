@@ -14,8 +14,8 @@ Benutzer denen ich folge oder folgen will ...
       %td{width: 15}
         &nbsp;
       %td
-        -#= link_to shorten_address(last_location.address), location_path(location_id: last_location.id), data: { remote: 'true', format: :js }
-        = link_to shorten_address(last_location.address), '#', onclick: "javascript:APP.loadLocation(#{last_location.id});"
+        -#= link_to shorten_address(last_location), location_path(location_id: last_location.id), data: { remote: 'true', format: :js }
+        = link_to shorten_address(last_location), '#', onclick: "javascript:APP.loadLocation(#{last_location.id});"
 
 %h4{colspan: 4}
   #{t('admin.i_want_to_follow')}

@@ -182,7 +182,7 @@ class UploadsController < ApplicationController
     poi_json = { id: poi.id,
                  lat: poi.location.latitude,
                  lng: poi.location.longitude,
-                 address: shorten_address(poi.location.address),
+                 address: shorten_address(poi.location),
                  locationId: poi.location.id }
   end
   

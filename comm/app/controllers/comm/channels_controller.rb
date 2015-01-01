@@ -20,13 +20,19 @@ module Comm
         if subscription_enc_key.present?
           begin
             comm_setting = CommSetting.where(sys_channel_enc_key: subscription_enc_key[1]).first
-            Rails.logger.debug "###### Found User #{comm_setting.user.id} for Client #{client_id}."
-            comm_setting.update_attribute(:current_faye_client_id, client_id)
-
+            Rails.logger.debug "###### Found User #{comm_setting.user.id} for Client #{client_id}. comm_setting.unsubscribe_ts = #{comm_setting.unsubscribe_ts}"
+            if comm_setting.unsubscribe_ts.present?
+              msg = { type: :unsubscribed_notification, old_client_id: comm_setting.current_faye_client_id, seconds_ago: ((DateTime.now - comm_setting.unsubscribe_ts.to_datetime) * 24 * 60 * 60).to_i }
+              Comm::ChannelsController.publish(channel, msg)
+              comm_setting.update_attributes(current_faye_client_id: client_id, unsubscribe_ts: nil)
+            else
+              comm_setting.update_attribute(:current_faye_client_id, client_id)
+            end
             # now that current_faye_client_id is set, the client can start to communicate
             # first it should register to it's own bidirectional channels
             msg = { type: :ready_notification, channel_enc_key: comm_setting.channel_enc_key }
-            Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{subscription_enc_key[1]}", msg)
+           #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{subscription_enc_key[1]}", msg)
+            Comm::ChannelsController.publish(channel, msg)
           rescue => e
             Rails.logger.error "!!!!!! #{e.message}"
           end
@@ -34,6 +40,19 @@ module Comm
       end
       monitor :unsubscribe do
         Rails.logger.debug "###### Client #{client_id} unsubscribed from #{channel}."
+###### Client 0wsoszcovhq9k2y9xhpax15wvam4jld unsubscribed from /system@gyimlwqrh.
+        subscription_enc_key = channel.match(/^\/system#{PEER_CHANNEL_PREFIX}([^\/]+)/)
+        if subscription_enc_key.present?
+          begin
+            # store info and send to client on next subscription
+            # since unsubscribed client would'n receive it here
+            comm_setting = CommSetting.where(sys_channel_enc_key: subscription_enc_key[1]).first
+            Rails.logger.debug "###### Found User #{comm_setting.user.id} for Client #{client_id}."
+            comm_setting.update_attribute(:unsubscribe_ts, DateTime.now)
+          rescue => e
+            Rails.logger.error "!!!!!! #{e.message}"
+          end
+        end
       end
       monitor :publish do
         Rails.logger.debug "###### Client #{client_id} published #{data.inspect} to #{channel}."
@@ -118,7 +137,7 @@ module Comm
               if user.present? && user.locations.present?
                 location = user.locations.last
                 Rails.logger.debug "###### providing reverse-geocoding-service: #{location.address}"
-                publish_data['address'] = shorten_address location.address
+                publish_data['address'] = shorten_address location
               end
             end
           rescue => e

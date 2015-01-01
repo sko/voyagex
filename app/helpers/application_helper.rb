@@ -61,12 +61,16 @@ module ApplicationHelper
   #
   #
   #
-  def shorten_address address
-    parts = address.split(',')
-    if parts.size >= 3
-      parts.drop([parts.size - 2, 2].min).join(',')
+  def shorten_address location
+    if location.address.present?
+      parts = location.address.split(',')
+      if parts.size >= 3
+        parts.drop([parts.size - 2, 2].min).join(',')
+      else
+        location.address
+      end
     else
-      address
+      "#{location.latitude}-#{location.longitude}"
     end
   end
 
