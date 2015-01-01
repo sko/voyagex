@@ -62,8 +62,8 @@ class window.VoyageX.View
     console.log 'got a map_events - message: ' + mapEvent.type
     if APP.userId() == mapEvent.userId# && mapEvent.type == 'click'
       return null
-    if VoyageX.Main.markerManager().get().getPopup()?
-      VoyageX.Main.markerManager().get().unbindPopup()
+#    if VoyageX.Main.markerManager().get().getPopup()?
+#      VoyageX.Main.markerManager().get().unbindPopup()
     if mapEvent.address?
       APP._setSelectedPositionLatLng VoyageX.Main.markerManager().get(), mapEvent.lat, mapEvent.lng, mapEvent.address
     else

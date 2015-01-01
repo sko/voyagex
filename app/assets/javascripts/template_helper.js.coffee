@@ -59,10 +59,12 @@ class window.VoyageX.TemplateHelper
       #selMarker = VoyageX.Main.markerManager().get()
       #if marker._zIndex >= selMarker._zIndex
       #  selMarker.setZIndexOffset marker._zIndex+1
-    popup = TemplateHelper._verifyPopup marker, 'poi_notes_container'
+   #popup = TemplateHelper._verifyPopup marker, 'poi_notes_container'
+    popup = marker.getPopup()
     unless popup?
       popup = L.popup {minWidth: 200, maxHeight: 300}
       marker.bindPopup(popup)
+      marker.off('click', marker.togglePopup, marker)
       popup.setContent(popupHtml)
     else
       popup.setContent(popupHtml)
@@ -90,7 +92,8 @@ class window.VoyageX.TemplateHelper
     TemplateHelper.poiNoteInputHtml('poi_note_input', poi.notes[0])
 
   @addPoiNotes: (poi, marker) ->
-    popup = TemplateHelper._verifyPopup marker, 'poi_notes_container'
+   #popup = TemplateHelper._verifyPopup marker, 'poi_notes_container'
+    popup = marker.getPopup()
     if popup?
       i = $('.leaflet-popup .upload_comment').length
       # TODO allow poi.notes to have more elements -> loop
@@ -104,14 +107,16 @@ class window.VoyageX.TemplateHelper
   @openMarkerControlsPopup: () ->
     marker = VoyageX.Main.markerManager().get()
     popupHtml = TemplateHelper._updateIds 'tmpl_marker_controls'
-    popup = TemplateHelper._verifyPopup marker, 'marker_controls'
+   #popup = TemplateHelper._verifyPopup marker, 'marker_controls'
+    popup = marker.getPopup()
     unless popup?
       marker.bindPopup popupHtml
+      marker.off('click', marker.togglePopup, marker)
     else
       popup.setContent popupHtml
     marker.openPopup()
-    $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').on 'click', (event) ->
-      VoyageX.Main.markerManager().get().unbindPopup()
+#    $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').on 'click', (event) ->
+#      VoyageX.Main.markerManager().get().unbindPopup()
 
   @poisPreviewHTML: (pois) ->
     html = ''
@@ -145,17 +150,17 @@ class window.VoyageX.TemplateHelper
 
   @_closePopupCB: (marker) ->
     (event) ->
-        marker.unbindPopup()
+#        marker.unbindPopup()
         VoyageX.Main.markerManager().userMarkerMouseOver true
 
-  @_verifyPopup: (marker, containerId) ->
-    popup = marker.getPopup()
-    if popup?
-      if $(popup._container).has('#'+containerId).length == 0
-        marker.unbindPopup()
-        #$(popup._container, $('.leaflet-popup')).remove()
-        popup = null
-    popup
+#  @_verifyPopup: (marker, containerId) ->
+#    popup = marker.getPopup()
+#    if popup?
+#      if $(popup._container).has('#'+containerId).length == 0
+#        marker.unbindPopup()
+#        #$(popup._container, $('.leaflet-popup')).remove()
+#        popup = null
+#    popup
 
   @_updateIds: (rootElementId, callback = null) ->
     html = $('#'+rootElementId).html()

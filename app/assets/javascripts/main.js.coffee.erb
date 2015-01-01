@@ -290,6 +290,18 @@ class window.VoyageX.Main
       if ! $('#upload_data_conrols').parent().hasClass('seethrough_panel')
         $('#upload_data_conrols').parent().addClass('seethrough_panel')
 
+  preTogglePopup: (contentId) ->
+    openPopup = $('#'+contentId)
+    if openPopup.length >= 1
+      #openPopup.closest('.leaflet-popup').children('.leaflet-popup-close-button').click()
+      if contentId == 'marker_controls'
+        openPopupMarker = Main.markerManager().get()
+      else
+        poiId = parseInt(openPopup.find('[id^=upload_comment_btn_]').attr('id').match(/[0-9]+$/)[0])
+        openPopupMarker = APP.getMarker poiId
+      openPopupMarker.closePopup()
+#      openPopupMarker.unbindPopup()
+
   @_markerEventsCB: (event) ->
     address = null
     switch event.type
@@ -297,22 +309,32 @@ class window.VoyageX.Main
         markerMeta = Main.markerManager().meta event.target
         if markerMeta.isUserMarker
           unless Main.markerManager().userMarkerMouseOver()
-            openPopup = $('#poi_notes_container')
-            if openPopup?
-              openPopup.closest('.leaflet-popup').children('.leaflet-popup-close-button').click()
+            # click on user-marker while poi-marker is open
+            APP.preTogglePopup 'poi_notes_container'
             Main.markerManager().userMarkerMouseOver true 
             APP.markerControls()
         else
         #unless markerMeta.isUserMarker
           if event.target.getPopup() && event.target.getPopup()._isOpen
-            $('#poi_notes_container').closest('.leaflet-popup').children('.leaflet-popup-close-button').click()
+            # click on poi-marker with open popup
+            #$('#poi_notes_container').closest('.leaflet-popup').children('.leaflet-popup-close-button').click()
+            event.target.closePopup()
+#            event.target.unbindPopup()
+            Main.markerManager().userMarkerMouseOver true
+            `;`
           else
+            # click on poi-marker with no popup
+            APP.preTogglePopup 'marker_controls'
             Storage.Model.instance().loadPoiNotes markerMeta.poi.id, null, (poi) ->
+                # userMarkerMouseOver is set in openPOINotePopup
                 VoyageX.TemplateHelper.openPOINotePopup poi, event.target
       when 'mouseover'
         markerMeta = Main.markerManager().meta event.target
         if markerMeta.isUserMarker && Main.markerManager().userMarkerMouseOver()
-          APP.markerControls()
+          unless event.target.getPopup() && event.target.getPopup()._isOpen
+            # click on user-marker with no popup
+            APP.preTogglePopup 'poi_notes_container'
+            APP.markerControls()
       when 'dblclick'
         APP._setSelectedPositionLatLng event.target, event.target._latlng.lat, event.target._latlng.lng, address
         APP.poiNoteInput()
