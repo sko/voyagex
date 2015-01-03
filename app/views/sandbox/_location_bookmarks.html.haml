@@ -19,8 +19,8 @@
       Kommentiert
     -#%th
     -#  Addresse
-  -# locations = tmp_user.locations.order('updated_at desc')
-  - locations = tmp_user.locations_users.joins(:location).order('updated_at desc')
+  -# locations = user.locations.order('updated_at desc')
+  - locations = user.locations_users.joins(:location).order('updated_at desc')
   - locations.each do |locations_user|
     - location = locations_user.location
     %tbody.bookmark-container{data: {id: location.id, address: location.address, lat: location.latitude, lng: location.longitude}}
@@ -34,7 +34,7 @@
         - if location.poi.present?
           / there should only be 1 poi per location, a poi always has an upload
           - poi_notes = location.poi.notes
-          - current_user_note = poi_notes.find{|p_n|p_n.user_id == tmp_user.id}
+          - current_user_note = poi_notes.find{|p_n|p_n.user_id == user.id}
           - if current_user_note.present?
             -#= link_to image_tag(current_user_note.attachment.file.url, style: 'max-width: 300px; max-height: 100px;'), location_path(location_id: location.id), data: { remote: 'true', format: :js }
             = link_to image_tag(current_user_note.attachment.file.url, style: 'max-width: 300px; max-height: 100px;'), '#', onclick: "javascript:APP.loadLocation(#{location.id});"

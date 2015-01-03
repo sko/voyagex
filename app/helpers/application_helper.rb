@@ -51,7 +51,11 @@ module ApplicationHelper
     else
       dummy_username = (0..6).map { MIXED[rand(MIXED.length)] }.join
       dummy_password = (0..8).map { MIXED[rand(MIXED.length)] }.join
-      u = User.create(username: dummy_username, password: dummy_password, password_confirmation: dummy_password, email: ADMIN_EMAIL_ADDRESS.sub(/^[^@]+/, dummy_username))
+      u = User.create(username: dummy_username,
+                      password: dummy_password,
+                      password_confirmation: dummy_password,
+                      email: ADMIN_EMAIL_ADDRESS.sub(/^[^@]+/, dummy_username),
+                      search_radius_meters: 1000)
       u.confirm!
       session[:tmp_user_id] = u.id
       u

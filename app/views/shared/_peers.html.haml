@@ -73,37 +73,39 @@
     %th{colspan: 4}
       #{t('admin.follow_me')}
   %tbody#follow_me
-    - user.comm_setting.followers.order(:username).each do |u|
-      %tr{id: "follow_me_#{u.id}"}
-        %td{width: 5}
-          &nbsp;
-        %td
-          #{u.username}
-        %td{width: 15}
-          &nbsp;
-        %td
-          = hidden_field_tag "grant[comm_peers][#{u.id.to_s}]", false, id: "follow_me_#{u.id.to_s}.h"
-          = check_box_tag "grant[comm_peers][#{u.id.to_s}]", true, :checked, id: "follow_me_#{u.id.to_s}"
-          = label_tag "follow_me_#{u.id.to_s}", ''
+    - if user.comm_setting.present?
+      - user.comm_setting.followers.order(:username).each do |u|
+        %tr{id: "follow_me_#{u.id}"}
+          %td{width: 5}
+            &nbsp;
+          %td
+            #{u.username}
+          %td{width: 15}
+            &nbsp;
+          %td
+            = hidden_field_tag "grant[comm_peers][#{u.id.to_s}]", false, id: "follow_me_#{u.id.to_s}.h"
+            = check_box_tag "grant[comm_peers][#{u.id.to_s}]", true, :checked, id: "follow_me_#{u.id.to_s}"
+            = label_tag "follow_me_#{u.id.to_s}", ''
   - # peers that requested grant to follow user
   %tr
     %th{colspan: 4}
       #{t('admin.want_to_follow_me')}
   %tbody#want_to_follow_me
-    - user.comm_setting.follow_grant_requests.order(:username).each do |u|
-      %tr{id: "want_to_follow_me_#{u.id}"}
-        %td{width: 5}
-          &nbsp;
-        %td
-          #{u.username}
-        %td{width: 15}
-          &nbsp;
-        %td
-          %div{style: 'float: left;'}
-            = hidden_field_tag "grant[comm_peers][#{u.id.to_s}]", false, id: "grant_comm_peers_#{u.id.to_s}.h"
-            = check_box_tag "grant[comm_peers][#{u.id.to_s}]", true
-            = label_tag "grant_comm_peers_#{u.id.to_s}", 'grant'
-          %div{style: 'margin-left: 15px;'}
-            = hidden_field_tag "deny[comm_peers][#{u.id.to_s}]", false, id: "deny_comm_peers_#{u.id.to_s}.h"
-            = check_box_tag "deny[comm_peers][#{u.id.to_s}]", true
-            = label_tag "deny_comm_peers_#{u.id.to_s}", 'reject'
+    - if user.comm_setting.present?
+      - user.comm_setting.follow_grant_requests.order(:username).each do |u|
+        %tr{id: "want_to_follow_me_#{u.id}"}
+          %td{width: 5}
+            &nbsp;
+          %td
+            #{u.username}
+          %td{width: 15}
+            &nbsp;
+          %td
+            %div{style: 'float: left;'}
+              = hidden_field_tag "grant[comm_peers][#{u.id.to_s}]", false, id: "grant_comm_peers_#{u.id.to_s}.h"
+              = check_box_tag "grant[comm_peers][#{u.id.to_s}]", true
+              = label_tag "grant_comm_peers_#{u.id.to_s}", 'grant'
+            %div{style: 'margin-left: 15px;'}
+              = hidden_field_tag "deny[comm_peers][#{u.id.to_s}]", false, id: "deny_comm_peers_#{u.id.to_s}.h"
+              = check_box_tag "deny[comm_peers][#{u.id.to_s}]", true
+              = label_tag "deny_comm_peers_#{u.id.to_s}", 'reject'

@@ -6,7 +6,7 @@ module Auth
     end
 
     def create
-      user_params = params.require(:user).permit(:email, :password, :password_confirmation)
+      user_params = params.require(:user).permit(:email, :password, :password_confirmation).merge!({search_radius_meters: 1000})
       if session[:tmp_user_id].present?
         @user = User.where(id: session[:tmp_user_id]).first
         if @user.present?

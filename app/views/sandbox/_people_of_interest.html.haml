@@ -6,7 +6,7 @@ Benutzer denen ich folge oder folgen will ...
 %h4{colspan: 4}
   #{t('admin.i_follow')}
 %table
-  - tmp_user.follows.each do |cs|
+  - user.follows.each do |cs|
     - last_location = cs.user.last_location
     %tr
       %td
@@ -20,7 +20,7 @@ Benutzer denen ich folge oder folgen will ...
 %h4{colspan: 4}
   #{t('admin.i_want_to_follow')}
 %table
-  - tmp_user.requested_grant_to_follow.each do |cs|
+  - user.requested_grant_to_follow.each do |cs|
     %tr
       %td
         #{cs.user.username}

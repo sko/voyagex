@@ -18,7 +18,7 @@ class window.VoyageX.Main
     @_online = online
     @_view = view
     @_comm = null
-    @_selectedPositionLatLng = [-1, -1]
+    @_selectedPosition = {lat: -1.0, lng: -1.0, address: null}
     @_curPOI = null
     #@_initPoisOnMap = []
     Main._STORAGE_MODEL = new Storage.Model()
@@ -111,7 +111,7 @@ class window.VoyageX.Main
     
   publishPosition: (bookmarkLocation = false, posLatLng = null) ->
     unless posLatLng?
-      posLatLng = @_selectedPositionLatLng
+      posLatLng = [@_selectedPosition.lat, @_selectedPosition.lng]
     @_comm.send('/map_events', {type: 'click',\
                                 userId: APP.userId(),\
                                 lat: posLatLng[0],\
@@ -161,7 +161,7 @@ class window.VoyageX.Main
       photoNavPanel.dialog("close")
 
   getSelectedPositionLatLng: () ->
-    return [@_selectedPositionLatLng[0], @_selectedPositionLatLng[1]]
+    return [@_selectedPosition.lat, @_selectedPosition.lng]
 
   _setSelectedPositionLatLng: (marker, lat, lng, address) ->
     poi = {lat: lat, lng: lng}
@@ -169,10 +169,11 @@ class window.VoyageX.Main
       marker = Main.markerManager().add poi, Main._markerEventsCB
     else
       marker = Main.markerManager().sel marker, lat, lng, Main._markerEventsCB
-    @_selectedPositionLatLng[0] = lat
-    @_selectedPositionLatLng[1] = lng
-    if address != null
-      $('#cur_loc_addr').html(address) 
+    @_selectedPosition.lat = lat
+    @_selectedPosition.lng = lng
+    @_selectedPosition.address = address
+#    if address != null
+#      $('#cur_loc_addr').html(address) 
     if showSearchRadius
       Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, APP.map())
 
@@ -239,7 +240,7 @@ class window.VoyageX.Main
     # @see _initPositionCB
     # BUT! notes have not been loaded maybe
     #searchBounds = Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, this.map())
-    searchBounds = window.searchBounds @_selectedPositionLatLng[0], @_selectedPositionLatLng[1], VoyageX.SEARCH_RADIUS_METERS
+    searchBounds = window.searchBounds @_selectedPosition.lat, @_selectedPosition.lng, VoyageX.SEARCH_RADIUS_METERS
     pois = Main.storageController().getPois (poi) ->
         if poi.lat > searchBounds.lat_south && poi.lat < searchBounds.lat_north &&
            poi.lng > searchBounds.lng_east && poi.lng < searchBounds.lng_west
@@ -263,10 +264,10 @@ class window.VoyageX.Main
           return false
     this.view().previewPois pois
 #      when 'location_bookmarks'
-#        Main.storage().photoNav @_selectedPositionLatLng[0], @_selectedPositionLatLng[1], (pois) ->
+#        Main.storage().photoNav @_selectedPosition.lat, @_selectedPosition.lng, (pois) ->
 #            console.log('TODO: APP.photonav for location_bookmarks ...')
 #      when 'people_of_interest'
-#        Main.storage().photoNav @_selectedPositionLatLng[0], @_selectedPositionLatLng[1], (pois) -> 
+#        Main.storage().photoNav @_selectedPosition.lat, @_selectedPosition.lng, (pois) -> 
 #            console.log('TODO: APP.photonav for people_of_interest ...')
 #      else
 #        alert('unknown photoNav-tab '+selectedTab)
