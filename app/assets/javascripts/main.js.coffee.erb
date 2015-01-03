@@ -68,6 +68,16 @@ class window.VoyageX.Main
               pan: false,
               animate: false
             })
+          $('#panel_control').draggable({
+#              start: (event, ui) ->
+#                  console.log('dragging ...')
+#              ,
+#              drag: (event, ui) ->
+#                  console.log('dragging ...')
+            })
+#          $( "#panel_control" ).on( "dragcreate", (event, ui) ->
+#                  console.log('dragging ...')
+#            )
         $('#zoom_level').html('<span style="color:white;">zoom: '+APP.map().getZoom()+'</span>')
         # next statement removes value from inputs!!
         #$("#network_state").buttonset()

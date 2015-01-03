@@ -108,12 +108,12 @@ class window.VoyageX.View
     if window.isMobile()
       maxWidth = Math.abs($(window).width() * 0.8)-10
       maxHeight = Math.abs($(window).height() * 0.8)-10
-      $('#attachment_view_panel').html('<div><img src="'+imgUrl+'" style="max-width:'+maxWidth+'px;max-height:'+maxHeight+'px;"></div>')
+      $('#attachment_view_panel').html($('#attachment_view_panel_close_btn').html()+'<div class="attachment_view"><img src="'+imgUrl+'" style="max-width:'+maxWidth+'px;max-height:'+maxHeight+'px;"></div>')
       $('#open_attachment_view_btn').click()
     else
       maxWidth = Math.abs($(window).width() * 0.5)-10
       maxHeight = Math.abs($(window).height() * 0.8)-10
-      $('#attachment_view_panel').html('<div><img src="'+imgUrl+'" style="max-width:'+maxWidth+'px;max-height:'+maxHeight+'px;"></div>')
+      $('#attachment_view_panel').html('<div class="attachment_view"><img src="'+imgUrl+'" style="max-width:'+maxWidth+'px;max-height:'+maxHeight+'px;"></div>')
       $('#attachment_view_panel').dialog('open')
 
   scrollToLastChatMessage: () ->

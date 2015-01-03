@@ -45,7 +45,7 @@
       $("head").append("<style type='text/css'>.leaflet-bottom {width:"+($(window).width()-35)+"px !important;}</style>");
       $("head").append("<style type='text/css'>#cur_loc_addr {position: fixed; top: "+41+"px; height: 20px; z-index: 1000 !important;}</style>");
       var panelCtrlTopOff = $(window).height() - 41;
-      $("head").append("<style type='text/css'>#panel_control {position: fixed; top: "+panelCtrlTopOff+"px; height: 20px; z-index: 1000 !important;}</style>");
+      $("head").append("<style type='text/css'>#panel_control, #photo_nav_open_icon {position: fixed; top: "+panelCtrlTopOff+"px; width: 32px; height: 43px; z-index: 1000 !important;}</style>");
       $("head").append("<style type='text/css'>#photo_nav_panel {width:"+($(window).width()-0)+"px;}</style>");
     #content{data: {role: 'content'}, style: 'padding: 0px !important;'}
       .auth{style: 'display:none;'}
@@ -54,18 +54,23 @@
       = yield
     #cur_loc_addr
       &nbsp;
+    -#= link_to image_tag('/assets/arrow-up-right.png', id: 'photo_nav_open_icon', style: 'z-index: 1001 !important'), '#', onclick: 'javascript:APP.photoNav()'
     #panel_control
+      -#{data: {role: 'footer', position: 'fixed'}}
       %span{style: 'text-align: left; z-index: 11 !important;'}
-        /= link_to image_tag('/assets/arrow-up-right.png', style: 'width: 32px; height: 43px;'), photo_nav_path, data: { remote: "true", format: :js }
-        = link_to image_tag('/assets/arrow-up-right.png', style: 'width: 32px; height: 43px;'), '#', onclick: 'javascript:APP.photoNav()'
-        = link_to '', '#photo_nav_panel', id: 'open_photo_nav_btn'
-        = link_to '', '#upload_data_panel', id: 'open_upload_data_btn'
-        = link_to '', '#attachment_view_panel', id: 'open_attachment_view_btn'
+        -#= link_to image_tag('/assets/arrow-up-right.png', style: 'width: 32px; height: 43px;'), photo_nav_path, data: { remote: "true", format: :js }
+        = link_to image_tag('/assets/arrow-up-right.png', id: 'photo_nav_open_icon', style: 'width: 32px; height: 43px;'), '#', onclick: 'javascript:APP.photoNav()'
+        = link_to '', '#photo_nav_panel', id: 'open_photo_nav_btn', style: 'display: none;'
+        = link_to '', '#upload_data_panel', id: 'open_upload_data_btn', style: 'display: none;'
+        = link_to '', '#attachment_view_panel', id: 'open_attachment_view_btn', style: 'display: none;'
     / panels nust be beginning or end in data-role: page
     = render partial: '/sandbox/photo_nav_panel.mobile'
     = render partial: '/sandbox/media_input_panel'
     = render partial: '/uploads/uploads.mobile'
     #attachment_view_panel{data: {role: 'panel', animate: 'true', display: 'overlay'}}
+    #attachment_view_panel_close_btn{style: 'display: none;'}
+      %div{style: 'float: right; z-index: 9999; position: absolute; top: 5px; right: 5px; padding: 0px 0px 0px 10px;'}
+        %span.ui-icon.ui-icon-circle-close{onclick: '$("#attachment_view_panel").panel("close");'}
     = javascript_include_tag 'application.mobile'
     = javascript_include_tag "#{params[:controller]}"
     = javascript_include_tag 'extensions.mobile'

@@ -12,7 +12,9 @@
         {commented_by_user}
 
 #tmpl_location_bookmarks_poi{style: 'display: none;'}
-  = link_to image_tag('attachment_url', style: 'max-width: 300px; max-height: 100px;'), '#', onclick: "javascript:APP.loadLocation({location_id});"
+  -#= link_to image_tag('attachment_url', style: 'max-width: 300px; max-height: 100px;'), '#', onclick: "javascript:APP.loadLocation({location_id});"
+  %a{href: '#', onclick: "javascript:APP.loadLocation({location_id});"}
+    %img{tmpl: {src: '{attachment_url}'}, style: "max-width: 300px; max-height: 100px;"}
 
 #tmpl_location_bookmarks_no_poi{style: 'display: none;'}
   kein POI
