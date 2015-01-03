@@ -22,8 +22,8 @@
     = javascript_include_tag "/assets/comm/channels.js"
   %body{data: {role: 'page'}}
     #ruler
-    #header{'data-role' => 'header', 'data-position' => 'fixed'}
-      #navbar{'data-role' => 'navbar'}
+    #menu_top{'data-role' => 'header', 'data-position' => 'fixed'}
+      .navbar-header{'data-role' => 'navbar'}
         %ul
           %li
             %a{id: 'nav_chat_popup_link', style: 'display:none;', href: '#nav_chat_popup', 'data-rel' => 'popup', 'data-position-to' => 'origin'}
@@ -69,9 +69,7 @@
     = javascript_include_tag 'application.mobile'
     = javascript_include_tag "#{params[:controller]}"
     = javascript_include_tag 'extensions.mobile'
-    :javascript
-      var chatHeight = $(window).height() - $("#navbar").height() - 10;
-      $("head").append("<style type='text/css'>.talk_message_text {width:100%;height:"+chatHeight+"px !important;}</style>");
+    
     - if params[:exec].present? && params[:exec].match(/^show_login_dialog/).present?
       - email_arg = params[:exec].match(/^show_login_dialog_confirm_email/).present? ? "'#{tmp_user.unconfirmed_email}'" : 'null'
       :javascript

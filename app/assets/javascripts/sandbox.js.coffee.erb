@@ -76,8 +76,9 @@ jQuery ->
       else
         publishText = $(this).val().substr(0, endIdx)
       APP.publishMessage(publishText)
-      $(this).val('\n-------------------------\n'+$(this).val())
-      $(this).selectRange(0) 
+      #$(this).val('\n-------------------------\n'+$(this).val())
+      #$(this).selectRange(0) 
+      VoyageX.View.addChatMessage { text: $('#message').val() }
 
   $('#poi_notes_container').scrollpanel({
       prefix: 'pcn-'

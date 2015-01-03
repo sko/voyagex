@@ -24,6 +24,9 @@ class window.VoyageX.ClientState
     @_currentViewKey = view.key
     if view.key == 'home'
       @_views.home.uploadType = view.uploadType
+    else if view.key == 'chat'
+      $('#message').val('')
+      $('#message').selectRange(0)
     this.refreshView()
 
   refreshView: () ->

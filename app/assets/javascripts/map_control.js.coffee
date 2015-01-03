@@ -104,8 +104,13 @@ class window.VoyageX.MapControl
       for tile, idx in tiles
         style = $(tile).attr('style')
         #key = $(tile).attr('src').match(/[0-9]+\/[0-9]+\/[0-9]+$/)
-        xOff = parseInt(style.match(/left:(.+?)px/)[1].trim())+1
-        yOff = parseInt(style.match(/top:(.+?)px/)[1].trim())+1
+        xMatch = style.match(/left:(.+?)px/)
+        if xMatch?
+          xOff = parseInt(xMatch[1].trim())+1
+          yOff = parseInt(style.match(/top:(.+?)px/)[1].trim())+1
+        else
+          xOff = parseInt(style.match(/translate\((.+?)px/)[1].trim())+1
+          yOff = parseInt(style.match(/translate\(.+?,(.+?)px/)[1].trim())+1
         latLngOff = @_map.unproject L.point((@_map.getPixelOrigin().x+xOff), (@_map.getPixelOrigin().y+yOff))
         x = parseInt(@_map.project(latLngOff).x/256)
         y = parseInt(@_map.project(latLngOff).y/256)

@@ -53,8 +53,7 @@ class window.VoyageX.View
     console.log 'got a talk - message: ' + message.type
     if APP.userId() == message.userId
       return null
-    $('#message').val('\n-------------------------\n'+message.text+$('#message').val())
-    $('#message').selectRange(0) 
+    View.addChatMessage message, false
     for listener in View.instance()._commListeners.talk
       listener(message)
 
@@ -116,6 +115,35 @@ class window.VoyageX.View
       maxHeight = Math.abs($(window).height() * 0.8)-10
       $('#attachment_view_panel').html('<div><img src="'+imgUrl+'" style="max-width:'+maxWidth+'px;max-height:'+maxHeight+'px;"></div>')
       $('#attachment_view_panel').dialog('open')
+
+  scrollToLastChatMessage: () ->
+    msgDiv = $('.chat_message').last()
+    msgDivOff = msgDiv.offset()
+    if msgDivOff?
+      scrollPane = msgDiv.closest('.chat_view').first()
+      scrollPane.scrollTop(msgDivOff.top)
+
+  @addChatMessage: (message, mine = true) ->
+    if mine
+      meOrOther = 'me'
+      leftOrRight = 'left'
+      #left = 0
+      #$('.chat_view').append '<div>&nbsp;</div>'
+    else
+      meOrOther = 'other'
+      leftOrRight = 'right'
+      #left = Math.round($('.chat_view').width()*0.2)
+    #$('.chat_view').append '<div style="left:'+left+'px;" class="chat_message chat_message_'+meOrOther+' triangle-border '+leftOrRight+'">'+message.text+'</div>'
+    $('.chat_view').append '<div class="chat_message_sep"></div><div class="chat_message chat_message_'+meOrOther+' triangle-border '+leftOrRight+'">'+message.text+'</div>'
+    APP.view().scrollToLastChatMessage()
+    #$('#message').val('\n-------------------------\n'+message.text+$('#message').val())
+    if mine
+      $('#message').val('')
+      if window.isMobile()
+        $('#message').blur()
+        $('body').scrollTop 0
+      else
+        $('#message').selectRange(0)
 
   scrollToPoiNote: (poiNoteId) ->
     poiNoteDiv = $('#poi_notes_container').children('[data-id='+poiNoteId+']').first()

@@ -29,7 +29,8 @@ class window.VoyageX.TemplateHelper
       poiNotesHtml
 
   @poiNotePopupEntryHtml: (poiNote, poiNoteTmpl, i, meta) ->
-    toggle = if i%2==0 then 'left' else 'right'
+    #toggle = if i%2==0 then 'left' else 'right'
+    toggle = if poiNote.user.id==currentUser.id then 'left' else 'right'
     poiNoteTmpl.
     replace(/\{poi_note_id\}/g, poiNote.id).
     replace(/\{i\}/g, i).
