@@ -1,3 +1,4 @@
+$('#settings_form').attr('action', '<%= user_path id: tmp_user.id -%>')
 $('.login-link').each () ->
   $(this).css('display', 'block')
 $('.reg-link').each () ->
@@ -5,12 +6,11 @@ $('.reg-link').each () ->
 $('.logout-link').each () ->
   $(this).css('display', 'none')
 # you are always someone
-VoyageX.SEARCH_RADIUS_METERS = <%= tmp_user.search_radius_meters||100 %>
-currentUser = { id: <%= tmp_user.id -%>, username: '<%= tmp_user.username -%>', homebaseLocationId: -1 }
-currentUser = { id: <%= tmp_user.id -%>,\
-                username: '<%= tmp_user.username -%>',\
-                homebaseLocationId: -1,\
-                lastLocation: {lat: <%= tmp_user.last_location.latitude -%>, lng: <%= tmp_user.last_location.longitude -%>} }
+window.VoyageX.SEARCH_RADIUS_METERS = <%= tmp_user.search_radius_meters||100 %>
+window.currentUser = { id: <%= tmp_user.id -%>,\
+                       username: '<%= tmp_user.username -%>',\
+                       homebaseLocationId: -1,\
+                       lastLocation: {lat: <%= tmp_user.last_location.latitude -%>, lng: <%= tmp_user.last_location.longitude -%>} }
 $('.whoami').each () ->
   $(this).html("<%= escape_javascript(link_to t('auth.whoami', username: tmp_user.username), change_username_path, class: 'navbar-inverse navbar-brand', data: { remote: 'true', format: :js }) -%>")
 for channel in VoyageX.Main.commChannels()

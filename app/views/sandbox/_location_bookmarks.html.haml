@@ -23,7 +23,7 @@
   - locations = user.locations_users.joins(:location).order('updated_at desc')
   - locations.each do |locations_user|
     - location = locations_user.location
-    %tbody.bookmark-container{data: {id: location.id, address: location.address, lat: location.latitude, lng: location.longitude}}
+    %tbody.bookmark-container{data: {id: location.id, lat: location.latitude, lng: location.longitude}}
     %tr
       %td{colspan: 3}
         -#= link_to shorten_address(location), location_path(location_id: location.id), data: { remote: 'true', format: :js }

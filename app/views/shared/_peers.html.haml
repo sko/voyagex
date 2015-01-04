@@ -19,11 +19,14 @@
       - if @initial_subscribe == true
         %script
           = render(partial: '/shared/subscriptions', formats: [:js], locals: { channel_enc_key: cs.channel_enc_key }).html_safe
-      %tr{id: "i_follow_#{cs.id}"}
+      %tr{id: "i_follow_#{cs.id}", data: {channelEncKey: cs.channel_enc_key}}
         %td{width: 5}
           &nbsp;
         %td
-          #{cs.user.username}
+          %span{style: 'float: left;'}
+            #{cs.user.username}
+          %span{style: 'padding-left: 10px;'}
+            = link_to 'reset connection', '#', onclick: "javascript:APP.resetConnection(#{cs.id});"
         %td{width: 15}
           &nbsp;
         %td

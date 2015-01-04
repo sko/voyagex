@@ -25,6 +25,7 @@ class window.VoyageX.View
       $('#i_want_to_follow_'+message.peer.comm_setting_id).remove()
       tr_template = $('#i_follow_template').html().
                     replace(/\{id\}/g, message.peer.comm_setting_id).
+                    replace(/\{channel_enc_key\}/, message.peer.channel_enc_key).
                     replace(/\{username\}/g, message.peer.username)
       $('#i_follow').append(tr_template)
       if window.isMobile()
@@ -185,6 +186,11 @@ class window.VoyageX.View
     VoyageX.TemplateHelper.addPoiNotes poi, newNotes, APP.getMarker(poi)
     View.instance().scrollToPoiNote newNotes[0].id
     #APP.panPosition(poi.lat, poi.lng, poi.address)
+  
+  @addBookmark: (location) ->
+    bookmarksPanel = $('#location_bookmarks')
+    if bookmarksPanel.find('.bookmark-container[data-id='+location.id+']').length == 0
+      console.log 'TODO View - addBookmark: ...'
 
   @instance: () ->
     @_SINGLETON

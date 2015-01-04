@@ -11,7 +11,8 @@ class UploadsController < ApplicationController
   def create
     user = current_user || tmp_user
     poi = nearby_poi user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
-    
+    user.locations << poi.location unless user.locations.find {|l|l.id==poi.location.id}
+
     @upload = Upload.new(attached_to: PoiNote.new(poi: poi, user: user, text: params[:poi_note][:text]))
     @upload.attached_to.attachment = @upload
     @upload.build_entity params[:poi_note][:file].content_type, file: params[:poi_note][:file]
@@ -30,6 +31,7 @@ class UploadsController < ApplicationController
   def update
     user = current_user || tmp_user
     @poi_note = PoiNote.find(params[:id])
+    user.locations << @poi_note.poi.location unless user.locations.find {|l|l.id==@poi_note.poi.location.id}
 
     upload = Upload.new
     upload.build_entity params[:poi_note][:file].content_type, file: params[:poi_note][:file]
@@ -48,6 +50,7 @@ class UploadsController < ApplicationController
   def create_from_base64
     user = current_user || tmp_user
     poi = nearby_poi user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
+    user.locations << poi.location unless user.locations.find {|l|l.id==poi.location.id}
     
     attachment_mapping = Upload.get_attachment_mapping params[:file_content_type]
     @upload = build_upload_base64 user, poi, attachment_mapping
@@ -74,6 +77,7 @@ class UploadsController < ApplicationController
   def update_from_base64
     user = current_user || tmp_user
     @poi_note = PoiNote.find(params[:id])
+    user.locations << @poi_note.poi.location unless user.locations.find {|l|l.id==@poi_note.poi.location.id}
     
     attachment_mapping = Upload.get_attachment_mapping params[:file_content_type]
 

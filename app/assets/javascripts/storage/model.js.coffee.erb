@@ -28,7 +28,7 @@ class window.Storage.Model
     .done (user) ->
         Comm.StorageController.instance().saveLocation user.last_location
         Comm.StorageController.instance().bookmark user.last_location.id
-        callback user
+        callback user.last_location
     .fail (jqXHR, textStatus) ->
         console.log('TODO: errorhandling')
 

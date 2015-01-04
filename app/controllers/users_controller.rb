@@ -43,8 +43,12 @@ class UsersController < ApplicationController
       peer_ids = params[:grant][:comm_peers].inject([[],[]]){|res,kv|kv[1]=='true'?res[0]<<kv[0]:res[1]<<kv[0];res}
       peer_ids[0].each do |peer_id|
         comm_peer = @user.comm_setting.comm_peers.find{|c_p|c_p.peer_id==peer_id.to_i}
-        unless comm_peer.granted_by_peer
-          comm_peer.update_attribute(:granted_by_peer, true)
+        unless comm_peer.present? && comm_peer.granted_by_peer
+          if comm_peer.present?
+            comm_peer.update_attribute(:granted_by_peer, true)
+          else
+            comm_peer = @user.comm_setting.comm_peers.create peer: User.find(peer_id)
+          end
           # notify peer that his subscription-request is granted from @user
           peer_sys_channel_enc_key = comm_peer.peer.comm_setting.sys_channel_enc_key
           msg = { type: :subscription_granted, peer: { comm_setting_id: @user.comm_setting.id, username: @user.username, channel_enc_key:  @user.comm_setting.channel_enc_key } }

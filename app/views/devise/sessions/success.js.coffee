@@ -1,3 +1,4 @@
+$('#settings_form').attr('action', '<%= user_path id: current_user.id -%>')
 $('.login-link').each () ->
   $(this).css('display', 'none')
 $('.reg-link').each () ->
@@ -7,11 +8,11 @@ $('.logout-link').each () ->
 <% if is_mobile -%>
 $('#sign_in_cancel').click()
 <% end -%>
-VoyageX.SEARCH_RADIUS_METERS = <%= current_user.search_radius_meters||100 %>
-currentUser = { id: <%= current_user.id -%>,\
-                username: '<%= current_user.username -%>',\
-                homebaseLocationId: <%= current_user.home_base.present? ? current_user.home_base.id : -1 -%>,\
-                lastLocation: {lat: <%= current_user.last_location.latitude -%>, lng: <%= current_user.last_location.longitude -%>} }
+window.VoyageX.SEARCH_RADIUS_METERS = <%= current_user.search_radius_meters||100 %>
+window.currentUser = { id: <%= current_user.id -%>,\
+                       username: '<%= current_user.username -%>',\
+                       homebaseLocationId: <%= current_user.home_base.present? ? current_user.home_base.id : -1 -%>,\
+                       lastLocation: {lat: <%= current_user.last_location.latitude -%>, lng: <%= current_user.last_location.longitude -%>} }
 $('.whoami').each () ->
   $(this).html("<%= escape_javascript(link_to t('auth.whoami', username: current_user.username), change_username_path, class: 'navbar-inverse navbar-brand', data: { remote: 'true', format: :js }) -%>")
 # first unsubscripe old channels before subscribing new - TODO: check if faye handles thso orderly

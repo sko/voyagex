@@ -102,6 +102,17 @@ class window.VoyageX.Main
     for n in Main._MAP_CONTROL._offlineZooms
       Main._MAP_CONTROL._zooms.push n
     
+  resetConnection: (commSettingId) ->
+    peerChannelEncKey = $('#i_follow_'+commSettingId).attr('data-channelEncKey')
+    for channel in VoyageX.Main.commChannels()
+      if channel == 'system'
+        continue
+      channelPath = '/'+channel
+      unless window.VoyageX.USE_GLOBAL_SUBSCRIBE 
+        channelPath += VoyageX.PEER_CHANNEL_PREFIX+peerChannelEncKey
+      Comm.Comm.unsubscribeFrom channelPath, false
+      Comm.Comm.subscribeTo channelPath, Comm.Comm.channelCallBacksJSON[channel].callback
+
   # TODO store with model local
   # TODO currently bookmarking is published - should it be?
   bookmarkLocation: (poiId = -1) ->
@@ -114,8 +125,7 @@ class window.VoyageX.Main
       poi = Main.storageController().get Comm.StorageController.poiKey({id: poiId})
       posLatLng = [poi.lat, poi.lng]
     #this.publishPosition true, posLatLng
-    Storage.Model.instance().addBookmark posLatLng, (user) ->
-        null #window.currentUser.homebaseLocationId = user.home_base.id
+    Storage.Model.instance().addBookmark posLatLng, VoyageX.View.addBookmark
     
   #publishPosition: (bookmarkLocation = false, posLatLng = null, setHomeBase = false) ->
   publishPosition: () ->
