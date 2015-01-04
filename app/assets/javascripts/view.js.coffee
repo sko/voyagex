@@ -158,11 +158,27 @@ class window.VoyageX.View
       if mySwiper?
         swiperSlideHtml = VoyageX.TemplateHelper.swiperSlideHtml poi, poi.notes[0]
         $('#poi_swiper_'+poi.id+' .swiper-wrapper').prepend(swiperSlideHtml)
-        mySwiper.reInit()
-        #mySwiper.resizeFix()
+        #VoyageX.TemplateHelper.addPoiNotes poi, APP.getMarker(poi)
+        #View.instance().scrollToPoiNote poi.notes[0].id
+      else
+        # most likely a new poi
+        # create swiper
+        poisPreviewHtml = VoyageX.TemplateHelper.poisPreviewHTML [poi]
+        # TODO correct position
+        $('#pois_preview').prepend(poisPreviewHtml)
+        window['myPoiSwiper'+poi.id] = $('#poi_swiper_'+poi.id).swiper({
+          createPagination: false,
+          centeredSlides: true,
+          slidesPerView: 'auto',
+          onSlideClick: photoClicked
+        })
+        mySwiper = window['myPoiSwiper'+poi.id]
+      mySwiper.reInit()
+      #mySwiper.resizeFix()
     for listener in View.instance()._commListeners.uploads
       listener(poi.notes[0])
-
+    
+    # add to popup
     VoyageX.TemplateHelper.addPoiNotes poi, APP.getMarker(poi)
     View.instance().scrollToPoiNote poi.notes[0].id
     #APP.panPosition(poi.lat, poi.lng, poi.address)

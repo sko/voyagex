@@ -99,8 +99,9 @@ class window.VoyageX.TemplateHelper
       i = $('.leaflet-popup .upload_comment').length
       # TODO allow poi.notes to have more elements -> loop
       popupEntryHtml = TemplateHelper.poiNotePopupHtmlFromTmpl(poi.notes[0], i)
-      popupHtml = popup.getContent().replace(/(<div[^>].+?upload_comment_btn_)/, popupEntryHtml+'$1')
+      popupHtml = popup.getContent().replace(/(<span[^>]*>\s*<div[^>].+?upload_comment_btn_)/, popupEntryHtml+'$1')
       popup.setContent(popupHtml)
+      #$('#poi_notes_container div.upload_comment').last().prepend(popupEntryHtml)
       #popup.update()
     else
       TemplateHelper.openPOINotePopup poi, marker

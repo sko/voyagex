@@ -656,7 +656,6 @@ class window.Comm.StorageController
 #    @_tileDB = {}
 #    @_tileMeta = { tilesByteSize: 0, numTiles: 0 }
 #    localStorage.removeItem 'comm.tiles.tileMeta'
-
     localStorage.removeItem(storeKey)
     if @_jsonObjects[storeKey]?
       @_jsonObjects[storeKey] = null

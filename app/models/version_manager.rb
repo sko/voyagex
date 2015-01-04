@@ -1,10 +1,11 @@
 class VersionManager
 
-  def initialize master, work_dir_root, user
-    @master = master
-    @work_dir = "#{work_dir_root}/#{user.id}"
+  def initialize master_branch, work_dir_root, user, is_repo_owner=false
+    @master = master_branch
+    @work_dir = "#{work_dir_root}/#{user.id}#{is_repo_owner ? '_owner' : ''}"
     @git_dir = "#{@work_dir}/.git"
     @git_args = "--git-dir=#{@git_dir} --work-tree=#{@work_dir}"
+    @is_repo_owner = is_repo_owner
     
     Dir.mkdir @work_dir unless File.exist? @work_dir
     unless File.exist? @git_dir
@@ -17,7 +18,8 @@ class VersionManager
         #`git #{@git_args} checkout -b #{@master}`
         #`git #{@git_args} add README.md`
         #`git #{@git_args} commit -m 'initial commit'`
-        `git #{@git_args} remote add origin https://github.com/sko/voyagex_data`
+        #{}`git #{@git_args} remote add origin https://github.com/sko/voyagex_data`
+        `git #{@git_args} remote add origin git@github.com:/sko/voyagex_data`
         `git #{@git_args} fetch`
         `git #{@git_args} checkout #{@master}`
         `git #{@git_args} config --global credential.helper cache`
@@ -35,12 +37,18 @@ class VersionManager
     @master
   end
 
+  def is_repo_owner?
+    @is_repo_owner
+  end
+
   def cur_branch
     `git #{@git_args} branch`.match(/^\* (.+?)$/m)[1]
   end
 
   def set_branch branch
+    return unless branch.present?
     if cur_branch != branch
+      push cur_branch
       if `git #{@git_args} branch`.match(/^\s+#{branch}$/m).present?
         `git #{@git_args} checkout #{branch}`
       else
@@ -55,6 +63,7 @@ class VersionManager
   end
 
   def merge branch
+    `git #{@git_args} fetch`
     #`git #{@git_args} merge #{@master}`
     #`git #{@git_args} merge -s resolve #{@master}`
     `git #{@git_args} rebase #{@master}`
@@ -62,11 +71,14 @@ class VersionManager
     `git #{@git_args} merge #{branch}`
   end
 
-  def push
-binding.pry
+  def push branch=nil
+    branch = @master unless branch.present? 
+    `git #{@git_args} add -u`
+    `git #{@git_args} commit -m 'commit before changing branch'`
     `git #{@git_args} fetch`
-    `git #{@git_args} rebase origin/#{@master}`
-    `git #{@git_args} push origin #{@master}`
+    # next might fatal: Needed a single revision and invalid upstream origin/#{branch} if branch doesn't exist
+    `git #{@git_args} rebase origin/#{branch}`
+    `git #{@git_args} push origin #{branch}`
   end
 
   def add_and_merge_file file, branch

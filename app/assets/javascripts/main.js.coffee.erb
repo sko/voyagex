@@ -354,7 +354,11 @@ class window.VoyageX.Main
   @commChannels: () ->
     Main._COMM_CHANNELS.slice(0)
 
+  # @deprecated - use APP.storage()
   @storageController: () ->
+    Main._STORAGE_CONTROLLER
+
+  storage: () ->
     Main._STORAGE_CONTROLLER
 
   @mapControl: () ->
