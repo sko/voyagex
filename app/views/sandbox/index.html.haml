@@ -35,11 +35,15 @@
     subdomains: ['a'],
     access_token: 'pk.eyJ1Ijoic3RlcGhhbmtvZWxsZXIiLCJhIjoiZEFHdnhwayJ9.AdtZiG5HGi5JAb64G1K-jA',
     max_zoom: 30 }
-    new VoyageX.Main(currentUser, VoyageX.StorageStrategy.instance(), view, mapOptions, offlineZooms, true) 
+    new VoyageX.Main(VoyageX.StorageStrategy.instance(), view, mapOptions, offlineZooms, true) 
 
 #tmpl_marker_controls{style: 'display: none;'}
   %div{tmpl: {id: 'marker_controls'}}
-    %div
-      = link_to t('pois.add'), '#', onclick: "javascript:APP.poiNoteInput()"
-    %div{style: 'padding: 5px 0px 5px 0px;'}
+    %div{style: 'padding: 0px 0px 5px 0px;'}
+      = link_to t('admin.add_homebase'), '#', onclick: "javascript:APP.setHomeBase()"
+    %div{style: 'padding: 0px 0px 5px 0px;'}
+      = link_to t('admin.show_homebase'), '#', onclick: "javascript:APP.loadLocation(currentUser.homebaseLocationId)"
+    %div{style: 'padding: 0px 0px 5px 0px;'}
       = link_to t('pois.bookmark'), '#', onclick: "javascript:APP.bookmarkLocation()"
+    %div{style: 'padding: 0px 0px 5px 0px;'}
+      = link_to t('pois.add'), '#', onclick: "javascript:APP.poiNoteInput()"

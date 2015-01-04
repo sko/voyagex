@@ -1,4 +1,5 @@
 class UsersController < ApplicationController 
+  include GeoUtils
 
   def update
     @user = User.find(params[:id])
@@ -85,12 +86,31 @@ class UsersController < ApplicationController
 
   def change_details
     if current_user.present?
-      edit = (!params[:username].present?)
-      unless edit
-        current_user.update_attribute(:username, params[:username])
+      if params[:detail].present?
+        user_json = {}
+        case params[:detail]
+        when 'home_base'
+          location = Location.new(latitude: params[:lat], longitude: params[:lng])
+          location = nearby_location location, 5
+          current_user.update_attribute :home_base, location
+          user_json[:id] = current_user.id
+          user_json[:home_base] = {id: location.id, lat: location.latitude, lng:location.longitude, address:location.address}
+        when 'locations'
+          location = Location.new(latitude: params[:lat], longitude: params[:lng])
+          location = nearby_poi(current_user, location, 10).location
+          user_json[:id] = current_user.id
+          user_json[:last_location] = {id: location.id, lat: location.latitude, lng:location.longitude, address:location.address}
+        end
+        render json: user_json.to_json
+        return
+      else
+        edit = (!params[:username].present?)
+        unless edit
+          current_user.update_attribute(:username, params[:username])
+        end
+        render "users/change_username", formats: [:js], locals: { edit: edit }
+        return
       end
-      render "users/change_username", formats: [:js], locals: { edit: edit }
-      return
     end
     render "users/change_username", formats: [:js], locals: { edit: false }
   end

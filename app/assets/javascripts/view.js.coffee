@@ -78,8 +78,9 @@ class window.VoyageX.View
       window.stopSound = VoyageX.MediaManager.instance().playSound('/Treat.mp3')
       # TODO: unify json-format, until then avoid circular structure
       poi = upload.poi_note.poi
+      Storage.Model.setupPoiForNote poi
       msg = { poi: poi }
-      Storage.Model.instance().syncWithStorage msg, View.addPoiNotes, upload.poi_note, 0
+      Storage.Model.instance().syncWithStorage msg, View.addPoiNotes, upload.poi_note
 
   previewPois: (pois) ->
     poisPreviewHtml = VoyageX.TemplateHelper.poisPreviewHTML pois
@@ -152,14 +153,16 @@ class window.VoyageX.View
       scrollPane = poiNoteDiv.closest('.leaflet-popup-content').first()
       scrollPane.scrollTop(poiNoteOff.top)
 
-  @addPoiNotes: (poi) ->
+  @addPoiNotes: (poi, newNotes) ->
     if poi.notes[0].attachment.content_type.match(/^[^\/]+/)[0] == 'image'
       mySwiper = window['myPoiSwiper'+poi.id]
       if mySwiper?
-        swiperSlideHtml = VoyageX.TemplateHelper.swiperSlideHtml poi, poi.notes[0]
-        $('#poi_swiper_'+poi.id+' .swiper-wrapper').prepend(swiperSlideHtml)
-        #VoyageX.TemplateHelper.addPoiNotes poi, APP.getMarker(poi)
-        #View.instance().scrollToPoiNote poi.notes[0].id
+        swiperWrapper = $('#poi_swiper_'+poi.id+' .swiper-wrapper')
+        for note, i in newNotes
+          swiperSlideHtml = VoyageX.TemplateHelper.swiperSlideHtml poi, note
+          swiperWrapper.append(swiperSlideHtml)
+        #VoyageX.TemplateHelper.addPoiNotes poi, newNotes, APP.getMarker(poi)
+        #View.instance().scrollToPoiNote newNotes[0].id
       else
         # most likely a new poi
         # create swiper
@@ -176,11 +179,11 @@ class window.VoyageX.View
       mySwiper.reInit()
       #mySwiper.resizeFix()
     for listener in View.instance()._commListeners.uploads
-      listener(poi.notes[0])
+      listener(poi, newNotes)
     
     # add to popup
-    VoyageX.TemplateHelper.addPoiNotes poi, APP.getMarker(poi)
-    View.instance().scrollToPoiNote poi.notes[0].id
+    VoyageX.TemplateHelper.addPoiNotes poi, newNotes, APP.getMarker(poi)
+    View.instance().scrollToPoiNote newNotes[0].id
     #APP.panPosition(poi.lat, poi.lng, poi.address)
 
   @instance: () ->

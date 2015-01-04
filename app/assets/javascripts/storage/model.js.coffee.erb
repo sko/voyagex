@@ -7,6 +7,31 @@ class window.Storage.Model
   constructor: () ->
     Model._SINGLETON = this
 
+  setHomeBase: (lat, lng, callback) ->
+    $.ajax
+      type: 'POST'
+      dataType: 'json'
+      url: '<%= set_user_detail_path(detail: 'home_base') %>'
+      data: {lat: lat, lng: lng}
+    .done (user) ->
+        Comm.StorageController.instance().saveLocation user.home_base, true
+        callback user
+    .fail (jqXHR, textStatus) ->
+        console.log('TODO: errorhandling')
+
+  addBookmark: (latLng, callback) ->
+    $.ajax
+      type: 'POST'
+      dataType: 'json'
+      url: '<%= set_user_detail_path(detail: 'locations') %>'
+      data: {lat: latLng[0], lng: latLng[1]}
+    .done (user) ->
+        Comm.StorageController.instance().saveLocation user.last_location
+        Comm.StorageController.instance().bookmark user.last_location.id
+        callback user
+    .fail (jqXHR, textStatus) ->
+        console.log('TODO: errorhandling')
+
   withLocation: (locationId, callback) ->
     location = Comm.StorageController.instance().getLocation locationId
     if location?
@@ -67,8 +92,9 @@ class window.Storage.Model
       data: data
     .done (poiNote) ->
         # TODO: unify json-format, until then avoid circular structure
+        Model.setupPoiForNote poiNote.poi
         msg = { poi: poiNote.poi }
-        Model.instance().syncWithStorage msg, callback, poiNote, 0
+        Model.instance().syncWithStorage msg, callback, poiNote
     .fail (jqXHR, textStatus) ->
         #$("#upload_error").html("<ul><-%= escape_javascript(@upload.errors.full_messages.map { |msg| content_tag(:li, msg) }.join.html_safe) %></ul>")
         # get from localStorage
@@ -78,6 +104,7 @@ class window.Storage.Model
   loadPoiNotes: (poiId, poiNoteId, callback) ->
     poi = Comm.StorageController.instance().get Comm.StorageController.poiKey {id: poiId}
     if poi? && poi.notes && poi.notes.length >= 1
+      # TODO now only returns stored poiNotes - but we have to check list for update
       if poiNoteId?
         for poiNote in poi.notes
           if poiNote.id == poiNoteId
@@ -93,8 +120,9 @@ class window.Storage.Model
       dataType: 'json'
       url: '<%= upload_comments_path(poi_id: ':poi_id', poi_note_id: '') %>'.replace(/:poi_id/, poiId)+poiNoteId
     .done (msg) ->
+        Model.setupPoiForNote msg.poi
         for note, i in msg.poi.notes
-          Model.instance().syncWithStorage msg, callback, note, i
+          Model.instance().syncWithStorage msg, callback, note, i+1, msg.poi.notes.length-1-i
     .fail (jqXHR, textStatus) ->
         # get from localStorage
         console.log('TODO: maybe get from local storage')
@@ -118,19 +146,27 @@ class window.Storage.Model
     if callback?
       callback { pois: 'TODO' }
 
-  syncWithStorage: (msg, callback, note, i) ->
+  syncWithStorage: (msg, callback, note, numAdded = 1, numLeft = 0) ->
     # store image
     attachmentUrl = Model._viewPoiNoteAttachment note
     # @see leaflet-functionaltilelayer _loadTile: function / MapControl - drawTile
     if (typeof attachmentUrl == 'string') 
       console.log 'Model - syncWithStorage: attachmentUrl-string = '+attachmentUrl
-      Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, i, callback
+      Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, numAdded, numLeft, callback
     else if (typeof attachmentUrl.then == 'function') 
       # Assume we are dealing with a promise.
       attachmentUrl.then (url) ->
           console.log 'Model - syncWithStorage: attachmentUrl-promise resolved to: '+url
           note.attachment.url = url
-          Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, i, callback
+          Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, numAdded, numLeft, callback
+
+  @setupPoiForNote: (poi) ->
+    storeKey = Comm.StorageController.poiKey {id: poi.id}
+    storedPoi = Comm.StorageController.instance().get storeKey
+    unless storedPoi
+      unless poi.notes?
+        poi.notes = []
+      localStorage.setItem(storeKey, JSON.stringify(poi))
 
   @_syncPois: (poi, callback, i) ->
     storeKey = Comm.StorageController.poiKey poi
@@ -151,19 +187,20 @@ class window.Storage.Model
     localStorage.setItem(storeKey, JSON.stringify(poi))
     callback poi
 
-  @_syncPoiNotes: (poi, poiKey, note, i, callback) ->
+  @_syncPoiNotes: (poi, poiKey, note, numAdded, numLeft, callback) ->
     poiKey = Comm.StorageController.poiKey(poi)
     existingPoiData = Comm.StorageController.instance().get poiKey
-    if existingPoiData?
-      unless Model._findPoiNote note, existingPoiData.notes
+    if existingPoiData? 
+      if Model._findPoiNote(note, existingPoiData.notes) == -1
         existingPoiData = Model._storeWithoutPoi poiKey, note
-    else
-      existingPoiData = Model._storeWithoutPoi poiKey, note
-    unless poi.notes? &&  i != (poi.notes.length - 1)
-      unless poi.notes?
-        #poi.notes = existingPoiData.notes
-        poi.notes = [note]
-      callback poi
+        #existingPoiData.notes.push note
+      poi.notes = existingPoiData.notes
+    unless numLeft >= 1
+      if poi.notes? && poi.notes.length >= 1
+        newNotes = poi.notes.slice poi.notes.length-numAdded
+      else
+        newNotes = [note]
+      callback poi, newNotes
 
   @_storeWithoutPoi: (poiKey, note) ->
     if note.poi?
@@ -177,10 +214,10 @@ class window.Storage.Model
       Comm.StorageController.instance().addToList poiKey, 'notes', note, false
   
   @_findPoiNote: (note, notes) ->
-    for n in notes
+    for n, idx in notes
       if n.id == note.id
-        return true
-    false
+        return idx
+    -1
 
 #  @poiNotes: (newPoiNotes, storedPoiNotes) ->
 #    # poinotes must always be sorted by id, also indicating their age-relation

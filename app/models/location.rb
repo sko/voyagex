@@ -13,4 +13,9 @@ class Location < ActiveRecord::Base
 #    end
 #  end
   after_validation :reverse_geocode
+
+  def self.default
+    # hagen - uni
+    Location.new(latitude: 51.3767, longitude: 7.4938)
+  end
 end

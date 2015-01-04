@@ -37,14 +37,18 @@ module ::GeoUtils
      :lat_north => lat+inner_square_half_side_length_lat}
   end
 
-  # this will save the location or a nearby poi-location with the user
-  def nearby_pois user, location, radius_meters = 10, limits_lat_lng = {}
+  def limits_constraint location, radius_meters = 10, limits_lat_lng = {}
     limits = lat_lng_limits location.latitude, location.longitude, radius_meters
     limits_lat = limits[:lat_south] > limits[:lat_north] ? limits[:lat_north]..limits[:lat_south] : limits[:lat_south]..limits[:lat_north]
     limits_lng = limits[:lng_east] > limits[:lng_west] ? limits[:lng_west]..limits[:lng_east] : limits[:lng_east]..limits[:lng_west]
     limits_lat_lng[:limits_lat] = limits_lat
     limits_lat_lng[:limits_lng] = limits_lng
-    nearbys = Poi.joins(:location).where(locations: { latitude: limits_lat, longitude: limits_lng })
+    limits
+  end
+
+  def nearby_pois location, radius_meters = 10, limits_lat_lng = {}
+    limits = limits_constraint location, radius_meters, limits_lat_lng
+    nearbys = Poi.joins(:location).where(locations: { latitude: limits_lat_lng[:limits_lat], longitude: limits_lat_lng[:limits_lng] })
   end
 
   # this will save the location or a nearby poi-location with the user
@@ -54,7 +58,7 @@ module ::GeoUtils
     # 2) otherwise range
    #nearbys = location.nearbys(0.01)
     limits_lat_lng = {}
-    nearbys = nearby_pois user, location, radius_meters, limits_lat_lng
+    nearbys = nearby_pois location, radius_meters, limits_lat_lng
     if nearbys.present?
       # TODO check address, then get closest - not first
       #poi = nearbys.first
@@ -70,7 +74,7 @@ module ::GeoUtils
     else
       nearbys = Location.where(locations: { latitude: limits_lat_lng[:limits_lat], longitude: limits_lat_lng[:limits_lng] })
       if nearbys.present?
-        # TODO check address, then get closest - not first
+        # TODO check address, then get closest - not first, check not to bookmark home_base
         #location = nearbys.first
         #user.locations_users.create(location: location) unless user.locations.where(id: location.id).present?
         user_nearbys = user.locations.where(id: nearbys.collect{|location|location.id})
@@ -87,6 +91,13 @@ module ::GeoUtils
       poi = Poi.new location: location
     end
     poi
+  end
+
+  # this will save the location or a nearby poi-location with the user
+  def nearby_location location, radius_meters = 10, limits_lat_lng = {}
+    limits = limits_constraint(location, radius_meters, limits_lat_lng) unless limits_lat_lng.present?
+    nearbys = Location.where(locations: { latitude: limits_lat_lng[:limits_lat], longitude: limits_lat_lng[:limits_lng] })
+    nearbys.first || location
   end
 
   private

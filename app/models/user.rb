@@ -3,6 +3,7 @@ class User < ActiveRecord::Base
   has_many :locations, through: :locations_users
   has_many :uploads
   has_one :comm_setting, inverse_of: :user, dependent: :destroy
+  belongs_to :home_base, class_name: 'Location', foreign_key: :home_base_id
 
   #scope :last_location, ->(){where(locations: {id: locations.maximum(:id)})}
 
@@ -14,7 +15,7 @@ class User < ActiveRecord::Base
          :confirmable
 
   def last_location
-    locations.where(locations: {updated_at: locations.maximum(:updated_at)}).first
+    locations.where(locations: {updated_at: locations.maximum(:updated_at)}).first||home_base||Location.default
   end
 
   def follows

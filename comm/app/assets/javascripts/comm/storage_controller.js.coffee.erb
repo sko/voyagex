@@ -70,12 +70,14 @@ class window.Comm.StorageController
     locations = eval("(" + localStorage.getItem(storeKey) + ")")
     if locations? then locations[locationId] else null
   
-  saveLocation: (location) ->
+  saveLocation: (location, homeBase = false) ->
     storeKey = 'comm.locations'
     locations = eval("(" + localStorage.getItem(storeKey) + ")")
     unless locations
       locations = {}
-    locations[location.id] = location
+    locations[location.id] = {lat: location.lat, lng: location.lng, address: location.address}
+    if homeBase
+      locations.homeBase = location.id
     localStorage.setItem storeKey, JSON.stringify(locations)
     location
   

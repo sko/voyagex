@@ -38,7 +38,7 @@ jQuery ->
       Storage.Model.instance().savePoiNote64 data, afterUploadPhoto
 
   # also called from iframe - that's why window.
-  window.afterUploadPhoto = (poi) ->
+  window.afterUploadPhoto = (poi, newNotes) ->
     # @see upload_comments.js.coffee
     $('#media_input_current').attr('src', '')
     $('#upload_comment').val('')
@@ -50,7 +50,7 @@ jQuery ->
     else
       uploadDataDialog.dialog("close")
     APP.panPosition poi.lat, poi.lng, poi.address
-    VoyageX.View.addPoiNotes poi
+    VoyageX.View.addPoiNotes poi, newNotes
     
   $(document).on 'click', '#upload_button', (event) ->
     uploadPhoto()

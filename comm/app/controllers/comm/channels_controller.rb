@@ -154,24 +154,6 @@ module Comm
       end
       monitor :publish do
         Rails.logger.debug "###### Client #{client_id} published #{data.inspect} to #{channel}."
-        begin
-          case data['type']
-          when 'click'
-            location = Location.new(latitude: data['lat'], longitude: data['lng'])
-            if data['bookmarkLocation']
-              user = User.where(id: data['userId']).first
-              location = nearby_poi(user, location, 10).location
-              #ls_u = user.locations_users.create(location: location)
-            end
-            # provide reverse lookup
-            unless data['address'].present?
-              Rails.logger.debug "###### providing reverse-geocoding-service: #{location.address}"
-              data['address'] = location.address
-            end
-          end
-        rescue => e
-          Rails.logger.error "!!!!!! #{e.message}"
-        end
       end
     end
 

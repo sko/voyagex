@@ -9,11 +9,10 @@ class window.VoyageX.Main
   @_COMM_CHANNELS = ['system', 'talk', 'map_events', 'uploads']
   @_STORAGE_MODEL = null
 
-  constructor: (user, cacheStrategy, view, mapOptions, offlineZooms, online) ->
+  constructor: (cacheStrategy, view, mapOptions, offlineZooms, online) ->
     Main._SINGLETON = this
     window.APP = this
     @_version = new VoyageX.Version [0, 1]
-    @_user = user
     @_initState = 0
     @_online = online
     @_view = view
@@ -50,10 +49,7 @@ class window.VoyageX.Main
         if navigator.geolocation 
           navigator.geolocation.getCurrentPosition(APP._initPositionCB, (error) ->
               #alert('geolocation timed out - manual selection required.\nsetting default location...')
-              if lastLocationLatLng?
-                APP._initPositionCB { coords: { latitude: lastLocationLatLng[0], longitude: lastLocationLatLng[1] } }
-              else
-                APP._initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
+              APP._initPositionCB { coords: { latitude: window.currentUser.lastLocation.lat, longitude: window.currentUser.lastLocation.lng } }
           , { enableHighAccuracy: true, timeout : 5000 })
 #       #APP.map().on('locationfound', (e) ->
 #       #    alert('found location...')
@@ -86,10 +82,10 @@ class window.VoyageX.Main
         cacheStats()
 
   userId: () ->
-    APP._user.id
+    window.currentUser.id
 
   userName: () ->
-    APP._user.username
+    window.currentUser.username
 
   isOnline: () ->
     @_online
@@ -117,16 +113,20 @@ class window.VoyageX.Main
       #poiId = $('#poi_notes_container > div[id^=upload_comment_btn_]').attr('id').match(/upload_comment_btn_([0-9]+)/)[1]
       poi = Main.storageController().get Comm.StorageController.poiKey({id: poiId})
       posLatLng = [poi.lat, poi.lng]
-    this.publishPosition true, posLatLng
+    #this.publishPosition true, posLatLng
+    Storage.Model.instance().addBookmark posLatLng, (user) ->
+        null #window.currentUser.homebaseLocationId = user.home_base.id
     
-  publishPosition: (bookmarkLocation = false, posLatLng = null) ->
+  #publishPosition: (bookmarkLocation = false, posLatLng = null, setHomeBase = false) ->
+  publishPosition: () ->
     unless posLatLng?
       posLatLng = [@_selectedPosition.lat, @_selectedPosition.lng]
     @_comm.send('/map_events', {type: 'click',\
                                 userId: APP.userId(),\
                                 lat: posLatLng[0],\
-                                lng: posLatLng[1],\
-                                bookmarkLocation: bookmarkLocation})
+                                lng: posLatLng[1]})#,\
+                                #bookmarkLocation: bookmarkLocation,\
+                                #setHomeBase: setHomeBase})
     $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').click()
 
   publishMessage: (publishText) ->
@@ -140,6 +140,11 @@ class window.VoyageX.Main
       return markerMeta.marker
     else
       return Main.markerManager().add(poi, Main._markerEventsCB, false)
+
+  setHomeBase: () ->
+    #this.publishPosition false, null, true
+    Storage.Model.instance().setHomeBase @_selectedPosition.lat, @_selectedPosition.lng, (user) ->
+        window.currentUser.homebaseLocationId = user.home_base.id
 
   loadLocation: (locationId) ->
     Storage.Model.instance().withLocation locationId, (location) ->
@@ -254,21 +259,23 @@ class window.VoyageX.Main
     pois = Main.storageController().getPois (poi) ->
         if poi.lat > searchBounds.lat_south && poi.lat < searchBounds.lat_north &&
            poi.lng > searchBounds.lng_east && poi.lng < searchBounds.lng_west
-          unless poi.notes && poi.notes.length >= 1
-            # dummy-poiNote for swiper
+#          unless poi.notes && poi.notes.length >= 1
+          # dummy-poiNote for swiper - replaced when attachments are loaded
+          unless poi.notes? && poi.notes.length >= 1
             poi.notes = [{id: -1, attachment: {url: '/assets/loading_200x100.png', width: 200, height: 100}}]
-            Storage.Model.instance().loadPoiNotes poi.id, null, (poiClone) ->
-                # TODO maybe template isn't ready
-                readyTemplate = $('#poi_swiper_'+poi.id+' [data-poiNoteId=-1]')
-                if readyTemplate.length >= 1
-                  readyTemplate.remove()
-                  for note in poiClone.notes
-                    swiperSlideHtml = VoyageX.TemplateHelper.swiperSlideHtml poi, note
-                    $('#poi_swiper_'+poi.id+' .swiper-wrapper').append(swiperSlideHtml)
-                    mySwiper = window['myPoiSwiper'+poi.id]
-                    mySwiper.reInit()
-                else
-                  poi.notes = poiClone.notes
+          Storage.Model.instance().loadPoiNotes poi.id, null, (poiClone) ->
+              swiperDummy = $('#poi_swiper_'+poi.id+' [data-poiNoteId=-1]')
+              if swiperDummy.length >= 1
+                # if there is a template ist must be swiper's loading-dummy
+                swiperDummy.remove()
+                for note in poiClone.notes
+                  swiperSlideHtml = VoyageX.TemplateHelper.swiperSlideHtml poi, note
+                  $('#poi_swiper_'+poi.id+' .swiper-wrapper').append(swiperSlideHtml)
+                  mySwiper = window['myPoiSwiper'+poi.id]
+                  mySwiper.reInit()
+              else
+                # template didn't insert swiperDummy yet, so we can use the real data
+                poi.notes = poiClone.notes
           return true
         else
           return false

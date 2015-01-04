@@ -92,17 +92,22 @@ class window.VoyageX.TemplateHelper
     $('#poi_note_input').html('')
     TemplateHelper.poiNoteInputHtml('poi_note_input', poi.notes[0])
 
-  @addPoiNotes: (poi, marker) ->
+  @addPoiNotes: (poi, newNotes, marker) ->
    #popup = TemplateHelper._verifyPopup marker, 'poi_notes_container'
     popup = marker.getPopup()
     if popup?
-      i = $('.leaflet-popup .upload_comment').length
-      # TODO allow poi.notes to have more elements -> loop
-      popupEntryHtml = TemplateHelper.poiNotePopupHtmlFromTmpl(poi.notes[0], i)
-      popupHtml = popup.getContent().replace(/(<span[^>]*>\s*<div[^>].+?upload_comment_btn_)/, popupEntryHtml+'$1')
+      #i = $('.leaflet-popup .upload_comment').length
+      i = poi.notes.length - newNotes.length
+      newPopupHtml = ''
+      for note, j in newNotes
+        newPopupHtml += TemplateHelper.poiNotePopupHtmlFromTmpl(note, i+j)
+      popupHtml = popup.getContent().replace(/(<span[^>]*>\s*<div[^>].+?upload_comment_btn_)/, newPopupHtml+'$1')
       popup.setContent(popupHtml)
-      #$('#poi_notes_container div.upload_comment').last().prepend(popupEntryHtml)
+      #$('#poi_notes_container div.upload_comment').last().prepend(newPopupHtml)
       #popup.update()
+      unless popup._isOpen
+        marker.openPopup()
+        VoyageX.Main.markerManager().userMarkerMouseOver false
     else
       TemplateHelper.openPOINotePopup poi, marker
 
