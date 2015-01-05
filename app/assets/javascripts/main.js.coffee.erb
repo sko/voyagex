@@ -123,7 +123,8 @@ class window.VoyageX.Main
     else
       #poiId = $('#poi_notes_container > div[id^=upload_comment_btn_]').attr('id').match(/upload_comment_btn_([0-9]+)/)[1]
       poi = Main.storageController().get Comm.StorageController.poiKey({id: poiId})
-      posLatLng = [poi.lat, poi.lng]
+      locationData = Main.storageController().getLocation poi.locationId
+      posLatLng = [locationData.lat, locationData.lng]
     #this.publishPosition true, posLatLng
     Storage.Model.instance().addBookmark posLatLng, VoyageX.View.addBookmark
     
@@ -150,6 +151,19 @@ class window.VoyageX.Main
       return markerMeta.marker
     else
       return Main.markerManager().add(poi, Main._markerEventsCB, false)
+
+  getOpenPopupMarker: () ->
+    userMarkerPopupPanel = $('#marker_controls')
+    if userMarkerPopupPanel.length >= 1
+      marker = Main.markerManager().get()
+    else
+      poiMarkerPopupPanel = $('#poi_notes_container')
+      if poiMarkerPopupPanel.length >= 1
+        poiId = parseInt(poiMarkerPopupPanel.find('[id^=upload_comment_btn_]').attr('id').match(/[0-9]+$/)[0])
+        marker = APP.getMarker {id: poiId}
+      else
+        marker = null
+    marker
 
   setHomeBase: () ->
     #this.publishPosition false, null, true
@@ -316,17 +330,25 @@ class window.VoyageX.Main
       if ! $('#upload_data_conrols').parent().hasClass('seethrough_panel')
         $('#upload_data_conrols').parent().addClass('seethrough_panel')
 
+  # just closes marker specified by contentId - not any other
   preTogglePopup: (contentId) ->
     openPopup = $('#'+contentId)
     if openPopup.length >= 1
-      #openPopup.closest('.leaflet-popup').children('.leaflet-popup-close-button').click()
       if contentId == 'marker_controls'
         openPopupMarker = Main.markerManager().get()
       else
-        poiId = parseInt(openPopup.find('[id^=upload_comment_btn_]').attr('id').match(/[0-9]+$/)[0])
+        poiId = parseInt openPopup.find('[id^=upload_comment_btn_]').attr('id').match(/[0-9]+$/)[0]
         openPopupMarker = APP.getMarker poiId
-      openPopupMarker.closePopup()
+      if openPopupMarker.getPopup()? && openPopupMarker.getPopup()._isOpen
+        Main._checkSaveNote()
+        openPopupMarker.closePopup()
 #      openPopupMarker.unbindPopup()
+
+  @_checkSaveNote: () ->
+    textArea = $('#note_editor textarea')
+    if textArea.length >= 1
+      locationId = parseInt textArea.attr('id').match(/[0-9]+$/)[0]
+      Storage.Model.instance().addNote locationId, textArea.val()
 
   @_markerEventsCB: (event) ->
     address = null
@@ -343,7 +365,7 @@ class window.VoyageX.Main
         #unless markerMeta.isUserMarker
           if event.target.getPopup() && event.target.getPopup()._isOpen
             # click on poi-marker with open popup
-            #$('#poi_notes_container').closest('.leaflet-popup').children('.leaflet-popup-close-button').click()
+            Main._checkSaveNote()
             event.target.closePopup()
 #            event.target.unbindPopup()
             Main.markerManager().userMarkerMouseOver true

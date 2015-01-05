@@ -2,12 +2,14 @@ class SandboxController < ApplicationController
   include ::AuthUtils
   include ::GeoUtils
 
+  # used when loading a location on the map 
   def location
     @location = Location.find(params[:location_id])
     nearby_m = (tmp_user.search_radius_meters||20000)
     load_location_data @location, nearby_m
   end
 
+  # used from Model.js to act withLocation
   def location_data
     location = Location.find(params[:location_id])
     location_json = {lat: location.latitude, lng: location.longitude, address: location.address}

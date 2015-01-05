@@ -69,9 +69,9 @@ class window.VoyageX.TemplateHelper
       popup.setContent(popupHtml)
     else
       popup.setContent(popupHtml)
-    marker.on 'popupclose', (event) ->
-        console.log('popupclose for current marker ... TODO')
     marker.openPopup()
+    marker.on 'popupclose', (event) ->
+        console.log('openPOINotePopup: popupclose for current marker ... TODO')
     VoyageX.Main.markerManager().userMarkerMouseOver false
 #    $('.leaflet-popup-close-button').on 'click', (event) ->
 #      poiIdElement = $(event.target).closest('.leaflet-popup').find('div[id^="upload_comment_btn_"]').attr('id')
@@ -107,6 +107,8 @@ class window.VoyageX.TemplateHelper
       #popup.update()
       unless popup._isOpen
         marker.openPopup()
+        marker.on 'popupclose', (event) ->
+            console.log('addPoiNotes: popupclose for current marker ... TODO')
         VoyageX.Main.markerManager().userMarkerMouseOver false
     else
       TemplateHelper.openPOINotePopup poi, marker
@@ -122,8 +124,32 @@ class window.VoyageX.TemplateHelper
     else
       popup.setContent popupHtml
     marker.openPopup()
+    marker.on 'popupclose', (event) ->
+        console.log('openMarkerControlsPopup: popupclose for current marker ... TODO')
 #    $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').on 'click', (event) ->
 #      VoyageX.Main.markerManager().get().unbindPopup()
+
+  @openNoteEditor: (bookmark) ->
+    marker = APP.getOpenPopupMarker()
+    unless marker?
+      marker = VoyageX.Main.markerManager().get()
+
+    editorHtml = TemplateHelper._updateIds('tmpl_note_editor').
+    replace(/\{locationId\}/g, bookmark.location.id).
+    replace(/\{text\}/, if bookmark.text? then bookmark.text else '')
+    popup = marker.getPopup()
+    unless popup?
+      popupHtml = TemplateHelper._updateIds 'tmpl_marker_controls'
+      marker.bindPopup editorHtml + popupHtml
+      marker.off('click', marker.togglePopup, marker)
+    else
+      popupHtml = popup.getContent()
+      if popupHtml.indexOf('note_editor') == -1
+        popup.setContent editorHtml + popupHtml
+    marker.openPopup()
+    marker.on 'popupclose', (event) ->
+        console.log('openNoteEditor: popupclose for current marker ... TODO')
+    $('#note').focus()
 
   @poisPreviewHTML: (pois) ->
     html = ''
@@ -155,9 +181,28 @@ class window.VoyageX.TemplateHelper
     replace(/\{width\}/g, width).
     replace(/\{height\}/g, maxHeight)
 
+  @locationsBookmarksHTML: (bookmarks) ->
+    html = ''
+    for bookmark, i in bookmarks
+      if bookmark.location.poi?
+        poiOrNoPoiHTML = TemplateHelper._updateAttributes('tmpl_location_bookmark_poi', ['src']).
+        replace(/\{attachment_url\}/, bookmark.location.poi.notes[0].attachment.url)
+      else
+        poiOrNoPoiHTML = $('#tmpl_location_bookmark_no_poi').html()
+      html = $('#tmpl_location_bookmarks').html().
+      replace(/\{location_poi_or_no_poi\}/, poiOrNoPoiHTML).
+      replace(/\{locationId\}/g, bookmark.location.id).
+      replace(/\{lat\}/, bookmark.location.lat).
+      replace(/\{lng\}/, bookmark.location.lng).
+      replace(/\{address\}/, bookmark.location.address).
+      replace(/\{bookmark_updated_at\}/, bookmark.updatedAt).
+      replace(/\{commented_by_user\}/, 'TODO')
+    html
+
   @_closePopupCB: (marker) ->
     (event) ->
 #        marker.unbindPopup()
+        VoyageX.Main._checkSaveNote()
         VoyageX.Main.markerManager().userMarkerMouseOver true
 
 #  @_verifyPopup: (marker, containerId) ->

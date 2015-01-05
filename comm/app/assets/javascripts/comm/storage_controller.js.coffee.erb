@@ -70,41 +70,78 @@ class window.Comm.StorageController
     locations = eval("(" + localStorage.getItem(storeKey) + ")")
     if locations? then locations[locationId] else null
   
-  saveLocation: (location, homeBase = false) ->
+  saveLocation: (location, flags = {}) ->
     storeKey = 'comm.locations'
     locations = eval("(" + localStorage.getItem(storeKey) + ")")
     unless locations
       locations = {}
     locations[location.id] = {lat: location.lat, lng: location.lng, address: location.address}
-    if homeBase
+    if flags.homeBase?
       locations.homeBase = location.id
+    if flags.poi?
+      unless locations.pois?
+        locations.pois = {}
+      unless locations.pois[location.id]?
+        locations.pois[location.id] = flags.poi
     localStorage.setItem storeKey, JSON.stringify(locations)
     location
   
-  bookmark: (locationId) ->
+  bookmark: (locationId, text = null) ->
     storeKey = 'comm.locations'
     locations = eval("(" + localStorage.getItem(storeKey) + ")")
     location = locations[locationId]
+    bookmark = {}
+    # only bookmark existing locations
     if location?
       if locations.bookmarks?
-        if locations.bookmarks.indexOf(locationId) == -1
-          locations.bookmarks.push locationId
+        bookmark = locations.bookmarks[locationId]
+        if bookmark?
+          if text?
+            bookmark.text = text
+          bookmark.updatedAt = new Date().getTime()
+          localStorage.setItem storeKey, JSON.stringify(locations)
+        else
+          bookmark = if text? then {updatedAt: new Date().getTime(), text: text} else {updatedAt: new Date().getTime()}
+          locations.bookmarks[locationId] = bookmark
           localStorage.setItem storeKey, JSON.stringify(locations)
       else
-        locations.bookmarks = [locationId]
+        locations.bookmarks = {}
+        bookmark = if text? then {updatedAt: new Date().getTime(), text: text} else {updatedAt: new Date().getTime()}
+        locations.bookmarks[locationId] = bookmark
         localStorage.setItem storeKey, JSON.stringify(locations)
-    location
+      # only return-value has location
+      bookmark.location = location
+      bookmark.location.id = locationId
+      if locations.pois? && locations.pois[locationId]?
+        storeKey = StorageController.poiKey locations.pois[locationId]
+        bookmark.location.poi = this.get storeKey
+    bookmark
   
-  bookmarks: () ->
+  bookmarks: (callback = null) ->
     storeKey = 'comm.locations'
     locations = eval("(" + localStorage.getItem(storeKey) + ")")
+    #locations = this.get 'comm.locations'
     if locations.bookmarks?
       bookmarks = []
-      for locationId in locations.bookmarks
-        bookmarks.push locations[locationId]
+      for locationId in Object.keys(locations.bookmarks)
+        if callback?
+          if callback(locations, locations.bookmarks[locationId])
+            bookmarks = []
+            break
+        bookmark = locations.bookmarks[locationId]
+        bookmark.location = locations[locationId]
+        bookmark.location.id = locationId
+        if locations.pois? && locations.pois[locationId]?
+          storeKey = StorageController.poiKey locations.pois[locationId]
+          bookmark.location.poi = this.get storeKey
+        bookmarks.push bookmark
       bookmarks
     else
       []
+
+  saveNote: (locationId, text) ->
+    this.bookmark locationId, text
+    #bookmarks (locations, locationBookmark) ->
 
   # directory path for storing with file-api
   @poiNoteAttachmentPath: (poiNote) ->
@@ -126,12 +163,17 @@ class window.Comm.StorageController
           )
 
   getPois: (callback = null) ->
+    locations = this.get 'comm.locations'
     pois = []
     for key, i in Object.keys(localStorage)
       #console.log(key)
       #document.writeln i+'. key = '+key+'<br>'
       if key.match(/^comm\.poi\./)?
         poi = this.get key
+        location = locations[poi.locationId]
+        poi.lat = location.lat
+        poi.lng = location.lng
+        poi.address = location.address
         if callback == null or callback(poi)
           pois.push poi
     pois

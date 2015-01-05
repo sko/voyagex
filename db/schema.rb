@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150101141802) do
+ActiveRecord::Schema.define(version: 20150105111049) do
 
   create_table "comm_peers", force: true do |t|
     t.integer  "comm_setting_id", null: false
@@ -51,6 +51,7 @@ ActiveRecord::Schema.define(version: 20150101141802) do
     t.integer  "user_id"
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.text     "note"
   end
 
   add_index "locations_users", ["location_id"], name: "index_locations_users_on_location_id", using: :btree

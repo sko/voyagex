@@ -14,7 +14,7 @@ class window.Storage.Model
       url: '<%= set_user_detail_path(detail: 'home_base') %>'
       data: {lat: lat, lng: lng}
     .done (user) ->
-        Comm.StorageController.instance().saveLocation user.home_base, true
+        Comm.StorageController.instance().saveLocation user.home_base, {homeBase: true}
         callback user
     .fail (jqXHR, textStatus) ->
         console.log('TODO: errorhandling')
@@ -27,8 +27,21 @@ class window.Storage.Model
       data: {lat: latLng[0], lng: latLng[1]}
     .done (user) ->
         Comm.StorageController.instance().saveLocation user.last_location
-        Comm.StorageController.instance().bookmark user.last_location.id
-        callback user.last_location
+        bookmark = Comm.StorageController.instance().bookmark user.last_location.id
+        callback bookmark
+    .fail (jqXHR, textStatus) ->
+        console.log('TODO: errorhandling')
+
+  addNote: (locationId, text) ->
+    if text.trim() == ''
+      return false
+    $.ajax
+      type: 'POST'
+      dataType: 'json'
+      url: '<%= set_user_detail_path(detail: 'notes') %>'
+      data: {location_id: locationId, text: text}
+    .done (user) ->
+        Comm.StorageController.instance().saveNote locationId, text
     .fail (jqXHR, textStatus) ->
         console.log('TODO: errorhandling')
 
@@ -166,7 +179,7 @@ class window.Storage.Model
     unless storedPoi
       unless poi.notes?
         poi.notes = []
-      localStorage.setItem(storeKey, JSON.stringify(poi))
+      Model._storeWithSeparateLocation storeKey, poi
 
   @_syncPois: (poi, callback, i) ->
     storeKey = Comm.StorageController.poiKey poi
@@ -184,14 +197,26 @@ class window.Storage.Model
     else
       unless poi.notes?
         poi.notes = []
-    localStorage.setItem(storeKey, JSON.stringify(poi))
+    Model._storeWithSeparateLocation storeKey, poi
     callback poi
+
+  @_storeWithSeparateLocation: (poiKey, poi) ->
+    Comm.StorageController.instance().saveLocation {id: poi.locationId,\
+                                                    lat: poi.lat,\
+                                                    lng: poi.lng,\
+                                                    address: poi.address}, {poi: {id: poi.id}}
+    locationAttrs = ['lat','lng','address']
+    storePoi = {}
+    for key in Object.keys(poi)
+      if locationAttrs.indexOf(key) == -1
+        storePoi[key] = poi[key]
+    localStorage.setItem poiKey, JSON.stringify(storePoi)
 
   @_syncPoiNotes: (poi, poiKey, note, numAdded, numLeft, callback) ->
     poiKey = Comm.StorageController.poiKey(poi)
     existingPoiData = Comm.StorageController.instance().get poiKey
     if existingPoiData? 
-      if Model._findPoiNote(note, existingPoiData.notes) == -1
+      unless existingPoiData.notes? && Model._findPoiNote(note, existingPoiData.notes) >= 0
         existingPoiData = Model._storeWithoutPoi poiKey, note
         #existingPoiData.notes.push note
       poi.notes = existingPoiData.notes

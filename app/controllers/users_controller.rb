@@ -1,9 +1,12 @@
 class UsersController < ApplicationController 
   include GeoUtils
+  include ApplicationHelper
+  include PoiHelper
 
   def update
     @user = User.find(params[:id])
-    # there's no subscribe here because @user would need grant first. he could try anyway - TODO?
+    # FIXME @user = current_user
+   # there's no subscribe here because @user would need grant first. he could try anyway - TODO?
     @un_subscribe = []
     if params[:follow].present?
       peer_setting_ids = params[:follow][:comm_peer_settings].inject([[],[]]){|res,kv|kv[1]=='true'?res[0]<<kv[0]:res[1]<<kv[0];res}
@@ -98,12 +101,19 @@ class UsersController < ApplicationController
           location = nearby_location location, 5
           current_user.update_attribute :home_base, location
           user_json[:id] = current_user.id
-          user_json[:home_base] = {id: location.id, lat: location.latitude, lng:location.longitude, address:location.address}
+          user_json[:home_base] = {id: location.id, lat: location.latitude, lng:location.longitude, address:shorten_address(location)}
         when 'locations'
           location = Location.new(latitude: params[:lat], longitude: params[:lng])
-          location = nearby_poi(current_user, location, 10).location
+          poi = nearby_poi(current_user, location, 10)
+          is_existing_poi = poi.persisted?
+          location = poi.location
           user_json[:id] = current_user.id
-          user_json[:last_location] = {id: location.id, lat: location.latitude, lng:location.longitude, address:location.address}
+          user_json[:last_location] = {id: location.id, lat: location.latitude, lng:location.longitude, address:shorten_address(location)}
+        when 'notes'
+          location = Location.find(params[:location_id])
+          current_user.locations_users.where(location_id: location.id).first.update_attributes note: params[:text], updated_at: DateTime.now
+          user_json[:id] = current_user.id
+          user_json[:note] = {id: location.id, lat: location.latitude, lng:location.longitude, address:location.address}
         end
         render json: user_json.to_json
         return

@@ -47,3 +47,10 @@
       = link_to t('pois.bookmark'), '#', onclick: "javascript:APP.bookmarkLocation()"
     %div{style: 'padding: 0px 0px 5px 0px;'}
       = link_to t('pois.add'), '#', onclick: "javascript:APP.poiNoteInput()"
+
+#tmpl_note_editor{style: 'display: none;'}
+  .note_editor{tmpl: {id: 'note_editor'}}
+    %div
+      Add Note
+    %div{style: 'padding: 0px 0px 5px 0px;'}
+      = text_area_tag :note, '{text}', id: 'note_{locationId}', class: :note_editor

@@ -33,11 +33,14 @@ testLocation = (initError) ->
   location = sC.getLocation new String(locationId)
   document.writeln 'location = '+JSON.stringify(location)+'<br>'
   document.writeln 'bookmarks 1:<br>'
-  bookmarks = sC.bookmarks()
+  bookmarks = sC.bookmarks (locations, locationBookmark) ->
+                  document.writeln 'locationBookmark = '+JSON.stringify(locationBookmark)+'<br>'
+                  locationBookmark.text = 'testi'
+                  false
   for location in bookmarks
     document.writeln 'location = '+JSON.stringify(location)+'<br>'
   document.writeln 'bookmarks 2:<br>'
-  sC.bookmark location.id
+  sC.bookmark locationId
   bookmarks = sC.bookmarks()
   for location in bookmarks
     document.writeln 'location = '+JSON.stringify(location)+'<br>'

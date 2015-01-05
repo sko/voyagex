@@ -69,7 +69,7 @@ module ApplicationHelper
     if location.address.present?
       parts = location.address.split(',')
       if parts.size >= 3
-        parts.drop([parts.size - 2, 2].min).join(',')
+        parts.drop([parts.size - 2, 2].min).join(',').strip
       else
         location.address
       end

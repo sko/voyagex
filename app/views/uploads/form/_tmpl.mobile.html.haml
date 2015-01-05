@@ -22,3 +22,4 @@
       = render partial: '/uploads/form/tmpl_file_data', locals: {poi_note: poi_note, f: f}
       = hidden_field_tag 'location[latitude]', '', id: ':remove', 'tmpl-id' => 'location_latitude'
       = hidden_field_tag 'location[longitude]', '', id: ':remove', 'tmpl-id' => 'location_longitude'
+  .upload_data_container{tmpl: {id: :upload_embed}}

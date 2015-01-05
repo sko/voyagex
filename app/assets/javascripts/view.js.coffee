@@ -187,10 +187,16 @@ class window.VoyageX.View
     View.instance().scrollToPoiNote newNotes[0].id
     #APP.panPosition(poi.lat, poi.lng, poi.address)
   
-  @addBookmark: (location) ->
+  @addBookmark: (bookmark) ->
+    VoyageX.TemplateHelper.openNoteEditor bookmark
     bookmarksPanel = $('#location_bookmarks')
     if bookmarksPanel.find('.bookmark-container[data-id='+location.id+']').length == 0
-      console.log 'TODO View - addBookmark: ...'
+      locationsBookmarksHTML = VoyageX.TemplateHelper.locationsBookmarksHTML [bookmark]
+      bookmarkEntries = $('#location_bookmarks .bookmark-container')
+      if bookmarkEntries.length >= 1
+        $('#location_bookmarks .bookmark-container').first().before(locationsBookmarksHTML)
+      else
+        $('#location_bookmarks table').first().append(locationsBookmarksHTML)
 
   @instance: () ->
     @_SINGLETON
