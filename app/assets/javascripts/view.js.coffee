@@ -190,7 +190,7 @@ class window.VoyageX.View
   @addBookmark: (bookmark) ->
     VoyageX.TemplateHelper.openNoteEditor bookmark
     bookmarksPanel = $('#location_bookmarks')
-    if bookmarksPanel.find('.bookmark-container[data-id='+location.id+']').length == 0
+    if bookmarksPanel.find('.bookmark-container[data-id='+bookmark.location.id+']').length == 0
       locationsBookmarksHTML = VoyageX.TemplateHelper.locationsBookmarksHTML [bookmark]
       bookmarkEntries = $('#location_bookmarks .bookmark-container')
       if bookmarkEntries.length >= 1

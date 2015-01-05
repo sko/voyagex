@@ -342,7 +342,6 @@ class window.VoyageX.Main
       if openPopupMarker.getPopup()? && openPopupMarker.getPopup()._isOpen
         Main._checkSaveNote()
         openPopupMarker.closePopup()
-#      openPopupMarker.unbindPopup()
 
   @_checkSaveNote: () ->
     textArea = $('#note_editor textarea')
@@ -372,7 +371,11 @@ class window.VoyageX.Main
             `;`
           else
             # click on poi-marker with no popup
-            APP.preTogglePopup 'marker_controls'
+            if event.target == VoyageX.Main.markerManager().get()
+              APP.preTogglePopup 'marker_controls'
+            else
+              Main._checkSaveNote()
+              #will be closed automatically: openPopupMarker = APP.getOpenPopupMarker()
             Storage.Model.instance().loadPoiNotes markerMeta.poi.id, null, (poi) ->
                 # userMarkerMouseOver is set in openPOINotePopup
                 VoyageX.TemplateHelper.openPOINotePopup poi, event.target

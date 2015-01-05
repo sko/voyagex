@@ -202,6 +202,7 @@ class window.VoyageX.TemplateHelper
   @_closePopupCB: (marker) ->
     (event) ->
 #        marker.unbindPopup()
+        console.log('_closePopupCB: current marker ... TODO')
         VoyageX.Main._checkSaveNote()
         VoyageX.Main.markerManager().userMarkerMouseOver true
 
