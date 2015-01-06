@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150105111049) do
+ActiveRecord::Schema.define(version: 20150106095406) do
 
   create_table "comm_peers", force: true do |t|
     t.integer  "comm_setting_id", null: false
@@ -80,6 +80,16 @@ ActiveRecord::Schema.define(version: 20150105111049) do
   create_table "roles", force: true do |t|
     t.string "name", null: false
   end
+
+  create_table "upload_entities_embeds", force: true do |t|
+    t.integer  "upload_id"
+    t.string   "embed_type"
+    t.text     "text"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "upload_entities_embeds", ["upload_id"], name: "index_upload_entities_embeds_on_upload_id", using: :btree
 
   create_table "upload_entities_mediafiles", force: true do |t|
     t.integer  "upload_id"

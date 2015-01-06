@@ -63,8 +63,8 @@ class window.VoyageX.TemplateHelper
       marker.bindPopup(popup)
       marker.off('click', marker.togglePopup, marker)
       # popupclose doesn't work if just popup is closed because of other marker's opening popup
-      #marker.on 'popupclose', (event) -> 
-      #    console.log('openPOINotePopup: popupclose for '+VoyageX.Main.markerManager().toString(event.target))
+      marker.on 'popupclose', (event) -> 
+          console.log('openPOINotePopup: popupclose for '+VoyageX.Main.markerManager().toString(event.target))
     popup.setContent(popupHtml)
     marker.openPopup()
     VoyageX.Main.markerManager().userMarkerMouseOver false
@@ -102,8 +102,8 @@ class window.VoyageX.TemplateHelper
       marker.bindPopup popupHtml
       marker.off('click', marker.togglePopup, marker)
       # popupclose doesn't work if just popup is closed because of other marker's opening popup
-      #marker.on 'popupclose', (event) ->
-      #    console.log('openMarkerControlsPopup: popupclose for '+VoyageX.Main.markerManager().toString(event.target))
+      marker.on 'popupclose', (event) ->
+          console.log('openMarkerControlsPopup: popupclose for '+VoyageX.Main.markerManager().toString(event.target))
     else
       popup.setContent popupHtml
     marker.openPopup()

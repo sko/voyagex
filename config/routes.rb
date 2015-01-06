@@ -18,6 +18,8 @@ VoyageX::Application.routes.draw do
   end
   post '/uploads_base64', to: 'uploads#create_from_base64', as: :uploads_base64
   put '/upload_base64/:id', to: 'uploads#update_from_base64', as: :upload_base64
+  post '/uploads_embed', to: 'uploads#create_from_embed', as: :uploads_embed
+  put '/uploads_embed/:id', to: 'uploads#update_from_embed', as: :upload_embed
 
   post '/uploads', to: 'uploads#create', as: :poi_notes
   put '/uploads/:id', to: 'uploads#update', as: :poi_note

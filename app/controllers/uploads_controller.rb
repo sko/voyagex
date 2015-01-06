@@ -100,6 +100,46 @@ class UploadsController < ApplicationController
     after_save
   end
 
+  def create_from_embed
+    user = current_user || tmp_user
+    poi = nearby_poi user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
+    user.locations << poi.location unless user.locations.find {|l|l.id==poi.location.id}
+
+    @upload = Upload.new(attached_to: PoiNote.new(poi: poi, user: user, text: params[:comment]))
+    @upload.attached_to.attachment = @upload
+    @upload.build_entity 'text/*', text: params[:data], embed_type: UploadEntity::Embed.get_embed_type(params[:data])
+    
+    if @upload.attached_to.save
+      #render "uploads/uploaded_base64", formats: [:js]
+      poi_note_json = poi_note_json @upload.attached_to
+      render json: poi_note_json.to_json
+    else
+      #render "uploads/uploaded_base64", formats: [:js]
+      render json: { error: 'failed' }, status: 401
+    end
+    
+    after_save
+  end
+
+  # adds a comment
+  def update_from_embed
+    user = current_user || tmp_user
+    @poi_note = PoiNote.find(params[:id])
+    user.locations << @poi_note.poi.location unless user.locations.find {|l|l.id==@poi_note.poi.location.id}
+
+    @upload = Upload.new
+    @upload.build_entity 'text/*', text: params[:data], embed_type: UploadEntity::Embed.get_embed_type(params[:data])
+    comment = @poi_note.comments.build(poi: @poi_note.poi, user: user, text: params[:comment], attachment: @upload)
+    @upload.attached_to = comment
+    comment.save
+    
+    #render "uploads/uploaded_base64", formats: [:js]
+    poi_note_json = poi_note_json comment
+    render json: poi_note_json.to_json
+
+    after_save
+  end
+
   def destroy
     @upload = Upload.find(params[:id])
     @upload.attached_to.destroy

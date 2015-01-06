@@ -114,6 +114,29 @@ class window.Storage.Model
         console.log('TODO: maybe get from local storage')
         #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
 
+  saveEmbed: (data, callback, poiId = null) ->
+    # TODO save before sending - if offline send later
+    if poiId != null
+      url = '<%= upload_embed_path(id: ':id') %>'.replace(/:id/, poiId)
+      data._method = 'put'
+    else
+      url = '<%= uploads_embed_path %>'
+    $.ajax
+      type: 'POST'
+      dataType: 'json'
+      url: url
+      data: data
+    .done (poiNote) ->
+        # TODO: unify json-format, until then avoid circular structure
+        Model.setupPoiForNote poiNote.poi
+        msg = { poi: poiNote.poi }
+        Model.instance().syncWithStorage msg, callback, poiNote
+    .fail (jqXHR, textStatus) ->
+        #$("#upload_error").html("<ul><-%= escape_javascript(@upload.errors.full_messages.map { |msg| content_tag(:li, msg) }.join.html_safe) %></ul>")
+        # get from localStorage
+        console.log('TODO: maybe get from local storage')
+        #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
+
   loadPoiNotes: (poiId, poiNoteId, callback) ->
     poi = Comm.StorageController.instance().get Comm.StorageController.poiKey {id: poiId}
     if poi? && poi.notes && poi.notes.length >= 1
@@ -316,11 +339,17 @@ class window.Storage.Model
 
   # has to be done sequentially becaus we're using one canvas for all
   _loadReadyImage: (poiNote, deferredModeParams = null) ->
+    if window.location.host != poiNote.attachment.url.match(/^https?:\/\/([^\/]+)/)[1]
+      console.log '_loadReadyImage - returning crossOrigin-url for poiNote['+poiNote.id+'].attachment: '+poiNote.attachment.url
+      if deferredModeParams?
+        deferredModeParams.deferred.resolve poiNote.attachment.url
+      return poiNote.attachment.url
     if deferredModeParams == null
       promise = true
       deferred = $.Deferred()
     img = new Image
     img.crossOrigin = ''
+    #img.crossOrigin = poiNote.attachment.url.match(/^https?:\/\/([^\/]+)/)[1]
     img.onload = (event) ->
       base64ImgDataUrl = Model._SINGLETON._toBase64 $('#attachment_canvas')[0], poiNote, this # event.target
       unless Comm.StorageController.isFileBased()

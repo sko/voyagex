@@ -23,8 +23,10 @@ de:
     take_shot: Schnappschuss aufnehmen
     upload_photo: Foto Hochladen
     upload_file: Datei Hochladen
+    upload_embed: Embed sichern
     select_camera: Foto aufnehmen
     select_file: Datei auswählen
+    select_embed: Embed einfügen
     comment: Kommentar
     add_comment: Kommentieren
     add_comment_submit: Hinzufügen

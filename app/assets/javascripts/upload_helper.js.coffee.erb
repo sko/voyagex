@@ -5,9 +5,15 @@ jQuery ->
     if selected.value == 'file'
       $('#upload_cam_container').css('display', 'none')
       $('#upload_file_controls').css('display', 'block')
-    else
+      $('#upload_embed_container').css('display', 'none')
+    else if selected.value == 'camera'
       $('#upload_cam_container').css('display', 'block')
       $('#upload_file_controls').css('display', 'none')
+      $('#upload_embed_container').css('display', 'none')
+    else
+      $('#upload_cam_container').css('display', 'none')
+      $('#upload_file_controls').css('display', 'none')
+      $('#upload_embed_container').css('display', 'block')
 
   curSelVidSrcIdx = 0
   switchCamera = () ->
@@ -37,10 +43,18 @@ jQuery ->
     else
       Storage.Model.instance().savePoiNote64 data, afterUploadPhoto
 
-  # also called from iframe - that's why window.
-  window.afterUploadPhoto = (poi, newNotes) ->
-    # @see upload_comments.js.coffee
-    $('#media_input_current').attr('src', '')
+  uploadEmbed = () ->
+    selLatLng = APP.getSelectedPositionLatLng()
+    data = { location: { latitude: selLatLng[0], longitude: selLatLng[1] },\
+             comment: $('#upload_comment').val(),\
+             data: $('#embed').val() }
+    uploadIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/([0-9]+)/)
+    if uploadIdMatch?
+      Storage.Model.instance().saveEmbed data, afterUploadEmbed, uploadIdMatch[1]
+    else
+      Storage.Model.instance().saveEmbed data, afterUploadEmbed
+
+  afterUpload = (poi, newNotes) ->
     $('#upload_comment').val('')
     if $.mobile
 #     if $('#upload_comment_conrols').hasClass('ui-popup-active')
@@ -51,12 +65,25 @@ jQuery ->
       uploadDataDialog.dialog("close")
     APP.panPosition poi.lat, poi.lng, poi.address
     VoyageX.View.addPoiNotes poi, newNotes
+
+  # also called from iframe - that's why window.
+  window.afterUploadPhoto = (poi, newNotes) ->
+    # @see upload_comments.js.coffee
+    $('#media_input_current').attr('src', '')
+    afterUpload poi, newNotes
+
+  window.afterUploadEmbed = (poi, newNotes) ->
+    $('#embed').val('')
+    afterUpload poi, newNotes
     
   $(document).on 'click', '#upload_button', (event) ->
     uploadPhoto()
     
   $(document).on 'click', '#media_input_upload_btn', (event) ->
     uploadPhoto64()
+    
+  $(document).on 'click', '#embed_upload_btn', (event) ->
+    uploadEmbed()
 
   if $.mobile
     $(document).on 'click', '.show-page-loading-msg', () ->

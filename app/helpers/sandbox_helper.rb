@@ -6,7 +6,7 @@ module SandboxHelper
   end
 
   def upload_entity_to_view upload
-    if upload.entity is_a? UploadEntity::Mediafile
+    if upload.entity.is_a? UploadEntity::Mediafile
       case upload.entity.content_type.match(/^[^\/]+/)[0]
       when 'image' 
         max_width = 100
@@ -23,6 +23,14 @@ module SandboxHelper
           inner_html += 'Your browser does not support the video element.'
           inner_html
         end
+      else
+        "unable to display entity with content_type: #{upload.entity.content_type}"
+      end
+    elsif upload.entity.is_a? UploadEntity::Embed
+      case upload.entity.embed_type.match(/^[^\/]+/)[0]
+      when 'image' 
+        max_width = 100
+        image_tag upload.entity.text, style: "width:#{max_width.to_i}px;" 
       else
         "unable to display entity with content_type: #{upload.entity.content_type}"
       end

@@ -23,8 +23,10 @@ en:
     take_shot: Take Shot
     upload_photo: Upload Photo
     upload_file: Upload File
+    upload_embed: Save Embed
     select_camera: Take a Photo
     select_file: Select File
+    select_embed: Add Embed
     comment: Comment
     add_comment: Comment
     add_comment_submit: Add

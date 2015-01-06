@@ -1,7 +1,7 @@
 module PoiHelper
 
   def add_attachment_to_poi_note_json upload, poi_note_json
-    if upload.entity is_a? UploadEntity::Mediafile
+    if upload.entity.is_a? UploadEntity::Mediafile
       case upload.entity.content_type.match(/^[^\/]+/)[0]
       when 'image'
         geometry = Paperclip::Geometry.from_file(upload.entity.file)
@@ -13,8 +13,19 @@ module PoiHelper
       else
         poi_note_json[:attachment] = { content_type: 'unknown/unknown', id: upload.id, url: upload.entity.file.url }
       end
+    elsif upload.entity.is_a? UploadEntity::Embed
+      case upload.entity.embed_type.match(/^[^\/]+/)[0]
+      when 'image'
+        poi_note_json[:attachment] = { content_type: upload.entity.embed_type, id: upload.id, url: upload.entity.text, width: -1, height: -1 }
+      when 'audio'
+        poi_note_json[:attachment] = { content_type: upload.entity.embed_type, id: upload.id, url: upload.entity.text }
+      when 'video'
+        poi_note_json[:attachment] = { content_type: upload.entity.embed_type, id: upload.id, url: upload.entity.text }
+      else
+        poi_note_json[:attachment] = { content_type: 'unknown/unknown', id: upload.id, url: upload.entity.text }
+      end
     else
-      poi_note_json[:attachment] = { content_type: 'unknown/unknown', id: upload.id, url: nil }
+      poi_note_json[:attachment] = { content_type: 'unknown/unknown', id: upload.id, url: nil, width: -1, height: -1 }
     end
   end
 
