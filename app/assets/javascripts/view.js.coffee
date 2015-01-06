@@ -61,6 +61,7 @@ class window.VoyageX.View
   _mapEventsCB: (mapEvent) ->
     console.log 'got a map_events - message: ' + mapEvent.type
     if APP.userId() == mapEvent.userId# && mapEvent.type == 'click'
+      window.currentAddress = mapEvent.address
       $('#current_address').html(mapEvent.address)
       return null
 #    if VoyageX.Main.markerManager().get().getPopup()?

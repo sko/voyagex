@@ -99,7 +99,10 @@ jQuery ->
     this.each () ->
       if this.setSelectionRange
         this.focus()
-        this.setSelectionRange(start, end)
+        try
+          this.setSelectionRange(start, end)
+        catch error
+          console.log('error when trying to set selectionRange: ', error)
       else if this.createTextRange
         range = this.createTextRange()
         range.collapse(true)

@@ -109,7 +109,9 @@ class window.VoyageX.TemplateHelper
     marker.openPopup()
     if isNewPopup
       poiNoteContainer = $('#marker_controls')
-      TemplateHelper._addPopupTitle poiNoteContainer, marker, {address: ''}#Comm.StorageController.instance().getLocation(poi.locationId)
+      TemplateHelper._addPopupTitle poiNoteContainer, marker, {address: currentAddress}#Comm.StorageController.instance().getLocation(poi.locationId)
+    else
+      $('#current_address').html(currentAddress)
 
   @openNoteEditor: (bookmark) ->
     marker = APP.getOpenPopupMarker()
@@ -136,6 +138,7 @@ class window.VoyageX.TemplateHelper
     marker.openPopup()
 #    if isNewPopup
 #      $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').on 'click', VoyageX.Main.closePopupCB(marker)
+    $('#current_address').html(currentAddress)
     $('#note').focus()
     noteEditor = $('#note_editor')
     noteEditor.closest('.leaflet-popup-content').first().scrollTop(noteEditor.offset().top)
@@ -191,7 +194,7 @@ class window.VoyageX.TemplateHelper
   @_addPopupTitle: (contentContainer, marker, location, poi) ->
     popupContainer = contentContainer.closest('.leaflet-popup').first()
     popupContainer.children('.leaflet-popup-close-button').on 'click', VoyageX.Main.closePopupCB(marker)
-    popupContainer.prepend('<span id="current_address" style="float: left;">'+location.address+(if poi? then ' ('+poi.id+')' else '')+'</span>')
+    popupContainer.prepend('<span id="current_address" style="float: left; font-size: 9px;">'+location.address+(if poi? then ' ('+poi.id+')' else '')+'</span>')
 
   @_updateIds: (rootElementId, callback = null) ->
     html = $('#'+rootElementId).html()

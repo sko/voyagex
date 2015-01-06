@@ -132,9 +132,25 @@ module Comm
             case publish_data['type']
             when 'click'
               unless publish_data['address'].present?
-                location = Location.new(latitude: publish_data['lat'], longitude: publish_data['lng'])
-                Rails.logger.debug "###### providing reverse-geocoding-service: #{location.address}"
-                publish_data['address'] = location.address
+                begin
+                  location = Location.new(latitude: publish_data['lat'], longitude: publish_data['lng'])
+                  location = nearby_location location, 10
+                  if location.persisted?
+                    address = shorten_address location
+                    publish_data['locationId'] = location.id
+                  else
+                    geo = Geocoder.search([publish_data['lat'], publish_data['lng']])
+                    address = geo[0].address
+                    parts = address.split(',')
+                    if parts.size >= 3
+                      address = parts.drop([parts.size - 2, 2].min).join(',').strip
+                    end
+                  end
+                  Rails.logger.debug "###### providing reverse-geocoding-service: #{address}"
+                  publish_data['address'] = address
+                rescue => e
+                  Rails.logger.error "!!!!!! #{e.message}"
+                end
               end
             end
           rescue => e
