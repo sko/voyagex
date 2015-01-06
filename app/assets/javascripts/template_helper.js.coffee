@@ -55,48 +55,29 @@ class window.VoyageX.TemplateHelper
     meta = {height: 0}
     popupHtml = TemplateHelper.poiNotePopupHtml(poi, meta)
     if marker == null
-      #marker = VoyageX.Main.markerManager().get()
       marker = APP.getMarker poi
-      #selMarker = VoyageX.Main.markerManager().get()
-      #if marker._zIndex >= selMarker._zIndex
-      #  selMarker.setZIndexOffset marker._zIndex+1
-   #popup = TemplateHelper._verifyPopup marker, 'poi_notes_container'
     popup = marker.getPopup()
-    unless popup?
+    isNewPopup = !popup?
+    if isNewPopup
       popup = L.popup {minWidth: 200, maxHeight: 300}
       marker.bindPopup(popup)
       marker.off('click', marker.togglePopup, marker)
-      popup.setContent(popupHtml)
-    else
-      popup.setContent(popupHtml)
+      # popupclose doesn't work if just popup is closed because of other marker's opening popup
+      #marker.on 'popupclose', (event) -> 
+      #    console.log('openPOINotePopup: popupclose for '+VoyageX.Main.markerManager().toString(event.target))
+    popup.setContent(popupHtml)
     marker.openPopup()
-    marker.on 'popupclose', (event) ->
-        console.log('openPOINotePopup: popupclose for current marker ... TODO')
     VoyageX.Main.markerManager().userMarkerMouseOver false
-#    $('.leaflet-popup-close-button').on 'click', (event) ->
-#      poiIdElement = $(event.target).closest('.leaflet-popup').find('div[id^="upload_comment_btn_"]').attr('id')
-#      if poiIdElement?
-#        markerMeta = VoyageX.Main.markerManager().forPoi parseInt(poiIdElement.match(/[0-9]+$/))
-#        markerMeta.marker.unbindPopup()
-#      else
-#        VoyageX.Main.markerManager().get().unbindPopup()
-    #$('.leaflet-popup-close-button').on 'click', TemplateHelper._closePopupCB(marker)
-    $('#poi_notes_container').closest('.leaflet-popup').children('.leaflet-popup-close-button').on 'click', TemplateHelper._closePopupCB(marker)
-
+    if isNewPopup
+      $('#poi_notes_container').closest('.leaflet-popup').children('.leaflet-popup-close-button').on 'click', VoyageX.Main.closePopupCB(marker)
       #$(event.target).closest('.leaflet-popup').remove()
-    #$('#upload_comment_btn_'+poi.notes[0].id).on 'click', (event) ->
-    #  openUploadCommentControls(poi.notes[0].id)
-      #$('#upload_comment_conrols').dialog('open')
-      #if ! $('#upload_comment_conrols').parent().hasClass('seethrough_panel')
-      #  $('#upload_comment_conrols').parent().addClass('seethrough_panel')
     $('#poi_note_input').html('')
     TemplateHelper.poiNoteInputHtml('poi_note_input', poi.notes[0])
 
   @addPoiNotes: (poi, newNotes, marker) ->
-   #popup = TemplateHelper._verifyPopup marker, 'poi_notes_container'
     popup = marker.getPopup()
     if popup?
-      #i = $('.leaflet-popup .upload_comment').length
+     #i = $('.leaflet-popup .upload_comment').length
       i = poi.notes.length - newNotes.length
       newPopupHtml = ''
       for note, j in newNotes
@@ -107,8 +88,6 @@ class window.VoyageX.TemplateHelper
       #popup.update()
       unless popup._isOpen
         marker.openPopup()
-        marker.on 'popupclose', (event) ->
-            console.log('addPoiNotes: popupclose for current marker ... TODO')
         VoyageX.Main.markerManager().userMarkerMouseOver false
     else
       TemplateHelper.openPOINotePopup poi, marker
@@ -118,16 +97,18 @@ class window.VoyageX.TemplateHelper
     popupHtml = TemplateHelper._updateIds 'tmpl_marker_controls'
    #popup = TemplateHelper._verifyPopup marker, 'marker_controls'
     popup = marker.getPopup()
-    unless popup?
+    isNewPopup = !popup?
+    if isNewPopup
       marker.bindPopup popupHtml
       marker.off('click', marker.togglePopup, marker)
+      # popupclose doesn't work if just popup is closed because of other marker's opening popup
+      #marker.on 'popupclose', (event) ->
+      #    console.log('openMarkerControlsPopup: popupclose for '+VoyageX.Main.markerManager().toString(event.target))
     else
       popup.setContent popupHtml
     marker.openPopup()
-    marker.on 'popupclose', (event) ->
-        console.log('openMarkerControlsPopup: popupclose for current marker ... TODO')
-#    $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').on 'click', (event) ->
-#      VoyageX.Main.markerManager().get().unbindPopup()
+    if isNewPopup
+      $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').on 'click', VoyageX.Main.closePopupCB(marker)
 
   @openNoteEditor: (bookmark) ->
     marker = APP.getOpenPopupMarker()
@@ -138,18 +119,25 @@ class window.VoyageX.TemplateHelper
     replace(/\{locationId\}/g, bookmark.location.id).
     replace(/\{text\}/, if bookmark.text? then bookmark.text else '')
     popup = marker.getPopup()
-    unless popup?
-      popupHtml = TemplateHelper._updateIds 'tmpl_marker_controls'
-      marker.bindPopup editorHtml + popupHtml
-      marker.off('click', marker.togglePopup, marker)
-    else
-      popupHtml = popup.getContent()
-      if popupHtml.indexOf('note_editor') == -1
-        popup.setContent editorHtml + popupHtml
+# note-editor is within existing popup - user or poi - so it should already exist here
+#    isNewPopup = !popup?
+#    if isNewPopup
+#      popupHtml = TemplateHelper._updateIds 'tmpl_marker_controls'
+#      marker.bindPopup popupHtml + editorHtml
+#      marker.off('click', marker.togglePopup, marker)
+#      # popupclose doesn't work if just popup is closed because of other marker's opening popup
+#      marker.on 'popupclose', (event) ->
+#          console.log('openNoteEditor: popupclose for current marker ... TODO')
+#    else
+    popupHtml = popup.getContent()
+    if popupHtml.indexOf('note_editor') == -1
+      popup.setContent popupHtml + editorHtml
     marker.openPopup()
-    marker.on 'popupclose', (event) ->
-        console.log('openNoteEditor: popupclose for current marker ... TODO')
+#    if isNewPopup
+#      $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').on 'click', VoyageX.Main.closePopupCB(marker)
     $('#note').focus()
+    noteEditor = $('#note_editor')
+    noteEditor.closest('.leaflet-popup-content').first().scrollTop(noteEditor.offset().top)
 
   @poisPreviewHTML: (pois) ->
     html = ''
@@ -198,22 +186,6 @@ class window.VoyageX.TemplateHelper
       replace(/\{bookmark_updated_at\}/, bookmark.updatedAt).
       replace(/\{commented_by_user\}/, 'TODO')
     html
-
-  @_closePopupCB: (marker) ->
-    (event) ->
-#        marker.unbindPopup()
-        console.log('_closePopupCB: current marker ... TODO')
-        VoyageX.Main._checkSaveNote()
-        VoyageX.Main.markerManager().userMarkerMouseOver true
-
-#  @_verifyPopup: (marker, containerId) ->
-#    popup = marker.getPopup()
-#    if popup?
-#      if $(popup._container).has('#'+containerId).length == 0
-#        marker.unbindPopup()
-#        #$(popup._container, $('.leaflet-popup')).remove()
-#        popup = null
-#    popup
 
   @_updateIds: (rootElementId, callback = null) ->
     html = $('#'+rootElementId).html()

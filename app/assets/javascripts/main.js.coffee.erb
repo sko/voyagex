@@ -104,7 +104,7 @@ class window.VoyageX.Main
     
   resetConnection: (commSettingId) ->
     peerChannelEncKey = $('#i_follow_'+commSettingId).attr('data-channelEncKey')
-    for channel in VoyageX.Main.commChannels()
+    for channel in Main.commChannels()
       if channel == 'system'
         continue
       channelPath = '/'+channel
@@ -338,15 +338,23 @@ class window.VoyageX.Main
         openPopupMarker = Main.markerManager().get()
       else
         poiId = parseInt openPopup.find('[id^=upload_comment_btn_]').attr('id').match(/[0-9]+$/)[0]
-        openPopupMarker = APP.getMarker poiId
+        openPopupMarker = APP.getMarker {id: poiId}
       if openPopupMarker.getPopup()? && openPopupMarker.getPopup()._isOpen
         Main._checkSaveNote()
         openPopupMarker.closePopup()
+
+  @closePopupCB: (leafletMarker) ->
+    (event) ->
+        meta = Main.markerManager().meta leafletMarker
+        console.log('closePopupCB: leafletMarker = '+Main.markerManager().toString(leafletMarker, meta))
+        Main._checkSaveNote()
+        Main.markerManager().userMarkerMouseOver true
 
   @_checkSaveNote: () ->
     textArea = $('#note_editor textarea')
     if textArea.length >= 1
       locationId = parseInt textArea.attr('id').match(/[0-9]+$/)[0]
+      console.log('_checkSaveNote: saving note for location '+Comm.StorageController.instance().getLocation(locationId).address)
       Storage.Model.instance().addNote locationId, textArea.val()
 
   @_markerEventsCB: (event) ->
@@ -366,12 +374,11 @@ class window.VoyageX.Main
             # click on poi-marker with open popup
             Main._checkSaveNote()
             event.target.closePopup()
-#            event.target.unbindPopup()
             Main.markerManager().userMarkerMouseOver true
             `;`
           else
             # click on poi-marker with no popup
-            if event.target == VoyageX.Main.markerManager().get()
+            if event.target == Main.markerManager().get()
               APP.preTogglePopup 'marker_controls'
             else
               Main._checkSaveNote()

@@ -62,9 +62,9 @@ class window.VoyageX.MarkerManager
   get: () ->
     if @_selectedMarker != null then @_selectedMarker.target() else null
 
-  meta: (marker) ->
+  meta: (leafletMarker) ->
     for m in @_markers
-      if m.target() == marker
+      if m.target() == leafletMarker
         return {poi: m.poi(), isUserMarker: m.isUserMarker()}
     null
 
@@ -100,6 +100,13 @@ class window.VoyageX.MarkerManager
     @_selectedSearchRadius.addTo(map);
     sBs
 
+  toString: (leafletMarker, meta = null) ->
+    unless meta?
+      meta = this.meta leafletMarker
+    if meta.isUserMarker
+      'user_' + leafletMarker._leaflet_id
+    else
+      'poi['+meta.poi.id+']_' + leafletMarker._leaflet_id
 
 class VoyageX.Marker
 
