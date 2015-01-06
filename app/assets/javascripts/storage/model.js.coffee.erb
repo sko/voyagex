@@ -339,7 +339,9 @@ class window.Storage.Model
 
   # has to be done sequentially becaus we're using one canvas for all
   _loadReadyImage: (poiNote, deferredModeParams = null) ->
-    if window.location.host != poiNote.attachment.url.match(/^https?:\/\/([^\/]+)/)[1]
+    #if window.location.host != poiNote.attachment.url.match(/^https?:\/\/([^\/]+)/)[1]
+    urlHostMatch = poiNote.attachment.url.match(/^https?:\/\/([^\/]+)/)
+    if urlHostMatch? && window.location.host != urlHostMatch[1]
       console.log '_loadReadyImage - returning crossOrigin-url for poiNote['+poiNote.id+'].attachment: '+poiNote.attachment.url
       if deferredModeParams?
         deferredModeParams.deferred.resolve poiNote.attachment.url

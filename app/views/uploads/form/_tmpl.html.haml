@@ -23,7 +23,7 @@
         = render partial: '/uploads/form/tmpl_file_data', locals: {poi_note: poi_note, f: f}
         = hidden_field_tag 'location[latitude]', '', id: ':remove', 'tmpl-id' => 'location_latitude'
         = hidden_field_tag 'location[longitude]', '', id: ':remove', 'tmpl-id' => 'location_longitude'
-    %div{tmpl: {id: :upload_embed_container}}
+    %div{tmpl: {id: :upload_embed_container}, style: 'display: none;'}
       = text_area_tag 'upload_comment[embed]', '', id: ':remove_upload_comment_embed', 'tmpl-id' => 'embed'
       %br
       .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{tmpl: {id: 'embed_upload_btn'}}

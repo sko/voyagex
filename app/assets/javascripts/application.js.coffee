@@ -20,7 +20,7 @@ addUser = () ->
   $("#new_user").submit()
   signUpDialog.dialog("close")
   return true
-signUpDialog = $("#sign_up_modal").dialog({
+window.signUpDialog = $("#sign_up_modal").dialog({
       autoOpen: false,
       height: Math.abs($(window).height() * 0.7),
       width: Math.abs($(window).width() * 0.3),
@@ -42,7 +42,7 @@ signInUser = () ->
   $("#new_session").submit()
   signInDialog.dialog("close")
   return true
-signInDialog = $("#sign_in_modal").dialog({
+window.signInDialog = $("#sign_in_modal").dialog({
       autoOpen: false,
       height: Math.abs($(window).height() * 0.7),
       width: Math.abs($(window).width() * 0.3),

@@ -131,13 +131,10 @@ module Comm
           begin
             case publish_data['type']
             when 'click'
-              # could calculate it via Location.new(latitude: data['lat'], longitude: data['lng']).address
-              # but maybe this is less expensive since reverse-geocode-lookup already done
-              user = User.where(id: publish_data['userId']).first
-              if user.present? && user.locations.present?
-                location = user.locations.last
+              unless publish_data['address'].present?
+                location = Location.new(latitude: publish_data['lat'], longitude: publish_data['lng'])
                 Rails.logger.debug "###### providing reverse-geocoding-service: #{location.address}"
-                publish_data['address'] = shorten_address location
+                publish_data['address'] = location.address
               end
             end
           rescue => e

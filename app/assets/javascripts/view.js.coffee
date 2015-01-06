@@ -61,6 +61,7 @@ class window.VoyageX.View
   _mapEventsCB: (mapEvent) ->
     console.log 'got a map_events - message: ' + mapEvent.type
     if APP.userId() == mapEvent.userId# && mapEvent.type == 'click'
+      $('#current_address').html(mapEvent.address)
       return null
 #    if VoyageX.Main.markerManager().get().getPopup()?
 #      VoyageX.Main.markerManager().get().unbindPopup()
@@ -104,7 +105,7 @@ class window.VoyageX.View
     $('#pois_preview_btn').click()
 
   viewAttachment: (poiNoteId) ->
-    #poiId = $('#poi_notes_container > div[id^=upload_comment_btn_]').attr('id').match(/upload_comment_btn_([0-9]+)/)[1]
+    #poiId = $('#poi_notes_container').attr('data-poiId')
     imgUrl = $('#poi_notes_container .upload_comment[data-id='+poiNoteId+'] img').attr('src')
     #height = attachmentViewPanel.height()
     if window.isMobile()

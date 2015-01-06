@@ -13,6 +13,10 @@ sendAuthFormOn13 = (event) ->
     submit = $('#auth_signin_email').val() != '' && $('#auth_signin_password').val() != ''
     if submit
       $(event.target).closest('form').submit()
+      if isMobile()
+        $('#sign_in_cancel').click()
+      else
+        signInDialog.dialog("close")
 
 $(document).on 'keyup', '#auth_signin_email', (event) ->
     sendAuthFormOn13 event

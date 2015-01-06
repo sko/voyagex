@@ -15,6 +15,7 @@ class window.VoyageX.Main
     @_version = new VoyageX.Version [0, 1]
     @_initState = 0
     @_online = online
+    @_navigatorOnline = online
     @_view = view
     @_comm = null
     @_selectedPosition = {lat: -1.0, lng: -1.0, address: null}
@@ -88,7 +89,22 @@ class window.VoyageX.Main
     window.currentUser.username
 
   isOnline: () ->
-    @_online
+    if navigator.onLine
+      unless @_navigatorOnline
+        @_navigatorOnline = true
+        console.log 'Main - isOnline: navigator switched to on-line ...'
+        # TODO reload offline-cache files ...  remember them in array? until set data-attr
+        #APP.map().invalidateSize({
+        #    reset: true,
+        #    pan: false,
+        #    animate: false
+        #  })
+      @_online
+    else
+      if @_navigatorOnline
+        @_navigatorOnline = false
+        console.log 'Main - isOnline: navigator switched to off-line ...'
+      false
 
   setOnline: () ->
     @_online = true
@@ -121,7 +137,7 @@ class window.VoyageX.Main
       #APP.panPosition(poi.lat, poi.lng, poi.address)
       APP.map().panTo(this.getSelectedPositionLatLng())
     else
-      #poiId = $('#poi_notes_container > div[id^=upload_comment_btn_]').attr('id').match(/upload_comment_btn_([0-9]+)/)[1]
+      #poiId = $('#poi_notes_container').attr('data-poiId')
       poi = Main.storageController().get Comm.StorageController.poiKey({id: poiId})
       locationData = Main.storageController().getLocation poi.locationId
       posLatLng = [locationData.lat, locationData.lng]
@@ -159,7 +175,7 @@ class window.VoyageX.Main
     else
       poiMarkerPopupPanel = $('#poi_notes_container')
       if poiMarkerPopupPanel.length >= 1
-        poiId = parseInt(poiMarkerPopupPanel.find('[id^=upload_comment_btn_]').attr('id').match(/[0-9]+$/)[0])
+        poiId = parseInt poiMarkerPopupPanel.attr('data-poiId')
         marker = APP.getMarker {id: poiId}
       else
         marker = null
@@ -337,7 +353,7 @@ class window.VoyageX.Main
       if contentId == 'marker_controls'
         openPopupMarker = Main.markerManager().get()
       else
-        poiId = parseInt openPopup.find('[id^=upload_comment_btn_]').attr('id').match(/[0-9]+$/)[0]
+        poiId = parseInt openPopup.attr('data-poiId')
         openPopupMarker = APP.getMarker {id: poiId}
       if openPopupMarker.getPopup()? && openPopupMarker.getPopup()._isOpen
         Main._checkSaveNote()

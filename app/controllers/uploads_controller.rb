@@ -132,6 +132,7 @@ class UploadsController < ApplicationController
     comment = @poi_note.comments.build(poi: @poi_note.poi, user: user, text: params[:comment], attachment: @upload)
     @upload.attached_to = comment
     comment.save
+    comment.reload
     
     #render "uploads/uploaded_base64", formats: [:js]
     poi_note_json = poi_note_json comment

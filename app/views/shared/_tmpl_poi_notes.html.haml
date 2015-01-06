@@ -1,5 +1,5 @@
 #tmpl_poi_notes_container{style: 'display: none;'}
-  %div{tmpl: {id: 'poi_notes_container'}}
+  %div{tmpl: {id: 'poi_notes_container'}, data: {poiId: '{poi_id}'}}
     {poi_notes}
     - if is_mobile
       %span

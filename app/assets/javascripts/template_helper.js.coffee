@@ -69,8 +69,8 @@ class window.VoyageX.TemplateHelper
     marker.openPopup()
     VoyageX.Main.markerManager().userMarkerMouseOver false
     if isNewPopup
-      $('#poi_notes_container').closest('.leaflet-popup').children('.leaflet-popup-close-button').on 'click', VoyageX.Main.closePopupCB(marker)
-      #$(event.target).closest('.leaflet-popup').remove()
+      poiNoteContainer = $('#poi_notes_container')
+      TemplateHelper._addPopupTitle poiNoteContainer, marker, Comm.StorageController.instance().getLocation(poi.locationId), poi
     $('#poi_note_input').html('')
     TemplateHelper.poiNoteInputHtml('poi_note_input', poi.notes[0])
 
@@ -108,7 +108,8 @@ class window.VoyageX.TemplateHelper
       popup.setContent popupHtml
     marker.openPopup()
     if isNewPopup
-      $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').on 'click', VoyageX.Main.closePopupCB(marker)
+      poiNoteContainer = $('#marker_controls')
+      TemplateHelper._addPopupTitle poiNoteContainer, marker, {address: ''}#Comm.StorageController.instance().getLocation(poi.locationId)
 
   @openNoteEditor: (bookmark) ->
     marker = APP.getOpenPopupMarker()
@@ -186,6 +187,11 @@ class window.VoyageX.TemplateHelper
       replace(/\{bookmark_updated_at\}/, bookmark.updatedAt).
       replace(/\{commented_by_user\}/, 'TODO')
     html
+
+  @_addPopupTitle: (contentContainer, marker, location, poi) ->
+    popupContainer = contentContainer.closest('.leaflet-popup').first()
+    popupContainer.children('.leaflet-popup-close-button').on 'click', VoyageX.Main.closePopupCB(marker)
+    popupContainer.prepend('<span id="current_address" style="float: left;">'+location.address+(if poi? then ' ('+poi.id+')' else '')+'</span>')
 
   @_updateIds: (rootElementId, callback = null) ->
     html = $('#'+rootElementId).html()
