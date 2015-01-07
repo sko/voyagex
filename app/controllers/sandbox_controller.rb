@@ -12,7 +12,7 @@ class SandboxController < ApplicationController
   # used from Model.js to act withLocation
   def location_data
     location = Location.find(params[:location_id])
-    location_json = {lat: location.latitude, lng: location.longitude, address: location.address}
+    location_json = {lat: location.latitude, lng: location.longitude, address: shorten_address(location)}
     poi = Poi.where(location_id: location.id).first
     location_json[:poi_id] = poi.id if poi.present?
     render json: location_json.to_json

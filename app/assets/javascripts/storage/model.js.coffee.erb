@@ -255,11 +255,19 @@ class window.Storage.Model
       notePoi = note.poi
       delete note.poi
       poiNoteClone = eval("("+JSON.stringify(note)+")")
-      storedJSON = Comm.StorageController.instance().addToList poiKey, 'notes', poiNoteClone, false
+      storedJSON = Model._storeWithSeparateUser poiKey, poiNoteClone
       note.poi = notePoi
       storedJSON
     else
-      Comm.StorageController.instance().addToList poiKey, 'notes', note, false
+      Model._storeWithSeparateUser poiKey, note
+
+  @_storeWithSeparateUser: (poiKey, note) ->
+    Comm.StorageController.instance().saveUser note.user
+    storeNote = {userId: note.user.id}
+    for key in Object.keys(note)
+      unless key == 'user'
+        storeNote[key] = note[key]
+    Comm.StorageController.instance().addToList poiKey, 'notes', storeNote, false
   
   @_findPoiNote: (note, notes) ->
     for n, idx in notes

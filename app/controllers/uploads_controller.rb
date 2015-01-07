@@ -142,6 +142,7 @@ class UploadsController < ApplicationController
   end
 
   def destroy
+    # TODO don't delete if first poiNote - can only be deleted via poi
     @upload = Upload.find(params[:id])
     @upload.attached_to.destroy
     render "uploads/deleted", formats: [:js]
@@ -184,7 +185,7 @@ class UploadsController < ApplicationController
   def after_save
     #geometry = Paperclip::Geometry.from_file(@upload.file)
     #file_data = { type: 'image', url: @upload.file.url, width: geometry.width.to_i, height: geometry.height.to_i }
-    #location_data = { lat: @upload.attached_to.poi.location.latitude, lng: @upload.attached_to.poi.location.longitude, address: @upload.attached_to.poi.location.address }
+    #location_data = { lat: @upload.attached_to.poi.location.latitude, lng: @upload.attached_to.poi.location.longitude, address: shorten_address(@upload.attached_to.poi.location) }
     #upload_msg = { id: @upload.id, file: file_data, location: location_data }
     poi_note = @upload.attached_to
     upload_msg = { type: 'poi_note_upload',

@@ -62,7 +62,7 @@ class window.VoyageX.View
     console.log 'got a map_events - message: ' + mapEvent.type
     if APP.userId() == mapEvent.userId# && mapEvent.type == 'click'
       window.currentAddress = mapEvent.address
-      $('#current_address').html(mapEvent.address)
+      $('#current_address').html(mapEvent.address+(if mapEvent.locationId? then ' ('+mapEvent.locationId+')' else ''))
       return null
 #    if VoyageX.Main.markerManager().get().getPopup()?
 #      VoyageX.Main.markerManager().get().unbindPopup()
@@ -77,7 +77,7 @@ class window.VoyageX.View
 
   _uploadsCB: (upload) ->
     console.log 'got an uploads - message: ' + upload.type
-    unless upload.poi_note.user.id == APP.userId()
+    unless upload.poi_note.userId == APP.userId()
       window.stopSound = VoyageX.MediaManager.instance().playSound('/Treat.mp3')
       # TODO: unify json-format, until then avoid circular structure
       poi = upload.poi_note.poi

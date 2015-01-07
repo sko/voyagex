@@ -86,7 +86,7 @@ module Comm
 #[2] pry(#<FayeRails::Filter::DSL>)> 
 ###### Inbound message {"channel"=>"/meta/subscribe", "clientId"=>"adv6zxtpglnbcovod8ecbu4wwb2ykkm", "subscription"=>"/map_events@rxbcin9nc", "id"=>"4"}.
         block_msg = nil
-        Rails.logger.debug "###### Inbound message #{message}."
+        Rails.logger.debug "###### Inbound message #{message}. (self: #{self.hash} / #{self.object_id})"
         if message['channel'].match(/^\/meta\/subscribe/).present?
           subscription_enc_key = message['subscription'].match(/^.+?#{PEER_CHANNEL_PREFIX}([^\/]+)/)
           if subscription_enc_key.present?

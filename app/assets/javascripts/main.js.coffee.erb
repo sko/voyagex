@@ -201,9 +201,17 @@ class window.VoyageX.Main
 #          $('#'+selectedTab+'_btn').click()
 #        else
 #          APP.photoNav()
-        if location.poi_id
-          APP.showPOI location.poi_id, -1
-        Main.markerManager().get().setLatLng(L.latLng(location.lat, location.lng))
+        if location.poiId
+          APP.showPOI location.poiId, -1
+        else
+          $('#current_address').html(location.address+' ('+locationId+')')
+          openPopupMarker = APP.getOpenPopupMarker()
+          if openPopupMarker? && openPopupMarker != Main.markerManager().get()
+            openPopupMarker.closePopup()
+          #Main.markerManager().userMarkerMouseOver true
+        if APP.map().getZoom() < 15
+          APP.map().setZoom 15
+        #Main.markerManager().get().setLatLng(L.latLng(location.lat, location.lng))
 
   showPOI: (poiId, poiNoteId) ->
     Storage.Model.instance().loadPoiNotes poiId, poiNoteId, (poi) ->

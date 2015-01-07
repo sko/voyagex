@@ -68,7 +68,15 @@ class window.Comm.StorageController
   getLocation: (locationId) ->
     storeKey = 'comm.locations'
     locations = eval("(" + localStorage.getItem(storeKey) + ")")
-    if locations? then locations[locationId] else null
+    if locations?
+      location = locations[locationId]
+      if location && locations.pois?
+        poi = locations.pois[locationId]
+        if poi?
+          location.poiId = poi.id
+      location
+    else
+      null
   
   saveLocation: (location, flags = {}) ->
     storeKey = 'comm.locations'
@@ -142,6 +150,20 @@ class window.Comm.StorageController
   saveNote: (locationId, text) ->
     this.bookmark locationId, text
     #bookmarks (locations, locationBookmark) ->
+  
+  getUser: (userId) ->
+    storeKey = 'comm.users'
+    users = eval("(" + localStorage.getItem(storeKey) + ")")
+    users[userId]
+  
+  saveUser: (user, flags = {}) ->
+    storeKey = 'comm.users'
+    users = eval("(" + localStorage.getItem(storeKey) + ")")
+    unless users
+      users = {}
+    users[user.id] = {username: user.username}
+    localStorage.setItem storeKey, JSON.stringify(users)
+    user
 
   # directory path for storing with file-api
   @poiNoteAttachmentPath: (poiNote) ->

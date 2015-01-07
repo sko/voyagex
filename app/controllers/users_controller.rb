@@ -113,7 +113,7 @@ class UsersController < ApplicationController
           location = Location.find(params[:location_id])
           current_user.locations_users.where(location_id: location.id).first.update_attributes note: params[:text], updated_at: DateTime.now
           user_json[:id] = current_user.id
-          user_json[:note] = {id: location.id, lat: location.latitude, lng:location.longitude, address:location.address}
+          user_json[:note] = {id: location.id, lat: location.latitude, lng:location.longitude, address:shorten_address(location)}
         end
         render json: user_json.to_json
         return

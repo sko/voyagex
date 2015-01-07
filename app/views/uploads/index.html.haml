@@ -8,5 +8,8 @@
       upload_id: #{upload.id}
       %br
       = link_to 'Delete', "/uploads/#{upload.id}", style: 'margin-left: 20px;', data: { remote: "true", format: :js, method: :delete }
+      - unless upload.attached_to.comments_on.present?
+        %b
+          Poi-id=#{upload.attached_to.poi.id}'s primary note!
     %div{style: 'clear: both;'}
       &nbsp;
