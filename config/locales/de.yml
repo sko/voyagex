@@ -13,6 +13,8 @@ de:
     email_confirm_required: "
       email-bestätigung für %{email} für&apos;s einloggen erforderlich
       TODO: resend confirmation instructions"
+  locations:
+    view_note: Notiz anzeigen
   pois:
     add: POI eintragen
     bookmark: Ort merken

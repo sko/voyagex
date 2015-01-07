@@ -46,10 +46,13 @@ class window.VoyageX.TemplateHelper
     poiNotesHtml = ''
     for poiNote, i in poi.notes
       poiNotesHtml += TemplateHelper.poiNotePopupEntryHtml(poiNote, poiNoteTmpl, i, meta)
+    bookmark = APP.storage().getBookmark(poi.locationId)
     popupHtml = popupHtml.
+                replace(/\{poi_id\}/g, poi.id).
+                replace(/\{location_id\}/g, poi.locationId).
+                replace(/\{display_view_note_btn\}/g, if bookmark? then 'inline' else 'none').
                 #replace(/\{address\}/g, poi.address).
-                replace(/\{poi_notes\}/, poiNotesHtml).
-                replace(/\{poi_id\}/g, poi.id)
+                replace(/\{poi_notes\}/, poiNotesHtml)
 
   @openPOINotePopup: (poi, marker = null) ->
     meta = {height: 0}
@@ -180,13 +183,14 @@ class window.VoyageX.TemplateHelper
         replace(/\{attachment_url\}/, bookmark.location.poi.notes[0].attachment.url)
       else
         poiOrNoPoiHTML = $('#tmpl_location_bookmark_no_poi').html()
+      updatedAt = new Date(bookmark.updatedAt)
       html = $('#tmpl_location_bookmarks').html().
       replace(/\{location_poi_or_no_poi\}/, poiOrNoPoiHTML).
       replace(/\{locationId\}/g, bookmark.location.id).
       replace(/\{lat\}/, bookmark.location.lat).
       replace(/\{lng\}/, bookmark.location.lng).
       replace(/\{address\}/, bookmark.location.address).
-      replace(/\{bookmark_updated_at\}/, bookmark.updatedAt).
+      replace(/\{bookmark_updated_at\}/, $.datepicker.formatDate('dd.mm.yy', updatedAt)+' '+updatedAt.getHours().toString().replace(/^([0-9])$/,'0$1')+':'+updatedAt.getMinutes().toString().replace(/^([0-9])$/,'0$1')).
       replace(/\{commented_by_user\}/, 'TODO')
     html
 

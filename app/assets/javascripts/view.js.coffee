@@ -5,6 +5,8 @@ class window.VoyageX.View
   constructor: () ->
     View._SINGLETON = this
     @_commListeners = {}
+    @_blinkArrowTO = null
+    @_blink = false
     for channel in ['talk', 'map_events', 'uploads']
       @_commListeners[channel] = []
 
@@ -74,18 +76,47 @@ class window.VoyageX.View
     #APP.map().setView [mapEvent.lat, mapEvent.lng], 16
     for listener in View.instance()._commListeners.map_events
       listener(mapEvent)
+    APP.view().startBlinking()
 
   _uploadsCB: (upload) ->
     console.log 'got an uploads - message: ' + upload.type
     unless upload.poi_note.userId == APP.userId()
-      window.stopSound = VoyageX.MediaManager.instance().playSound('/Treat.mp3')
       # TODO: unify json-format, until then avoid circular structure
       poi = upload.poi_note.poi
       Storage.Model.setupPoiForNote poi
       msg = { poi: poi }
       Storage.Model.instance().syncWithStorage msg, View.addPoiNotes, upload.poi_note
+      APP.view().startBlinking()
+
+  startBlinking: () ->
+    APP.view()._blink = true
+    APP.view().blinkArrow()
+
+  blinkArrow: (iconSuffix = null, stop = false) ->
+    target = $('#photo_nav_open_icon')
+    if stop
+      APP.view()._blink = false
+      clearTimeout APP.view()._blinkArrowTO
+      target.attr('src', target.attr('src').replace(/(\.[^.]+|).png/, iconSuffix+'.png'))
+      return true
+    if APP.view()._blink
+      if iconSuffix?
+        target.attr('src', target.attr('src').replace(/(\.[^.]+|).png/, iconSuffix+'.png'))
+        if iconSuffix == ''
+          APP.view()._blinkArrowTO = setTimeout "APP.view().blinkArrow()", 500
+        else
+          unless stopSound?
+            window.stopSound = VoyageX.MediaManager.instance().playSound('/Treat.mp3', (event) ->
+                if event.msg == 'finished'
+                  window.stopSound = null
+              )
+      else
+        #target.delay(500).blinkArrow('.on').delay(500).blinkArrow('')
+        this.blinkArrow '.on'
+        APP.view()._blinkArrowTO = setTimeout "APP.view().blinkArrow('')", 500
 
   previewPois: (pois) ->
+    APP.view().blinkArrow '', true
     poisPreviewHtml = VoyageX.TemplateHelper.poisPreviewHTML pois
     $('#pois_preview').html(poisPreviewHtml)
     # this has to be done after html is added ...
@@ -119,6 +150,9 @@ class window.VoyageX.View
       maxHeight = Math.abs($(window).height() * 0.8)-10
       $('#attachment_view_panel').html('<div class="attachment_view"><img src="'+imgUrl+'" style="max-width:'+maxWidth+'px;max-height:'+maxHeight+'px;"></div>')
       $('#attachment_view_panel').dialog('open')
+  
+  viewBookmarkNote: (bookmark) ->
+    VoyageX.TemplateHelper.openNoteEditor bookmark
 
   scrollToLastChatMessage: () ->
     msgDiv = $('.chat_message').last()
@@ -188,9 +222,9 @@ class window.VoyageX.View
     VoyageX.TemplateHelper.addPoiNotes poi, newNotes, APP.getMarker(poi)
     View.instance().scrollToPoiNote newNotes[0].id
     #APP.panPosition(poi.lat, poi.lng, poi.address)
-  
+
   @addBookmark: (bookmark) ->
-    VoyageX.TemplateHelper.openNoteEditor bookmark
+    View.instance().viewBookmarkNote bookmark
     bookmarksPanel = $('#location_bookmarks')
     if bookmarksPanel.find('.bookmark-container[data-id='+bookmark.location.id+']').length == 0
       locationsBookmarksHTML = VoyageX.TemplateHelper.locationsBookmarksHTML [bookmark]

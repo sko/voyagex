@@ -79,7 +79,7 @@ class window.VoyageX.MediaManager
     # we’re done with the rotating so restore the unrotated context
     context.restore();
 
-  playSound: (filePath) ->
+  playSound: (filePath, callback = null) ->
     if @_audioPlayer?
       audio1 = MediaManager.instance()._audioPlayer.createBufferSource()
       stopCB = () ->
@@ -93,6 +93,9 @@ class window.VoyageX.MediaManager
         (bufferList) ->
             audio1.buffer = bufferList[0]
             audio1.connect(MediaManager.instance()._audioPlayer.destination)
+            if callback?
+              audio1.onended = () ->
+                  callback {msg: 'finished'}
             audio1.start(0)
       )
       bufferLoader.load()

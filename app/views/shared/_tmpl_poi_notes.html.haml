@@ -17,6 +17,10 @@
         .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: 'bookmark_poi_btn_{poi_id}', onclick: 'APP.bookmarkLocation({poi_id})'}
           .ui-button-text
             #{t('pois.bookmark')}
+      %span{style: 'display: {display_view_note_btn};'}
+        .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{id: 'view_note_btn_{poi_id}', onclick: 'APP.view().viewBookmarkNote(APP.storage().getBookmark({location_id}))'}
+          .ui-button-text
+            #{t('locations.view_note')}
 
 #tmpl_poi_note{style: 'display: none;'}
   .triangle-border.upload_comment{class: '{toggle}', tmpl: {toggle: 'left|right'}, style: 'vertical-align: top;', data: {id: '{poi_note_id}', index: '{i}'}}

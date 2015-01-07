@@ -94,6 +94,18 @@ class window.Comm.StorageController
     localStorage.setItem storeKey, JSON.stringify(locations)
     location
   
+  getBookmark: (locationId) ->
+    storeKey = 'comm.locations'
+    locations = eval("(" + localStorage.getItem(storeKey) + ")")
+    if locations.bookmarks?
+      bookmark = locations.bookmarks[locationId]
+      if bookmark?
+        bookmark.location = locations[locationId]
+        bookmark.location.id = locationId
+      bookmark
+    else
+      null
+
   bookmark: (locationId, text = null) ->
     storeKey = 'comm.locations'
     locations = eval("(" + localStorage.getItem(storeKey) + ")")
