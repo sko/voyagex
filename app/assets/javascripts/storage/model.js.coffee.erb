@@ -75,6 +75,8 @@ class window.Storage.Model
         console.log('TODO: maybe get from local storage')
         #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
 
+  loadPeers: () ->
+    
   savePoiNote: (formId, callback) ->
     $("#"+formId).submit()
 

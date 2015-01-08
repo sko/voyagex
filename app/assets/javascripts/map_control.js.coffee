@@ -32,7 +32,7 @@ class window.VoyageX.MapControl
         console.log '### map-event: ready ...'
         #MapControl.instance().showTileInfo false
         #for poi in APP._initPoisOnMap
-        #  marker = Main.markerManager().add poi, VoyageX.Main._markerEventsCB, false
+        #  marker = Main.markerManager().add poi.location, VoyageX.Main._markerEventsCB, false
         if APP.isOnline()
           mC = VoyageX.MapControl.instance()
           unless Comm.StorageController.isFileBased()

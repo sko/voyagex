@@ -91,6 +91,20 @@ class UsersController < ApplicationController
     @user.save
   end
 
+  def peers
+    peers_json = []
+    if current_user.present?
+      if params[:location_id].present?
+        # TODO
+      else
+        current_user.follows.each do |cs|
+          peers_json << {peer_id: cs.user.id, port: {id: cs.id, channel_enc_key: cs.channel_enc_key}}
+        end
+      end
+    end
+    render json: {peers: peers_json}.to_json
+  end
+
   def change_details
     if current_user.present?
       if params[:detail].present?

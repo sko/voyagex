@@ -66,14 +66,16 @@ class window.VoyageX.View
       window.currentAddress = mapEvent.address
       $('#current_address').html(mapEvent.address+(if mapEvent.locationId? then ' ('+mapEvent.locationId+')' else ''))
       return null
-#    if VoyageX.Main.markerManager().get().getPopup()?
-#      VoyageX.Main.markerManager().get().unbindPopup()
-    if mapEvent.address?
-      APP._setSelectedPositionLatLng VoyageX.Main.markerManager().get(), mapEvent.lat, mapEvent.lng, mapEvent.address
-    else
-      APP._setSelectedPositionLatLng VoyageX.Main.markerManager().get(), mapEvent.lat, mapEvent.lng, null
-    APP.map().panTo([mapEvent.lat, mapEvent.lng])
-    #APP.map().setView [mapEvent.lat, mapEvent.lng], 16
+    if false # move to event-ordinates
+      if mapEvent.address?
+        APP._setSelectedPositionLatLng VoyageX.Main.markerManager().get(), mapEvent.lat, mapEvent.lng, mapEvent.address
+      else
+        APP._setSelectedPositionLatLng VoyageX.Main.markerManager().get(), mapEvent.lat, mapEvent.lng, null
+      APP.map().panTo([mapEvent.lat, mapEvent.lng])
+      #APP.map().setView [mapEvent.lat, mapEvent.lng], 16
+    #poiId ... $('#pois_preview > .poi-preview-container[data-id=68]')
+    #locationId ... $('#location_bookmarks .bookmark-container[data-id=4016]')
+    #TODO ... $('#people_of_interest')
     for listener in View.instance()._commListeners.map_events
       listener(mapEvent)
     APP.view().alert()

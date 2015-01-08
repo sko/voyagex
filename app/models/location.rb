@@ -14,8 +14,13 @@ class Location < ActiveRecord::Base
 #  end
   after_validation :reverse_geocode
 
+  @@default_location = nil
+
   def self.default
     # hagen - uni
-    Location.new(latitude: 51.3767, longitude: 7.4938)
+    return @@default_location if @@default_location.present?
+    @@default_location = Location.where(latitude: 51.3767, longitude: 7.4938).first
+    @@default_location = Location.create(latitude: 51.3767, longitude: 7.4938) unless @@default_location.present?
+    @@default_location
   end
 end

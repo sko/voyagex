@@ -9,16 +9,19 @@ class window.VoyageX.MarkerManager
     @_maxZIndex = 0
     @_userMarkerMouseOver = true
 
-  add: (poi, callBack, isUserMarker = false) ->
-    markerOps = { draggable: isUserMarker,\
+  add: (location, callBack, flags = {isUserMarker: false, isPeerMarker: false}) ->
+    markerOps = { draggable: flags.isUserMarker,\
                   riseOnHover: true }
-    unless isUserMarker
-      markerOps.icon = new L.Icon.Default({iconUrl: '/assets/marker-icon-red.png'})
-    marker = L.marker([poi.lat, poi.lng], markerOps)
-    @_markers.push new VoyageX.Marker(marker, poi, isUserMarker)
+    unless flags.isUserMarker
+      if flags.isPeerMarker
+        markerOps.icon = new L.Icon.Default({iconUrl: '/assets/marker-icon-yellow.png'})
+      else
+        markerOps.icon = new L.Icon.Default({iconUrl: '/assets/marker-icon-red.png'})
+    marker = L.marker([location.lat, location.lng], markerOps)
+    @_markers.push new VoyageX.Marker(marker, location, flags)
     if callBack != null
       marker.on 'click', callBack
-      if isUserMarker
+      if flags.isUserMarker
         marker.on 'dblclick', callBack
         marker.on 'dragend', callBack
         marker.on 'mouseover', callBack
@@ -27,18 +30,18 @@ class window.VoyageX.MarkerManager
       @_maxZIndex = marker._zIndex+1
       if @_selectedMarker != null
         @_selectedMarker.target().setZIndexOffset @_maxZIndex
-    if isUserMarker
+    if flags.isUserMarker
       marker._icon.title = marker._leaflet_id
     else
-      marker._icon.title = poi.address
+      marker._icon.title = location.address
     marker
 
   sel: (replaceMarker, lat, lng, callBack) ->
     # if @_selectedMarker != null && replaceMarker == @_selectedMarker.target()
     #   @_map.removeLayer @_selectedMarker.target()
     if replaceMarker == null
-      poi = {lat: lat, lng: lng}
-      marker = this.add poi, callBack, true
+      location = {lat: lat, lng: lng}
+      marker = this.add location, callBack, true
       @_selectedMarker = @_markers[@_markers.length - 1]
     else
       for m in @_markers
@@ -65,7 +68,9 @@ class window.VoyageX.MarkerManager
   meta: (leafletMarker) ->
     for m in @_markers
       if m.target() == leafletMarker
-        return {poi: m.poi(), isUserMarker: m.isUserMarker()}
+        #poi = eval("(" + localStorage.getItem(Comm.StorageController.poiKey({id: m.location.poiId})) + ")")
+        poi = APP.storage().get Comm.StorageController.poiKey({id: m.location().poiId})
+        return {poi: poi, isUserMarker: m.isUserMarker()}
     null
 
   userMarkerMouseOver: (enable = null) ->
@@ -80,8 +85,9 @@ class window.VoyageX.MarkerManager
 
   forPoi: (poiId) ->
     for m in @_markers
-      if m.poi().id == poiId
-        return {marker: m.target(), poi: m.poi(), isUserMarker: m.isUserMarker()}
+      if m.location().poiId == poiId
+        poi = APP.storage().get Comm.StorageController.poiKey({id: m.location().poiId})
+        return {marker: m.target(), poi: poi, isUserMarker: m.isUserMarker()}
     null
 
   searchBounds: (radiusMeters, map) ->
@@ -110,19 +116,23 @@ class window.VoyageX.MarkerManager
 
 class VoyageX.Marker
 
-  constructor: (marker, poi, isUserMarker = false) ->
+  constructor: (marker, location, flags) ->
     @_target = marker
-    @_poi = poi
-    @_isUserMarker = isUserMarker
+    @_location = location
+    @_flags = flags
 
   target: ->
     @_target
 
-  poi: ->
-    @_poi
+  location: ->
+    @_location
+
+#  poi: ->
+#    #locations = eval("(" + localStorage.getItem(storeKey) + ")")
+#    if @_location.poiId? then getPoi(@_location.poi) else APP.storage().getPoi(@_location.id)
 
   isUserMarker: ->
-    @_isUserMarker
+    @_flags.isUserMarker
 
   setLatLng: (lat, lng) ->
    @_target.setLatLng(L.latLng(lat, lng))

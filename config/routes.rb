@@ -7,6 +7,7 @@ VoyageX::Application.routes.draw do
 
   resources :users, only: [:update] do
   end
+  get '/peers/:location_id', to: 'users#peers', as: :peers
 
   get '/location_bookmarks', to: 'sandbox#index'
   get '/location/:location_id', to: 'sandbox#location', as: :location

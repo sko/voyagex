@@ -8,7 +8,7 @@ Benutzer denen ich folge oder folgen will ...
 %table
   - user.follows.each do |cs|
     - last_location = cs.user.last_location
-    %tr
+    %tr{data: {userId: cs.user.id}}
       %td
         #{cs.user.username}
       %td{width: 15}
@@ -21,7 +21,7 @@ Benutzer denen ich folge oder folgen will ...
   #{t('admin.i_want_to_follow')}
 %table
   - user.requested_grant_to_follow.each do |cs|
-    %tr
+    %tr{data: {userId: cs.user.id}}
       %td
         #{cs.user.username}
       %td{width: 15}

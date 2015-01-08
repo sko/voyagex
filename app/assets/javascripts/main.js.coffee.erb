@@ -47,6 +47,25 @@ class window.VoyageX.Main
                                    APP._systemCB)
         Main._MAP_CONTROL = new VoyageX.MapControl cacheStrategy, mapOptions, offlineZooms
         Main._MARKER_MANAGER = new VoyageX.MarkerManager(APP.map())
+        # handled in _peers.html.haml
+        #Storage.Model.instance().loadPeers (peer) ->
+        #  marker = Main.markerManager().add poi.location, Main._markerEventsCB, false
+        for peer in initArgs.peers
+#window.initArgs.peers.push({id: #{cs.user.id}, username: '#{cs.user.username}', peerPort: {id: #{cs.id}, channel_enc_key: '#{cs.channel_enc_key}'}});
+          peerPort = peer.peerPort
+          delete peer.peerPort
+          lastLocation = peer.lastLocation
+          delete peer.lastLocation
+          poiId = lastLocation.poiId
+          if poiId?
+            delete lastLocation.poiId
+            APP.storage().saveLocation lastLocation, {poi: {id: lastLocation.poiId}}
+          else
+            APP.storage().saveLocation lastLocation
+          peer.lastLocationId = lastLocation.id
+          APP.storage().saveUser peer, {peerPort: peerPort}
+          marker = Main.markerManager().add lastLocation, Main._markerEventsCB, {isUserMarker: false, isPeerMarker: true}
+        delete window.initArgs.peers
         if navigator.geolocation 
           navigator.geolocation.getCurrentPosition(APP._initPositionCB, (error) ->
               #alert('geolocation timed out - manual selection required.\nsetting default location...')
@@ -166,7 +185,7 @@ class window.VoyageX.Main
     if markerMeta?
       return markerMeta.marker
     else
-      return Main.markerManager().add(poi, Main._markerEventsCB, false)
+      return Main.markerManager().add poi.location, Main._markerEventsCB, false
 
   getOpenPopupMarker: () ->
     userMarkerPopupPanel = $('#marker_controls')
@@ -229,7 +248,7 @@ class window.VoyageX.Main
   _setSelectedPositionLatLng: (marker, lat, lng, address) ->
     poi = {lat: lat, lng: lng}
     if marker == null
-      marker = Main.markerManager().add poi, Main._markerEventsCB
+      marker = Main.markerManager().add poi.location, Main._markerEventsCB
     else
       marker = Main.markerManager().sel marker, lat, lng, Main._markerEventsCB
     @_selectedPosition.lat = lat
@@ -244,18 +263,19 @@ class window.VoyageX.Main
     $('#zoom_level').html('<span style="color:white;">zoom: '+APP.map().getZoom()+'</span>')
 
   _initPositionCB: (position, address = null, isReInit = false) ->
-    poi = {lat: position.coords.latitude, lng: position.coords.longitude}
+    location = {lat: position.coords.latitude, lng: position.coords.longitude}
     if isReInit
       marker = Main.markerManager().get()
     else
-      marker = Main.markerManager().add poi, Main._markerEventsCB, true
+      marker = Main.markerManager().add location, Main._markerEventsCB, {isUserMarker: true, isPeerMarker: false}
     APP._setSelectedPositionLatLng marker, position.coords.latitude, position.coords.longitude, address
     APP.map().panTo([position.coords.latitude, position.coords.longitude])
     #APP.map().setView [position.coords.latitude, position.coords.longitude], 16
     unless isReInit
       APP.publishPosition()
-    Storage.Model.instance().loadPois poi.lat, poi.lng, (poi) ->
-      marker = Main.markerManager().add poi, Main._markerEventsCB, false
+    Storage.Model.instance().loadPois location.lat, location.lng, (poi) ->
+      location = {id: poi.locationId, lat: poi.lat, lng: poi.lng, address: poi.address, poiId: poi.id}
+      marker = Main.markerManager().add location, Main._markerEventsCB
       #APP._initPoisOnMap.push poi
 
   _systemCB: (message) ->

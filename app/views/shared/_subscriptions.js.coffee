@@ -8,3 +8,4 @@ for channel in VoyageX.Main.commChannels()
   window.subscribeTo.push channelPath
   #window.Comm.StorageController.instance().addToList 'subscribe', 'push', channelPath
   #Comm.Comm.subscribeTo channelPath, Comm.Comm.channelCallBacksJSON[channel]
+#APP.storage().saveUser {id: #{cs.user.id}, username: '#{cs.user.username}', peerPort: {id: #{cs.id}, channel_enc_key: '#{cs.channel_enc_key'}});

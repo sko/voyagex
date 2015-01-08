@@ -10,7 +10,7 @@
 
 #tmpl_people_i_follow{style: 'display: none;'}
   -#%tbody#i_follow
-  %tr
+  %tr{data: {userId: '{user_id}'}}
     %td
       {username}
     %td{width: 15}
@@ -20,7 +20,7 @@
 
 #tmpl_people_follow_me{style: 'display: none;'}
   -#%tbody#follow_me
-  %tr
+  %tr{data: {userId: '{user_id}'}}
     %td
       {username}
     %td{width: 15}
