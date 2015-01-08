@@ -157,8 +157,9 @@ class window.Storage.Model
       url: '<%= upload_comments_path(poi_id: ':poi_id', poi_note_id: '') %>'.replace(/:poi_id/, poiId)+poiNoteId
     .done (msg) ->
         Model.setupPoiForNote msg.poi
+        loadStats = { numAdded: msg.poi.notes.length, numLeft: msg.poi.notes.length }
         for note, i in msg.poi.notes
-          Model.instance().syncWithStorage msg, callback, note, i+1, msg.poi.notes.length-1-i
+          Model.instance().syncWithStorage msg, callback, note, loadStats#i+1, msg.poi.notes.length-1-i
     .fail (jqXHR, textStatus) ->
         # get from localStorage
         console.log('TODO: maybe get from local storage')
@@ -182,19 +183,24 @@ class window.Storage.Model
     if callback?
       callback { pois: 'TODO' }
 
-  syncWithStorage: (msg, callback, note, numAdded = 1, numLeft = 0) ->
+  #syncWithStorage: (msg, callback, note, numAdded = 1, numLeft = 0) ->
+  syncWithStorage: (msg, callback, note, loadStats = {numAdded:1,numLeft:1}) ->
     # store image
     attachmentUrl = Model._viewPoiNoteAttachment note
     # @see leaflet-functionaltilelayer _loadTile: function / MapControl - drawTile
     if (typeof attachmentUrl == 'string') 
       console.log 'Model - syncWithStorage: attachmentUrl-string = '+attachmentUrl
-      Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, numAdded, numLeft, callback
+      #Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, numAdded, numLeft, callback
+      loadStats.numLeft -= 1
+      Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, loadStats, callback
     else if (typeof attachmentUrl.then == 'function') 
       # Assume we are dealing with a promise.
       attachmentUrl.then (url) ->
           console.log 'Model - syncWithStorage: attachmentUrl-promise resolved to: '+url
           note.attachment.url = url
-          Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, numAdded, numLeft, callback
+          #Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, numAdded, numLeft, callback
+          loadStats.numLeft -= 1
+          Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, loadStats, callback
 
   @setupPoiForNote: (poi) ->
     storeKey = Comm.StorageController.poiKey {id: poi.id}
@@ -235,7 +241,8 @@ class window.Storage.Model
         storePoi[key] = poi[key]
     localStorage.setItem poiKey, JSON.stringify(storePoi)
 
-  @_syncPoiNotes: (poi, poiKey, note, numAdded, numLeft, callback) ->
+  #@_syncPoiNotes: (poi, poiKey, note, numAdded, numLeft, callback) ->
+  @_syncPoiNotes: (poi, poiKey, note, loadStats, callback) ->
     poiKey = Comm.StorageController.poiKey(poi)
     existingPoiData = Comm.StorageController.instance().get poiKey
     if existingPoiData? 
@@ -243,9 +250,9 @@ class window.Storage.Model
         existingPoiData = Model._storeWithoutPoi poiKey, note
         #existingPoiData.notes.push note
       poi.notes = existingPoiData.notes
-    unless numLeft >= 1
+    unless loadStats.numLeft >= 1
       if poi.notes? && poi.notes.length >= 1
-        newNotes = poi.notes.slice poi.notes.length-numAdded
+        newNotes = poi.notes.slice poi.notes.length-loadStats.numAdded
       else
         newNotes = [note]
       callback poi, newNotes
