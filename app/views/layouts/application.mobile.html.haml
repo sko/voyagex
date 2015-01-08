@@ -59,7 +59,7 @@
       -#{data: {role: 'footer', position: 'fixed'}}
       %span{style: 'text-align: left; z-index: 11 !important;'}
         -#= link_to image_tag('/assets/arrow-up-right.png', style: 'width: 32px; height: 43px;'), photo_nav_path, data: { remote: "true", format: :js }
-        = link_to image_tag('/assets/arrow-up-right.png', id: 'photo_nav_open_icon', style: 'width: 32px; height: 43px;'), '#', onclick: 'javascript:APP.photoNav()'
+        = link_to image_tag('/assets/arrow-up-right.png', id: 'photo_nav_open_icon', style: 'width: 32px; height: 43px;', class: 'photo_nav_open_icon'), '#', onclick: 'javascript:APP.photoNav()'
         = link_to '', '#photo_nav_panel', id: 'open_photo_nav_btn', style: 'display: none;'
         = link_to '', '#upload_data_panel', id: 'open_upload_data_btn', style: 'display: none;'
         = link_to '', '#attachment_view_panel', id: 'open_attachment_view_btn', style: 'display: none;'

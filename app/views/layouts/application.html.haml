@@ -37,7 +37,7 @@
     #panel_control
       %span{style: 'text-align: left; z-index: 11 !important;'}
       /= link_to image_tag('/assets/arrow-up-right.png', style: 'width: 32px; height: 43px;'), photo_nav_path, data: { remote: "true", format: :js }
-      = link_to image_tag('/assets/arrow-up-right.png', id: 'photo_nav_open_icon', style: 'width: 32px; height: 43px;'), '#', onclick: 'javascript:APP.photoNav()'
+      = link_to image_tag('/assets/arrow-up-right.png', id: 'photo_nav_open_icon', style: 'width: 32px; height: 43px;', class: 'photo_nav_open_icon'), '#', onclick: 'javascript:APP.photoNav()'
     = render partial: '/sandbox/photo_nav_panel'
     = javascript_include_tag "application"
     = javascript_include_tag params[:controller]

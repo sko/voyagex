@@ -76,7 +76,7 @@ class window.VoyageX.View
     #APP.map().setView [mapEvent.lat, mapEvent.lng], 16
     for listener in View.instance()._commListeners.map_events
       listener(mapEvent)
-    APP.view().startBlinking()
+    APP.view().alert()
 
   _uploadsCB: (upload) ->
     console.log 'got an uploads - message: ' + upload.type
@@ -86,37 +86,43 @@ class window.VoyageX.View
       Storage.Model.setupPoiForNote poi
       msg = { poi: poi }
       Storage.Model.instance().syncWithStorage msg, View.addPoiNotes, upload.poi_note
-      APP.view().startBlinking()
+      APP.view().alert()
 
-  startBlinking: () ->
-    APP.view()._blink = true
-    APP.view().blinkArrow()
-
-  blinkArrow: (iconSuffix = null, stop = false) ->
-    target = $('#photo_nav_open_icon')
+  # start with no params
+  _blinkArrow: (iconSuffix = null, stop = false) ->
+    target = $('.photo_nav_open_icon')
     if stop
-      APP.view()._blink = false
-      clearTimeout APP.view()._blinkArrowTO
-      target.attr('src', target.attr('src').replace(/(\.[^.]+|).png/, iconSuffix+'.png'))
+      @_blink = false
+      clearTimeout @_blinkArrowTO
+      target.each () ->
+        $(this).attr('src', $(this).attr('src').replace(/(\.[^.]+|).png/, iconSuffix+'.png'))
       return true
-    if APP.view()._blink
+    if @_blink
       if iconSuffix?
-        target.attr('src', target.attr('src').replace(/(\.[^.]+|).png/, iconSuffix+'.png'))
+        target.each () ->
+          $(this).attr('src', $(this).attr('src').replace(/(\.[^.]+|).png/, iconSuffix+'.png'))
         if iconSuffix == ''
-          APP.view()._blinkArrowTO = setTimeout "APP.view().blinkArrow()", 500
+          @_blinkArrowTO = setTimeout "APP.view()._blinkArrow()", 500
         else
           unless stopSound?
             window.stopSound = VoyageX.MediaManager.instance().playSound('/Treat.mp3', (event) ->
                 if event.msg == 'finished'
-                  window.stopSound = null
+                  `;`#window.stopSound = null
               )
       else
-        #target.delay(500).blinkArrow('.on').delay(500).blinkArrow('')
-        this.blinkArrow '.on'
-        APP.view()._blinkArrowTO = setTimeout "APP.view().blinkArrow('')", 500
+        this._blinkArrow '.on'
+        @_blinkArrowTO = setTimeout "APP.view()._blinkArrow('')", 500
+
+  alert: (stop = false) ->
+    if stop
+      this._blinkArrow '', true
+      window.stopSound = null
+    else
+      @_blink = true
+      this._blinkArrow()
 
   previewPois: (pois) ->
-    APP.view().blinkArrow '', true
+    this.alert true
     poisPreviewHtml = VoyageX.TemplateHelper.poisPreviewHTML pois
     $('#pois_preview').html(poisPreviewHtml)
     # this has to be done after html is added ...

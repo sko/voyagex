@@ -39,14 +39,17 @@
 
 #tmpl_marker_controls{style: 'display: none;'}
   %div{tmpl: {id: 'marker_controls'}}
-    %div{style: 'padding: 0px 0px 5px 0px;'}
-      = link_to t('admin.add_homebase'), '#', onclick: "javascript:APP.setHomeBase()"
-    %div{style: 'padding: 0px 0px 5px 0px;'}
-      = link_to t('admin.show_homebase'), '#', onclick: "javascript:APP.loadLocation(currentUser.homebaseLocationId)"
-    %div{style: 'padding: 0px 0px 5px 0px;'}
-      = link_to t('pois.bookmark'), '#', onclick: "javascript:APP.bookmarkLocation()"
-    %div{style: 'padding: 0px 0px 5px 0px;'}
-      = link_to t('pois.add'), '#', onclick: "javascript:APP.poiNoteInput()"
+    %div{style: 'width: 150px !important; height: 25px; padding: 0px 0px 5px 0px;'}
+      %div{style: 'float: left; margin: 0px 0px 0px 5px;'}
+        = link_to image_tag('/assets/add-marker.png', style: 'height: 25px;', title: t('pois.add'), alt: t('pois.add')), '#', onclick: "javascript:APP.poiNoteInput()"
+      %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
+        = link_to image_tag('/assets/add-bookmark.png', style: 'height: 25px;', title: t('pois.bookmark'), alt: t('pois.bookmark')), '#', onclick: "javascript:APP.bookmarkLocation()"
+      %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
+        = link_to image_tag('/assets/set-home.png', style: 'height: 23px;', title: t('admin.add_homebase'), alt: t('admin.add_homebase')), '#', onclick: "javascript:APP.setHomeBase()"
+      %div{style: 'float: left; margin: 0px 5px 0px 5px; padding: 0px;'}
+        = link_to image_tag('/assets/home.png', style: 'height: 23px;', title: t('admin.show_homebase'), alt: t('admin.show_homebase')), '#', onclick: "javascript:APP.loadLocation(currentUser.homebaseLocationId)"
+      %div{style: 'margin: 0px 0px 0px 5px; padding: 0px;'}
+        = link_to image_tag('/assets/arrow-up-right.png', style: 'height: 23px;', title: 'navigator', alt: 'navigator', class: 'photo_nav_open_icon'), '#', onclick: "javascript:APP.photoNav()"
 
 #tmpl_note_editor{style: 'display: none;'}
   .note_editor{tmpl: {id: 'note_editor'}}
