@@ -3,6 +3,10 @@ class UploadEntity::Embed < ActiveRecord::Base
   
   #belongs_to :upload, inverse_of: :entity
   belongs_to :upload, inverse_of: :embed
+  
+  validates :upload, presence: true
+  validates :text, presence: true
+  validates :embed_type, presence: true
 
   def file
     Struct.new(:url, :content_type).new text, UploadEntity::Embed.get_embed_type(text)

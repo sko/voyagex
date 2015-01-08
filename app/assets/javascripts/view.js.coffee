@@ -80,7 +80,7 @@ class window.VoyageX.View
 
   _uploadsCB: (upload) ->
     console.log 'got an uploads - message: ' + upload.type
-    unless upload.poi_note.userId == APP.userId()
+    unless upload.poi_note.user.id == APP.userId()
       # TODO: unify json-format, until then avoid circular structure
       poi = upload.poi_note.poi
       Storage.Model.setupPoiForNote poi

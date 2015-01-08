@@ -655,7 +655,7 @@ class window.Comm.StorageController
   # reserved listKeys:
   # push: creates/uses an array for entries stored with storeKey
   # if an array is defined for a storeKey then there can't be any other objects defined aside (@see this.pop())
-  addToList: (storeKey, listKey, data, fifo = true) ->
+  addToList: (storeKey, listKey, data, fifo = true, insertIndexCB = null) ->
     stored = localStorage.getItem(storeKey)
     if stored == null
       if listKey == 'push'
@@ -690,7 +690,16 @@ class window.Comm.StorageController
             else
               storedJSON.push data
         else
-          if fifo
+          if insertIndexCB?
+            inserted = false
+            for d, idx in storedJSON[listKey]
+              if insertIndexCB d, data
+                storedJSON[listKey].splice idx, 0, data
+                inserted = true
+                break
+            unless inserted
+              storedJSON[listKey].push data
+          else if fifo
             storedJSON[listKey].splice 0, 0, data
           else
             storedJSON[listKey].push data

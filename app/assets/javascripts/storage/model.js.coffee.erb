@@ -183,14 +183,12 @@ class window.Storage.Model
     if callback?
       callback { pois: 'TODO' }
 
-  #syncWithStorage: (msg, callback, note, numAdded = 1, numLeft = 0) ->
   syncWithStorage: (msg, callback, note, loadStats = {numAdded:1,numLeft:1}) ->
     # store image
     attachmentUrl = Model._viewPoiNoteAttachment note
     # @see leaflet-functionaltilelayer _loadTile: function / MapControl - drawTile
     if (typeof attachmentUrl == 'string') 
       console.log 'Model - syncWithStorage: attachmentUrl-string = '+attachmentUrl
-      #Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, numAdded, numLeft, callback
       loadStats.numLeft -= 1
       Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, loadStats, callback
     else if (typeof attachmentUrl.then == 'function') 
@@ -198,7 +196,6 @@ class window.Storage.Model
       attachmentUrl.then (url) ->
           console.log 'Model - syncWithStorage: attachmentUrl-promise resolved to: '+url
           note.attachment.url = url
-          #Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, numAdded, numLeft, callback
           loadStats.numLeft -= 1
           Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, loadStats, callback
 
@@ -241,7 +238,6 @@ class window.Storage.Model
         storePoi[key] = poi[key]
     localStorage.setItem poiKey, JSON.stringify(storePoi)
 
-  #@_syncPoiNotes: (poi, poiKey, note, numAdded, numLeft, callback) ->
   @_syncPoiNotes: (poi, poiKey, note, loadStats, callback) ->
     poiKey = Comm.StorageController.poiKey(poi)
     existingPoiData = Comm.StorageController.instance().get poiKey
@@ -274,8 +270,8 @@ class window.Storage.Model
     for key in Object.keys(note)
       unless key == 'user'
         storeNote[key] = note[key]
-    Comm.StorageController.instance().addToList poiKey, 'notes', storeNote, false
-  
+    Comm.StorageController.instance().addToList poiKey, 'notes', storeNote, false, (a, b) ->
+        a.id >= b.id
   @_findPoiNote: (note, notes) ->
     for n, idx in notes
       if n.id == note.id
