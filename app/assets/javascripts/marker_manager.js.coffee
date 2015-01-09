@@ -9,11 +9,11 @@ class window.VoyageX.MarkerManager
     @_maxZIndex = 0
     @_userMarkerMouseOver = true
 
-  add: (location, callBack, flags = {isUserMarker: false, isPeerMarker: false}) ->
+  add: (location, callBack, flags = {isUserMarker: false, peer: null}) ->
     markerOps = { draggable: flags.isUserMarker,\
                   riseOnHover: true }
     unless flags.isUserMarker
-      if flags.isPeerMarker
+      if flags.peer?
         markerOps.icon = new L.Icon.Default({iconUrl: '/assets/marker-icon-yellow.png'})
       else
         markerOps.icon = new L.Icon.Default({iconUrl: '/assets/marker-icon-red.png'})
@@ -33,7 +33,10 @@ class window.VoyageX.MarkerManager
     if flags.isUserMarker
       marker._icon.title = marker._leaflet_id
     else
-      marker._icon.title = location.address
+      if flags.peer?
+        marker._icon.title = flags.peer.username+' ('+flags.peer.id+')'
+      else
+        marker._icon.title = location.address
     marker
 
   sel: (replaceMarker, lat, lng, callBack) ->
@@ -55,7 +58,7 @@ class window.VoyageX.MarkerManager
             @_markers.splice idx, 1
             break
         poi = {lat: lat, lng: lng}
-        @_selectedMarker = new VoyageX.Marker(replaceMarker, poi, true)
+        @_selectedMarker = new VoyageX.Marker(replaceMarker, poi, {isUserMarker: true, peer: null})
         @_markers.push @_selectedMarker
 
     @_selectedMarker.target().setZIndexOffset @_maxZIndex        
@@ -68,9 +71,12 @@ class window.VoyageX.MarkerManager
   meta: (leafletMarker) ->
     for m in @_markers
       if m.target() == leafletMarker
-        #poi = eval("(" + localStorage.getItem(Comm.StorageController.poiKey({id: m.location.poiId})) + ")")
-        poi = APP.storage().get Comm.StorageController.poiKey({id: m.location().poiId})
-        return {poi: poi, isUserMarker: m.isUserMarker()}
+        meta = {isUserMarker: m.isUserMarker(), poi: null, peer: null}
+        if m.isPeerMarker()
+          meta.peer = m._flags.peer
+        else
+          meta.poi = APP.storage().get Comm.StorageController.poiKey({id: m.location().poiId})
+        return meta
     null
 
   userMarkerMouseOver: (enable = null) ->
@@ -88,6 +94,12 @@ class window.VoyageX.MarkerManager
       if m.location().poiId == poiId
         poi = APP.storage().get Comm.StorageController.poiKey({id: m.location().poiId})
         return {marker: m.target(), poi: poi, isUserMarker: m.isUserMarker()}
+    null
+
+  forPeer: (peerId) ->
+    for m in @_markers
+      if m._flags.peer? && m._flags.peer.id == peerId
+        return {marker: m.target(), peer: m._flags.peer, isUserMarker: m.isUserMarker()}
     null
 
   searchBounds: (radiusMeters, map) ->
@@ -133,6 +145,9 @@ class VoyageX.Marker
 
   isUserMarker: ->
     @_flags.isUserMarker
+
+  isPeerMarker: ->
+    @_flags.peer?
 
   setLatLng: (lat, lng) ->
    @_target.setLatLng(L.latLng(lat, lng))

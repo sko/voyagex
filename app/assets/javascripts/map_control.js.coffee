@@ -25,6 +25,7 @@ class window.VoyageX.MapControl
     #@_tileImageContentType = 'image/png'
     #@_tileLoadQueue = []
     @_tileLoadQueue = {}
+    @_cacheMissTiles = []
     @_saveCallsToFlushCount = 0
     @_showTileInfo = false
     @_map = new L.Map('map', mapOptions)
@@ -394,6 +395,14 @@ class window.VoyageX.MapControl
     canvas.toDataURL(@_tileImageContentType)
 
   _notInCacheImage: (canvas, x, y, z) ->
+    pixelOriginX = parseInt(APP.map().getPixelOrigin().x/256)
+    pixelOriginY = parseInt(APP.map().getPixelOrigin().y/256)
+    #pixelOriginX = parseInt(APP.map().getPixelBounds().min.x/256)
+    #pixelOriginY = parseInt(APP.map().getPixelBounds().min.y/256)
+    @_cacheMissTiles.push {top: (y-pixelOriginY)*256, left: (x-pixelOriginX)*256}
+    #@_cacheMissTiles.push {top: (pixelOriginY-y)*256+parseInt(APP.map().project(APP.map().getCenter()).x-APP.map().getPixelOrigin().x),\
+    #                       left: (pixelOriginX-x)*256+parseInt(APP.map().project(APP.map().getCenter()).y-APP.map().getPixelOrigin().y)}
+
     canvas.width = 256
     canvas.height = 256
     context = canvas.getContext('2d')

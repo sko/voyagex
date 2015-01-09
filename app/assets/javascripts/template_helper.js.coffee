@@ -67,7 +67,7 @@ class window.VoyageX.TemplateHelper
       marker.off('click', marker.togglePopup, marker)
       # popupclose doesn't work if just popup is closed because of other marker's opening popup
       marker.on 'popupclose', (event) -> 
-          console.log('openPOINotePopup: popupclose for '+VoyageX.Main.markerManager().toString(event.target))
+          console.log('openPOINotePopup: popupclose for '+VoyageX.Main.markerManager().toString(marker))
     popup.setContent(popupHtml)
     marker.openPopup()
     VoyageX.Main.markerManager().userMarkerMouseOver false
@@ -95,10 +95,27 @@ class window.VoyageX.TemplateHelper
     else
       TemplateHelper.openPOINotePopup poi, marker
 
+  @openPeerPopup: (peer, marker) ->
+    popupHtml = TemplateHelper._updateIds 'tmpl_peer_popup'
+    popup = marker.getPopup()
+    isNewPopup = !popup?
+    if isNewPopup
+      popup = L.popup()# {minWidth: 200, maxHeight: 300}
+      marker.bindPopup(popup)
+      marker.off('click', marker.togglePopup, marker)
+      # popupclose doesn't work if just popup is closed because of other marker's opening popup
+      marker.on 'popupclose', (event) -> 
+          console.log('openPeerPopup: popupclose for '+VoyageX.Main.markerManager().toString(marker))
+    popup.setContent(popupHtml)
+    marker.openPopup()
+    VoyageX.Main.markerManager().userMarkerMouseOver false
+#    if isNewPopup
+#      peerPopup = $('#tmpl_peer_popup')
+#      TemplateHelper._addPopupTitle peerPopup, marker, Comm.StorageController.instance().getLocation(poi.locationId), poi
+
   @openMarkerControlsPopup: () ->
     marker = VoyageX.Main.markerManager().get()
     popupHtml = TemplateHelper._updateIds 'tmpl_marker_controls'
-   #popup = TemplateHelper._verifyPopup marker, 'marker_controls'
     popup = marker.getPopup()
     isNewPopup = !popup?
     if isNewPopup
@@ -106,7 +123,7 @@ class window.VoyageX.TemplateHelper
       marker.off('click', marker.togglePopup, marker)
       # popupclose doesn't work if just popup is closed because of other marker's opening popup
       marker.on 'popupclose', (event) ->
-          console.log('openMarkerControlsPopup: popupclose for '+VoyageX.Main.markerManager().toString(event.target))
+          console.log('openMarkerControlsPopup: popupclose for '+VoyageX.Main.markerManager().toString(marker))
     else
       popup.setContent popupHtml
     marker.openPopup()

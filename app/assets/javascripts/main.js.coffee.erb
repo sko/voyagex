@@ -64,7 +64,7 @@ class window.VoyageX.Main
             APP.storage().saveLocation lastLocation
           peer.lastLocationId = lastLocation.id
           APP.storage().saveUser peer, {peerPort: peerPort}
-          marker = Main.markerManager().add lastLocation, Main._markerEventsCB, {isUserMarker: false, isPeerMarker: true}
+          marker = Main.markerManager().add lastLocation, Main._markerEventsCB, {isUserMarker: false, peer: peer}
         delete window.initArgs.peers
         if navigator.geolocation 
           navigator.geolocation.getCurrentPosition(APP._initPositionCB, (error) ->
@@ -427,9 +427,12 @@ class window.VoyageX.Main
             else
               Main._checkSaveNote()
               #will be closed automatically: openPopupMarker = APP.getOpenPopupMarker()
-            Storage.Model.instance().loadPoiNotes markerMeta.poi.id, null, (poi) ->
-                # userMarkerMouseOver is set in openPOINotePopup
-                VoyageX.TemplateHelper.openPOINotePopup poi, event.target
+            if markerMeta.peer?
+              VoyageX.TemplateHelper.openPeerPopup markerMeta.peer, event.target
+            else
+              Storage.Model.instance().loadPoiNotes markerMeta.poi.id, null, (poi) ->
+                  # userMarkerMouseOver is set in openPOINotePopup
+                  VoyageX.TemplateHelper.openPOINotePopup poi, event.target
       when 'mouseover'
         markerMeta = Main.markerManager().meta event.target
         if markerMeta.isUserMarker && Main.markerManager().userMarkerMouseOver()

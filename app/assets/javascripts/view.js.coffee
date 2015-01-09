@@ -76,6 +76,8 @@ class window.VoyageX.View
     #poiId ... $('#pois_preview > .poi-preview-container[data-id=68]')
     #locationId ... $('#location_bookmarks .bookmark-container[data-id=4016]')
     #TODO ... $('#people_of_interest')
+    markerMeta = VoyageX.Main.markerManager().forPeer mapEvent.userId
+    markerMeta.marker.setLatLng L.latLng(mapEvent.lat, mapEvent.lng)
     for listener in View.instance()._commListeners.map_events
       listener(mapEvent)
     APP.view().alert()

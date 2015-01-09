@@ -101,6 +101,7 @@ class window.Comm.Comm
     # Comm.initChannelContexts response, Comm.channelCallBacksJSON
 
   @initChannelContexts: (initParams, channelCallBacks) ->
+    Comm.subscribeTo '/ping', Comm._systemSubscriptionListener
     for channel in Object.keys(channelCallBacks)
       if channel == 'system'
         continue
@@ -158,6 +159,10 @@ class window.Comm.Comm
     # on serverside it looks the same as timeout-unsubscribe
     else if message.type == 'unsubscribed_notification'
         console.log('_systemSubscriptionListener: client '+message.old_client_id+' unsubscribed '+message.seconds_ago+' seconds ago ... (probably timedout/disconnected by server)')
+        return null
+    else if message.type == 'ping'
+        # TODO: respond if we follow client
+        console.log('_systemSubscriptionListener: client '+message.old_client_id+' sent ping.')
         return null
     Comm.channelCallBacksJSON.system.callback message
 
