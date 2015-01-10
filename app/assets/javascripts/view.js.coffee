@@ -81,7 +81,7 @@ class window.VoyageX.View
     if withinSearchBounds curUserLatLng[0], curUserLatLng[1], sBs
       markerMeta = VoyageX.Main.markerManager().forPeer mapEvent.userId
       markerMeta.marker.setLatLng L.latLng(mapEvent.lat, mapEvent.lng)
-      unless APP.view()._alertOn
+      unless true || APP.view()._alertOn
         APP.view().alert()
     else
       console.log '_mapEventsCB: outside searchbounds ...'

@@ -7,15 +7,15 @@ Benutzer denen ich folge oder folgen will ...
   #{t('admin.i_follow')}
 %table
   - user.follows.each do |cs|
-    - last_location = cs.user.last_location
+    - last_location = cs.user.snapshot.location.present? ? cs.user.snapshot.location : Location.new(latitude: cs.user.snapshot.lat, longitude: cs.user.snapshot.lng)
     %tr{data: {userId: cs.user.id}}
       %td
         #{cs.user.username}
       %td{width: 15}
         &nbsp;
       %td
-        -#= link_to shorten_address(last_location), location_path(location_id: last_location.id), data: { remote: 'true', format: :js }
-        = link_to shorten_address(last_location), '#', onclick: "javascript:APP.loadLocation(#{last_location.id});"
+        -#= link_to shorten_address(cs.user.snapshot.location), location_path(location_id: cs.user.snapshot.location.id), data: { remote: 'true', format: :js }
+        = link_to shorten_address(last_location, true), '#', onclick: "javascript:APP.loadLocation({locationId: #{last_location.present? ? last_location.id : null}, lat: #{cs.user.snapshot.lat}, lng: #{cs.user.snapshot.lng}, address: '{cs.user.snapshot.address}'});"
 
 %h4{colspan: 4}
   #{t('admin.i_want_to_follow')}

@@ -117,12 +117,13 @@ class UsersController < ApplicationController
           user_json[:id] = current_user.id
           user_json[:home_base] = {id: location.id, lat: location.latitude, lng:location.longitude, address:shorten_address(location)}
         when 'locations'
-          location = Location.new(latitude: params[:lat], longitude: params[:lng])
-          poi = nearby_poi(current_user, location, 10)
-          is_existing_poi = poi.persisted?
-          location = poi.location
+          #location = Location.new(latitude: params[:lat], longitude: params[:lng])
+          #poi = nearby_poi(current_user, location, 10)
+          #location = poi.location
+          location = current_user.snapshot.location.present? ? current_user.snapshot.location : current_user.last_location
           user_json[:id] = current_user.id
-          user_json[:last_location] = {id: location.id, lat: location.latitude, lng:location.longitude, address:shorten_address(location)}
+          user_json[:last_location] = {id: location.id, lat: location.latitude, lng:location.longitude, address:shorten_address(location, true)}
+          location = tmp_user.snapshot.location.present? ? tmp_user.snapshot.location : tmp_user.last_location
         when 'notes'
           location = Location.find(params[:location_id])
           current_user.locations_users.where(location_id: location.id).first.update_attributes note: params[:text], updated_at: DateTime.now

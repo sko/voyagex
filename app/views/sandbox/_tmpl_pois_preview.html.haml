@@ -2,7 +2,7 @@
   .poi-preview-container{data: {id: '{poiId}'}}
     .poi-info
       -#= link_to '{address}', location_path(location_id: '{locationId}'), data: { remote: 'true', format: :js }
-      = link_to '{address}', '#', onclick: 'javascript:APP.loadLocation({locationId});'
+      = link_to '{address}', '#', onclick: 'javascript:APP.loadLocation({locationId: {locationId}});'
     .poi-preview{style: "width: {maxWidth}px; text-align: center;"}
       .swiper-container{id: "poi_swiper_{poiId}"}
         .swiper-wrapper

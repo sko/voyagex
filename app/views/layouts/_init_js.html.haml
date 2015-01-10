@@ -1,3 +1,5 @@
+- lat = tmp_user.snapshot.location.present? ? tmp_user.snapshot.location.latitude : tmp_user.snapshot.lat
+- lng = tmp_user.snapshot.location.present? ? tmp_user.snapshot.location.longitude : tmp_user.snapshot.lng
 = javascript_tag do
   -#window.scrollTo(0,1);
   window.DEBUG = false;
@@ -7,7 +9,7 @@
   window.VoyageX.TILE_URL_TEMPLATE = '#{Leaflet.tile_layer}';
   window.VoyageX.USE_GLOBAL_SUBSCRIBE = #{USE_GLOBAL_SUBSCRIBE};
   window.VoyageX.SEARCH_RADIUS_METERS = #{tmp_user.search_radius_meters||100};
-  window.currentUser = { id: #{tmp_user.id}, username: '#{tmp_user.username}', homebaseLocationId: #{tmp_user.home_base.present? ? tmp_user.home_base.id : -1}, lastLocation: {lat: #{tmp_user.last_location.latitude}, lng: #{tmp_user.last_location.longitude}} };
+  window.currentUser = { id: #{tmp_user.id}, username: '#{tmp_user.username}', homebaseLocationId: #{tmp_user.home_base.present? ? tmp_user.home_base.id : -1}, lastLocation: {lat: #{lat}, lng: #{lng}} };
   - if current_user.present?
     window.VoyageX.CHANNEL_ENC_KEY = '#{current_user.comm_setting.channel_enc_key}';
     window.VoyageX.SYS_CHANNEL_ENC_KEY = '#{current_user.comm_setting.sys_channel_enc_key}';

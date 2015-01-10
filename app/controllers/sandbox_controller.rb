@@ -25,7 +25,7 @@ class SandboxController < ApplicationController
     @initial_subscribe = true
     
     nearby_m = (tmp_user.search_radius_meters||20000)
-    location = tmp_user.last_location
+    location = tmp_user.snapshot.location.present? ? tmp_user.snapshot.location : tmp_user.last_location
     if location.present?
       load_location_data location, nearby_m
     else

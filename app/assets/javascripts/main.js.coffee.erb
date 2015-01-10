@@ -205,7 +205,17 @@ class window.VoyageX.Main
     Storage.Model.instance().setHomeBase @_selectedPosition.lat, @_selectedPosition.lng, (user) ->
         window.currentUser.homebaseLocationId = user.home_base.id
 
-  loadLocation: (locationId) ->
+  loadLocation: (location) ->
+    if location.locationId?
+
+
+
+
+    else
+
+
+
+    
     Storage.Model.instance().withLocation locationId, (location) ->
         APP._initPositionCB { coords: { latitude: location.lat, longitude: location.lng } }, location.address, true
         if isMobile()

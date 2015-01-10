@@ -120,6 +120,7 @@ ActiveRecord::Schema.define(version: 20150110084140) do
     t.integer  "location_id"
     t.float    "lat",             limit: 24
     t.float    "lng",             limit: 24
+    t.string   "address"
     t.string   "cur_commit_hash"
     t.datetime "created_at"
     t.datetime "updated_at"

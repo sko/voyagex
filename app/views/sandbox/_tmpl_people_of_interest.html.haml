@@ -16,7 +16,7 @@
     %td{width: 15}
       &nbsp;
     %td
-      = link_to '{last_location}', '#', onclick: "javascript:APP.loadLocation({last_location_id});"
+      = link_to '{last_location}', '#', onclick: "javascript:APP.loadLocation({locationId: {lastLocationId}, lat: {lastLat}, lng: {lastLng}, address: '{lastAddress}'});"
 
 #tmpl_people_follow_me{style: 'display: none;'}
   -#%tbody#follow_me

@@ -5,6 +5,7 @@ class AddUserSnapshots < ActiveRecord::Migration
       t.integer :location_id
       t.float :lat
       t.float :lng
+      t.string :address
       t.string :cur_commit_hash
       t.timestamps
     end
