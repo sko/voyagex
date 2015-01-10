@@ -325,8 +325,8 @@ class window.VoyageX.Main
     #searchBounds = Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, this.map())
     searchBounds = window.searchBounds @_selectedPosition.lat, @_selectedPosition.lng, VoyageX.SEARCH_RADIUS_METERS
     pois = Main.storageController().getPois (poi) ->
-        if poi.lat > searchBounds.lat_south && poi.lat < searchBounds.lat_north &&
-           poi.lng > searchBounds.lng_east && poi.lng < searchBounds.lng_west
+        if poi.lat >= searchBounds.lat_south && poi.lat <= searchBounds.lat_north &&
+           poi.lng >= searchBounds.lng_west && poi.lng <= searchBounds.lng_east
 #          unless poi.notes && poi.notes.length >= 1
           # dummy-poiNote for swiper - replaced when attachments are loaded
           unless poi.notes? && poi.notes.length >= 1

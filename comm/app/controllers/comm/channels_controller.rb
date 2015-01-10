@@ -167,6 +167,17 @@ module Comm
       end
       monitor :publish do
         Rails.logger.debug "###### Client #{client_id} published #{data.inspect} to #{channel}."
+        begin
+          case data['type']
+          when 'click'
+            user = User.where(id: data['userId']).first
+            location = nearby_location Location.new(latitude: data['lat'], longitude: data['lng']), 10
+            user.snapshot.location = location
+            user.snapshot.save!
+          end
+        rescue => e
+          Rails.logger.error "!!!!!! #{e.message}"
+        end
       end
     end
 

@@ -6,7 +6,7 @@ module Auth
     end
 
     def create
-      user_params = params.require(:user).permit(:email, :password, :password_confirmation).merge!({search_radius_meters: 1000})
+      user_params = params.require(:user).permit(:email, :password, :password_confirmation)
       if session[:tmp_user_id].present?
         @user = User.where(id: session[:tmp_user_id]).first
         if @user.present?
@@ -14,7 +14,12 @@ module Auth
           # email-change will trigger @user.send_confirmation_instructions
         end
       end
-      @user = User.new(user_params) unless @user.present?
+#      t.integer :user_id
+#      t.integer :location_id
+#      t.float :lat
+#      t.float :lng
+#      t.string :cur_commit_hash
+      @user = User.new(user_params.merge!({search_radius_meters: 1000, snapshot: UserSnapshot.new}) unless @user.present?
       if @user.save
         # user has to confirm email-address first, so no sign_in @user
         #redirect_to root_path(exec: 'show_login_dialog_confirm_email')

@@ -6,7 +6,7 @@ class window.VoyageX.View
     View._SINGLETON = this
     @_commListeners = {}
     @_blinkArrowTO = null
-    @_blink = false
+    @_alertOn = false
     for channel in ['talk', 'map_events', 'uploads']
       @_commListeners[channel] = []
 
@@ -61,7 +61,7 @@ class window.VoyageX.View
       listener(message)
 
   _mapEventsCB: (mapEvent) ->
-    console.log 'got a map_events - message: ' + mapEvent.type
+    console.log '_mapEventsCB: got a map_events - message: ' + mapEvent.type
     if APP.userId() == mapEvent.userId# && mapEvent.type == 'click'
       window.currentAddress = mapEvent.address
       $('#current_address').html(mapEvent.address+(if mapEvent.locationId? then ' ('+mapEvent.locationId+')' else ''))
@@ -76,11 +76,17 @@ class window.VoyageX.View
     #poiId ... $('#pois_preview > .poi-preview-container[data-id=68]')
     #locationId ... $('#location_bookmarks .bookmark-container[data-id=4016]')
     #TODO ... $('#people_of_interest')
-    markerMeta = VoyageX.Main.markerManager().forPeer mapEvent.userId
-    markerMeta.marker.setLatLng L.latLng(mapEvent.lat, mapEvent.lng)
+    sBs = searchBounds mapEvent.lat, mapEvent.lng, VoyageX.SEARCH_RADIUS_METERS
+    curUserLatLng = APP.getSelectedPositionLatLng()
+    if withinSearchBounds curUserLatLng[0], curUserLatLng[1], sBs
+      markerMeta = VoyageX.Main.markerManager().forPeer mapEvent.userId
+      markerMeta.marker.setLatLng L.latLng(mapEvent.lat, mapEvent.lng)
+      unless APP.view()._alertOn
+        APP.view().alert()
+    else
+      console.log '_mapEventsCB: outside searchbounds ...'
     for listener in View.instance()._commListeners.map_events
       listener(mapEvent)
-    APP.view().alert()
 
   _uploadsCB: (upload) ->
     console.log 'got an uploads - message: ' + upload.type
@@ -96,12 +102,12 @@ class window.VoyageX.View
   _blinkArrow: (iconSuffix = null, stop = false) ->
     target = $('.photo_nav_open_icon')
     if stop
-      @_blink = false
+      @_alertOn = false
       clearTimeout @_blinkArrowTO
       target.each () ->
         $(this).attr('src', $(this).attr('src').replace(/(\.[^.]+|).png/, iconSuffix+'.png'))
       return true
-    if @_blink
+    if @_alertOn
       if iconSuffix?
         target.each () ->
           $(this).attr('src', $(this).attr('src').replace(/(\.[^.]+|).png/, iconSuffix+'.png'))
@@ -122,7 +128,7 @@ class window.VoyageX.View
       this._blinkArrow '', true
       window.stopSound = null
     else
-      @_blink = true
+      @_alertOn = true
       this._blinkArrow()
 
   previewPois: (pois) ->

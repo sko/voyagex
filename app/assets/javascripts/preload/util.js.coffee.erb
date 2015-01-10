@@ -80,11 +80,14 @@ window.searchBounds = (lat, lng, radiusMeters) ->
   inner_square_half_side_length_lat = Math.round(Math.sqrt((2*diameterLat)**2) / 2*10000000)/10000000
   inner_square_half_side_length_lng = Math.round(Math.sqrt((2*diameterLng)**2) / 2*10000000)/10000000
   
-  searchBounds = {lng_east: lng-inner_square_half_side_length_lng,\
-                  lng_west: lng+inner_square_half_side_length_lng,\
+  searchBounds = {lng_west: lng-inner_square_half_side_length_lng,\
+                  lng_east: lng+inner_square_half_side_length_lng,\
                   lat_south: lat-inner_square_half_side_length_lat,\
                   lat_north: lat+inner_square_half_side_length_lat}
 
+window.withinSearchBounds = (lat, lng, searchBounds) ->
+  lat >= searchBounds.lat_south && lat <= searchBounds.lat_north &&
+  lng >= searchBounds.lng_west && lng <= searchBounds.lng_east
 
 jQuery ->
 #  $.ajaxSetup({

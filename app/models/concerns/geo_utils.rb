@@ -31,18 +31,16 @@ module ::GeoUtils
     inner_square_half_side_length_lat = (Math.sqrt((2*diameter_lat)**2) / 2*10000000).round.to_f/10000000
     inner_square_half_side_length_lng = (Math.sqrt((2*diameter_lng)**2) / 2*10000000).round.to_f/10000000
     
-    {:lng_east => lng-inner_square_half_side_length_lng,
-     :lng_west => lng+inner_square_half_side_length_lng,
+    {:lng_west => lng-inner_square_half_side_length_lng,
+     :lng_east => lng+inner_square_half_side_length_lng,
      :lat_south => lat-inner_square_half_side_length_lat,
      :lat_north => lat+inner_square_half_side_length_lat}
   end
 
   def limits_constraint location, radius_meters = 10, limits_lat_lng = {}
     limits = lat_lng_limits location.latitude, location.longitude, radius_meters
-    limits_lat = limits[:lat_south] > limits[:lat_north] ? limits[:lat_north]..limits[:lat_south] : limits[:lat_south]..limits[:lat_north]
-    limits_lng = limits[:lng_east] > limits[:lng_west] ? limits[:lng_west]..limits[:lng_east] : limits[:lng_east]..limits[:lng_west]
-    limits_lat_lng[:limits_lat] = limits_lat
-    limits_lat_lng[:limits_lng] = limits_lng
+    limits_lat_lng[:limits_lat] = limits[:lat_south]..limits[:lat_north]
+    limits_lat_lng[:limits_lng] = limits[:lng_west]..limits[:lng_east]
     limits
   end
 

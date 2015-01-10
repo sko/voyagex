@@ -55,7 +55,8 @@ module ApplicationHelper
                       password: dummy_password,
                       password_confirmation: dummy_password,
                       email: ADMIN_EMAIL_ADDRESS.sub(/^[^@]+/, dummy_username),
-                      search_radius_meters: 1000)
+                      search_radius_meters: 1000,
+                      snapshot: UserSnapshot.new)
       u.confirm!
       session[:tmp_user_id] = u.id
       u

@@ -9,6 +9,15 @@ class window.VoyageX.MarkerManager
     @_maxZIndex = 0
     @_userMarkerMouseOver = true
 
+  _checkVisible: (location) ->
+    samePosMarker = this.forPos location.lat, location.lng
+    if samePosMarker?
+      # can only be user- or peer-marker
+      console.log('add: moving marker top/left +3px to visibility ...')
+      posPoint = @_map.project L.latLng(location.lat, location.lng)
+      movedLatLng = @_map.unproject L.point(posPoint.x+3, posPoint.y+3)
+      samePosMarker.setLatLng movedLatLng
+
   add: (location, callBack, flags = {isUserMarker: false, peer: null}) ->
     markerOps = { draggable: flags.isUserMarker,\
                   riseOnHover: true }
@@ -17,6 +26,7 @@ class window.VoyageX.MarkerManager
         markerOps.icon = new L.Icon.Default({iconUrl: '/assets/marker-icon-yellow.png'})
       else
         markerOps.icon = new L.Icon.Default({iconUrl: '/assets/marker-icon-red.png'})
+        this._checkVisible location
     marker = L.marker([location.lat, location.lng], markerOps)
     @_markers.push new VoyageX.Marker(marker, location, flags)
     if callBack != null
@@ -102,6 +112,12 @@ class window.VoyageX.MarkerManager
         return {marker: m.target(), peer: m._flags.peer, isUserMarker: m.isUserMarker()}
     null
 
+  forPos: (lat, lng) ->
+    for m in @_markers
+      if m.target().getLatLng().lat == lat && m.target().getLatLng().lng == lng
+        return m
+    null
+
   searchBounds: (radiusMeters, map) ->
     if @_selectedSearchRadius != null
       map.removeLayer(@_selectedSearchRadius)
@@ -113,8 +129,8 @@ class window.VoyageX.MarkerManager
     
     sBs = searchBounds lat, lng, radiusMeters
 
-    @_selectedSearchRadius = L.rectangle([[sBs.lat_north, sBs.lng_west],
-                                          [sBs.lat_south, sBs.lng_east]], {color: '#ff7800', weight: 1})
+    @_selectedSearchRadius = L.rectangle([[sBs.lat_north, sBs.lng_east],
+                                          [sBs.lat_south, sBs.lng_west]], {color: '#ff7800', weight: 1})
     @_selectedSearchRadius.addTo(map);
     sBs
 

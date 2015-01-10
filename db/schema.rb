@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150106095406) do
+ActiveRecord::Schema.define(version: 20150110084140) do
 
   create_table "comm_peers", force: true do |t|
     t.integer  "comm_setting_id", null: false
@@ -19,6 +19,8 @@ ActiveRecord::Schema.define(version: 20150106095406) do
     t.datetime "created_at"
     t.datetime "updated_at"
     t.boolean  "granted_by_peer"
+    t.text     "note_follower"
+    t.text     "note_followed"
   end
 
   add_index "comm_peers", ["comm_setting_id"], name: "index_comm_peers_on_comm_setting_id", using: :btree
@@ -112,6 +114,18 @@ ActiveRecord::Schema.define(version: 20150106095406) do
   end
 
   add_index "uploads", ["entity_id", "entity_type"], name: "index_uploads_on_entity_id_and_entity_type", using: :btree
+
+  create_table "user_snapshots", force: true do |t|
+    t.integer  "user_id"
+    t.integer  "location_id"
+    t.float    "lat",             limit: 24
+    t.float    "lng",             limit: 24
+    t.string   "cur_commit_hash"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "user_snapshots", ["user_id"], name: "index_user_snapshots_on_user_id", using: :btree
 
   create_table "users", force: true do |t|
     t.string   "username"

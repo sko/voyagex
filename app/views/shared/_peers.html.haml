@@ -20,7 +20,7 @@
         %script
           = render(partial: '/shared/subscriptions', formats: [:js], locals: { channel_enc_key: cs.channel_enc_key }).html_safe
           -#APP.storage().saveUser({id: #{cs.user.id}, username: '#{cs.user.username}', peerPort: {id: #{cs.id}, channel_enc_key: '#{cs.channel_enc_key}'}});
-          - last_loc = cs.user.last_location
+          - last_loc = cs.user.snapshot.location
           - last_loc_poi = Poi.where(location: last_loc).first
           window.initArgs.peers.push({id: #{cs.user.id}, username: '#{cs.user.username}', lastLocation: {id: #{last_loc.id}, lat: #{last_loc.latitude}, lng: #{last_loc.longitude}, address: '#{shorten_address(last_loc)}'#{last_loc_poi.present? ? ", poiId: #{last_loc_poi.id}" : ''}}, peerPort: {id: #{cs.id}, channel_enc_key: '#{cs.channel_enc_key}'}});
       %tr{id: "i_follow_#{cs.id}", data: {channelEncKey: cs.channel_enc_key}}
