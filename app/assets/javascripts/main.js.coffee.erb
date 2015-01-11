@@ -180,6 +180,11 @@ class window.VoyageX.Main
                           userId: APP.userId(),\
                           text: APP.userName()+': '+publishText})
 
+  p2pChatMessage: (peer, messageText) ->
+    @_comm.send('/talk', {type: 'p2p-message',\
+                          userId: APP.userId(),\
+                          text: messageText}, peer)
+
   getMarker: (poi) ->
     markerMeta = Main.markerManager().forPoi poi.id
     if markerMeta?
@@ -205,42 +210,35 @@ class window.VoyageX.Main
     Storage.Model.instance().setHomeBase @_selectedPosition.lat, @_selectedPosition.lng, (user) ->
         window.currentUser.homebaseLocationId = user.home_base.id
 
-  loadLocation: (location) ->
-    if location.locationId?
-
-
-
-
+  loadLocation: (location, fetch = true) ->
+    if location.lat? || !fetch
+      APP._initPositionCB { coords: { latitude: location.lat, longitude: location.lng } }, location.address, true
+      if isMobile()
+        $("#photo_nav_panel").panel("close")
+      else
+        photoNavPanel.dialog("close")
+#      # other 2 tabs will not change content - they are loaded from tsart on
+#      selectedTab = $('#photo_nav_panel ul[role=tablist] [class~=ui-tabs-active]').attr('aria-controls')
+#      if selectedTab != 'pois_preview'
+#        #$('#pois_preview_btn').click()
+#        APP.photoNav()
+#        $('#'+selectedTab+'_btn').click()
+#      else
+#        APP.photoNav()
+      if location.poiId
+        APP.showPOI location.poiId, -1
+      else
+        $('#current_address').html(location.address+' ('+location.locationId+')')
+        openPopupMarker = APP.getOpenPopupMarker()
+        if openPopupMarker? && openPopupMarker != Main.markerManager().get()
+          openPopupMarker.closePopup()
+        #Main.markerManager().userMarkerMouseOver true
+      if APP.map().getZoom() < 15
+        APP.map().setZoom 15
+      #Main.markerManager().get().setLatLng(L.latLng(location.lat, location.lng))
     else
-
-
-
-    
-    Storage.Model.instance().withLocation locationId, (location) ->
-        APP._initPositionCB { coords: { latitude: location.lat, longitude: location.lng } }, location.address, true
-        if isMobile()
-          $("#photo_nav_panel").panel("close")
-        else
-          photoNavPanel.dialog("close")
-#        # other 2 tabs will not change content - they are loaded from tsart on
-#        selectedTab = $('#photo_nav_panel ul[role=tablist] [class~=ui-tabs-active]').attr('aria-controls')
-#        if selectedTab != 'pois_preview'
-#          #$('#pois_preview_btn').click()
-#          APP.photoNav()
-#          $('#'+selectedTab+'_btn').click()
-#        else
-#          APP.photoNav()
-        if location.poiId
-          APP.showPOI location.poiId, -1
-        else
-          $('#current_address').html(location.address+' ('+locationId+')')
-          openPopupMarker = APP.getOpenPopupMarker()
-          if openPopupMarker? && openPopupMarker != Main.markerManager().get()
-            openPopupMarker.closePopup()
-          #Main.markerManager().userMarkerMouseOver true
-        if APP.map().getZoom() < 15
-          APP.map().setZoom 15
-        #Main.markerManager().get().setLatLng(L.latLng(location.lat, location.lng))
+      Storage.Model.instance().withLocation location.locationId, (location) ->
+          APP.loadLocation location, false
 
   showPOI: (poiId, poiNoteId) ->
     Storage.Model.instance().loadPoiNotes poiId, poiNoteId, (poi) ->

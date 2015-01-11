@@ -9,9 +9,14 @@ class window.VoyageX.MarkerManager
     @_maxZIndex = 0
     @_userMarkerMouseOver = true
 
-  _checkVisible: (location) ->
-    samePosMarker = this.forPos location.lat, location.lng
-    if samePosMarker?
+  _checkVisible: (location, samePosMarker = null) ->
+    if samePosMarker == null
+      samePosMarker = this.forPos location.lat, location.lng
+      if samePosMarker? ||
+         ((p = @_map.project(L.latLng(location.lat, location.lng)))? && (samePosMarker = this.nearByPoint(p.x, p.y, 3))?)
+        if samePosMarker._flags.peer?
+          this._checkVisible location, samePosMarker
+    else
       # can only be user- or peer-marker
       console.log('add: moving marker top/left +3px to visibility ...')
       posPoint = @_map.project L.latLng(location.lat, location.lng)
@@ -115,6 +120,13 @@ class window.VoyageX.MarkerManager
   forPos: (lat, lng) ->
     for m in @_markers
       if m.target().getLatLng().lat == lat && m.target().getLatLng().lng == lng
+        return m
+    null
+
+  nearByPoint: (x, y, minNumPixels) ->
+    for m in @_markers
+      mPoint = @_map.project m.target().getLatLng()
+      if Math.abs(mPoint.x-x) < minNumPixels || Math.abs(mPoint.y-y) < minNumPixels
         return m
     null
 

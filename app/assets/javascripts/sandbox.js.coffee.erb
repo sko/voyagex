@@ -76,6 +76,23 @@ jQuery ->
       #$(this).selectRange(0) 
       VoyageX.View.addChatMessage { text: $('#message').val() }
 
+  #$('.p2p_message').on 'keyup', (event) ->
+  window.sendP2PChatMessage = (event) ->
+    if (event.which == 13 || event.keyCode == 13)
+      event.preventDefault()
+      endIdx = $(event.target).val().indexOf('\n---')
+      if endIdx == -1
+        publishText = $(event.target).val()
+      else
+        publishText = $(event.target).val().substr(0, endIdx)
+      peerChatContainer = $(event.target).closest('.peer_popup').first()
+      peerId = parseInt(peerChatContainer.attr('data-peerId'))
+      peer = Comm.StorageController.instance().getUser peerId
+      APP.p2pChatMessage(peer, publishText)
+      #$(event.target).val('\n-------------------------\n'+$(event.target).val())
+      #$(event.target).selectRange(0) 
+      VoyageX.View.addChatMessage { text: $('#p2p_message_'+peerId).val() }, true, {peer: peer, chatContainer: peerChatContainer, msgInput: $(event.target)}
+
   $('#poi_notes_container').scrollpanel({
       prefix: 'pcn-'
     })

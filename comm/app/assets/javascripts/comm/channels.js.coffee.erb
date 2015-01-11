@@ -64,20 +64,21 @@ class window.Comm.Comm
     .fail (jqXHR, textStatus) ->
         alert('TODO: handle registration failure...')
 
-  send: (channel, message) ->
+  send: (channel, message, peer = null) ->
     # 1) client wants to publish before register-ajax-response set the enc_key
     #    1.1: store request and send after register (local storage)
     # 2) the same goes for requests when client is offline
     unless Comm.channelCallBacksJSON[channel.substr(1)] == null or !systemReady
       channelPath = channel
       unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
-        channelPath += VoyageX.PEER_CHANNEL_PREFIX+Comm.channelCallBacksJSON[channel.substr(1)].channel_enc_key
+        channelPath += VoyageX.PEER_CHANNEL_PREFIX +
+                       if peer? then peer.peerPort.channel_enc_key else Comm.channelCallBacksJSON[channel.substr(1)].channel_enc_key
       client.publish(channelPath, message)
     else
       if (Modernizr.localstorage)
         console.log('caching publish to '+channel)
         # later send: @_storageController.pop('comm.publish')
-        cacheEntry = { channel: channel, message: message }
+        cacheEntry = { channel: channel, message: message, peer: peer }
         @_storageController.addToList('comm.publish', 'push', cacheEntry)
       else
         alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
@@ -150,7 +151,7 @@ class window.Comm.Comm
       systemReady = true
       while (cacheEntry = Comm.instance()._storageController.pop('comm.publish'))
         console.log('sending cached-publish to '+cacheEntry.channel)
-        Comm.instance().send cacheEntry.channel, cacheEntry.message
+        Comm.instance().send cacheEntry.channel, cacheEntry.message, cacheEntry.peer
     # since unsubscribed client will not receive anymore - but server will send this on next subscription
     # before ready_notification
     # if client disconnects by itself, then:

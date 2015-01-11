@@ -50,7 +50,8 @@ group :test do
   gem 'factory_girl_rails'
 end
 
-group :staging, :development do
+#group :staging, :development do
+group :production, :staging, :development do
   # Faye
   gem 'thin'
 end

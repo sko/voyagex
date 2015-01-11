@@ -56,7 +56,12 @@ class window.VoyageX.View
     console.log 'got a talk - message: ' + message.type
     if APP.userId() == message.userId
       return null
-    View.addChatMessage message, false
+    switch message.type
+      when 'message'
+        View.addChatMessage message, false
+      when 'p2p-message'
+        peer = Comm.StorageController.instance().getUser parseInt(message.userId)
+        View.addChatMessage message, false, {peer: peer}
     for listener in View.instance()._commListeners.talk
       listener(message)
 
@@ -170,34 +175,45 @@ class window.VoyageX.View
   viewBookmarkNote: (bookmark) ->
     VoyageX.TemplateHelper.openNoteEditor bookmark
 
-  scrollToLastChatMessage: () ->
-    msgDiv = $('.chat_message').last()
+  scrollToLastChatMessage: (peerChatMeta = null) ->
+    if peerChatMeta?
+      scrollPane = $('div.peer_popup[data-peerId='+peerChatMeta.peer.id+'] > .p2p_chat_container > .p2p_chat_view').first()
+      msgDiv = scrollPane.find('.p2p_chat_msg').last()
+    else
+      msgDiv = $('.chat_message').last()
     msgDivOff = msgDiv.offset()
     if msgDivOff?
-      scrollPane = msgDiv.closest('.chat_view').first()
+      unless scrollPane?
+        scrollPane = msgDiv.closest('.chat_view').first()
       scrollPane.scrollTop(msgDivOff.top)
 
-  @addChatMessage: (message, mine = true) ->
+  @addChatMessage: (message, mine = true, peerChatMeta = null) ->
     if mine
       meOrOther = 'me'
       leftOrRight = 'left'
-      #left = 0
-      #$('.chat_view').append '<div>&nbsp;</div>'
     else
       meOrOther = 'other'
       leftOrRight = 'right'
-      #left = Math.round($('.chat_view').width()*0.2)
-    #$('.chat_view').append '<div style="left:'+left+'px;" class="chat_message chat_message_'+meOrOther+' triangle-border '+leftOrRight+'">'+message.text+'</div>'
-    $('.chat_view').append '<div class="chat_message_sep"></div><div class="chat_message chat_message_'+meOrOther+' triangle-border '+leftOrRight+'">'+message.text+'</div>'
-    APP.view().scrollToLastChatMessage()
-    #$('#message').val('\n-------------------------\n'+message.text+$('#message').val())
+    if peerChatMeta?
+      if mine
+        msgHtml = VoyageX.TemplateHelper.p2PChatMsgHtml currentUser, message.text
+        peerChatMeta.chatContainer.find('.p2p_chat_view').first().append '<div class="chat_message_sep"></div>'+msgHtml
+        #<div class="chat_message chat_message_'+meOrOther+' triangle-border '+leftOrRight+'">'+message.text+'</div>'
+        msgInput = peerChatMeta.msgInput
+      else
+        VoyageX.TemplateHelper.openP2PChat peerChatMeta.peer, [message.text]
+    else
+      $('.chat_view').append '<div class="chat_message_sep"></div><div class="chat_message chat_message_'+meOrOther+' triangle-border '+leftOrRight+'">'+message.text+'</div>'
+      msgInput = $('#message')
+    APP.view().scrollToLastChatMessage peerChatMeta
+    #msgInput.val('\n-------------------------\n'+message.text+msgInput.val())
     if mine
-      $('#message').val('')
+      msgInput.val('')
       if window.isMobile()
-        $('#message').blur()
+        msgInput.blur()
         $('body').scrollTop 0
       else
-        $('#message').selectRange(0)
+        msgInput.selectRange(0)
 
   scrollToPoiNote: (poiNoteId) ->
     poiNoteDiv = $('#poi_notes_container').children('[data-id='+poiNoteId+']').first()

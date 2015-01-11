@@ -24,6 +24,7 @@ unterscheidung ob in der nähe oder ganz wo anders
 ==========
 Concept
 ==========
++) tour wie bei uscan ... mehrere pois verbinden
 +) a la git: der ganze baum wird als dateisystem angelegt, jedes objekt ist ne datei. alles ist ein verzueichnis, auch comment. die eigenschaften werden in einer datei geschireben - entweder eine datei für alle oder für jede eigenschaft eine datei. wenn alle attrib8ute in einem file stehen muss an erster stelle auch die version stehen, bzw. der commit-hash
 +) polymorphic wie bei whatsbetter, WhatsBetter::Comparable <=> Upload (also ändern), Content als entity von Upload.
    aber: hilfsmethode file in upload: delegate!!!

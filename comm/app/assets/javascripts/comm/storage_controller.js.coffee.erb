@@ -166,7 +166,12 @@ class window.Comm.StorageController
   getUser: (userId) ->
     storeKey = 'comm.users'
     users = eval("(" + localStorage.getItem(storeKey) + ")")
-    users[userId]
+    user = users[userId]
+    if user?
+      user.id = userId
+      if (peer = users.peers[userId])?
+        user.peerPort = peer.peerPort
+    user
   
   saveUser: (user, flags = {}) ->
     storeKey = 'comm.users'

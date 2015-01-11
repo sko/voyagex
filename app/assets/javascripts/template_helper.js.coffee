@@ -95,8 +95,9 @@ class window.VoyageX.TemplateHelper
     else
       TemplateHelper.openPOINotePopup poi, marker
 
-  @openPeerPopup: (peer, marker) ->
-    popupHtml = TemplateHelper._updateIds 'tmpl_peer_popup'
+  @openPeerPopup: (peer, marker, messages = [], contentCallback = null) ->
+    popupHtml = TemplateHelper._updateIds('tmpl_peer_popup').
+    replace(/\{peer_id\}/g, peer.id)
     popup = marker.getPopup()
     isNewPopup = !popup?
     if isNewPopup
@@ -106,7 +107,7 @@ class window.VoyageX.TemplateHelper
       # popupclose doesn't work if just popup is closed because of other marker's opening popup
       marker.on 'popupclose', (event) -> 
           console.log('openPeerPopup: popupclose for '+VoyageX.Main.markerManager().toString(marker))
-    popup.setContent(popupHtml)
+    popup.setContent(if contentCallback? then contentCallback(popupHtml, peer, marker, messages) else popupHtml)
     marker.openPopup()
     VoyageX.Main.markerManager().userMarkerMouseOver false
 #    if isNewPopup
@@ -161,6 +162,56 @@ class window.VoyageX.TemplateHelper
     $('#note').focus()
     noteEditor = $('#note_editor')
     noteEditor.closest('.leaflet-popup-content').first().scrollTop(noteEditor.offset().top)
+
+  @p2PChatMsgHtml: (from, message, messageHtml = null) ->
+    unless messageHtml?
+      messageHtml = $('#tmpl_p2p_chat_msg').html()
+    toggle = if from.id==currentUser.id then 'left' else 'right'
+    messageHtml.
+    replace(/\{toggle\}/, toggle).
+    replace(/\stmpl-toggle=['"]?[^'" >]+/g, '').
+    replace(/\{message\}/, message)
+
+  @p2PChatHtml: (peer, messages, p2pChatHtml = null) ->
+    unless p2pChatHtml?
+      p2pChatHtml = TemplateHelper._updateIds('tmpl_p2p_chat_container').
+      replace(/\{peer_id\}/g, peer.id)
+    messageHtml = $('#tmpl_p2p_chat_msg').html()
+    #i = $('.leaflet-popup .p2p_chat_msg').length
+    newMessagesHtml = ''
+    for msg, j in messages
+      newMessagesHtml += TemplateHelper.p2PChatMsgHtml(peer, msg, messageHtml)
+    p2pChatHtml.
+    replace(/(<\/div>\s*<div[^>]* class=['"]\s*p2p_chat_input\s*['"][^>]*>)/m, newMessagesHtml+'$1')
+
+  @openP2PChat: (peer, newMessages = []) ->
+    markerMeta = VoyageX.Main.markerManager().forPeer peer.id
+    popup = markerMeta.marker.getPopup()
+    if popup?
+      popupHtml = popup.getContent()
+      # $('div.peer_popup[data-peerId=196]')
+      # $('div.peer_popup[data-peerId=196] > .p2p_chat_container > .p2p_chat_view > p2p_chat_msg')
+      if popupHtml.indexOf('p2p_chat_container') == -1
+        p2pChatHtml = TemplateHelper.p2PChatHtml peer, newMessages
+      else
+        # only if popup is open
+        #popupContainer = $('div.peer_popup[data-peerId='+peer.id+']')
+        chatContainerContent = $('div.peer_popup[data-peerId='+peer.id+'] > .p2p_chat_container').first().wrap('<p/>').parent().html()
+        $('div.peer_popup[data-peerId='+peer.id+'] > p > .p2p_chat_container').first().unwrap()
+        p2pChatHtml = TemplateHelper.p2PChatHtml peer, newMessages, chatContainerContent
+      popupHtml = popupHtml.replace(/(<div[^>]* class=['"]\s*peer_popup\s*['"][^>]*>)(.|[\r\n])+?(<div[^>]* id=['"]p2p_controls['"])/, '$1'+p2pChatHtml+'$3')
+      popup.setContent popupHtml
+      # / if popupHtml.indexOf('p2p_chat_container') == -1
+      markerMeta.marker.openPopup()
+    else
+      TemplateHelper.openPeerPopup peer, markerMeta.marker, newMessages, (popupHtml, peer, marker, messages) ->
+          if popupHtml.indexOf('p2p_chat_container') == -1
+            p2pChatHtml = TemplateHelper.p2PChatHtml peer, messages
+            popupHtml = popupHtml.replace(/(<div[^>]* class=['"]\s*peer_popup\s*['"][^>]*>)(.|[\r\n])+?(<div[^>]* id=['"]p2p_controls['"])/, '$1'+p2pChatHtml+'$3')
+          popupHtml
+    $('.p2p_message').on 'keyup', (event) ->
+        sendP2PChatMessage event
+    VoyageX.Main.markerManager().userMarkerMouseOver false
 
   @poisPreviewHTML: (pois) ->
     html = ''
