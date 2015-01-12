@@ -64,7 +64,8 @@ class window.VoyageX.Main
             APP.storage().saveLocation lastLocation
           peer.lastLocationId = lastLocation.id
           APP.storage().saveUser peer, {peerPort: peerPort}
-          marker = Main.markerManager().add lastLocation, Main._markerEventsCB, {isUserMarker: false, peer: peer}
+          #marker = Main.markerManager().add lastLocation, Main._markerEventsCB, {isUserMarker: false, peer: peer}
+          marker = APP.getPeerMarker peer, lastLocation
         delete window.initArgs.peers
         if navigator.geolocation 
           navigator.geolocation.getCurrentPosition(APP._initPositionCB, (error) ->

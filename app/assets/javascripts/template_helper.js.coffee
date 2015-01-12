@@ -85,7 +85,7 @@ class window.VoyageX.TemplateHelper
       newPopupHtml = ''
       for note, j in newNotes
         newPopupHtml += TemplateHelper.poiNotePopupHtmlFromTmpl(note, i+j)
-      popupHtml = popup.getContent().replace(/(<span[^>]*>\s*<div[^>].+?upload_comment_btn_)/, newPopupHtml+'$1')
+      popupHtml = popup.getContent().replace(/(<div[^>].*? class=["'][^'"]*\s?poi_controls(["']|\s))/, newPopupHtml+'$1')
       popup.setContent(popupHtml)
       #$('#poi_notes_container div.upload_comment').last().prepend(newPopupHtml)
       #popup.update()
@@ -151,15 +151,15 @@ class window.VoyageX.TemplateHelper
     noteEditor.closest('.leaflet-popup-content').first().scrollTop(noteEditor.offset().top)
     $('#'+typeId).focus()
 
-  @openNoteEditor: (bookmark) ->
+  @openNoteEditor: (location) ->
     marker = APP.getOpenPopupMarker()
     unless marker?
       marker = VoyageX.Main.markerManager().get()
-    TemplateHelper.editorFor bookmark, marker, 'note_bookmark_'+bookmark.location.id, (bookmark) ->
-        TemplateHelper.noteHtml 'bookmark_'+bookmark.location.id, if bookmark.text? then bookmark.text else ''
+    TemplateHelper.editorFor location, marker, 'note_bookmark_'+location.id, (location) ->
+        TemplateHelper.noteHtml 'bookmark_'+location.id, if location.bookmark? && location.bookmark.text? then location.bookmark.text else ''
 
   @openPeerNoteEditor: (peer, marker) ->
-    TemplateHelper.editorFor peer, marker, 'note_peer_'+peer.id, (bookmark) ->
+    TemplateHelper.editorFor peer, marker, 'note_peer_'+peer.id, (peer) ->
         TemplateHelper.noteHtml 'peer_'+peer.id, if peer.note? then peer.note else ''
 
   @p2PChatMsgHtml: (from, message, messageHtml = null) ->
@@ -246,21 +246,21 @@ class window.VoyageX.TemplateHelper
     replace(/\{width\}/g, width).
     replace(/\{height\}/g, maxHeight)
 
-  @locationsBookmarksHTML: (bookmarks) ->
+  @locationsBookmarksHTML: (bookmarkLocations) ->
     html = ''
-    for bookmark, i in bookmarks
-      if bookmark.location.poi?
+    for location, i in bookmarkLocations
+      if location.poi?
         poiOrNoPoiHTML = TemplateHelper._updateAttributes('tmpl_location_bookmark_poi', ['src']).
-        replace(/\{attachment_url\}/, bookmark.location.poi.notes[0].attachment.url)
+        replace(/\{attachment_url\}/, location.poi.notes[0].attachment.url)
       else
         poiOrNoPoiHTML = $('#tmpl_location_bookmark_no_poi').html()
       updatedAt = new Date(bookmark.updatedAt)
       html = $('#tmpl_location_bookmarks').html().
       replace(/\{location_poi_or_no_poi\}/, poiOrNoPoiHTML).
-      replace(/\{locationId\}/g, bookmark.location.id).
-      replace(/\{lat\}/, bookmark.location.lat).
-      replace(/\{lng\}/, bookmark.location.lng).
-      replace(/\{address\}/, bookmark.location.address).
+      replace(/\{locationId\}/g,location.id).
+      replace(/\{lat\}/,location.lat).
+      replace(/\{lng\}/,location.lng).
+      replace(/\{address\}/,location.address).
       replace(/\{bookmark_updated_at\}/, $.datepicker.formatDate('dd.mm.yy', updatedAt)+' '+updatedAt.getHours().toString().replace(/^([0-9])$/,'0$1')+':'+updatedAt.getMinutes().toString().replace(/^([0-9])$/,'0$1')).
       replace(/\{commented_by_user\}/, 'TODO')
     html

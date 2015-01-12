@@ -70,10 +70,16 @@ class window.Comm.StorageController
     locations = eval("(" + localStorage.getItem(storeKey) + ")")
     if locations?
       location = locations[locationId]
-      if location && locations.pois?
-        poi = locations.pois[locationId]
-        if poi?
-          location.poiId = poi.id
+      if location
+        if locations.pois?
+          poi = locations.pois[locationId]
+          if poi?
+            location.poiId = poi.id
+        if locations.bookmarks?
+          bookmark = locations.bookmarks[locationId]
+          if bookmark?
+            location.bookmark = bookmark
+      location.id = locationId
       location
     else
       null
@@ -110,7 +116,7 @@ class window.Comm.StorageController
     storeKey = 'comm.locations'
     locations = eval("(" + localStorage.getItem(storeKey) + ")")
     location = locations[locationId]
-    bookmark = {}
+    #bookmark = {}
     # only bookmark existing locations
     if location?
       if locations.bookmarks?
@@ -129,13 +135,14 @@ class window.Comm.StorageController
         bookmark = if text? then {updatedAt: new Date().getTime(), text: text} else {updatedAt: new Date().getTime()}
         locations.bookmarks[locationId] = bookmark
         localStorage.setItem storeKey, JSON.stringify(locations)
-      # only return-value has location
-      bookmark.location = location
-      bookmark.location.id = locationId
+      # setup return-value
+      location.id = locationId
+      location.bookmark = bookmark
       if locations.pois? && locations.pois[locationId]?
         storeKey = StorageController.poiKey locations.pois[locationId]
-        bookmark.location.poi = this.get storeKey
-    bookmark
+        location.poi = this.get storeKey
+    #bookmark
+    location
   
   bookmarks: (callback = null) ->
     storeKey = 'comm.locations'

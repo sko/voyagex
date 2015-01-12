@@ -27,8 +27,8 @@ class window.Storage.Model
       data: {lat: latLng[0], lng: latLng[1]}
     .done (user) ->
         Comm.StorageController.instance().saveLocation user.last_location
-        bookmark = Comm.StorageController.instance().bookmark user.last_location.id
-        callback bookmark
+        bookmarkLocation = Comm.StorageController.instance().bookmark user.last_location.id
+        callback bookmarkLocation
     .fail (jqXHR, textStatus) ->
         console.log('TODO: errorhandling')
 

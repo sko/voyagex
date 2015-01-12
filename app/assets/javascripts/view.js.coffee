@@ -173,8 +173,8 @@ class window.VoyageX.View
       $('#attachment_view_panel').dialog('open')
   
   # called for either poi- or user-marker
-  viewBookmarkNote: (bookmark) ->
-    VoyageX.TemplateHelper.openNoteEditor bookmark
+  viewBookmarkNote: (location) ->
+    VoyageX.TemplateHelper.openNoteEditor location
   
   viewPeerNote: (peer) ->
     markerMeta = VoyageX.Main.markerManager().forPeer peer.id
@@ -260,11 +260,11 @@ class window.VoyageX.View
     View.instance().scrollToPoiNote newNotes[0].id
     #APP.panPosition(poi.lat, poi.lng, poi.address)
 
-  @addBookmark: (bookmark) ->
-    View.instance().viewBookmarkNote bookmark
+  @addBookmark: (bookmarkLocation) ->
+    View.instance().viewBookmarkNote bookmarkLocation
     bookmarksPanel = $('#location_bookmarks')
-    if bookmarksPanel.find('.bookmark-container[data-id='+bookmark.location.id+']').length == 0
-      locationsBookmarksHTML = VoyageX.TemplateHelper.locationsBookmarksHTML [bookmark]
+    if bookmarksPanel.find('.bookmark-container[data-id='+bookmarkLocation.id+']').length == 0
+      locationsBookmarksHTML = VoyageX.TemplateHelper.locationsBookmarksHTML [bookmarkLocation]
       bookmarkEntries = $('#location_bookmarks .bookmark-container')
       if bookmarkEntries.length >= 1
         $('#location_bookmarks .bookmark-container').first().before(locationsBookmarksHTML)
