@@ -32,16 +32,16 @@ class window.Storage.Model
     .fail (jqXHR, textStatus) ->
         console.log('TODO: errorhandling')
 
-  addNote: (locationId, text) ->
+  addNote: (type, id, text) ->
     if text.trim() == ''
       return false
     $.ajax
       type: 'POST'
       dataType: 'json'
       url: '<%= set_user_detail_path(detail: 'notes') %>'
-      data: {location_id: locationId, text: text}
+      data: if type=='peer' then {peer_id: id, text: text} else {location_id: id, text: text}
     .done (user) ->
-        Comm.StorageController.instance().saveNote locationId, text
+        Comm.StorageController.instance().saveNote type, id, text
     .fail (jqXHR, textStatus) ->
         console.log('TODO: errorhandling')
 

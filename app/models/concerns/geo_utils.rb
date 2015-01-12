@@ -27,9 +27,9 @@ module ::GeoUtils
 
     diameter_lat = meter_lat * radius_meters
     diameter_lng = meter_lng * radius_meters
-    
-    inner_square_half_side_length_lat = (Math.sqrt((2*diameter_lat)**2) / 2*10000000).round.to_f/10000000
-    inner_square_half_side_length_lng = (Math.sqrt((2*diameter_lng)**2) / 2*10000000).round.to_f/10000000
+    afterCommaFactor = 10000000 # 7
+    inner_square_half_side_length_lat = (Math.sqrt((2*diameter_lat)**2) / 2*afterCommaFactor).round.to_f/afterCommaFactor
+    inner_square_half_side_length_lng = (Math.sqrt((2*diameter_lng)**2) / 2*afterCommaFactor).round.to_f/afterCommaFactor
     
     {:lng_west => lng-inner_square_half_side_length_lng,
      :lng_east => lng+inner_square_half_side_length_lng,

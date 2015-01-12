@@ -23,7 +23,7 @@ class window.VoyageX.MarkerManager
       movedLatLng = @_map.unproject L.point(posPoint.x+3, posPoint.y+3)
       samePosMarker.setLatLng movedLatLng
 
-  add: (location, callBack, flags = {isUserMarker: false, peer: null}) ->
+  add: (location, callBack, flags = {isUserMarker: false, peer: null}, meta = false) ->
     markerOps = { draggable: flags.isUserMarker,\
                   riseOnHover: true }
     unless flags.isUserMarker
@@ -52,7 +52,7 @@ class window.VoyageX.MarkerManager
         marker._icon.title = flags.peer.username+' ('+flags.peer.id+')'
       else
         marker._icon.title = location.address
-    marker
+    if meta then {marker: marker, isUserMarker: flags.isUserMarker, poi: APP.storage().getPoi(location.id), peer: flags.peer} else marker
 
   sel: (replaceMarker, lat, lng, callBack) ->
     # if @_selectedMarker != null && replaceMarker == @_selectedMarker.target()
@@ -80,8 +80,8 @@ class window.VoyageX.MarkerManager
     @_selectedMarker.setLatLng lat, lng
     @_selectedMarker.target()
 
-  get: () ->
-    if @_selectedMarker != null then @_selectedMarker.target() else null
+  get: (meta = false) ->
+    if @_selectedMarker != null then (if meta then @_selectedMarker else @_selectedMarker.target()) else null
 
   meta: (leafletMarker) ->
     for m in @_markers
@@ -93,6 +93,11 @@ class window.VoyageX.MarkerManager
           meta.poi = APP.storage().get Comm.StorageController.poiKey({id: m.location().poiId})
         return meta
     null
+  
+  @metaJSON: (marker, options) ->
+    {target: () ->
+        marker.target()
+      , isUserMarker: marker.isUserMarker(), poi: options.poi, peer: options.peer}
 
   userMarkerMouseOver: (enable = null) ->
     if enable == null
@@ -108,13 +113,13 @@ class window.VoyageX.MarkerManager
     for m in @_markers
       if m.location().poiId == poiId
         poi = APP.storage().get Comm.StorageController.poiKey({id: m.location().poiId})
-        return {marker: m.target(), poi: poi, isUserMarker: m.isUserMarker()}
+        return MarkerManager.metaJSON m, {poi: poi}
     null
 
   forPeer: (peerId) ->
     for m in @_markers
       if m._flags.peer? && m._flags.peer.id == peerId
-        return {marker: m.target(), peer: m._flags.peer, isUserMarker: m.isUserMarker()}
+        return MarkerManager.metaJSON m, {peer: m._flags.peer}
     null
 
   forPos: (lat, lng) ->
@@ -126,7 +131,7 @@ class window.VoyageX.MarkerManager
   nearByPoint: (x, y, minNumPixels) ->
     for m in @_markers
       mPoint = @_map.project m.target().getLatLng()
-      if Math.abs(mPoint.x-x) < minNumPixels || Math.abs(mPoint.y-y) < minNumPixels
+      if Math.abs(mPoint.x-x) < minNumPixels && Math.abs(mPoint.y-y) < minNumPixels
         return m
     null
 

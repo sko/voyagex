@@ -183,26 +183,6 @@ class window.VoyageX.Main
                           userId: APP.userId(),\
                           text: messageText}, peer)
 
-  getMarker: (poi) ->
-    markerMeta = Main.markerManager().forPoi poi.id
-    if markerMeta?
-      return markerMeta.marker
-    else
-      return Main.markerManager().add poi.location, Main._markerEventsCB, false
-
-  getOpenPopupMarker: () ->
-    userMarkerPopupPanel = $('#marker_controls')
-    if userMarkerPopupPanel.length >= 1
-      marker = Main.markerManager().get()
-    else
-      poiMarkerPopupPanel = $('#poi_notes_container')
-      if poiMarkerPopupPanel.length >= 1
-        poiId = parseInt poiMarkerPopupPanel.attr('data-poiId')
-        marker = APP.getMarker {id: poiId}
-      else
-        marker = null
-    marker
-
   setHomeBase: () ->
     #this.publishPosition false, null, true
     Storage.Model.instance().setHomeBase @_selectedPosition.lat, @_selectedPosition.lng, (user) ->
@@ -380,32 +360,82 @@ class window.VoyageX.Main
       if ! $('#upload_data_conrols').parent().hasClass('seethrough_panel')
         $('#upload_data_conrols').parent().addClass('seethrough_panel')
 
-  # just closes marker specified by contentId - not any other
-  preTogglePopup: (contentId) ->
-    openPopup = $('#'+contentId)
-    if openPopup.length >= 1
-      if contentId == 'marker_controls'
-        openPopupMarker = Main.markerManager().get()
+  getMarker: (poi, meta = false) ->
+    markerMeta = Main.markerManager().forPoi poi.id
+    if markerMeta?
+      return if meta then markerMeta else markerMeta.target()
+    else
+      if poi.location?
+        return Main.markerManager().add poi.location, Main._markerEventsCB, null, meta
       else
-        poiId = parseInt openPopup.attr('data-poiId')
-        openPopupMarker = APP.getMarker {id: poiId}
-      if openPopupMarker.getPopup()? && openPopupMarker.getPopup()._isOpen
-        Main._checkSaveNote()
-        openPopupMarker.closePopup()
+        if poi.locationId?
+          location = Comm.StorageController.instance().getLocation poi.locationId
+        else
+          location = {lat: poi.lat, lng: poi.lng, address: poi.address}
+        return Main.markerManager().add location, Main._markerEventsCB, null, meta
+
+  getPeerMarker: (peer, location, meta = false) ->
+    markerMeta = Main.markerManager().forPeer peer.id
+    if markerMeta?
+      return if meta then markerMeta else markerMeta.target()
+    else
+      return Main.markerManager().add location, Main._markerEventsCB, {isUserMarker: false, peer: peer}, meta
+
+  getOpenPopupMarker: (meta = false) ->
+    if (userMarkerPopupPanel = $('#marker_controls')).length >= 1
+      marker = Main.markerManager().get meta
+    else if (peerMarkerPopupPanel = $('div[id^=peer_popup_]')).length >= 1
+      peerId = parseInt peerMarkerPopupPanel.attr('id').match(/[0-9]+$/)[0]
+      #peer = Comm.StorageController.instance().getUser peerId
+      marker = APP.getPeerMarker {id: peerId}, null, meta
+    else
+      if (poiMarkerPopupPanel = $('#poi_notes_container')).length >= 1
+        poiId = parseInt poiMarkerPopupPanel.attr('data-poiId')
+        marker = APP.getMarker {id: poiId}, meta
+      else
+        marker = null
+    marker
+
+  # just closes markers of specified type - not any other
+  # poi_notes_container | marker_controls | peer_popup_{peer_id}
+  preTogglePopup: () ->
+    openPopupMarkerMeta = this.getOpenPopupMarker true
+    if openPopupMarkerMeta?
+      if openPopupMarkerMeta.target().getPopup()? && openPopupMarkerMeta.target().getPopup()._isOpen
+        if openPopupMarkerMeta.isUserMarker
+          Main._checkSaveNote 'marker_controls'
+        else if openPopupMarkerMeta.peer?
+          Main._checkSaveNote 'peer_popup_'+openPopupMarkerMeta.peer.id
+        else
+          Main._checkSaveNote 'poi_notes_container'
+        openPopupMarkerMeta.target().closePopup()
 
   @closePopupCB: (leafletMarker) ->
     (event) ->
         meta = Main.markerManager().meta leafletMarker
-        console.log('closePopupCB: leafletMarker = '+Main.markerManager().toString(leafletMarker, meta))
-        Main._checkSaveNote()
+        if meta.isUserMarker
+          contentId = 'marker_controls'
+        else if meta.peer?
+          contentId = 'peer_popup_'+meta.peer.id
+        else
+          contentId = 'poi_notes_container'
+        console.log('closePopupCB: contentId = '+contentId+', leafletMarker = '+Main.markerManager().toString(leafletMarker, meta))
+        Main._checkSaveNote contentId
         Main.markerManager().userMarkerMouseOver true
 
-  @_checkSaveNote: () ->
-    textArea = $('#note_editor textarea')
+  # poi_notes_container | marker_controls | peer_popup_{peer_id}
+  @_checkSaveNote: (contentId) ->
+    noteEditor = $('#'+contentId).parent().find('.note_editor').first()
+    textArea = noteEditor.find('textarea')
     if textArea.length >= 1
-      locationId = parseInt textArea.attr('id').match(/[0-9]+$/)[0]
-      console.log('_checkSaveNote: saving note for location '+Comm.StorageController.instance().getLocation(locationId).address)
-      Storage.Model.instance().addNote locationId, textArea.val()
+      targetId = parseInt textArea.attr('id').match(/[0-9]+$/)[0]
+      if contentId.match(/^peer_popup_/)?
+        targetType = 'peer'
+        console.log('_checkSaveNote: saving note for peer '+Comm.StorageController.instance().getUser(targetId).username)
+      else
+        targetType = 'bookmark'
+        console.log('_checkSaveNote: saving note for location '+Comm.StorageController.instance().getLocation(targetId).address)
+      Storage.Model.instance().addNote targetType, targetId, textArea.val()
 
   @_markerEventsCB: (event) ->
     address = null
@@ -415,24 +445,18 @@ class window.VoyageX.Main
         if markerMeta.isUserMarker
           unless Main.markerManager().userMarkerMouseOver()
             # click on user-marker while poi-marker is open
-            APP.preTogglePopup 'poi_notes_container'
+            APP.preTogglePopup()
             Main.markerManager().userMarkerMouseOver true 
             APP.markerControls()
         else
         #unless markerMeta.isUserMarker
+          APP.preTogglePopup()
           if event.target.getPopup() && event.target.getPopup()._isOpen
             # click on poi-marker with open popup
-            Main._checkSaveNote()
             event.target.closePopup()
             Main.markerManager().userMarkerMouseOver true
-            `;`
           else
             # click on poi-marker with no popup
-            if event.target == Main.markerManager().get()
-              APP.preTogglePopup 'marker_controls'
-            else
-              Main._checkSaveNote()
-              #will be closed automatically: openPopupMarker = APP.getOpenPopupMarker()
             if markerMeta.peer?
               VoyageX.TemplateHelper.openPeerPopup markerMeta.peer, event.target
             else
@@ -444,7 +468,7 @@ class window.VoyageX.Main
         if markerMeta.isUserMarker && Main.markerManager().userMarkerMouseOver()
           unless event.target.getPopup() && event.target.getPopup()._isOpen
             # click on user-marker with no popup
-            APP.preTogglePopup 'poi_notes_container'
+            APP.preTogglePopup()
             APP.markerControls()
       when 'dblclick'
         APP._setSelectedPositionLatLng event.target, event.target._latlng.lat, event.target._latlng.lng, address

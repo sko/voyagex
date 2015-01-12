@@ -125,10 +125,21 @@ class UsersController < ApplicationController
           user_json[:last_location] = {id: location.id, lat: location.latitude, lng:location.longitude, address:shorten_address(location, true)}
           location = tmp_user.snapshot.location.present? ? tmp_user.snapshot.location : tmp_user.last_location
         when 'notes'
-          location = Location.find(params[:location_id])
-          current_user.locations_users.where(location_id: location.id).first.update_attributes note: params[:text], updated_at: DateTime.now
+          if params[:peer_id].present?
+            comm_peer = CommPeer.where(peer_id: current_user.id).first
+            comm_peer.update_attribute(:note_follower, params[:text]) if comm_peer.present?
+            user_json[:note] = {id: comm_peer.comm_setting.user.id}
+          else
+            location = Location.find(params[:location_id])
+            locations_user = current_user.locations_users.where(location_id: location.id).first
+            if locations_user.present?
+              locations_user.update_attributes note: params[:text], updated_at: DateTime.now
+            else
+              locations_user = current_user.locations_users.create(location: location, note: params[:text])
+            end
+            user_json[:note] = {id: location.id, lat: location.latitude, lng:location.longitude, address:shorten_address(location)}
+          end
           user_json[:id] = current_user.id
-          user_json[:note] = {id: location.id, lat: location.latitude, lng:location.longitude, address:shorten_address(location)}
         end
         render json: user_json.to_json
         return

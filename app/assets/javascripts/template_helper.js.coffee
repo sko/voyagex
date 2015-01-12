@@ -147,9 +147,9 @@ class window.VoyageX.TemplateHelper
     if popupHtml.indexOf('note_editor') == -1
       popup.setContent popupHtml + editorHtml
     marker.openPopup()
-    $('#'+typeId).focus()
     noteEditor = $('#'+typeId).closest('.note_editor').first()
     noteEditor.closest('.leaflet-popup-content').first().scrollTop(noteEditor.offset().top)
+    $('#'+typeId).focus()
 
   @openNoteEditor: (bookmark) ->
     marker = APP.getOpenPopupMarker()
@@ -185,28 +185,32 @@ class window.VoyageX.TemplateHelper
 
   @openP2PChat: (peer, newMessages = []) ->
     markerMeta = VoyageX.Main.markerManager().forPeer peer.id
-    popup = markerMeta.marker.getPopup()
+    popup = markerMeta.target().getPopup()
     if popup?
       popupHtml = popup.getContent()
-      # $('div.peer_popup[data-peerId=196]')
-      # $('div.peer_popup[data-peerId=196] > .p2p_chat_container > .p2p_chat_view > p2p_chat_msg')
+      # $('#peer_popup_196')
+      # $('#peer_popup_196 > .p2p_chat_container > .p2p_chat_view > p2p_chat_msg')
       if popupHtml.indexOf('p2p_chat_container') == -1
         p2pChatHtml = TemplateHelper.p2PChatHtml peer, newMessages
       else
         # only if popup is open
-        #popupContainer = $('div.peer_popup[data-peerId='+peer.id+']')
-        chatContainerContent = $('div.peer_popup[data-peerId='+peer.id+'] > .p2p_chat_container').first().wrap('<p/>').parent().html()
-        $('div.peer_popup[data-peerId='+peer.id+'] > p > .p2p_chat_container').first().unwrap()
+        #popupContainer = $('#peer_popup_'+peer.id)
+        chatContainerContent = $('#peer_popup_'+peer.id+' > .p2p_chat_container').first().wrap('<p/>').parent().html()
+        $('#peer_popup_'+peer.id+' > p > .p2p_chat_container').first().unwrap()
         p2pChatHtml = TemplateHelper.p2PChatHtml peer, newMessages, chatContainerContent
-      popupHtml = popupHtml.replace(/(<div[^>]* class=['"]\s*peer_popup\s*['"][^>]*>)(.|[\r\n])+?(<div[^>]* class=['"]\s*p2p_controls\s*['"])/, '$1'+p2pChatHtml+'$3')
+     #popupHtml = popupHtml.replace(/(<div[^>]* id=['"]peer_popup_'+peer.id+'['"][^>]*>)(.|[\r\n])+?(<div[^>]* class=['"]\s*p2p_controls\s*['"])/, '$1'+p2pChatHtml+'$3')
+      containerRegexp = new RegExp('(<div[^>]* id=[\'"]peer_popup_'+peer.id+'[\'"][^>]*>)(.|[\\r\\n])+?(<div[^>]* class=[\'"]\\s*p2p_controls\\s*[\'"])')
+      popupHtml = popupHtml.replace(containerRegexp, '$1'+p2pChatHtml+'$3')
       popup.setContent popupHtml
       # / if popupHtml.indexOf('p2p_chat_container') == -1
-      markerMeta.marker.openPopup()
+      markerMeta.target().openPopup()
     else
-      TemplateHelper.openPeerPopup peer, markerMeta.marker, newMessages, (popupHtml, peer, marker, messages) ->
+      TemplateHelper.openPeerPopup peer, markerMeta.target(), newMessages, (popupHtml, peer, marker, messages) ->
           if popupHtml.indexOf('p2p_chat_container') == -1
             p2pChatHtml = TemplateHelper.p2PChatHtml peer, messages
-            popupHtml = popupHtml.replace(/(<div[^>]* class=['"]\s*peer_popup\s*['"][^>]*>)(.|[\r\n])+?(<div[^>]* class=['"]\s*p2p_controls\s*['"])/, '$1'+p2pChatHtml+'$3')
+           #popupHtml = popupHtml.replace(/(<div[^>]* id=['"]peer_popup_'+peer.id+'['"][^>]*>)(.|[\r\n])+?(<div[^>]* class=['"]\s*p2p_controls\s*['"])/, '$1'+p2pChatHtml+'$3')
+            containerRegexp = new RegExp('(<div[^>]* id=[\'"]peer_popup_'+peer.id+'[\'"][^>]*>)(.|[\\r\\n])+?(<div[^>]* class=[\'"]\\s*p2p_controls\\s*[\'"])')
+            popupHtml = popupHtml.replace(containerRegexp, '$1'+p2pChatHtml+'$3')
           popupHtml
     $('.p2p_message').on 'keyup', (event) ->
         sendP2PChatMessage event

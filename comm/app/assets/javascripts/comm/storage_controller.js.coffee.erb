@@ -159,9 +159,12 @@ class window.Comm.StorageController
     else
       []
 
-  saveNote: (locationId, text) ->
-    this.bookmark locationId, text
-    #bookmarks (locations, locationBookmark) ->
+  saveNote: (type, id, text) ->
+    if type == 'peer'
+      this.saveUser(this.getUser(id), {note: text})
+    else
+      this.bookmark id, text
+      #bookmarks (locations, locationBookmark) ->
   
   getUser: (userId) ->
     storeKey = 'comm.users'
@@ -184,6 +187,8 @@ class window.Comm.StorageController
         users.peers = {}
       unless users.peers[user.id]?
         users.peers[user.id] = {peerPort: flags.peerPort}
+    if flags.note?
+      users[user.id].note = flags.note
     localStorage.setItem storeKey, JSON.stringify(users)
     user
 

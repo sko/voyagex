@@ -85,7 +85,7 @@ class window.VoyageX.View
     curUserLatLng = APP.getSelectedPositionLatLng()
     if withinSearchBounds curUserLatLng[0], curUserLatLng[1], sBs
       markerMeta = VoyageX.Main.markerManager().forPeer mapEvent.userId
-      markerMeta.marker.setLatLng L.latLng(mapEvent.lat, mapEvent.lng)
+      markerMeta.target().setLatLng L.latLng(mapEvent.lat, mapEvent.lng)
       unless true || APP.view()._alertOn
         APP.view().alert()
     else
@@ -178,11 +178,11 @@ class window.VoyageX.View
   
   viewPeerNote: (peer) ->
     markerMeta = VoyageX.Main.markerManager().forPeer peer.id
-    VoyageX.TemplateHelper.openPeerNoteEditor peer, markerMeta.marker
+    VoyageX.TemplateHelper.openPeerNoteEditor peer, markerMeta.target()
 
   scrollToLastChatMessage: (peerChatMeta = null) ->
     if peerChatMeta?
-      scrollPane = $('div.peer_popup[data-peerId='+peerChatMeta.peer.id+'] > .p2p_chat_container > .p2p_chat_view').first()
+      scrollPane = $('#peer_popup_'+peerChatMeta.peer.id+' > .p2p_chat_container > .p2p_chat_view').first()
       msgDiv = scrollPane.find('.p2p_chat_msg').last()
     else
       msgDiv = $('.chat_message').last()
