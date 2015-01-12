@@ -148,8 +148,6 @@ class window.VoyageX.Main
       Comm.Comm.unsubscribeFrom channelPath, false
       Comm.Comm.subscribeTo channelPath, Comm.Comm.channelCallBacksJSON[channel].callback
 
-  # TODO store with model local
-  # TODO currently bookmarking is published - should it be?
   bookmarkLocation: (poiId = -1) ->
     if poiId == -1
       posLatLng = this.getSelectedPositionLatLng()

@@ -134,34 +134,33 @@ class window.VoyageX.TemplateHelper
     else
       $('#current_address').html(currentAddress)
 
+  @noteHtml: (typeId, text) ->
+    TemplateHelper._updateIds('tmpl_note_editor').
+    replace(/\{type\}_\{id\}/g, typeId).
+    replace(/\{text\}/, text)
+
+  @editorFor: (target, marker, typeId, callback) ->
+    popup = marker.getPopup()
+    # note-editor is within existing popup - user, poi or peer - so it should already exist here
+    popupHtml = popup.getContent()
+    editorHtml = callback target
+    if popupHtml.indexOf('note_editor') == -1
+      popup.setContent popupHtml + editorHtml
+    marker.openPopup()
+    $('#'+typeId).focus()
+    noteEditor = $('#'+typeId).closest('.note_editor').first()
+    noteEditor.closest('.leaflet-popup-content').first().scrollTop(noteEditor.offset().top)
+
   @openNoteEditor: (bookmark) ->
     marker = APP.getOpenPopupMarker()
     unless marker?
       marker = VoyageX.Main.markerManager().get()
+    TemplateHelper.editorFor bookmark, marker, 'note_bookmark_'+bookmark.location.id, (bookmark) ->
+        TemplateHelper.noteHtml 'bookmark_'+bookmark.location.id, if bookmark.text? then bookmark.text else ''
 
-    editorHtml = TemplateHelper._updateIds('tmpl_note_editor').
-    replace(/\{locationId\}/g, bookmark.location.id).
-    replace(/\{text\}/, if bookmark.text? then bookmark.text else '')
-    popup = marker.getPopup()
-# note-editor is within existing popup - user or poi - so it should already exist here
-#    isNewPopup = !popup?
-#    if isNewPopup
-#      popupHtml = TemplateHelper._updateIds 'tmpl_marker_controls'
-#      marker.bindPopup popupHtml + editorHtml
-#      marker.off('click', marker.togglePopup, marker)
-#      # popupclose doesn't work if just popup is closed because of other marker's opening popup
-#      marker.on 'popupclose', (event) ->
-#          console.log('openNoteEditor: popupclose for current marker ... TODO')
-#    else
-    popupHtml = popup.getContent()
-    if popupHtml.indexOf('note_editor') == -1
-      popup.setContent popupHtml + editorHtml
-    marker.openPopup()
-#    if isNewPopup
-#      $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').on 'click', VoyageX.Main.closePopupCB(marker)
-    $('#note').focus()
-    noteEditor = $('#note_editor')
-    noteEditor.closest('.leaflet-popup-content').first().scrollTop(noteEditor.offset().top)
+  @openPeerNoteEditor: (peer, marker) ->
+    TemplateHelper.editorFor peer, marker, 'note_peer_'+peer.id, (bookmark) ->
+        TemplateHelper.noteHtml 'peer_'+peer.id, if peer.note? then peer.note else ''
 
   @p2PChatMsgHtml: (from, message, messageHtml = null) ->
     unless messageHtml?
@@ -199,7 +198,7 @@ class window.VoyageX.TemplateHelper
         chatContainerContent = $('div.peer_popup[data-peerId='+peer.id+'] > .p2p_chat_container').first().wrap('<p/>').parent().html()
         $('div.peer_popup[data-peerId='+peer.id+'] > p > .p2p_chat_container').first().unwrap()
         p2pChatHtml = TemplateHelper.p2PChatHtml peer, newMessages, chatContainerContent
-      popupHtml = popupHtml.replace(/(<div[^>]* class=['"]\s*peer_popup\s*['"][^>]*>)(.|[\r\n])+?(<div[^>]* id=['"]p2p_controls['"])/, '$1'+p2pChatHtml+'$3')
+      popupHtml = popupHtml.replace(/(<div[^>]* class=['"]\s*peer_popup\s*['"][^>]*>)(.|[\r\n])+?(<div[^>]* class=['"]\s*p2p_controls\s*['"])/, '$1'+p2pChatHtml+'$3')
       popup.setContent popupHtml
       # / if popupHtml.indexOf('p2p_chat_container') == -1
       markerMeta.marker.openPopup()
@@ -207,7 +206,7 @@ class window.VoyageX.TemplateHelper
       TemplateHelper.openPeerPopup peer, markerMeta.marker, newMessages, (popupHtml, peer, marker, messages) ->
           if popupHtml.indexOf('p2p_chat_container') == -1
             p2pChatHtml = TemplateHelper.p2PChatHtml peer, messages
-            popupHtml = popupHtml.replace(/(<div[^>]* class=['"]\s*peer_popup\s*['"][^>]*>)(.|[\r\n])+?(<div[^>]* id=['"]p2p_controls['"])/, '$1'+p2pChatHtml+'$3')
+            popupHtml = popupHtml.replace(/(<div[^>]* class=['"]\s*peer_popup\s*['"][^>]*>)(.|[\r\n])+?(<div[^>]* class=['"]\s*p2p_controls\s*['"])/, '$1'+p2pChatHtml+'$3')
           popupHtml
     $('.p2p_message').on 'keyup', (event) ->
         sendP2PChatMessage event

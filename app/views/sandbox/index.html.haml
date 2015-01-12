@@ -54,8 +54,8 @@
         = link_to image_tag('/assets/arrow-up-right.png', style: 'height: 23px;', title: 'navigator', alt: 'navigator', class: 'photo_nav_open_icon'), '#', onclick: "javascript:APP.photoNav()"
 
 #tmpl_note_editor{style: 'display: none;'}
-  .note_editor{tmpl: {id: 'note_editor'}}
+  .note_editor
     %div
       Add Note
     %div{style: 'padding: 0px 0px 5px 0px;'}
-      = text_area_tag :note, '{text}', id: 'note_{locationId}', class: :note_editor
+      = text_area_tag :note, '{text}', id: 'note_{type}_{id}', class: :note_editor

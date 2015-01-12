@@ -1,12 +1,12 @@
 #tmpl_peer_popup{style: 'display: none;'}
   -#%div{tmpl: {id: 'peer_popup'}}
   .peer_popup{data: {peerId: '{peer_id}'}}
-    %div{tmpl: {id: 'p2p_controls'}}
+    .p2p_controls
       %div{style: 'width: 150px !important; height: 25px; padding: 0px 0px 5px 0px;'}
         %div{style: 'float: left; margin: 0px 0px 0px 5px;'}
-          = link_to image_tag('/assets/p2p-chat.png', style: 'height: 25px;', title: t('pois.bookmark'), alt: t('pois.bookmark')), '#', onclick: 'javascript:VoyageX.TemplateHelper.openP2PChat(Comm.StorageController.instance().getUser({peer_id}))'
+          = link_to image_tag('/assets/p2p-chat.png', style: 'height: 25px;', title: t('peers.chat'), alt: t('peers.chat')), '#', onclick: 'javascript:VoyageX.TemplateHelper.openP2PChat(Comm.StorageController.instance().getUser({peer_id}))'
         %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
-          = link_to image_tag('/assets/add-note.png', style: 'height: 25px;', title: t('pois.bookmark'), alt: t('pois.bookmark')), '#', onclick: "javascript:APP.bookmarkLocation()"
+          = link_to image_tag('/assets/add-note.png', style: 'height: 25px;', title: t('peers.add_note'), alt: t('peers.add_note')), '#', onclick: "javascript:APP.view().viewPeerNote(Comm.StorageController.instance().getUser({peer_id}))"
 
 #tmpl_p2p_chat_container{style: 'display: none;'}
   .p2p_chat_container

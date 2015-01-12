@@ -172,8 +172,13 @@ class window.VoyageX.View
       $('#attachment_view_panel').html('<div class="attachment_view"><img src="'+imgUrl+'" style="max-width:'+maxWidth+'px;max-height:'+maxHeight+'px;"></div>')
       $('#attachment_view_panel').dialog('open')
   
+  # called for either poi- or user-marker
   viewBookmarkNote: (bookmark) ->
     VoyageX.TemplateHelper.openNoteEditor bookmark
+  
+  viewPeerNote: (peer) ->
+    markerMeta = VoyageX.Main.markerManager().forPeer peer.id
+    VoyageX.TemplateHelper.openPeerNoteEditor peer, markerMeta.marker
 
   scrollToLastChatMessage: (peerChatMeta = null) ->
     if peerChatMeta?

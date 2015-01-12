@@ -18,6 +18,9 @@ en:
   pois:
     add: add POI
     bookmark: bookmark Location
+  peers:
+    chat: Chat
+    add_note: Add Note
   uploads:
     upload: Upload
     take_photo: Take a Photo
