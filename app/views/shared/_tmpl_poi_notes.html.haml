@@ -2,6 +2,7 @@
   %div{tmpl: {id: 'poi_notes_container'}, data: {poiId: '{poi_id}'}}
     {poi_notes}
     .poi_controls
+      %hr.controls_sep
       - if is_mobile
         %span
           /- popup_params = { data: { rel: 'popup', 'position-to' => 'window', 'data-role' => 'button' } }

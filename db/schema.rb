@@ -39,8 +39,8 @@ ActiveRecord::Schema.define(version: 20150110084140) do
   add_index "comm_settings", ["user_id"], name: "index_comm_settings_on_user_id", using: :btree
 
   create_table "locations", force: true do |t|
-    t.float    "latitude",   limit: 24, null: false
-    t.float    "longitude",  limit: 24, null: false
+    t.decimal  "latitude",   precision: 10, scale: 7, null: false
+    t.decimal  "longitude",  precision: 10, scale: 7, null: false
     t.text     "address"
     t.datetime "created_at"
     t.datetime "updated_at"
@@ -118,8 +118,8 @@ ActiveRecord::Schema.define(version: 20150110084140) do
   create_table "user_snapshots", force: true do |t|
     t.integer  "user_id"
     t.integer  "location_id"
-    t.float    "lat",             limit: 24
-    t.float    "lng",             limit: 24
+    t.decimal  "lat",             precision: 10, scale: 7
+    t.decimal  "lng",             precision: 10, scale: 7
     t.string   "address"
     t.string   "cur_commit_hash"
     t.datetime "created_at"

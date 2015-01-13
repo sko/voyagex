@@ -3,8 +3,8 @@ class AddUserSnapshots < ActiveRecord::Migration
     create_table :user_snapshots do |t|
       t.integer :user_id
       t.integer :location_id
-      t.float :lat
-      t.float :lng
+      t.decimal :lat, :precision => 10, :scale => 7
+      t.decimal :lng, :precision => 10, :scale => 7
       t.string :address
       t.string :cur_commit_hash
       t.timestamps

@@ -1,8 +1,8 @@
 class AddLocations < ActiveRecord::Migration
   def change
     create_table :locations do |t|
-      t.float :latitude, null: false
-      t.float :longitude, null: false
+      t.decimal :latitude, :precision => 10, :scale => 7, nil: false
+      t.decimal :longitude, :precision => 10, :scale => 7, nil: false
       t.text :address
 
       t.timestamps

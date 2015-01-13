@@ -31,10 +31,10 @@ module ::GeoUtils
     inner_square_half_side_length_lat = (Math.sqrt((2*diameter_lat)**2) / 2*afterCommaFactor).round.to_f/afterCommaFactor
     inner_square_half_side_length_lng = (Math.sqrt((2*diameter_lng)**2) / 2*afterCommaFactor).round.to_f/afterCommaFactor
     
-    {:lng_west => lng-inner_square_half_side_length_lng,
-     :lng_east => lng+inner_square_half_side_length_lng,
-     :lat_south => lat-inner_square_half_side_length_lat,
-     :lat_north => lat+inner_square_half_side_length_lat}
+    {:lng_west => (lng-inner_square_half_side_length_lng).to_f,
+     :lng_east => (lng+inner_square_half_side_length_lng).to_f,
+     :lat_south => (lat-inner_square_half_side_length_lat).to_f,
+     :lat_north => (lat+inner_square_half_side_length_lat).to_f}
   end
 
   def limits_constraint location, radius_meters = 10, limits_lat_lng = {}
@@ -82,6 +82,7 @@ module ::GeoUtils
           user_nearbys[0].touch 
           location = user_nearbys[0]
         else
+          location = nearbys.first
           user.locations_users.create(location: location)
           #location.reload
         end
