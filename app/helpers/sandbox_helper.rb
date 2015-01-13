@@ -1,5 +1,6 @@
 module SandboxHelper
-  include ApplicationHelper
+  include ::ApplicationHelper
+  include ::GeoUtils
   
   def comment_attachment_to_view poi_note
     upload_entity_to_view poi_note.attachment

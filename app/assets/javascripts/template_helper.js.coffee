@@ -85,7 +85,7 @@ class window.VoyageX.TemplateHelper
       newPopupHtml = ''
       for note, j in newNotes
         newPopupHtml += TemplateHelper.poiNotePopupHtmlFromTmpl(note, i+j)
-      popupHtml = popup.getContent().replace(/(<div[^>].*? class=["'][^'"]*\s?poi_controls(["']|\s))/, newPopupHtml+'$1')
+      popupHtml = popup.getContent().replace(/(<div[^>]* class=["'][^'"]*\s?poi_controls(["']|\s))/, newPopupHtml+'$1')
       popup.setContent(popupHtml)
       #$('#poi_notes_container div.upload_comment').last().prepend(newPopupHtml)
       #popup.update()

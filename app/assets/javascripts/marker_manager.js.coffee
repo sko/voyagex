@@ -33,7 +33,8 @@ class window.VoyageX.MarkerManager
         markerOps.icon = new L.Icon.Default({iconUrl: '/assets/marker-icon-red.png'})
         this._checkVisible location
     marker = L.marker([location.lat, location.lng], markerOps)
-    @_markers.push new VoyageX.Marker(marker, location, flags)
+    m = new VoyageX.Marker(marker, location, flags)
+    @_markers.push m
     if callBack != null
       marker.on 'click', callBack
       if flags.isUserMarker
@@ -52,7 +53,8 @@ class window.VoyageX.MarkerManager
         marker._icon.title = flags.peer.username+' ('+flags.peer.id+')'
       else
         marker._icon.title = location.address
-    if meta then {marker: marker, isUserMarker: flags.isUserMarker, poi: APP.storage().getPoi(location.id), peer: flags.peer} else marker
+   #if meta then {marker: marker, isUserMarker: flags.isUserMarker, poi: APP.storage().getPoi(location.id), peer: flags.peer} else marker
+    if meta then MarkerManager.metaJSON(m, {poi: APP.storage().getPoi(location.id), peer: flags.peer}) else marker
 
   sel: (replaceMarker, lat, lng, callBack) ->
     # if @_selectedMarker != null && replaceMarker == @_selectedMarker.target()
@@ -97,7 +99,7 @@ class window.VoyageX.MarkerManager
   @metaJSON: (marker, options) ->
     {target: () ->
         marker.target()
-      , isUserMarker: marker.isUserMarker(), poi: options.poi, peer: options.peer}
+      , m: marker, isUserMarker: marker.isUserMarker(), poi: options.poi, peer: options.peer}
 
   userMarkerMouseOver: (enable = null) ->
     if enable == null

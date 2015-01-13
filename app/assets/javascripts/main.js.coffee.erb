@@ -207,7 +207,7 @@ class window.VoyageX.Main
       if location.poiId
         APP.showPOI location.poiId, -1
       else
-        $('#current_address').html(location.address+' ('+location.locationId+')')
+        $('#current_address').html(location.address+' ('+location.id+')')
         openPopupMarker = APP.getOpenPopupMarker()
         if openPopupMarker? && openPopupMarker != Main.markerManager().get()
           openPopupMarker.closePopup()
@@ -216,7 +216,7 @@ class window.VoyageX.Main
         APP.map().setZoom 15
       #Main.markerManager().get().setLatLng(L.latLng(location.lat, location.lng))
     else
-      Storage.Model.instance().withLocation location.locationId, (location) ->
+      Storage.Model.instance().withLocation location.id, (location) ->
           APP.loadLocation location, false
 
   showPOI: (poiId, poiNoteId) ->
@@ -262,7 +262,11 @@ class window.VoyageX.Main
       APP.publishPosition()
     Storage.Model.instance().loadPois location.lat, location.lng, (poi) ->
       location = {id: poi.locationId, lat: poi.lat, lng: poi.lng, address: poi.address, poiId: poi.id}
-      marker = Main.markerManager().add location, Main._markerEventsCB
+      markerMeta = APP.getMarker poi, true
+      if markerMeta?
+        markerMeta.m.setLatLng poi.lat, poi.lng
+      else
+        Main.markerManager().add location, Main._markerEventsCB
       #APP._initPoisOnMap.push poi
 
   _systemCB: (message) ->

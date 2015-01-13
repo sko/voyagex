@@ -15,7 +15,7 @@ Benutzer denen ich folge oder folgen will ...
         &nbsp;
       %td
         -#= link_to shorten_address(cs.user.snapshot.location), location_path(location_id: cs.user.snapshot.location.id), data: { remote: 'true', format: :js }
-        = link_to shorten_address(last_location, true), '#', onclick: "javascript:APP.loadLocation({locationId: #{last_location.present? ? last_location.id : 'null'}, lat: #{cs.user.snapshot.lat||'null'}, lng: #{cs.user.snapshot.lng||'null'}, address: #{cs.user.snapshot.address.present? ? "'#{cs.user.snapshot.address}'" : 'null'}});".html_safe
+        = link_to shorten_address(last_location, true), '#', onclick: "javascript:APP.loadLocation({id: #{last_location.present? ? last_location.id : 'null'}, lat: #{cs.user.snapshot.lat||'null'}, lng: #{cs.user.snapshot.lng||'null'}, address: #{cs.user.snapshot.address.present? ? "'#{cs.user.snapshot.address}'" : 'null'}});".html_safe
 
 %h4{colspan: 4}
   #{t('admin.i_want_to_follow')}
