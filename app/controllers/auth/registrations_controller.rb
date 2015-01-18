@@ -19,7 +19,7 @@ module Auth
 #      t.float :lat
 #      t.float :lng
 #      t.string :cur_commit_hash
-      @user = User.new(user_params.merge!({search_radius_meters: 1000, snapshot: UserSnapshot.new(location: Location.default)}) unless @user.present?
+      @user = User.new(user_params.merge!({search_radius_meters: 1000, snapshot: UserSnapshot.new(location: Location.default)})) unless @user.present?
       if @user.save
         # user has to confirm email-address first, so no sign_in @user
         #redirect_to root_path(exec: 'show_login_dialog_confirm_email')

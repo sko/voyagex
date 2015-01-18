@@ -254,7 +254,7 @@ class window.VoyageX.TemplateHelper
         replace(/\{attachment_url\}/, location.poi.notes[0].attachment.url)
       else
         poiOrNoPoiHTML = $('#tmpl_location_bookmark_no_poi').html()
-      updatedAt = new Date(bookmark.updatedAt)
+      updatedAt = new Date(location.bookmark.updatedAt)
       html = $('#tmpl_location_bookmarks').html().
       replace(/\{location_poi_or_no_poi\}/, poiOrNoPoiHTML).
       replace(/\{locationId\}/g,location.id).

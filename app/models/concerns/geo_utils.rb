@@ -50,6 +50,7 @@ module ::GeoUtils
   end
 
   # this will save the location or a nearby poi-location with the user
+  # TODO separate saving locations_users
   def nearby_poi user, location, radius_meters = 10
     # FIXME:
     # 1) when address is available check same address

@@ -120,10 +120,10 @@ class UsersController < ApplicationController
           #location = Location.new(latitude: params[:lat], longitude: params[:lng])
           #poi = nearby_poi(current_user, location, 10)
           #location = poi.location
-          location = current_user.snapshot.location.present? ? current_user.snapshot.location : current_user.last_location
+          location = nearby_location Location.new(latitude: params[:lat], longitude: params[:lng]), 5
+          location = current_user.locations_users.create(location: location, note: params[:text]).location unless current_user.locations_users.find{|l_u|l_u.location==location}.present?
           user_json[:id] = current_user.id
           user_json[:last_location] = {id: location.id, lat: location.latitude, lng:location.longitude, address:shorten_address(location, true)}
-          location = tmp_user.snapshot.location.present? ? tmp_user.snapshot.location : tmp_user.last_location
         when 'notes'
           if params[:peer_id].present?
             comm_peer = CommPeer.where(peer_id: current_user.id).first
