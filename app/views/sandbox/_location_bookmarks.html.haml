@@ -37,10 +37,8 @@ TODO: filter: von mir kommentiert. alternativ: eigener tab dafür
             - poi_notes = location.poi.notes
             - current_user_note = poi_notes.find{|p_n|p_n.user_id == user.id}
             - if current_user_note.present?
-              -#= link_to image_tag(current_user_note.attachment.file.url, style: 'max-width: 300px; max-height: 100px;'), location_path(location_id: location.id), data: { remote: 'true', format: :js }
               = link_to image_tag(current_user_note.attachment.file.url, style: 'max-width: 300px; max-height: 100px;'), '#', onclick: "javascript:APP.loadLocation({id: #{location.id}});"
             - else
-              -#= link_to image_tag(poi_notes[0].attachment.file.url, style: 'max-width: 300px; max-height: 100px;'), location_path(location_id: location.id), data: { remote: 'true', format: :js }
               = link_to image_tag(poi_notes[0].attachment.file.url, style: 'max-width: 300px; max-height: 100px;'), '#', onclick: "javascript:APP.loadLocation({id: #{location.id}});"
           - else
             kein POI

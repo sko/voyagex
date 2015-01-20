@@ -1,4 +1,4 @@
-%div{tmpl: {id: :upload_file_controls}, style: 'display: none;'}
+%div{tmpl: {id: :upload_file_controls}}
   = hidden_field_tag 'poi_note[text]', '', 'tmpl-id' => 'upload_comment_text'
   %span{style: 'float: left;'}
     = f.file_field 'file', 'tmpl-id' => 'fileupload'

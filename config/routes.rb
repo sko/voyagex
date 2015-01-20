@@ -21,6 +21,8 @@ VoyageX::Application.routes.draw do
   put '/upload_base64/:id', to: 'uploads#update_from_base64', as: :upload_base64
   post '/uploads_embed', to: 'uploads#create_from_embed', as: :uploads_embed
   put '/uploads_embed/:id', to: 'uploads#update_from_embed', as: :upload_embed
+  post '/uploads_plain_text', to: 'uploads#create_from_plain_text', as: :uploads_plain_text
+  put '/uploads_plain_text/:id', to: 'uploads#update_from_plain_text', as: :upload_plain_text
 
   post '/uploads', to: 'uploads#create', as: :poi_notes
   put '/uploads/:id', to: 'uploads#update', as: :poi_note
@@ -41,5 +43,7 @@ VoyageX::Application.routes.draw do
 
   get '/test/javascript', to: 'test#javascript', as: :test_javascript
 
+  get '/thesis', to: 'thesis#index', as: :thesis
+  
   root to: 'sandbox#index'
 end

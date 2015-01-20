@@ -4,16 +4,24 @@ jQuery ->
   window.toggleUploadType = (selected) ->
     if selected.value == 'file'
       $('#upload_cam_container').css('display', 'none')
-      $('#upload_file_controls').css('display', 'block')
+      $('#upload_file_container').css('display', 'block')
       $('#upload_embed_container').css('display', 'none')
+      $('#upload_plain_text_container').css('display', 'none')
     else if selected.value == 'camera'
       $('#upload_cam_container').css('display', 'block')
-      $('#upload_file_controls').css('display', 'none')
+      $('#upload_file_container').css('display', 'none')
       $('#upload_embed_container').css('display', 'none')
+      $('#upload_plain_text_container').css('display', 'none')
+    else if selected.value == 'embed'
+      $('#upload_cam_container').css('display', 'none')
+      $('#upload_file_container').css('display', 'none')
+      $('#upload_embed_container').css('display', 'block')
+      $('#upload_plain_text_container').css('display', 'none')
     else
       $('#upload_cam_container').css('display', 'none')
-      $('#upload_file_controls').css('display', 'none')
-      $('#upload_embed_container').css('display', 'block')
+      $('#upload_file_container').css('display', 'none')
+      $('#upload_embed_container').css('display', 'none')
+      $('#upload_plain_text_container').css('display', 'block')
 
   curSelVidSrcIdx = 0
   switchCamera = () ->
@@ -21,6 +29,18 @@ jQuery ->
       stopCurrentVideo()
     curSelVidSrcIdx = mediaManager.nextSelectedVideoSrcIdx()
     takePhoto()
+
+  # callback: { addToData: () -> ..., after: afterCB }
+  savePoI = (callback) ->
+    selLatLng = APP.getSelectedPositionLatLng()
+    data = { location: { latitude: selLatLng[0], longitude: selLatLng[1] },\
+             comment: $('#upload_comment').val() }
+    callback.addToData data
+    uploadIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/([0-9]+)/)
+    if uploadIdMatch?
+      callback.save data, callback.after, uploadIdMatch[1]
+    else
+      callback.save data, callback.after
 
   uploadPhoto = () ->
     selLatLng = APP.getSelectedPositionLatLng()
@@ -75,12 +95,17 @@ jQuery ->
   window.afterUploadEmbed = (poi, newNotes) ->
     $('#embed').val('')
     afterUpload poi, newNotes
-    
+
   $(document).on 'click', '#upload_button', (event) ->
     uploadPhoto()
     
   $(document).on 'click', '#media_input_upload_btn', (event) ->
     uploadPhoto64()
+    
+  $(document).on 'click', '#plain_text_upload_btn', (event) ->
+    savePoI { addToData: (data) ->
+        data.data = window.location.origin+'/assets/noise.gif'
+      , save: Storage.Model.instance().saveEmbed, after: afterUpload }
     
   $(document).on 'click', '#embed_upload_btn', (event) ->
     uploadEmbed()

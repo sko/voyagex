@@ -27,9 +27,11 @@ en:
     take_photo: Take a Photo
     start_camera: Start Camera
     take_shot: Take Shot
+    upload_plain_text: Save
     upload_photo: Upload Photo
     upload_file: Upload File
     upload_embed: Save Embed
+    select_plain_text: Plain Text
     select_camera: Take a Photo
     select_file: Select File
     select_embed: Add Embed

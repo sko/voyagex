@@ -141,6 +141,41 @@ class UploadsController < ApplicationController
     after_save
   end
 
+  def create_from_plain_text
+    user = current_user || tmp_user
+    poi = nearby_poi user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
+    user.locations << poi.location unless user.locations.find {|l|l.id==poi.location.id}
+
+    poi_note = PoiNote.new(poi: poi, user: user, text: params[:comment])
+    
+    if poi_note.save
+      #render "uploads/uploaded_base64", formats: [:js]
+      poi_note_json = poi_note_json poi_note
+      render json: poi_note_json.to_json
+    else
+      #render "uploads/uploaded_base64", formats: [:js]
+      render json: { error: 'failed' }, status: 401
+    end
+    
+    after_save
+  end
+
+  # adds a comment
+  def update_from_plain_text
+    user = current_user || tmp_user
+    @poi_note = PoiNote.find(params[:id])
+    user.locations << @poi_note.poi.location unless user.locations.find {|l|l.id==@poi_note.poi.location.id}
+
+    comment = @poi_note.comments.build(poi: @poi_note.poi, user: user, text: params[:comment])
+    comment.save
+    
+    #render "uploads/uploaded_base64", formats: [:js]
+    poi_note_json = poi_note_json comment
+    render json: poi_note_json.to_json
+
+    after_save
+  end
+
   def destroy
     # TODO don't delete if first poiNote - can only be deleted via poi
     @upload = Upload.find(params[:id])
