@@ -317,20 +317,20 @@ class window.VoyageX.TemplateHelper
   @_mediaFileTag: (upload, meta) ->
     scale = -1.0
     height = -1
+    maxWidth = 100.0
     switch upload.content_type.match(/^[^\/]+/)[0]
       when 'image' 
-        maxWidth = 100.0
         scale = maxWidth/upload.width
         height = Math.round(upload.height*scale)
         meta.height += height
         '<img src='+upload.url+' style="width:'+maxWidth+'px;height:'+height+'px;">'
       when 'audio'
-        '<audio controls: "controls">'+
+        '<audio controls>'+
           '<source src="'+upload.url+'" type="'+upload.content_type+'">'+
           'Your browser does not support the audio element.'+
         '</audio>'
       when 'video'
-        '<video controls: "controls">'+
+        '<video controls style="max-width:'+maxWidth+'px;">'+
           '<source src="'+upload.url+'" type="'+upload.content_type+'">'+
           'Your browser does not support the video element.'+
         '</video>'

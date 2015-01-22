@@ -362,16 +362,53 @@ class window.Storage.Model
 
   cacheAttachment: (poiNote, deferredModeParams = null) ->
     if Comm.StorageController.isFileBased()
-      attachment = this._loadReadyImage poiNote, deferredModeParams
+      #attachment = this._loadReadyImage poiNote, deferredModeParams
+      switch poiNote.attachment.content_type.match(/^[^\/]+/)[0]
+        when 'audio' 
+          attachment = this._loadReadyBlob poiNote, deferredModeParams
+        when 'image'
+          attachment = this._loadReadyImage poiNote, deferredModeParams
+        when 'video' 
+          attachment = this._loadReadyBlob poiNote, deferredModeParams
     else
       attachment = Comm.StorageController.instance().getPoiNoteAttachment poiNote, deferredModeParams
       unless attachment?
         #console.log 'cacheAttachment - '+Comm.StorageController.poiNoteAttachmentKey(poiNote)
-        attachment = this._loadReadyImage poiNote, deferredModeParams
+        #attachment = this._loadReadyImage poiNote, deferredModeParams
+        switch poiNote.attachment.content_type.match(/^[^\/]+/)[0]
+          when 'audio' 
+            attachment = this._loadReadyBlob poiNote, deferredModeParams
+          when 'image'
+            attachment = this._loadReadyImage poiNote, deferredModeParams
+          when 'video' 
+            attachment = this._loadReadyBlob poiNote, deferredModeParams
       attachment
 
   @instance: () ->
     Model._SINGLETON
+
+  # has to be done sequentially becaus we're using one canvas for all
+  _loadReadyBlob: (poiNote, deferredModeParams = null) ->
+    unless Comm.StorageController.isFileBased()
+      # can't convert audio to data:uri ... TODO
+      return poiNote.attachment.url
+    #if window.location.host != poiNote.attachment.url.match(/^https?:\/\/([^\/]+)/)[1]
+    urlHostMatch = poiNote.attachment.url.match(/^https?:\/\/([^\/]+)/)
+    if urlHostMatch? # && window.location.host != urlHostMatch[1]
+      console.log '_loadReadyBlob - returning crossOrigin-url for poiNote['+poiNote.id+'].attachment: '+poiNote.attachment.url
+      if deferredModeParams?
+        deferredModeParams.deferred.resolve poiNote.attachment.url
+      return poiNote.attachment.url
+    $.ajax
+      type: 'GET'
+      dataType: 'binary'
+      processData: false
+      url: poiNote.attachment.url
+    .done (blob) ->
+        Comm.StorageController.instance().storePoiNoteAttachment poiNote, blob, deferredModeParams
+    .fail (jqXHR, textStatus) ->
+        console.log('TODO: errorhandling')
+    null
 
   # has to be done sequentially becaus we're using one canvas for all
   _loadReadyImage: (poiNote, deferredModeParams = null) ->

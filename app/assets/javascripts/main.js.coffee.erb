@@ -50,23 +50,7 @@ class window.VoyageX.Main
         # handled in _peers.html.haml
         #Storage.Model.instance().loadPeers (peer) ->
         #  marker = Main.markerManager().add poi.location, Main._markerEventsCB, false
-        for peer in initArgs.peers
-#window.initArgs.peers.push({id: #{cs.user.id}, username: '#{cs.user.username}', peerPort: {id: #{cs.id}, channel_enc_key: '#{cs.channel_enc_key}'}});
-          peerPort = peer.peerPort
-          delete peer.peerPort
-          lastLocation = peer.lastLocation
-          delete peer.lastLocation
-          poiId = lastLocation.poiId
-          if poiId?
-            delete lastLocation.poiId
-            APP.storage().saveLocation lastLocation, {poi: {id: lastLocation.poiId}}
-          else
-            APP.storage().saveLocation lastLocation
-          peer.lastLocationId = lastLocation.id
-          APP.storage().saveUser peer, {peerPort: peerPort}
-          #marker = Main.markerManager().add lastLocation, Main._markerEventsCB, {isUserMarker: false, peer: peer}
-          marker = APP.getPeerMarker peer, lastLocation
-        delete window.initArgs.peers
+        APP.initPeers()
         if navigator.geolocation 
           navigator.geolocation.getCurrentPosition(APP._initPositionCB, (error) ->
               #alert('geolocation timed out - manual selection required.\nsetting default location...')
@@ -148,6 +132,31 @@ class window.VoyageX.Main
         channelPath += VoyageX.PEER_CHANNEL_PREFIX+peerChannelEncKey
       Comm.Comm.unsubscribeFrom channelPath, false
       Comm.Comm.subscribeTo channelPath, Comm.Comm.channelCallBacksJSON[channel].callback
+
+  initPeers: (callback = null) ->
+    for peer in initArgs.peers
+#window.initArgs.peers.push({id: #{cs.user.id}, username: '#{cs.user.username}', peerPort: {id: #{cs.id}, channel_enc_key: '#{cs.channel_enc_key}'}});
+      peerPort = peer.peerPort
+      delete peer.peerPort
+      lastLocation = peer.lastLocation
+      delete peer.lastLocation
+      # ---------------------
+      poiId = lastLocation.poiId
+      if poiId?
+        delete lastLocation.poiId
+        APP.storage().saveLocation lastLocation, {poi: {id: lastLocation.poiId}}
+      else
+        APP.storage().saveLocation lastLocation
+      # ---------------------
+      peer.lastLocationId = lastLocation.id
+      APP.storage().saveUser peer, {peerPort: peerPort}
+      # ---------------------
+      if callback?
+        callback peer
+      #marker = Main.markerManager().add lastLocation, Main._markerEventsCB, {isUserMarker: false, peer: peer}
+      marker = APP.getPeerMarker peer, lastLocation
+    window.initArgs.peers.splice(0, window.initArgs.peers.length)
+    #delete window.initArgs.peers
 
   bookmarkLocation: (poiId = -1) ->
     if poiId == -1
