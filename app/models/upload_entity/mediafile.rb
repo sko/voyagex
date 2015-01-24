@@ -2,6 +2,16 @@ class UploadEntity::Mediafile < ActiveRecord::Base
   
   self.table_name = 'upload_entities_mediafiles'
   
+  ACCEPTED_CONTENT_TYPES = ["application/octet-stream",
+                            "audio/mp3",
+                            "audio/ogg",
+                            "image/jpg",
+                            "image/jpeg",
+                            "image/png",
+                            "image/gif",
+                            "image/webp",
+                            "video/mp4"]
+
   #belongs_to :upload, inverse_of: :entity
   belongs_to :upload, inverse_of: :mediafile
   
@@ -10,15 +20,7 @@ class UploadEntity::Mediafile < ActiveRecord::Base
   
   validates :upload, presence: true
   validates_attachment :file, presence: true
-  validates_attachment_content_type :file, content_type: ["application/octet-stream",
-                                                          "audio/mp3",
-                                                          "audio/ogg",
-                                                          "image/jpg",
-                                                          "image/jpeg",
-                                                          "image/png",
-                                                          "image/gif",
-                                                          "image/webp",
-                                                          "video/mp4"]
+  validates_attachment_content_type :file, content_type: UploadEntity::Mediafile::ACCEPTED_CONTENT_TYPES
   
   alias_attribute :content_type, :file_content_type
 

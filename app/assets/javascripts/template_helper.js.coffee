@@ -97,7 +97,8 @@ class window.VoyageX.TemplateHelper
 
   @openPeerPopup: (peer, marker, messages = [], contentCallback = null) ->
     popupHtml = TemplateHelper._updateIds('tmpl_peer_popup').
-    replace(/\{peer_id\}/g, peer.id)
+    replace(/\{peer_id\}/g, peer.id).
+    replace(/\{peer_foto_url\}/, peer.foto.url)
     popup = marker.getPopup()
     isNewPopup = !popup?
     if isNewPopup

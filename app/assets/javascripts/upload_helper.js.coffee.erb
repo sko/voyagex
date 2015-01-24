@@ -109,6 +109,18 @@ jQuery ->
     
   $(document).on 'click', '#embed_upload_btn', (event) ->
     uploadEmbed()
+    
+  $(document).on 'click', '#user_foto_media_input_upload_btn', (event) ->
+    fotoContentType = $('#user_foto_media_input_current').attr('src').match(/^data:([^;]+)/)[1]
+    fotoData = $('#user_foto_media_input_current').attr('src').replace(/^data:image\/.+?base64,/,'')
+    data = { foto_data: fotoData,\
+             foto_content_type: fotoContentType }
+    stopCurrentVideo()
+    Storage.Model.instance().saveUserFoto64 data, (user) ->
+        $('#'+curPrefix.current+'media_input_capture').attr('src', '')
+        $('#'+curPrefix.current+'media_input_current').attr('src', '')
+        $('.whoami-img').attr('src', user.foto.url)
+        toogleUserFotoUpload()
 
   if $.mobile
     $(document).on 'click', '.show-page-loading-msg', () ->
@@ -145,11 +157,43 @@ jQuery ->
   $(document).on 'click', '#media_input_init', (event) ->
     $('#media_input_panel_show').click()
     takePhoto()
+
+  $(document).on 'click', '#user_foto_media_input_init', (event) ->
+    $('#user_foto_file_container').hide()
+    $('#user_foto_cam_container').show()
+    $('#user_foto_media_input_panel_show').click()
+    takePhoto({capDis: 'user_foto_', current: 'user_foto_'})
+
+  window.userFotoFileInputInit = () ->
+    if curPrefix?
+      stopCurrentVideo()
+    $('#user_foto_cam_container').hide()
+    $('#user_foto_file_container').show()
+
+  $(document).on 'click', '#user_foto_file_input_init', (event) ->
+    userFotoFileInputInit()
+
+  window.userFotoMediaInputInitMobile = () ->
+    $('#user_foto_file_container').hide()
+    $('#user_foto_cam_container').show()
+    $('#user_foto_media_input_panel_show').click()
+    takePhoto({capDis: '', current: 'user_foto_'})
   
+  $(document).on 'click', '#user_foto_media_input_init_mobile', (event) ->
+      userFotoMediaInputInitMobile()
+
   $(document).on 'click', '#media_input_capture_btn', (event) ->
     snapshot()
 
   $(document).on 'click', '#media_input_stop_btn', (event) ->
+    stopCurrentVideo()
+    if $.mobile
+      closeMediaInputPanel()
+  
+  $(document).on 'click', '#user_foto_media_input_capture_btn', (event) ->
+    snapshot()
+
+  $(document).on 'click', '#user_foto_media_input_stop_btn', (event) ->
     stopCurrentVideo()
     if $.mobile
       closeMediaInputPanel()
@@ -159,11 +203,12 @@ jQuery ->
 
   closeMediaInputPanel = () ->
     $("#media_input_panel").panel("close")
-    $('button[value=camera]').focus()
-    # reopen panel
-    # TODO: which one?
-    $('#open_upload_data_btn').click()
-    #$('#open_upload_comment_btn').click()
+    if curPrefix.current == ''
+      $('button[value=camera]').focus()
+      # reopen panel
+      # TODO: which one?
+      $('#open_upload_data_btn').click()
+      #$('#open_upload_comment_btn').click()
 
   stopCurrentVideo = () ->
     mediaInputVideo[0].pause()
@@ -183,9 +228,11 @@ jQuery ->
       if $.mobile
         closeMediaInputPanel()
 
-  takePhoto = () ->
-    if (Modernizr.getusermedia) 
-      $('#media_input_container').css('display', 'block')
+  curPrefix = null
+  takePhoto = (prefix = {capDis: '', current: ''}) ->
+    if (Modernizr.getusermedia)
+      curPrefix = prefix
+      $('#'+prefix.current+'media_input_container').css('display', 'block')
       gUM = Modernizr.prefixed('getUserMedia', navigator)
       if mediaManager.curSelectedVideoSrcIdx() >= 0
         constraints = mediaManager.constraintsForMediaSource(-1, curSelVidSrcIdx)
@@ -193,9 +240,9 @@ jQuery ->
         constraints = {video: true}
       gUM(constraints, (stream) ->
           # this is the success-callback
-          mediaInputVideo = $('#media_input_capture')
-          mediaInputImage = $('#media_input_current')
-          mediaInputCanvas = $('#media_input_display')
+          mediaInputVideo = $('#'+prefix.capDis+'media_input_capture')
+          mediaInputImage = $('#'+prefix.current+'media_input_current')
+          mediaInputCanvas = $('#'+prefix.capDis+'media_input_display')
           mediaInputVideo.attr('src', window.URL.createObjectURL(stream))
           #mediaInputVideo.attr('controls', true)
           #mediaInputVideo.on 'click', () ->

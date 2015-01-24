@@ -85,6 +85,7 @@ class window.VoyageX.Main
         $('button[value=camera]').focus()
         APP._zoomEnd(null)
         cacheStats()
+        $('#user_foto_input_type').buttonset()
 
   userId: () ->
     window.currentUser.id
@@ -149,7 +150,7 @@ class window.VoyageX.Main
         APP.storage().saveLocation lastLocation
       # ---------------------
       peer.lastLocationId = lastLocation.id
-      APP.storage().saveUser peer, {peerPort: peerPort}
+      APP.storage().saveUser peer, {peerPort: peerPort, foto: peer.foto}
       # ---------------------
       if callback?
         callback peer

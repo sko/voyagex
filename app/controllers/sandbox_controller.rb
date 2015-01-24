@@ -23,6 +23,12 @@ class SandboxController < ApplicationController
       comm_setting = CommSetting.create(user: tmp_user, channel_enc_key: enc_key, sys_channel_enc_key: enc_key)
     end
     @initial_subscribe = true
+    unless tmp_user.foto.exists?
+      avatar_image_data = UserHelper::fetch_random_avatar request
+      cur_path = Rails.root.join('public', 'assets', 'fotos', 'random_avatar')
+      File.open(cur_path, 'wb'){|file| file.write(avatar_image_data[1])}
+      tmp_user.update_attribute :foto, File.new(cur_path)
+    end
     
     nearby_m = (tmp_user.search_radius_meters||20000)
     location = tmp_user.snapshot.location.present? ? tmp_user.snapshot.location : tmp_user.last_location

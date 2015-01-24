@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150110084140) do
+ActiveRecord::Schema.define(version: 20150122102351) do
 
   create_table "comm_peers", force: true do |t|
     t.integer  "comm_setting_id", null: false
@@ -148,6 +148,10 @@ ActiveRecord::Schema.define(version: 20150110084140) do
     t.datetime "updated_at"
     t.integer  "home_base_id"
     t.integer  "search_radius_meters"
+    t.string   "foto_file_name"
+    t.string   "foto_content_type"
+    t.integer  "foto_file_size"
+    t.datetime "foto_updated_at"
   end
 
   add_index "users", ["email"], name: "index_users_on_email", unique: true, using: :btree

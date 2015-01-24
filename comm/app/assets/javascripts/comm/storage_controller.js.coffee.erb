@@ -194,6 +194,8 @@ class window.Comm.StorageController
         users.peers = {}
       unless users.peers[user.id]?
         users.peers[user.id] = {peerPort: flags.peerPort}
+    if flags.foto?
+      users[user.id].foto = flags.foto
     if flags.note?
       users[user.id].note = flags.note
     localStorage.setItem storeKey, JSON.stringify(users)

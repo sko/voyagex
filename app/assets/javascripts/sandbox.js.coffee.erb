@@ -53,6 +53,14 @@ jQuery ->
     else
       APP.setOffline()
 
+  window.toogleUserFotoUpload = () ->
+    if $('#user_foto_input_container').css('display') == 'none'
+      $('#whoami_img_container').css('display', 'none')
+      $('#user_foto_input_container').css('display', 'block')
+    else
+      $('#whoami_img_container').css('display', 'block')
+      $('#user_foto_input_container').css('display', 'none')
+
   window.openUploadCommentControls = (poiId) ->
     #$("#upload_comment_conrols").css('display', 'block')
     #VoyageX.NavBar.menuNavClick('map')

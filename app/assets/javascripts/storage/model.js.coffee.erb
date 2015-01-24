@@ -162,6 +162,20 @@ class window.Storage.Model
         console.log('TODO: maybe get from local storage')
         #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
 
+  saveUserFoto64: (data, callback) ->
+    # TODO save before sending - if offline send later
+    url = '<%= set_user_detail_path(detail: 'foto_base64') %>'
+    #data._method = 'put'
+    $.ajax
+      type: 'POST'
+      dataType: 'json'
+      url: url
+      data: data
+    .done (user) ->
+        callback user
+    .fail (jqXHR, textStatus) ->
+        console.log('TODO: maybe get from local storage')
+
   loadPoiNotes: (poiId, poiNoteId, callback) ->
     poi = Comm.StorageController.instance().get Comm.StorageController.poiKey {id: poiId}
     if poi? && poi.notes && poi.notes.length >= 1

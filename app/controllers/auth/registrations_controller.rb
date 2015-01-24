@@ -21,6 +21,10 @@ module Auth
 #      t.string :cur_commit_hash
       @user = User.new(user_params.merge!({search_radius_meters: 1000, snapshot: UserSnapshot.new(location: Location.default)})) unless @user.present?
       if @user.save
+        avatar_image_data = UserHelper::fetch_random_avatar request
+        cur_path = Rails.root.join('public', 'assets', 'fotos', 'random_avatar')
+        File.open(cur_path, 'wb'){|file| file.write(avatar_image_data[1])}
+        @user.update_attribute :foto, File.new(cur_path)
         # user has to confirm email-address first, so no sign_in @user
         #redirect_to root_path(exec: 'show_login_dialog_confirm_email')
         render "devise/registrations/success", layout: false, formats: [:js], locals: {resource: @user, resource_name: :user}

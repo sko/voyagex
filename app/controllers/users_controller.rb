@@ -108,13 +108,12 @@ class UsersController < ApplicationController
   def change_details
     if current_user.present?
       if params[:detail].present?
-        user_json = {}
+        user_json = {id:current_user.id}
         case params[:detail]
         when 'home_base'
           location = Location.new(latitude: params[:lat], longitude: params[:lng])
           location = nearby_location location, 5
           current_user.update_attribute :home_base, location
-          user_json[:id] = current_user.id
           user_json[:home_base] = {id: location.id, lat: location.latitude, lng:location.longitude, address:shorten_address(location)}
         when 'locations'
           #location = Location.new(latitude: params[:lat], longitude: params[:lng])
@@ -122,7 +121,6 @@ class UsersController < ApplicationController
           #location = poi.location
           location = nearby_location Location.new(latitude: params[:lat], longitude: params[:lng]), 5
           location = current_user.locations_users.create(location: location, note: params[:text]).location unless current_user.locations_users.find{|l_u|l_u.location==location}.present?
-          user_json[:id] = current_user.id
           user_json[:last_location] = {id: location.id, lat: location.latitude, lng:location.longitude, address:shorten_address(location, true)}
         when 'notes'
           if params[:peer_id].present?
@@ -139,7 +137,25 @@ class UsersController < ApplicationController
             end
             user_json[:note] = {id: location.id, lat: location.latitude, lng:location.longitude, address:shorten_address(location)}
           end
-          user_json[:id] = current_user.id
+        when 'foto_base64'
+          attachment_mapping = Upload.get_attachment_mapping params[:foto_content_type]
+          if attachment_mapping.size >= 2
+            file_name = "#{current_user.username}.#{attachment_mapping[1]}" 
+          else
+            suffix = ".#{params[:foto_content_type].match(/^[^\/]+\/([^\s;,]+)/)[1]}" rescue ''
+            file_name = "#{current_user.username}#{suffix}" 
+          end
+          current_user.set_base64_file params[:foto_data], attachment_mapping[0], file_name
+          if current_user.save
+            if attachment_mapping.size >= 2
+              # restore original content-type after imagemagick did it's job
+              suffix = ".#{params[:foto_content_type].match(/^[^\/]+\/([^\s;,]+)/)[1]}" rescue ''
+              File.rename(current_user.foto.path, current_user.foto.path.sub(/\.[^.]+$/, suffix))
+              current_user.update_attributes(foto_file_name: current_user.foto_file_name.sub(/\.[^.]+$/, suffix), foto_content_type: params[:foto_content_type])
+            end
+            geometry = Paperclip::Geometry.from_file(current_user.foto)
+            user_json[:foto] = {url: current_user.foto.url, width: geometry.width.to_i, height: geometry.height.to_i}
+          end
         end
         render json: user_json.to_json
         return

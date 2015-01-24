@@ -47,6 +47,7 @@
       var panelCtrlTopOff = $(window).height() - 41;
       $("head").append("<style type='text/css'>#panel_control, #photo_nav_open_icon {position: fixed; top: "+panelCtrlTopOff+"px; width: 32px; height: 43px; z-index: 1000 !important;}</style>");
       $("head").append("<style type='text/css'>#photo_nav_panel {width:"+($(window).width()-0)+"px;}</style>");
+      $("head").append("<style type='text/css'>#user_foto_media_input_current {width:"+Math.round($(window).width()*0.3)+"px;}</style>");
     #content{data: {role: 'content'}, style: 'padding: 0px !important;'}
       .auth{style: 'display:none;'}
         = render partial: '/auth/sign_in.mobile', locals: {resource: User.new, resource_name: :user}

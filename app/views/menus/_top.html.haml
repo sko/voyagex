@@ -19,6 +19,8 @@
               - else
                 %span{class: 'navbar-inverse navbar-brand'}
                   #{t('auth.whoami', username: tmp_user().username).html_safe}
+            %span.myfoto{style: 'float :left; z-index:1003;'}
+              = image_tag tmp_user().foto.url, class: 'whoami-img', style: 'margin: 3px 0px -10px 0px; max-height: 45px;'
             .logout-link{style: "display: #{user_signed_in? ? 'block' : 'none'}; float: right;"}
               = link_to t('auth.sign_out'), destroy_user_session_path, class: 'navbar-inverse navbar-brand', data: { remote: "true", format: :js, method: :delete }
           %li

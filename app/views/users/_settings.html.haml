@@ -1,4 +1,8 @@
 %div
+  %span#whoami_img_container
+    = link_to image_tag(tmp_user().foto.url, style: 'max-width: 150px;', class: 'whoami-img'), '#', onclick: 'javascript:toogleUserFotoUpload()'
+  #user_foto_input_container{style: 'display:none;'}
+    = render partial: '/users/foto', locals: {user: tmp_user()}
   = form_for tmp_user, remote: true, method: :patch, :html => { :id => "settings_form" } do |f|
     .user_settings{style: 'padding: 0px 0px 20px 0px;'}
       %span{style: 'float: left; padding: 0px 10px 0px 0px;'}
