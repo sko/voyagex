@@ -10,6 +10,7 @@ class window.Comm.StorageController
       alert('ERROR: StorageController is Singleton')
       return null
     StorageController._SINGLETON = this
+    @_uploadQ = new Comm.UploadQ()
     @_jsonObjects = {}
     @_tileDB = {}
     @_tileMeta = null
@@ -64,7 +65,10 @@ class window.Comm.StorageController
   
   @poiNoteAttachmentKey: (poiNote) ->
     'comm.poiNoteAttachment.'+poiNote.id
-  
+
+  @uploadQueueKey: (storePath) ->
+    storePath[0]+'/'+storePath[1]
+
   getLocation: (locationId) ->
     storeKey = 'comm.locations'
     locations = eval("(" + localStorage.getItem(storeKey) + ")")
@@ -84,9 +88,10 @@ class window.Comm.StorageController
     else
       null
   
-  saveLocation: (location, flags = {}) ->
+  saveLocation: (location, flags = {}, locations = null) ->
     storeKey = 'comm.locations'
-    locations = eval("(" + localStorage.getItem(storeKey) + ")")
+    unless locations?
+      locations = eval("(" + localStorage.getItem(storeKey) + ")")
     unless locations
       locations = {}
     locations[location.id] = {lat: location.lat, lng: location.lng, address: location.address}
@@ -99,6 +104,20 @@ class window.Comm.StorageController
         locations.pois[location.id] = flags.poi
     localStorage.setItem storeKey, JSON.stringify(locations)
     location
+  
+  # after q-upload 
+  resetLocation: (oldLocation, newLocation, newPoi) ->
+    storeKey = 'comm.locations'
+    locations = eval("(" + localStorage.getItem(storeKey) + ")")
+    flags = {}
+    if locations.homeBase? && locations.homeBase == oldLocation.id
+      flags.homeBase = true
+    if newPoi?
+      flags.poi = { id: newPoi.id }
+    delete locations[oldLocation.id]
+    if locations.pois? && locations.pois[oldLocation.id]?
+      delete locations.pois[oldLocation.id]
+    this.saveLocation newLocation, flags, locations
   
   getBookmark: (locationId) ->
     storeKey = 'comm.locations'
@@ -597,7 +616,7 @@ class window.Comm.StorageController
               else
                 # it's likely that directory has been created meanwhile by other request
                 if firstCall
-                  #console.log('_getDirectory - '+e+' when trying to CREATE directory / trying one more READ: '+path)
+                  #console.log('_getPoiNoteDirectory - '+e+' when trying to CREATE directory / trying one more READ: '+path)
                   return sC._getPoiNoteDirectory nextDirIdx, dirReader, poiNote, data, deferredModeParams, false
                 else
                   console.log('_getPoiNoteDirectory - '+e+' when trying to CREATE directory '+path)
@@ -618,12 +637,14 @@ class window.Comm.StorageController
     else if data != null
       this._savePoiNoteAttachmentFile poiNote, parentDirReader, data, deferredModeParams
   
-  _getPoiNoteAttachmentFile: (poiNote, prefetchMode, deferredModeParams) ->
+  _getPoiNoteAttachmentFile: (poiNote, deferredModeParams) ->
     path = '/poiNotes/attachments/'+poiNote.id
     @_dirReaders.entry.getFile(path, {}, (fileEntry) ->
         console.log('_getPoiNoteAttachmentFile - found file: '+path)
         # if binary:
-        deferredModeParams.deferred.resolve fileEntry.toURL(poiNote.attachment.content_type)
+        #deferredModeParams.deferred.resolve fileEntry.toURL(poiNote.attachment.content_type), fileEntry.file
+        fileEntry.file (file) ->
+            deferredModeParams.deferred.resolve fileEntry.toURL(poiNote.attachment.content_type), new Blob([file], { type: poiNote.attachment.content_type })
 #        # if text (base64):
 #        fileEntry.file (file) ->
 #            #@_dirReaders.entries.poiNotes.entries.attachments.reader
@@ -635,32 +656,23 @@ class window.Comm.StorageController
 #            reader.onload = (e) ->
 #                if this.result == ''
 #                  console.log('bad read on '+path)
-#                deferredModeParams.deferred.resolve this.result
+#                deferredModeParams.deferred.resolve this.result, file
 #            reader.readAsText(file)
       , (e) ->
         if (e.code == FileError.NOT_FOUND_ERR) 
           console.log('_getPoiNoteAttachmentFile - no such file: '+path)
         else
           console.log('_getPoiNoteAttachmentFile - error: '+e+' for '+path)
-       #VoyageX.MapControl.tileUrl deferredModeParams.mC, deferredModeParams.view, deferredModeParams
-        #if prefetchMode == 0
         deferredModeParams.attachmentUrl poiNote, deferredModeParams
-        #else
-        #  VoyageX.MapControl.loadAndPrefetch deferredModeParams.mC, xYZ, deferredModeParams.view.subdomain, deferredModeParams
       )
 
-  #loadAndPrefetchPoiNoteAttachment: (prefetchParams) ->
-  #  #this._getPoiNoteAttachmentFile prefetchParams.xYZ, 1, prefetchParams
-  #  VoyageX.MapControl.loadAndPrefetch deferredModeParams.mC, xYZ, deferredModeParams.view.subdomain, deferredModeParams
-  #  prefetchParams.promise = prefetchParams.deferred.promise()
-  
   getPoiNoteAttachment: (poiNote, deferredModeParams = null) ->
     storeKey = StorageController.poiNoteAttachmentKey poiNote
     if StorageController.isFileBased()
       #if deferredModeParams.promise == null
       #  deferredModeParams.promise = deferredModeParams.deferred.promise()
       console.log('getPoiNoteAttachment - '+storeKey)
-      this._getPoiNoteAttachmentFile poiNote, 0, deferredModeParams
+      this._getPoiNoteAttachmentFile poiNote, deferredModeParams
       deferredModeParams.promise
     else
       stored = localStorage.getItem storeKey
@@ -683,6 +695,56 @@ class window.Comm.StorageController
       }
     console.log 'caching tile: '+storeKey
     this.storeTile xYZ, geoJSON, null, deferredModeParams
+
+  # storePath ... ['queue', timemillis]
+  queueUpload: (poi, poiNote, callback, fileInputId = null) ->
+    if fileInputId?
+      inputFile = $('#'+fileInputId)[0].files[0]
+      poiNote.attachment = { content_type: inputFile.type, url: null }
+      @_uploadQ.setPoiNote poi, poiNote
+      @_uploadQ.setCallback callback
+      @_uploadQ.setFile inputFile
+      @_uploadQ.storeUpload()
+    uploadQKey = 'comm.uploadQ.poiNotes'
+    this.addToList uploadQKey, 'push', { id: poiNote.id, poiId: poi.id, fileName: inputFile.name }
+  
+  uploadQueue: (callback) ->
+    uploadQKey = 'comm.uploadQ.poiNotes'
+    stored = localStorage.getItem(uploadQKey)
+    qEntries = eval("(" + stored + ")")
+    if qEntries?
+      perPoiList = {}
+      #for qEntry, idx in qEntries
+      for idxSub in [0..qEntries.length-1]
+        qEntry = qEntries[qEntries.length-1-idxSub]
+        poiKey = Comm.StorageController.poiKey {id: qEntry.poiId}
+        poi = Comm.StorageController.instance().get poiKey
+        location = Comm.StorageController.instance().getLocation poi.locationId
+        for n in poi.notes
+          if n.id == qEntry.id
+            poiNote = n
+            break
+        $("#upload_comment").val(poiNote.text)
+        deferredModeParams = { deferred: $.Deferred(),\
+                               promise: null }
+        deferredModeParams.promise = deferredModeParams.deferred.promise()
+        ((location, poi, poiNote, fileName, perPoiList, isLast) ->
+             deferredModeParams.promise.then (url, file) ->
+                 unless perPoiList[poi.id]?
+                   perPoiList[poi.id] = { poi: poi,\
+                                          location: location,\
+                                          files: {},\
+                                          fileNames: {} }
+                 perPoiList[poi.id].files[poiNote.id] = file
+                 perPoiList[poi.id].fileNames[poiNote.id] = fileName
+                 if isLast
+                   for entryKey in Object.keys(perPoiList)
+                     cb = { cb: (origCallback) ->
+                                Comm.UploadQ.instance().syncResponseCallback location, poi, origCallback }
+                     batchUpload perPoiList[entryKey], cb
+        )(location, poi, poiNote, qEntry.fileName, perPoiList, idxSub==(qEntries.length-1))
+        this._getPoiNoteAttachmentFile poiNote, deferredModeParams
+    true
 
   # reserved listKeys:
   # push: creates/uses an array for entries stored with storeKey
@@ -808,3 +870,98 @@ class Comm.StorageEntryWrapper
 
   getItem: (key) ->
     @_jsonObject[key]
+
+#
+#
+#
+class Comm.UploadQ
+  
+  @_SINGLETON = null
+  
+  constructor: () ->
+    UploadQ._SINGLETON = this
+    @_poi = null
+    @_poiNote = null
+    @_callback = null
+    @_file = null
+
+  setPoiNote: (poi, poiNote) ->
+    @_poi = poi
+    @_poiNote = poiNote
+
+  setCallback: (callback) ->
+    @_callback = callback
+
+  setFile: (file) ->
+    @_file = file
+
+  storeUpload: () ->
+    unless Comm.StorageController.isFileBased()
+#    file = UploadQ.instance()._file
+#    #storePoiNoteAttachment @_poiNote, fileLoadedEvent.target.result
+#    base64ImgDataUrl = fileLoadedEvent.target.result
+#    unless Comm.StorageController.isFileBased()
+#      Comm.StorageController.instance().storePoiNoteAttachment @_poiNote, base64ImgDataUrl, deferredModeParams
+#      cacheStats()
+#    else
+#      # actually we could store base64 in file as well
+#      #Comm.StorageController.instance().storePoiNoteAttachment @_poiNote, base64ImgDataUrl, deferredModeParams
+#      $('#attachment_canvas')[0].toBlob((blob) ->
+#          Comm.StorageController.instance().storePoiNoteAttachment @_poiNote, blob, deferredModeParams
+#        )
+      Comm.StorageController.instance().storePoiNoteAttachment @_poiNote, base64ImgDataUrl, deferredModeParams
+      cacheStats()
+    else
+      deferredModeParams = { deferred: $.Deferred(),\
+                             promise: null }
+      deferredModeParams.promise = deferredModeParams.deferred.promise()
+      deferredModeParams.promise.then (url) ->
+          console.log 'UploadQ - storeUpload: attachmentUrl-promise resolved to: '+url
+          poi = UploadQ.instance()._poi
+          note = UploadQ.instance()._poiNote
+          note.attachment.url = url
+          loadStats = { numAdded: 1, numLeft: 0 }
+          Storage.Model._syncPoiNotes poi, Comm.StorageController.poiKey(poi), note, loadStats, UploadQ.instance()._callback
+      Comm.StorageController.instance().storePoiNoteAttachment @_poiNote, @_file, deferredModeParams
+
+  syncResponseCallback: (location, poi, origCallback) ->
+    (cbPoi, cbNewPoiNotes) ->
+        # TODO: rename poi to cbPoi and new notes as well
+        if location.id < 0
+          location = APP.storage().resetLocation location, { id: cbPoi.locationId,\
+                                                             lat: cbPoi.lat,\
+                                                             lng: cbPoi.lng,\
+                                                             address: cbPoi.address }, cbPoi
+        curNewPoiNoteIdx = 0
+        for n, idx in poi.notes
+          if n.id < 0
+            # there are as many notes with id < 0 as cbNewPoiNotes
+            # FIXME that's not true - there could be more notes added meanwhile from other users 
+            newNote = cbNewPoiNotes[curNewPoiNoteIdx]
+            ((poiNote, cbPoiNote) ->
+              APP.storage()._dirReaders.entries.poiNotes.entries.attachments.entry.getFile poiNote.id, {}, (fileEntry) ->
+                  fileEntry.moveTo APP.storage()._dirReaders.entries.poiNotes.entries.attachments.entry, cbPoiNote.id
+                , (e) ->
+                    console.log('syncResponseCallback - '+e)
+            )(n, newNote)
+            n.id = newNote.id
+            n.attachment.url = n.attachment.url.replace(/[^\/]+$/, newNote.id)
+            curNewPoiNoteIdx += 1
+        
+        if poi.id < 0
+          poiKey = Comm.StorageController.poiKey {id: poi.id}
+          localStorage.removeItem poiKey
+          poi.id = cbPoi.id
+          poi.locationId = location.id
+        # save the poi with new id and new note-ids
+        poiKey = Comm.StorageController.poiKey {id: poi.id}
+        localStorage.setItem poiKey, JSON.stringify(poi)
+
+        uploadQKey = 'comm.uploadQ.poiNotes'
+        while (qEntry = APP.storage().pop(uploadQKey))?
+          console.log('syncResponseCallback - removing Q-entry')
+
+        origCallback cbPoi, cbNewPoiNotes
+
+  @instance: () ->
+    @_SINGLETON

@@ -40,4 +40,28 @@ module SandboxHelper
     end
   end
 
+  def upload_entity_preview_url upload
+    if upload.entity.is_a? UploadEntity::Mediafile
+      case upload.entity.content_type.match(/^[^\/]+/)[0]
+      when 'image' 
+        upload.file.url
+      when 'audio'
+        '/assets/audio-file.png'
+      when 'video'
+        '/assets/video-file.png'
+      else
+        '/assets/no-preview.png'
+      end
+    elsif upload.entity.is_a? UploadEntity::Embed
+      case upload.entity.embed_type.match(/^[^\/]+/)[0]
+      when 'image' 
+        upload.entity.text
+      else
+        '/assets/no-preview.png'
+      end
+    else
+      '/assets/no-preview.png'
+    end
+  end
+
 end

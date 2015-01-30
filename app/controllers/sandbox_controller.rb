@@ -29,7 +29,13 @@ class SandboxController < ApplicationController
       File.open(cur_path, 'wb'){|file| file.write(avatar_image_data[1])}
       tmp_user.update_attribute :foto, File.new(cur_path)
     end
-    
+    if tmp_user.last_sign_in_ip.present?
+      unless tmp_user.snapshot.cur_commit_hash.present?
+        vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, tmp_user, false#user.is_admin
+        tmp_user.snapshot.update_attribute :cur_commit_hash, vm.cur_commit
+      end
+    end
+
     nearby_m = (tmp_user.search_radius_meters||20000)
     location = tmp_user.snapshot.location.present? ? tmp_user.snapshot.location : tmp_user.last_location
     if location.present?

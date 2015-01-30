@@ -11,7 +11,7 @@
 %table{width: '100%', border: 0, cellspacing: 0, cellpadding: 0}
   - # peers followed by user and granted
   %tr
-    %th{colspan: 4}
+    %th{colspan: 6}
       #{t('admin.i_follow')}
   %tbody#i_follow
     - user.follows.each do |cs|
@@ -30,6 +30,10 @@
         %td{width: 5}
           &nbsp;
         %td
+          = image_tag cs.user.foto.url, style: 'max-width: 35px !important;'
+        %td{width: 15}
+          &nbsp;
+        %td
           %span{style: 'float: left;'}
             #{cs.user.username}
           %span{style: 'padding-left: 10px;'}
@@ -42,12 +46,16 @@
           = label_tag "i_follow_#{cs.id.to_s}", ''
   - # peers followed by user and not granted
   %tr
-    %th{colspan: 4}
+    %th{colspan: 6}
       #{t('admin.i_want_to_follow')}
   %tbody#i_want_to_follow
     - user.requested_grant_to_follow.each do |cs|
       %tr{id: "i_want_to_follow_#{cs.id}"}
         %td{width: 5}
+          &nbsp;
+        %td
+          = image_tag cs.user.foto.url, style: 'max-width: 35px !important;'
+        %td{width: 15}
           &nbsp;
         %td
           #{cs.user.username}
@@ -59,13 +67,17 @@
           = label_tag "i_want_to_follow_#{cs.id.to_s}", ''
   - # peers not followed by user   / and comm_peers.id is null
   %tr
-    %th{colspan: 4}
+    %th{colspan: 6}
       #{t('admin.i_dont_follow')}
   %tbody#i_dont_follow
     /- CommSetting.joins(:user).joins('left outer join comm_peers on comm_settings.id = comm_peers.comm_setting_id').where('comm_settings.user_id != ? and (comm_peers.peer_id is null or comm_peers.peer_id != ?) and current_sign_in_at is not null', user.id, user.id).order('users.username').each do |cs|
     - User.joins(:comm_setting).where('`users`.id != ? and `users`.current_sign_in_at is not null and `comm_settings`.id not in (select `comm_peers`.comm_setting_id from `comm_peers` where `comm_peers`.peer_id = ?)', user.id, user.id).order('`users`.username').each do |u|
       %tr{id: "i_dont_follow_#{u.comm_setting.id}"}
         %td{width: 5}
+          &nbsp;
+        %td
+          = image_tag u.foto.url, style: 'max-width: 35px !important;'
+        %td{width: 15}
           &nbsp;
         %td
           #{u.username}
@@ -76,17 +88,21 @@
           = check_box_tag "follow[comm_peer_settings][#{u.comm_setting.id.to_s}]", true, false, id: "i_dont_follow_#{u.comm_setting.id.to_s}", style: 'float: left;'
           = label_tag "i_dont_follow_#{u.comm_setting.id.to_s}", t('admin.check_to_follow')
   %tr
-    %th{colspan: 4}
+    %th{colspan: 6}
       <hr />
   - # peers that follow user
   %tr
-    %th{colspan: 4}
+    %th{colspan: 6}
       #{t('admin.follow_me')}
   %tbody#follow_me
     - if user.comm_setting.present?
       - user.comm_setting.followers.order(:username).each do |u|
         %tr{id: "follow_me_#{u.id}"}
           %td{width: 5}
+            &nbsp;
+          %td
+            = image_tag u.foto.url, style: 'max-width: 35px !important;'
+          %td{width: 15}
             &nbsp;
           %td
             #{u.username}
@@ -98,13 +114,17 @@
             = label_tag "follow_me_#{u.id.to_s}", ''
   - # peers that requested grant to follow user
   %tr
-    %th{colspan: 4}
+    %th{colspan: 6}
       #{t('admin.want_to_follow_me')}
   %tbody#want_to_follow_me
     - if user.comm_setting.present?
       - user.comm_setting.follow_grant_requests.order(:username).each do |u|
         %tr{id: "want_to_follow_me_#{u.id}"}
           %td{width: 5}
+            &nbsp;
+          %td
+            = image_tag u.foto.url, style: 'max-width: 35px !important;'
+          %td{width: 15}
             &nbsp;
           %td
             #{u.username}

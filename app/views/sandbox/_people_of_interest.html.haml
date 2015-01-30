@@ -10,6 +10,10 @@ Benutzer denen ich folge oder folgen will ...
     - last_location = cs.user.snapshot.location.present? ? cs.user.snapshot.location : Location.new(latitude: cs.user.snapshot.lat, longitude: cs.user.snapshot.lng)
     %tr{data: {userId: cs.user.id}}
       %td
+        = image_tag cs.user.foto.url, style: 'max-width: 35px !important;'
+      %td{width: 15}
+        &nbsp;
+      %td
         #{cs.user.username}
       %td{width: 15}
         &nbsp;

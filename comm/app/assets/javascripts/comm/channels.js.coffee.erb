@@ -50,6 +50,34 @@ class window.Comm.Comm
       this.register(@_user_id)
     else
       Comm.initSystemContext {sys_channel_enc_key: sysChannelEncKey}
+    
+    #window.addEventListener "offline", (e) ->
+    #    alert("offline")
+    #  , false
+    #window.addEventListener "online", (e) ->
+    #    alert("online")
+    #  , false
+
+  checkPingResponse: (pingKey) ->
+    if window.pingKey != pingKey
+      if APP._online
+        APP.setOffline()
+        setTimeout "Comm.Comm.instance().pingBackend()", 5000
+
+  pingBackend: () ->
+    pingKey = Math.round(Math.random() * 100000)
+    $.ajax
+      type: 'GET'
+      url: '<%= comm_ping_path(key: ':key') %>'.replace(/:key/, pingKey)
+      dataType: 'script'
+    .done (user) ->
+        unless APP._online
+          APP.setOnline()
+    .fail (jqXHR, textStatus) ->
+        if APP._online
+          APP.setOffline()
+        setTimeout "Comm.Comm.instance().pingBackend()", 5000
+    setTimeout 'Comm.Comm.instance().checkPingResponse('+pingKey+')', 3000
 
   register: (userId) ->
     data = { _method: 'put',\
@@ -68,7 +96,7 @@ class window.Comm.Comm
     # 1) client wants to publish before register-ajax-response set the enc_key
     #    1.1: store request and send after register (local storage)
     # 2) the same goes for requests when client is offline
-    unless Comm.channelCallBacksJSON[channel.substr(1)] == null or !systemReady
+    unless Comm.channelCallBacksJSON[channel.substr(1)] == null or !systemReady or !APP.isOnline()
       channelPath = channel
       unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
         channelPath += VoyageX.PEER_CHANNEL_PREFIX +

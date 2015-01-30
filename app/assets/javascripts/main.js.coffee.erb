@@ -86,6 +86,8 @@ class window.VoyageX.Main
         APP._zoomEnd(null)
         cacheStats()
         $('#user_foto_input_type').buttonset()
+        window.pingKey = -1
+        #setTimeout "Comm.Comm.instance().pingBackend()", 5000
 
   userId: () ->
     window.currentUser.id
@@ -116,13 +118,19 @@ class window.VoyageX.Main
     Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
     for n in [Main._MAP_CONTROL._minZoom..Main._MAP_CONTROL._maxZoom]
       Main._MAP_CONTROL._zooms.push n
+    APP.storage().uploadQueue (poiNote) ->
+        console.log 'Main - setOnline: uploaded Q-Entry'
+    unless $('#network_state_online').attr('checked') == 'checked'
+      $('#network_state_online').attr('checked', 'checked')
 
   setOffline: () ->
     @_online = false
     Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
     for n in Main._MAP_CONTROL._offlineZooms
       Main._MAP_CONTROL._zooms.push n
-    
+    unless $('#network_state_offline').attr('checked') == 'checked'
+      $('#network_state_offline').attr('checked', 'checked')
+
   resetConnection: (commSettingId) ->
     peerChannelEncKey = $('#i_follow_'+commSettingId).attr('data-channelEncKey')
     for channel in Main.commChannels()
@@ -147,7 +155,8 @@ class window.VoyageX.Main
         delete lastLocation.poiId
         APP.storage().saveLocation lastLocation, {poi: {id: lastLocation.poiId}}
       else
-        APP.storage().saveLocation lastLocation
+        if lastLocation.id?
+          APP.storage().saveLocation lastLocation
       # ---------------------
       peer.lastLocationId = lastLocation.id
       APP.storage().saveUser peer, {peerPort: peerPort, foto: peer.foto}
@@ -166,8 +175,8 @@ class window.VoyageX.Main
       APP.map().panTo(this.getSelectedPositionLatLng())
     else
       #poiId = $('#poi_notes_container').attr('data-poiId')
-      poi = Main.storageController().get Comm.StorageController.poiKey({id: poiId})
-      locationData = Main.storageController().getLocation poi.locationId
+      poi = APP.storage().get Comm.StorageController.poiKey({id: poiId})
+      locationData = APP.storage().getLocation poi.locationId
       posLatLng = [locationData.lat, locationData.lng]
     #this.publishPosition true, posLatLng
     Storage.Model.instance().addBookmark posLatLng, VoyageX.View.addBookmark
@@ -325,7 +334,7 @@ class window.VoyageX.Main
     # BUT! notes have not been loaded maybe
     #searchBounds = Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, this.map())
     searchBounds = window.searchBounds @_selectedPosition.lat, @_selectedPosition.lng, VoyageX.SEARCH_RADIUS_METERS
-    pois = Main.storageController().getPois (poi) ->
+    pois = APP.storage().getPois (poi) ->
         if poi.lat >= searchBounds.lat_south && poi.lat <= searchBounds.lat_north &&
            poi.lng >= searchBounds.lng_west && poi.lng <= searchBounds.lng_east
 #          unless poi.notes && poi.notes.length >= 1
@@ -350,10 +359,10 @@ class window.VoyageX.Main
           return false
     this.view().previewPois pois
 #      when 'location_bookmarks'
-#        Main.storage().photoNav @_selectedPosition.lat, @_selectedPosition.lng, (pois) ->
+#        APP.model().photoNav @_selectedPosition.lat, @_selectedPosition.lng, (pois) ->
 #            console.log('TODO: APP.photonav for location_bookmarks ...')
 #      when 'people_of_interest'
-#        Main.storage().photoNav @_selectedPosition.lat, @_selectedPosition.lng, (pois) -> 
+#        APP.model().photoNav @_selectedPosition.lat, @_selectedPosition.lng, (pois) -> 
 #            console.log('TODO: APP.photonav for people_of_interest ...')
 #      else
 #        alert('unknown photoNav-tab '+selectedTab)
@@ -495,10 +504,6 @@ class window.VoyageX.Main
   @commChannels: () ->
     Main._COMM_CHANNELS.slice(0)
 
-  # @deprecated - use APP.storage()
-  @storageController: () ->
-    Main._STORAGE_CONTROLLER
-
   storage: () ->
     Main._STORAGE_CONTROLLER
 
@@ -511,11 +516,11 @@ class window.VoyageX.Main
   @markerManager: () ->
     Main._MARKER_MANAGER
 
-  @storage: () ->
+  model: () ->
     Main._STORAGE_MODEL
-
-  @instance: () ->
-    Main._SINGLETON
 
   view: () ->
     @_view
+
+  @instance: () ->
+    Main._SINGLETON

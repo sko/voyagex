@@ -95,13 +95,24 @@ class window.VoyageX.View
 
   _uploadsCB: (upload) ->
     console.log 'got an uploads - message: ' + upload.type
-    unless upload.poi_note.user.id == APP.userId()
-      # TODO: unify json-format, until then avoid circular structure
-      poi = upload.poi_note.poi
-      Storage.Model.setupPoiForNote poi
-      msg = { poi: poi }
-      Storage.Model.instance().syncWithStorage msg, View.addPoiNotes, upload.poi_note
-      APP.view().alert()
+    if upload.type == 'poi_note_upload'
+      unless upload.poi_note.user.id == APP.userId()
+        # TODO: unify json-format, until then avoid circular structure
+        poi = upload.poi_note.poi
+        Storage.Model.setupPoiForNote poi
+        msg = { poi: poi }
+        Storage.Model.instance().syncWithStorage msg, View.addPoiNotes, upload.poi_note
+        APP.view().alert()
+    else if upload.type == 'poi_sync'
+      unless upload.poi.user.id == APP.userId()
+        delete upload.poi.user
+        poi = upload.poi
+        Storage.Model.setupPoiForNote poi
+        msg = { poi: poi }
+        loadStats = { numAdded: poi.notes.length, numLeft: poi.notes.length }
+        for note in poi.notes
+          Storage.Model.instance().syncWithStorage msg, View.addPoiNotes, note, loadStats
+        APP.view().alert()
 
   # start with no params
   _blinkArrow: (iconSuffix = null, stop = false) ->

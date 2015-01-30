@@ -23,7 +23,8 @@ VoyageX::Application.routes.draw do
   put '/uploads_embed/:id', to: 'uploads#update_from_embed', as: :upload_embed
   post '/uploads_plain_text', to: 'uploads#create_from_plain_text', as: :uploads_plain_text
   put '/uploads_plain_text/:id', to: 'uploads#update_from_plain_text', as: :upload_plain_text
-
+  post '/sync_pois', to: 'uploads#sync_poi', as: :sync_pois
+  put '/sync_poi/:id', to: 'uploads#sync_poi', as: :sync_poi
   post '/uploads', to: 'uploads#create', as: :poi_notes
   put '/uploads/:id', to: 'uploads#update', as: :poi_note
 
@@ -37,6 +38,7 @@ VoyageX::Application.routes.draw do
   #put '/upload_file', to: 'uploads#create'
   #post '/upload_file', to: 'uploads#update'
   #put '/upload_file64', to: 'uploads#create_from_base64', as: :json_uploads
+  get '/ping/:key', to: 'comm/comm#ping', as: :comm_ping
   put '/register', to: 'comm/comm#register', as: :comm_register
   post '/subscribe/:channel', to: 'comm/comm#subscribe', as: :comm_subscribe
   post '/publish/:channel', to: 'comm/comm#publish', as: :comm_publish

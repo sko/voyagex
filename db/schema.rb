@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150122102351) do
+ActiveRecord::Schema.define(version: 20150203114252) do
 
   create_table "comm_peers", force: true do |t|
     t.integer  "comm_setting_id", null: false
@@ -38,12 +38,24 @@ ActiveRecord::Schema.define(version: 20150122102351) do
   add_index "comm_settings", ["channel_enc_key"], name: "index_comm_settings_on_channel_enc_key", using: :btree
   add_index "comm_settings", ["user_id"], name: "index_comm_settings_on_user_id", using: :btree
 
+  create_table "commits", force: true do |t|
+    t.integer  "user_id"
+    t.string   "hash"
+    t.datetime "timestamp"
+    t.integer  "local_time_millis"
+  end
+
+  add_index "commits", ["hash"], name: "index_commits_on_hash", using: :btree
+  add_index "commits", ["timestamp"], name: "index_commits_on_timestamp", using: :btree
+
   create_table "locations", force: true do |t|
-    t.decimal  "latitude",   precision: 10, scale: 7, null: false
-    t.decimal  "longitude",  precision: 10, scale: 7, null: false
+    t.decimal  "latitude",          precision: 10, scale: 7, null: false
+    t.decimal  "longitude",         precision: 10, scale: 7, null: false
     t.text     "address"
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.string   "commit_hash"
+    t.integer  "local_time_millis"
   end
 
   add_index "locations", ["latitude", "longitude"], name: "index_locations_on_latitude_and_longitude", using: :btree
@@ -67,6 +79,8 @@ ActiveRecord::Schema.define(version: 20150122102351) do
     t.integer  "attachment_id"
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.string   "commit_hash"
+    t.integer  "local_time_millis"
   end
 
   add_index "poi_notes", ["comments_on_id"], name: "index_poi_notes_on_comments_on_id", using: :btree
@@ -77,6 +91,8 @@ ActiveRecord::Schema.define(version: 20150122102351) do
     t.integer  "location_id"
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.string   "commit_hash"
+    t.integer  "local_time_millis"
   end
 
   create_table "roles", force: true do |t|

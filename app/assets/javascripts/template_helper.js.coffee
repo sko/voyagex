@@ -2,13 +2,13 @@ class window.VoyageX.TemplateHelper
  
   @_SINGLETON = null
 
-  @poiNoteInputHtml: (parentElementId, poiNote = null) ->
+  @poiNoteInputHtml: (parentElementId, poi = null, poiNote = null) ->
     html = $('#tmpl_poi_note_input').html()
     formId = null
     html = TemplateHelper._updateIds 'tmpl_poi_note_input', (cur) ->
         if cur.match(/_form$/) != null
           formId = cur
-    html = TemplateHelper._updateRefs 'tmpl_poi_note_input', html
+    html = TemplateHelper._updateRefs 'tmpl_poi_note_input', html.replace(/:poi_id/, if poi? then poi.id else -1)
     $('#'+parentElementId).html(html)
     if poiNote != null && formId != null
       methodDiv = $('#'+formId+' > div').first()
@@ -29,6 +29,10 @@ class window.VoyageX.TemplateHelper
       poiNotesHtml
 
   @poiNotePopupEntryHtml: (poiNote, poiNoteTmpl, i, meta) ->
+    if poiNote.user?
+      username = poiNote.user.username
+    else
+      username = Comm.StorageController.instance().getUser(poiNote.userId).username
     #toggle = if i%2==0 then 'left' else 'right'
     toggle = if poiNote.userId==currentUser.id then 'left' else 'right'
     poiNoteTmpl.
@@ -37,7 +41,7 @@ class window.VoyageX.TemplateHelper
     replace(/\{toggle\}/g, toggle).
     replace(/\stmpl-toggle=['"]?[^'" >]+/g, '').
     replace(/\{media_file_tag\}/, TemplateHelper._mediaFileTag(poiNote.attachment, meta)).
-    replace(/\{username\}/, Comm.StorageController.instance().getUser(poiNote.userId).username).
+    replace(/\{username\}/, username).
     replace(/\{comment\}/, padTextHtml(poiNote.text, 80))
 
   @poiNotePopupHtml: (poi, meta) ->
@@ -75,7 +79,7 @@ class window.VoyageX.TemplateHelper
       poiNoteContainer = $('#poi_notes_container')
       TemplateHelper._addPopupTitle poiNoteContainer, marker, Comm.StorageController.instance().getLocation(poi.locationId), poi
     $('#poi_note_input').html('')
-    TemplateHelper.poiNoteInputHtml('poi_note_input', poi.notes[0])
+    TemplateHelper.poiNoteInputHtml('poi_note_input', poi, poi.notes[0])
 
   @addPoiNotes: (poi, newNotes, marker) ->
     popup = marker.getPopup()
@@ -96,7 +100,7 @@ class window.VoyageX.TemplateHelper
       TemplateHelper.openPOINotePopup poi, marker
 
   @openPeerPopup: (peer, marker, messages = [], contentCallback = null) ->
-    popupHtml = TemplateHelper._updateIds('tmpl_peer_popup').
+    popupHtml = TemplateHelper._updateAttributes('tmpl_peer_popup', ['src'], TemplateHelper._updateIds('tmpl_peer_popup')).
     replace(/\{peer_id\}/g, peer.id).
     replace(/\{peer_foto_url\}/, peer.foto.url)
     popup = marker.getPopup()
@@ -236,14 +240,18 @@ class window.VoyageX.TemplateHelper
   @swiperSlideHtml: (poi, poiNote) ->
     maxHeight = 100.0
     maxWidth = 300
-    scale = maxHeight / poiNote.attachment.height
-    width = Math.round(poiNote.attachment.width * scale + 0.49)
+    if poiNote.attachment.height?
+      scale = maxHeight / poiNote.attachment.height
+      width = Math.round(poiNote.attachment.width * scale + 0.49)
+    else
+      width = 100
    #swiperSlideTmpl = TemplateHelper._updateAttributes('tmpl_swiper_slide', ['src'], TemplateHelper._updateIds('tmpl_swiper_slide')).
     swiperSlideTmpl = TemplateHelper._updateAttributes('tmpl_swiper_slide', ['src'], $('#tmpl_swiper_slide').html()).
     replace(/\{poiId\}/g, poi.id).
     replace(/\{poiNoteId\}/g, poiNote.id).
     #replace(/\{address\}/g, poi.address).
-    replace(/\{attachment_url\}/g, poiNote.attachment.url).
+    #replace(/\{attachment_url\}/g, poiNote.attachment.url).
+    replace(/\{attachment_url\}/g, TemplateHelper._attachmentPreviewUrl(poiNote.attachment)).
     replace(/\{width\}/g, width).
     replace(/\{height\}/g, maxHeight)
 
@@ -337,3 +345,14 @@ class window.VoyageX.TemplateHelper
         '</video>'
       else
         'unable to display entity with content_type: '+upload.content_type
+
+  @_attachmentPreviewUrl: (upload) ->
+    switch upload.content_type.match(/^[^\/]+/)[0]
+      when 'image'
+        upload.url
+      when 'audio'
+        '/assets/audio-file.png'
+      when 'video'
+        '/assets/video-file.png'
+      else
+        '/assets/no-preview.png'

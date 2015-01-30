@@ -53,6 +53,14 @@ class User < ActiveRecord::Base
     end
   end
 
+  def is_admin
+    email == 'skoeller@gmx.de'
+  end
+
+  def self.admin
+    User.where(email: 'skoeller@gmx.de').first
+  end
+
   def self.create_tmp_user
     User.create(username: tmp_id, email: 'sko', )
   end

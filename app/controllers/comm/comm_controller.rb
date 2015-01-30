@@ -2,6 +2,10 @@ module Comm
   class CommController < ::ActionController::Base  
     include ::AuthUtils
 
+    def ping
+      #binding.pry
+    end
+
     # we don't subscribe the users to a channel but rather push to them (on their system-channel)
     # to subscribe on their own.
     # this way they also can have a dialog whether they are interested at all

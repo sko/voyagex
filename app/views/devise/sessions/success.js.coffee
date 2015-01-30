@@ -21,7 +21,8 @@ window.VoyageX.SEARCH_RADIUS_METERS = <%= current_user.search_radius_meters||100
 window.currentUser = { id: <%= current_user.id -%>,\
                        username: '<%= current_user.username -%>',\
                        homebaseLocationId: <%= current_user.home_base.present? ? current_user.home_base.id : -1 -%>,\
-                       lastLocation: {lat: <%= lat -%>, lng: <%= lng -%>} }
+                       lastLocation: {lat: <%= lat -%>, lng: <%= lng -%>},\
+                       curCommitHash: '<%= current_user.snapshot.cur_commit_hash -%>' }
 $('.whoami').each () ->
   $(this).html("<%= escape_javascript(link_to t('auth.whoami', username: current_user.username), change_username_path, class: 'navbar-inverse navbar-brand', data: { remote: 'true', format: :js }) -%>")
 $('#comm_peer_data').html("<%= j render(partial: 'shared/peers', locals: {user: current_user}) -%>")

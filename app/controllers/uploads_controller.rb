@@ -4,9 +4,59 @@ class UploadsController < ApplicationController
   include PoiHelper
 
   skip_before_filter :verify_authenticity_token, only: [:create, :update]
+  
+  MASTER = 'test/master'
+  WORK_DIR_ROOT = "#{Rails.root}/user_repos"
 
   def index
     render layout: 'uploads'
+  end
+
+  #
+  # TODO: 
+  # +) comment-on
+  #
+  # sync pois that where edited offline
+  def sync_poi
+    @user = current_user || tmp_user
+    vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, @user, false#@user.is_admin
+    prev_commit = vm.cur_commit
+puts "prev_commit = #{prev_commit}"
+    if params[:id].present?
+      @commented_poi_note = PoiNote.find(params[:id])
+      @poi = @commented_poi_note.poi
+    else
+      @poi = nearby_poi @user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
+      # vm
+      vm.add_location @poi.location
+    end
+    @user.locations << @poi.location unless @user.locations.find {|l|l.id==@poi.location.id}
+
+    # TODO: merge other notes that where uploaded meanwhile
+    params[:poi_note_ids].each do |poi_note_id|
+      upload = Upload.new(attached_to: PoiNote.new(poi: @poi, user: @user, text: params[:poi_note][poi_note_id][:text]))
+      upload.attached_to.attachment = upload
+      upload.build_entity params[:poi_note][poi_note_id][:file].content_type, file: params[:poi_note][poi_note_id][:file]
+      @poi.notes << upload.attached_to
+    end
+
+    if @poi.save
+      # vm
+      vm.add_poi @poi
+      poi_note_json_list = []
+      (@poi.notes.length-params[:poi_note_ids].length..(@poi.notes.length-1)).each do |idx|
+        poi_note_json_list << poi_note_json(@poi.notes[idx])
+        vm.add_poi_note @poi, @poi.notes[idx]
+      end
+      @poi_json = poi_json @poi
+      @poi_json[:user] = { id: @user.id }
+      @poi_json[:notes] = poi_note_json_list
+      render json: @poi_json.to_json
+
+      after_sync
+    else
+      render json: { errors: @upload.errors.full_messages }, status: 401
+    end
   end
 
   def create
@@ -17,15 +67,17 @@ class UploadsController < ApplicationController
     @upload = Upload.new(attached_to: PoiNote.new(poi: poi, user: user, text: params[:poi_note][:text]))
     @upload.attached_to.attachment = @upload
     @upload.build_entity params[:poi_note][:file].content_type, file: params[:poi_note][:file]
-    
+
     if @upload.save
       @poi_note_json = poi_note_json @upload.attached_to
-      render "uploads/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
-    else
-      render "uploads/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
-    end
+      #render "uploads/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
+      render json: @poi_note_json.to_json
     
-    after_save
+      after_save
+    else
+      #render "uploads/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
+      render json: { errors: @upload.errors.full_messages }, status: 401
+    end
   end
 
   # adds a comment
@@ -43,7 +95,8 @@ class UploadsController < ApplicationController
     @upload = comment.attachment
     @poi_note_json = poi_note_json @upload.attached_to
     
-    render "uploads/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
+    #render "uploads/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
+    render json: @poi_note_json.to_json
     
     after_save
   end
@@ -64,14 +117,14 @@ class UploadsController < ApplicationController
         @upload.entity.update_attributes(file_file_name: @upload.entity.file_file_name.sub(/\.[^.]+$/, suffix), file_content_type: params[:file_content_type])
       end
       #render "uploads/uploaded_base64", formats: [:js]
-      poi_note_json = poi_note_json @upload.attached_to
-      render json: poi_note_json.to_json
+      @poi_note_json = poi_note_json @upload.attached_to
+      render json: @poi_note_json.to_json
+    
+      after_save
     else
       #render "uploads/uploaded_base64", formats: [:js]
       render json: { error: 'failed' }, status: 401
     end
-    
-    after_save
   end
 
   # adds a comment
@@ -94,8 +147,8 @@ class UploadsController < ApplicationController
     end
     
     #render "uploads/uploaded_base64", formats: [:js]
-    poi_note_json = poi_note_json @upload.attached_to
-    render json: poi_note_json.to_json
+    @poi_note_json = poi_note_json @upload.attached_to
+    render json: @poi_note_json.to_json
 
     after_save
   end
@@ -111,14 +164,14 @@ class UploadsController < ApplicationController
     
     if @upload.attached_to.save
       #render "uploads/uploaded_base64", formats: [:js]
-      poi_note_json = poi_note_json @upload.attached_to
-      render json: poi_note_json.to_json
+      @poi_note_json = poi_note_json @upload.attached_to
+      render json: @poi_note_json.to_json
+    
+      after_save
     else
       #render "uploads/uploaded_base64", formats: [:js]
       render json: { error: 'failed' }, status: 401
     end
-    
-    after_save
   end
 
   # adds a comment
@@ -135,8 +188,8 @@ class UploadsController < ApplicationController
     comment.reload
     
     #render "uploads/uploaded_base64", formats: [:js]
-    poi_note_json = poi_note_json comment
-    render json: poi_note_json.to_json
+    @poi_note_json = poi_note_json comment
+    render json: @poi_note_json.to_json
 
     after_save
   end
@@ -150,14 +203,14 @@ class UploadsController < ApplicationController
     
     if poi_note.save
       #render "uploads/uploaded_base64", formats: [:js]
-      poi_note_json = poi_note_json poi_note
-      render json: poi_note_json.to_json
+      @poi_note_json = poi_note_json poi_note
+      render json: @poi_note_json.to_json
+    
+      after_save
     else
       #render "uploads/uploaded_base64", formats: [:js]
       render json: { error: 'failed' }, status: 401
     end
-    
-    after_save
   end
 
   # adds a comment
@@ -170,8 +223,8 @@ class UploadsController < ApplicationController
     comment.save
     
     #render "uploads/uploaded_base64", formats: [:js]
-    poi_note_json = poi_note_json comment
-    render json: poi_note_json.to_json
+    @poi_note_json = poi_note_json comment
+    render json: @poi_note_json.to_json
 
     after_save
   end
@@ -217,14 +270,24 @@ class UploadsController < ApplicationController
 
   private
 
+  def after_sync
+    upload_msg = { type: 'poi_sync',
+                   poi: @poi_json }
+
+    channel_path = '/uploads'
+    channel_path += "#{PEER_CHANNEL_PREFIX}#{@user.comm_setting.channel_enc_key}" unless USE_GLOBAL_SUBSCRIBE
+    Comm::ChannelsController.publish(channel_path, upload_msg)
+  end
+
   def after_save
     #geometry = Paperclip::Geometry.from_file(@upload.file)
     #file_data = { type: 'image', url: @upload.file.url, width: geometry.width.to_i, height: geometry.height.to_i }
     #location_data = { lat: @upload.attached_to.poi.location.latitude, lng: @upload.attached_to.poi.location.longitude, address: shorten_address(@upload.attached_to.poi.location) }
     #upload_msg = { id: @upload.id, file: file_data, location: location_data }
-    poi_note = @upload.attached_to
+    #poi_note = @upload.attached_to
     upload_msg = { type: 'poi_note_upload',
-                   poi_note: poi_note_json(poi_note) }
+#                   poi_note: poi_note_json(poi_note) }
+                   poi_note: @poi_note_json }
 
     channel_path = '/uploads'
     channel_path += "#{PEER_CHANNEL_PREFIX}#{@upload.attached_to.user.comm_setting.channel_enc_key}" unless USE_GLOBAL_SUBSCRIBE

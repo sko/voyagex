@@ -76,9 +76,112 @@ class window.Storage.Model
         #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
 
   loadPeers: () ->
-    
-  savePoiNote: (formId, callback) ->
-    $("#"+formId).submit()
+    console.log('TODO: ...')
+
+  syncPoi: (formData, poi = null, callback) ->
+    if poi?
+      url = '<%= sync_poi_path(id: ':id') %>'.replace(/:id/, poi.notes[0].id)
+      formData.append('_method', 'put')
+    else
+      url = '<%= sync_pois_path %>'
+    $.ajax
+      type: 'POST'
+#      beforeSend: (xhr) ->
+#          xhr.setRequestHeader('X-CSRF-Token', $('meta[name=csrf-token]').first().attr('content'))
+      dataType: 'json'
+      url: url
+      data: formData
+      cache: false
+      contentType: false
+      processData: false
+    .done (poi) ->
+      callback poi, poi.notes
+    .fail (jqXHR, textStatus) ->
+      # get from localStorage
+      console.log('TODO: ?')
+      #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
+
+ #savePoiNote: (formId, callback) ->
+  # TODO comments-on-poiNote-id instead of poi-id !!!
+  savePoiNote: (formData, callback, poiId = null, isQUpload = false) ->
+    if APP.isOnline()
+      #$("#"+formId).submit()
+      if poiId? && poiId >= 0
+        url = '<%= upload_path(id: ':id') %>'.replace(/:id/, poiId)
+        formData.append('_method', 'put')
+      else
+        url = '<%= uploads_path %>'
+      $.ajax
+          type: 'POST'
+#          beforeSend: (xhr) ->
+#              xhr.setRequestHeader('X-CSRF-Token', $('meta[name=csrf-token]').first().attr('content'))
+          dataType: 'json'
+          url: url
+          data: formData
+          cache: false
+          contentType: false
+          processData: false
+      .done (poiNote) ->
+          if isQUpload
+            callback poiNote.poi, poiNote
+          else
+            # TODO: unify json-format, until then avoid circular structure
+            Model.setupPoiForNote poiNote.poi
+            msg = { poi: poiNote.poi }
+            Model.instance().syncWithStorage msg, callback, poiNote
+      .fail (jqXHR, textStatus) ->
+          # get from localStorage
+          console.log('TODO: maybe get from local storage')
+          #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
+    else
+      if (Modernizr.localstorage)
+        console.log('caching poiNote ...')
+        #id = 'q.'+new Date().getTime()
+        id = -new Date().getTime()
+        poiId = parseInt $('#upload_form').attr('data-poiId')
+        if poiId != -1
+          storeKey = Comm.StorageController.poiKey {id: poiId}
+          #poi = Comm.StorageController.instance().get storeKey
+          # don't get from cache - since we're setting lat/lng/address later
+          poi = eval("(" + localStorage.getItem(storeKey) + ")")
+          location = Comm.StorageController.instance().getLocation poi.locationId
+          uploadIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/(-?[0-9]+)/)
+          poiFirstNoteId = parseInt uploadIdMatch[1]
+        else
+          # TODO get nearby-location from localStore ('comm.locations')
+          location = { id: id,\
+                       # decimal-scale: 7
+                       lat: Math.round($("#location_latitude").val()*10000000)/10000000,\
+                       lng: Math.round($("#location_longitude").val()*10000000)/10000000,\
+                       address: 'TODO' }
+          Comm.StorageController.instance().saveLocation location, { poi: { 'id': id } }
+          poi = { id: id,\
+                  locationId: id,\
+                  notes: [] }
+          poiKey = Comm.StorageController.poiKey poi
+          localStorage.setItem poiKey, JSON.stringify(poi)
+        poi.lat = location.lat
+        poi.lng = location.lng
+        poi.address = location.address
+        poiNote = { id: id,\
+                    user: { id: currentUser.id,\
+                            username: currentUser.username },\
+                    text: $("#upload_comment_text").val() }
+        Comm.StorageController.instance().queueUpload poi, poiNote, callback, 'fileupload'
+#        Model.setupPoiForNote poiNote.poi
+#        msg = { poi: poiNote.poi }
+#        Model.instance().syncWithStorage msg, callback, poiNote
+
+#        fileContentType = $('#media_input_current').attr('src').match(/^data:([^;]+)/)[1]
+#        fileData = $('#media_input_current').attr('src').replace(/^data:image\/.+?base64,/,'')
+#        data = { location: { latitude: selLatLng[0], longitude: selLatLng[1] },\
+#                 file_comment: $('#upload_comment').val(),\
+#                 file_data: fileData,\
+#                 file_content_type: fileContentType }
+#        cacheEntry = { channel: channel, message: message, peer: peer }
+#        @_storageController.addToList('comm.publish', 'push', cacheEntry)
+      else
+        alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
 
 # {"poi":{"id":2,"lat":51.3767,"lng":7.49389,"address":"Germany, North-Rhine-Westphalia, L704",
 # "notes":[
@@ -310,7 +413,17 @@ class window.Storage.Model
       unless key == 'user'
         storeNote[key] = note[key]
     Comm.StorageController.instance().addToList poiKey, 'notes', storeNote, false, (a, b) ->
-        a.id >= b.id
+        if a.id >= 0
+          if b.id >= 0
+            a.id >= b.id
+          else
+            false
+        else
+          if b.id >= 0
+            true
+          else
+            a.id <= b.id
+
   @_findPoiNote: (note, notes) ->
     for n, idx in notes
       if n.id == note.id
@@ -445,7 +558,7 @@ class window.Storage.Model
         Comm.StorageController.instance().storePoiNoteAttachment poiNote, base64ImgDataUrl, deferredModeParams
         cacheStats()
       else
-        # actually we could store base64 in file as wall
+        # actually we could store base64 in file as well
         #Comm.StorageController.instance().storePoiNoteAttachment poiNote, base64ImgDataUrl, deferredModeParams
         $('#attachment_canvas')[0].toBlob((blob) ->
             Comm.StorageController.instance().storePoiNoteAttachment poiNote, blob, deferredModeParams

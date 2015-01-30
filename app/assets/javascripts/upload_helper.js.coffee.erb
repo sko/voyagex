@@ -1,5 +1,15 @@
 <% environment.context_class.instance_eval { include Rails.application.routes.url_helpers } %>
 
+class window.VoyageX.UploadHelper
+
+  @_SINGLETON = null
+
+  constructor: () ->
+    UploadHelper._SINGLETON = this
+
+  @instance: () ->
+    UploadHelper._SINGLETON
+
 jQuery ->
   window.toggleUploadType = (selected) ->
     if selected.value == 'file'
@@ -36,18 +46,63 @@ jQuery ->
     data = { location: { latitude: selLatLng[0], longitude: selLatLng[1] },\
              comment: $('#upload_comment').val() }
     callback.addToData data
-    uploadIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/([0-9]+)/)
+    uploadIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/(-?[0-9]+)/)
     if uploadIdMatch?
       callback.save data, callback.after, uploadIdMatch[1]
     else
       callback.save data, callback.after
 
-  uploadPhoto = () ->
-    selLatLng = APP.getSelectedPositionLatLng()
+  window.batchUpload = (perPoiEntry, callback) ->
+    formData = new FormData()
+    formData.append 'location[latitude]', perPoiEntry.location.lat
+    formData.append 'location[longitude]', perPoiEntry.location.lng
+    skipInputNames = ['location[latitude]','location[longitude]','poi_note[text]','poi_note[file]']
+    for note in perPoiEntry.poi.notes
+      if note.id >= 0
+        continue
+      formData.append 'poi_note_ids[]', note.id
+      formData.append 'poi_note['+note.id+'][text]', note.text
+      formData.append 'poi_note['+note.id+'][file]', perPoiEntry.files[note.id], perPoiEntry.fileNames[note.id]
+    uploadForm = $('#tmpl_poi_note_input #new_poi_note').first()
+    uploadForm.find('input').each ((formData, skipInputNames) ->
+        () ->
+            if $.inArray($(this).attr('name'), skipInputNames) == -1
+              formData.append($(this).attr('name'), $(this).attr('value'))
+        )(formData, skipInputNames)
+    Storage.Model.instance().syncPoi formData,
+                                     (if perPoiEntry.poi.id >= 0 then perPoiEntry.poi else null),
+                                     (if callback? then callback.cb(afterUploadPhoto) else afterUploadPhoto)
+
+  window.uploadPhoto = (uploadId = null, file = null, selLatLng = null, callback = null) ->
+ #window.uploadPhoto = (uploadId = null, file = null, contentType = null, selLatLng = null, callback = null) ->
+    unless uploadId?
+      uploadIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/(-?[0-9]+)/)
+      uploadId = (if uploadIdMatch? then uploadIdMatch[1] else null)
+    unless selLatLng?
+      selLatLng = APP.getSelectedPositionLatLng()
+    unless file?
+      file = $('#fileupload')[0].files[0]
+    # used for offline-queueing
     $("#location_latitude").val(selLatLng[0])
     $("#location_longitude").val(selLatLng[1])
     $("#upload_comment_text").val($("#upload_comment").val())
-    Storage.Model.instance().savePoiNote 'upload_form', afterUploadPhoto
+    #Storage.Model.instance().savePoiNote prefix+'upload_form', afterUploadPhoto
+    
+    formData = new FormData()
+    skipInputNames = ['location[latitude]','location[longitude]','poi_note[text]','poi_note[file]']
+    formData.append('location[latitude]', selLatLng[0])
+    formData.append('location[longitude]', selLatLng[1])
+    formData.append('poi_note[text]', $("#upload_comment").val())
+    formData.append('poi_note[file]', file, 'TODO_filename')
+#    unless file.type? && file.type != ''
+#      formData.append('poi_note[content_type]', contentType)
+    uploadForm = $('#tmpl_poi_note_input #new_poi_note').first()
+    uploadForm.find('input').each ((formData, skipInputNames) ->
+        () ->
+            if $.inArray($(this).attr('name'), skipInputNames) == -1
+              formData.append($(this).attr('name'), $(this).attr('value'))
+        )(formData, skipInputNames)
+    Storage.Model.instance().savePoiNote formData, (if callback? then callback.cb(afterUploadPhoto) else afterUploadPhoto), uploadId, callback?
 
   uploadPhoto64 = () ->
     selLatLng = APP.getSelectedPositionLatLng()
@@ -57,7 +112,7 @@ jQuery ->
              file_comment: $('#upload_comment').val(),\
              file_data: fileData,\
              file_content_type: fileContentType }
-    uploadIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/([0-9]+)/)
+    uploadIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/(-?[0-9]+)/)
     if uploadIdMatch?
       Storage.Model.instance().savePoiNote64 data, afterUploadPhoto, uploadIdMatch[1]
     else
@@ -68,7 +123,7 @@ jQuery ->
     data = { location: { latitude: selLatLng[0], longitude: selLatLng[1] },\
              comment: $('#upload_comment').val(),\
              data: $('#embed').val() }
-    uploadIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/([0-9]+)/)
+    uploadIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/(-?[0-9]+)/)
     if uploadIdMatch?
       Storage.Model.instance().saveEmbed data, afterUploadEmbed, uploadIdMatch[1]
     else
@@ -97,7 +152,13 @@ jQuery ->
     afterUpload poi, newNotes
 
   $(document).on 'click', '#upload_button', (event) ->
-    uploadPhoto()
+    event.stopPropagation()
+    event.preventDefault()
+    uploadIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/(-?[0-9]+)/)
+    if uploadIdMatch?
+      uploadPhoto uploadIdMatch[1]
+    else
+      uploadPhoto()
     
   $(document).on 'click', '#media_input_upload_btn', (event) ->
     uploadPhoto64()
