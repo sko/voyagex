@@ -52,6 +52,9 @@ class window.VoyageX.MapControl
             y = parseInt(mC._map.project(mC._map.getCenter()).y/256)
             view = {zoom: mC._map.getZoom(), tile: {column: x, row: y}, subdomain: mC._mapOptions.subdomains[0]}
             mC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS
+        posLatLng = VoyageX.MapControl.instance()._map.getCenter()
+        position = {coords: {latitude: posLatLng.lat, longitude: posLatLng.lng}}
+        APP._initPositionCB(position, null, true)
     @_map.on('zoomend', (e) ->
         console.log '### map-event: zoomend ...'
         APP._zoomEnd(e);

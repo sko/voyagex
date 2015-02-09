@@ -19,12 +19,20 @@ class UploadsController < ApplicationController
   # sync pois that where edited offline
   def sync_poi
     @user = current_user || tmp_user
+    # vm
     vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, @user, false#@user.is_admin
     prev_commit = vm.cur_commit
-puts "prev_commit = #{prev_commit}"
+    diff = vm.changed
+    # TODO
+    # for now only add is implemented.
+    diff_added = diff['A']
+    diff_modified = diff['M']
+    diff_deleted = diff['D']
+    
     if params[:id].present?
       @commented_poi_note = PoiNote.find(params[:id])
       @poi = @commented_poi_note.poi
+      # if poi is deleted then create new one - tell user to replace old ...
     else
       @poi = nearby_poi @user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
       # vm
@@ -32,26 +40,59 @@ puts "prev_commit = #{prev_commit}"
     end
     @user.locations << @poi.location unless @user.locations.find {|l|l.id==@poi.location.id}
 
-    # TODO: merge other notes that where uploaded meanwhile
+    # TODO: decide on merge-order-algorithm
+    # TODO: only notes for given poi are added - all other changes must be sent to client after_sync
+    new_poi_notes = []
+    poi_note_json_list = []
+    diff_added.each do |entry|
+      note_match = entry.match(/^note_([0-9]+)/)
+      next unless note_match.present?
+      poi_note = PoiNote.where(note_match[1].to_i).first
+      if poi_note.present?
+        if poi_note.poi == @poi
+          new_poi_notes << poi_note
+          poi_note_json_list << poi_note_json(poi_note)
+        end
+      else
+        Rails.logger.warn "poi_note[id=#{note_match[1]}] found in diff from user/branch #{@user.id}/#{vm.cur_branch} but not in db"
+      end
+    end
     params[:poi_note_ids].each do |poi_note_id|
       upload = Upload.new(attached_to: PoiNote.new(poi: @poi, user: @user, text: params[:poi_note][poi_note_id][:text]))
       upload.attached_to.attachment = upload
       upload.build_entity params[:poi_note][poi_note_id][:file].content_type, file: params[:poi_note][poi_note_id][:file]
       @poi.notes << upload.attached_to
+      new_poi_notes << upload.attached_to
     end
 
     if @poi.save
       # vm
       vm.add_poi @poi
-      poi_note_json_list = []
+      
       (@poi.notes.length-params[:poi_note_ids].length..(@poi.notes.length-1)).each do |idx|
         poi_note_json_list << poi_note_json(@poi.notes[idx])
+        # vm
         vm.add_poi_note @poi, @poi.notes[idx]
       end
+      # vm
+      vm.merge true, true
+      cur_commit = vm.cur_commit
+      
+      @poi.update_attribute :commit_hash, cur_commit unless @poi.commit_hash.present?
+      new_poi_notes.each {|p_n|p_n.update_attribute(:commit_hash, cur_commit) unless p_n.commit_hash.present?}
+      
       @poi_json = poi_json @poi
       @poi_json[:user] = { id: @user.id }
       @poi_json[:notes] = poi_note_json_list
-      render json: @poi_json.to_json
+      
+      data = @poi_json.to_json
+      render json: data
+    
+      # http://stackoverflow.com/questions/552659/assigning-git-sha1s-without-git
+      # "blob " + filesize + "\0" + data
+#      commit_hash = Digest::SHA1.new << "blob #{data.size}\0#{data}"
+#      @poi.update_attribute :commit_hash, commit_hash
+#      new_poi_notes.each {|p_n|p_n.update_attribute(:commit_hash, commit_hash)}
 
       after_sync
     else
@@ -59,16 +100,34 @@ puts "prev_commit = #{prev_commit}"
     end
   end
 
+  # creates a poi with initial poi_note or adds poi_note to poi's initial poi_note
   def create
     user = current_user || tmp_user
     poi = nearby_poi user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
     user.locations << poi.location unless user.locations.find {|l|l.id==poi.location.id}
+    is_new_poi = poi.notes.empty? # if not before then it was persisted? in nearby_poi
+    # FIXME - if poi exists then add new note as comment to poi's initial poi_note and set comments_on
 
-    @upload = Upload.new(attached_to: PoiNote.new(poi: poi, user: user, text: params[:poi_note][:text]))
+    poi_note_params = { poi: poi, user: user, text: params[:poi_note][:text] }
+    attached_to = PoiNote.new poi_note_params
+    unless is_new_poi
+      attached_to.comments_on = poi.notes.first
+      poi.notes.first.comments << attached_to
+    end
+    @upload = Upload.new(attached_to: attached_to)
     @upload.attached_to.attachment = @upload
     @upload.build_entity params[:poi_note][:file].content_type, file: params[:poi_note][:file]
 
     if @upload.save
+      vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, user, false#@user.is_admin
+      prev_commit = vm.cur_commit
+      vm.add_poi poi if is_new_poi
+      vm.add_poi_note poi, @upload.attached_to
+      vm.merge true, true
+      cur_commit = vm.cur_commit
+      poi.update_attribute :commit_hash, cur_commit unless poi.commit_hash.present?
+      @upload.attached_to.update_attribute :commit_hash, cur_commit
+
       @poi_note_json = poi_note_json @upload.attached_to
       #render "uploads/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
       render json: @poi_note_json.to_json
@@ -80,7 +139,7 @@ puts "prev_commit = #{prev_commit}"
     end
   end
 
-  # adds a comment
+  # adds a comment to a poi_note
   def update
     user = current_user || tmp_user
     @poi_note = PoiNote.find(params[:id])

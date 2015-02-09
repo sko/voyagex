@@ -57,7 +57,9 @@ class window.Comm.Comm
     #window.addEventListener "online", (e) ->
     #    alert("online")
     #  , false
-
+    #window.applicationCache.addEventListener "error", (e) ->
+    #    alert("Error fetching manifest: a good chance we are offline")
+    
   checkPingResponse: (pingKey) ->
     if window.pingKey != pingKey
       if APP._online

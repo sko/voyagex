@@ -60,16 +60,18 @@ module VoyageX
     config.assets.version = '1.0'
     
     config.middleware.delete Rack::Lock
-#    config.middleware.use FayeRails::Middleware,
-#                          mount: '/comm',
-#                          :timeout => 25,
-#                          :engine  => {
-#                                        :type  => Faye::Redis,
-#                                        :host  => 'localhost'
-#                                      } do
-#      map '/**' => Comm::ChannelsController  
-#      map :default => :block
-#    end
+    if Rails.env == 'production'
+        config.middleware.use FayeRails::Middleware,
+                              mount: '/comm',
+                              :timeout => 25,
+                              :engine  => {
+                                            :type  => Faye::Redis,
+                                            :host  => 'localhost'
+                                          } do
+          map '/**' => Comm::ChannelsController  
+          map :default => :block
+        end
+    end
   end
 end
 

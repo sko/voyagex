@@ -63,17 +63,23 @@ class window.Storage.Model
           console.log('TODO: errorhandling')
 
   loadPois: (lat, lng, callback) ->
-    $.ajax
-      type: 'GET'
-      dataType: 'json'
-      url: '<%= pois_path(lat: ':lat', lng: ':lng') %>'.replace(/:lat/, lat).replace(/:lng/, lng)
-    .done (msg) ->
-        for poi, i in msg.pois
+    if false && APP.isOnline()
+      $.ajax
+        type: 'GET'
+        dataType: 'json'
+        url: '<%= pois_path(lat: ':lat', lng: ':lng') %>'.replace(/:lat/, lat).replace(/:lng/, lng)
+      .done (msg) ->
+          for poi, i in msg.pois
+            Model._syncPois poi, callback, i
+      .fail (jqXHR, textStatus) ->
+          # get from localStorage
+          console.log('TODO: maybe get from local storage')
+          #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
+    else
+      if (Modernizr.localstorage)
+        pois = Comm.StorageController.instance().pois(searchBounds(lat, lng, VoyageX.SEARCH_RADIUS_METERS))
+        for poi, i in pois
           Model._syncPois poi, callback, i
-    .fail (jqXHR, textStatus) ->
-        # get from localStorage
-        console.log('TODO: maybe get from local storage')
-        #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
 
   loadPeers: () ->
     console.log('TODO: ...')

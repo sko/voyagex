@@ -178,10 +178,35 @@ class window.Comm.StorageController
         bookmark.location = locations[locationId]
         bookmark.location.id = locationId
         if locations.pois? && locations.pois[locationId]?
-          storeKey = StorageController.poiKey locations.pois[locationId]
+          storeKey = StorageController.poiKey locations.pois[locationId].id
           bookmark.location.poi = this.get storeKey
         bookmarks.push bookmark
       bookmarks
+    else
+      []
+  
+  pois: (searchBounds, callback = null) ->
+    storeKey = 'comm.locations'
+    locations = eval("(" + localStorage.getItem(storeKey) + ")")
+    #locations = this.get 'comm.locations'
+    if locations.pois?
+      pois = []
+      for locationId in Object.keys(locations.pois)
+        location = locations[locationId]
+        if withinSearchBounds(location.lat, location.lng, searchBounds)
+          poiKey = StorageController.poiKey {id: locations.pois[locationId].id}
+          if callback?
+            if callback(locations, locations[locationId], locations.pois[locationId].id)
+              pois = []
+              break
+          else
+            #poi = StorageController.instance().get poiKey
+            poi = eval("(" + localStorage.getItem(poiKey) + ")")
+            poi.lat = location.lat
+            poi.lng = location.lng
+            poi.address = location.address
+            pois.push poi
+      pois
     else
       []
 

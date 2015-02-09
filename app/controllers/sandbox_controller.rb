@@ -70,6 +70,13 @@ class SandboxController < ApplicationController
     render "sandbox/photo_nav", layout: false, formats: [:js]
   end
 
+  # chrome://appcache-internals/
+  def manifest
+    mf = Rails.root.join('app', 'views', 'sandbox', 'voyagex.mf')
+    render file: mf, formats: ['mf'], content_type: 'text/cache-manifest'
+    #render text: ''
+  end
+
   private
 
   def load_location_data location, nearby_m

@@ -43,7 +43,7 @@ add poi_note 1.2
 v1
       v1_file = File.join(@v_m_u_1.work_dir, 'serialized')
       File.open(v1_file, 'w+') { |f| f.write(v1) }
-      @v_m_u_1.add_and_merge_file v1_file, v1_branch
+      @v_m_u_1.add_and_merge_file v1_file
       @v_m_u_1.push
 
       v2_branch = 'spec/v1'
@@ -56,7 +56,7 @@ add poi_note 2.2
 v2
       v2_file = File.join(@v_m_u_2.work_dir, 'serialized')
       File.open(v2_file, 'w+') { |f| f.write(v2) }
-      @v_m_u_2.add_and_merge_file v2_file, v2_branch
+      @v_m_u_2.add_and_merge_file v2_file
       @v_m_u_2.push
       end
     end
@@ -71,7 +71,7 @@ v2
 m1
     m1_file = File.join(@v_m_u_master.work_dir, 'serialized')
     File.open(m1_file, 'w+') { |f| f.write(m1) }
-    @v_m_u_master.add_and_merge_file m1_file, SPEC_MASTER
+    @v_m_u_master.add_and_merge_file m1_file
     @v_m_u_master.push
   end
 

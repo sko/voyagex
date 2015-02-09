@@ -2,6 +2,7 @@ class VersionManager
 
   def initialize master_branch, work_dir_root, user, is_repo_owner=false
     @master = master_branch
+    @user = user
     @work_dir = "#{work_dir_root}/#{user.id}#{is_repo_owner ? '_owner' : ''}"
     @git_dir = "#{@work_dir}/.git"
     @git_args = "--git-dir=#{@git_dir} --work-tree=#{@work_dir}"
@@ -55,6 +56,34 @@ class VersionManager
     `git #{@git_args} log --pretty=oneline | grep -o "^[^ ]\\+"`.split
   end
 
+  def changed branch = nil
+    branch = cur_branch unless branch.present?
+    `git #{@git_args} fetch`
+    diff = {}
+    cur_change_type = nil
+    `git #{@git_args} diff --name-status #{branch}..origin/#{branch}`.split.each_with_index do |entry, idx|
+      if idx%2==0
+        cur_change_type = diff[entry]
+        unless cur_change_type.present?
+          cur_change_type = []
+          diff[entry] = cur_change_type
+        end
+      else
+        # TODO:
+        # 1) entity is added if file "data" is added.
+        # 2) entity is deleted if file "data" is deleted.
+        # 3) only "data" can be modified - others are either added or deleted.
+        # Example:
+        # "D"=>["location_4154/data", "poi_104/data", "poi_111/note_488/attachment/data", "poi_111/note_488/data"],
+        # "A"=>["location_4167/data", "poi_117/data", "poi_117/note_497/attachment/data", "poi_117/note_497/data"],
+        # "M"=>["poi_106/note_477/data"]}
+        target = entry.match(/([^\/]+_[0-9]+)\/(?!.+_[0-9])/)
+        cur_change_type << target[1] unless cur_change_type.include?(target[1])
+      end
+    end
+    diff
+  end
+
   def first_commit file
     `git #{@git_args} log --pretty=oneline --diff-filter=A -- #{file} | grep -o "^[^ ]\\+"`.strip
   end
@@ -80,28 +109,35 @@ class VersionManager
     `git #{@git_args} commit -m '-'`
   end
 
-  def merge branch
+  def merge add_all = false, push = false
+    branch = cur_branch
+    if add_all
+      `git #{@git_args} add -A`
+      `git #{@git_args} commit -m 'user #{@user.id} merging #{cur_branch}'`
+    end
     `git #{@git_args} fetch`
     #`git #{@git_args} merge #{@master}`
     #`git #{@git_args} merge -s resolve #{@master}`
-    `git #{@git_args} rebase #{@master}`
+    `git #{@git_args} rebase origin/#{@master}`
     set_branch @master
     `git #{@git_args} merge #{branch}`
+    `git #{@git_args} push origin #{branch}` if push
+    set_branch branch
   end
 
   def push branch=nil
     branch = @master unless branch.present? 
     `git #{@git_args} add -u`
-    `git #{@git_args} commit -m 'commit before changing branch'`
+    `git #{@git_args} commit -m 'user #{@user.id} pushing #{cur_branch}'`
     `git #{@git_args} fetch`
     # next might fatal: Needed a single revision and invalid upstream origin/#{branch} if branch doesn't exist
     `git #{@git_args} rebase origin/#{branch}`
     `git #{@git_args} push origin #{branch}`
   end
 
-  def add_and_merge_file file, branch
+  def add_and_merge_file file
     add_file file
-    merge branch
+    merge
   end
 
   def add_location location, location_dir = nil
@@ -114,7 +150,7 @@ class VersionManager
 {
   lat: #{location.latitude}
   lng: #{location.longitude}
-  address: '#{location.address}'
+  address: '#{location.address.gsub(/'/, "\\\'")}'
 }
 data
     file = File.join(location_dir, 'data')
@@ -146,7 +182,7 @@ data
     data  = <<data
 {
   user_id: #{note.user.id}
-  text: #{note.text}
+  text: '#{note.text.gsub(/'/, "\\\'").gsub(/\n/, '\\\n').gsub(/\r/, '\\\r')}'
   comments_on_id: #{note.comments_on_id}
   created_at: #{note.created_at}
   updated_at: #{note.updated_at}
