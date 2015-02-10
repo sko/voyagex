@@ -107,13 +107,11 @@ class window.Storage.Model
       console.log('TODO: ?')
       #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
 
- #savePoiNote: (formId, callback) ->
   # TODO comments-on-poiNote-id instead of poi-id !!!
-  savePoiNote: (formData, callback, poiId = null, isQUpload = false) ->
+  savePoiNote: (formData, callback, uploadTargetId = null, isQUpload = false) ->
     if APP.isOnline()
-      #$("#"+formId).submit()
-      if poiId? && poiId >= 0
-        url = '<%= upload_path(id: ':id') %>'.replace(/:id/, poiId)
+      if uploadTargetId? && uploadTargetId >= 0
+        url = '<%= upload_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
         formData.append('_method', 'put')
       else
         url = '<%= uploads_path %>'
@@ -141,135 +139,158 @@ class window.Storage.Model
           #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
     else
       if (Modernizr.localstorage)
-        console.log('caching poiNote ...')
-        #id = 'q.'+new Date().getTime()
-        id = -new Date().getTime()
         poiId = parseInt $('#upload_form').attr('data-poiId')
-        if poiId != -1
-          storeKey = Comm.StorageController.poiKey {id: poiId}
-          #poi = Comm.StorageController.instance().get storeKey
-          # don't get from cache - since we're setting lat/lng/address later
-          poi = eval("(" + localStorage.getItem(storeKey) + ")")
-          location = Comm.StorageController.instance().getLocation poi.locationId
-          uploadIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/(-?[0-9]+)/)
-          poiFirstNoteId = parseInt uploadIdMatch[1]
+        if poiId? && poiId >= 0
+          uploadTargetId = APP.transfer().getUploadTargetId()
         else
-          # TODO get nearby-location from localStore ('comm.locations')
-          location = { id: id,\
-                       # decimal-scale: 7
-                       lat: Math.round($("#location_latitude").val()*10000000)/10000000,\
-                       lng: Math.round($("#location_longitude").val()*10000000)/10000000,\
-                       address: 'TODO' }
-          Comm.StorageController.instance().saveLocation location, { poi: { 'id': id } }
-          poi = { id: id,\
-                  locationId: id,\
-                  notes: [] }
-          poiKey = Comm.StorageController.poiKey poi
-          localStorage.setItem poiKey, JSON.stringify(poi)
-        poi.lat = location.lat
-        poi.lng = location.lng
-        poi.address = location.address
-        poiNote = { id: id,\
-                    user: { id: currentUser.id,\
-                            username: currentUser.username },\
-                    text: $("#upload_comment_text").val() }
-        Comm.StorageController.instance().queueUpload poi, poiNote, callback, 'fileupload'
-#        Model.setupPoiForNote poiNote.poi
-#        msg = { poi: poiNote.poi }
-#        Model.instance().syncWithStorage msg, callback, poiNote
-
-#        fileContentType = $('#media_input_current').attr('src').match(/^data:([^;]+)/)[1]
-#        fileData = $('#media_input_current').attr('src').replace(/^data:image\/.+?base64,/,'')
-#        data = { location: { latitude: selLatLng[0], longitude: selLatLng[1] },\
-#                 file_comment: $('#upload_comment').val(),\
-#                 file_data: fileData,\
-#                 file_content_type: fileContentType }
-#        cacheEntry = { channel: channel, message: message, peer: peer }
-#        @_storageController.addToList('comm.publish', 'push', cacheEntry)
+          uploadTargetId = null
+        this._cachePoiNote poiId, uploadTargetId, callback
       else
         alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
 
-# {"poi":{"id":2,"lat":51.3767,"lng":7.49389,"address":"Germany, North-Rhine-Westphalia, L704",
-# "notes":[
-# {"id":97,"user":{"id":101,"username":"tomas"},"text":"frohes fest","attachment":{"content_type":"image/jpeg","id":265,"url":"/assets/files/84/original/hagen_feu-campus.jpg?1419236682","width":500,"height":334}},
-# {"id":98,"user":{"id":101,"username":"tomas"},"text":"leider verfahren","attachment":{"content_type":"image/jpeg","id":266,"url":"/assets/files/85/original/berlin_aktion-belaestigung.jpg?1419236733","width":860,"height":649}}
-# ]}}
-  #
-  # store poi
-  # if online - compare pois (merge), else use stored poi
-  # megr on server? or here? how to diff?
-  # each entry is line - line here != line remote
-  # if id == id - modified
-  # else inserted / removed
-  #
-  savePoiNote64: (data, callback, poiId = null) ->
-    # TODO save before sending - if offline send later
-    if poiId != null
-      url = '<%= upload_base64_path(id: ':id') %>'.replace(/:id/, poiId)
-      data._method = 'put'
+  savePoiNote64: (data, callback, uploadTargetId = null) ->
+    if APP.isOnline()
+      if uploadTargetId? && uploadTargetId >= 0
+        url = '<%= upload_base64_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
+        data._method = 'put'
+      else
+        url = '<%= uploads_base64_path %>'
+      $.ajax
+        type: 'POST'
+        dataType: 'json'
+        url: url
+        data: data
+      .done (poiNote) ->
+          # TODO: unify json-format, until then avoid circular structure
+          Model.setupPoiForNote poiNote.poi
+          msg = { poi: poiNote.poi }
+          Model.instance().syncWithStorage msg, callback, poiNote
+      .fail (jqXHR, textStatus) ->
+          #$("#upload_error").html("<ul><-%= escape_javascript(@upload.errors.full_messages.map { |msg| content_tag(:li, msg) }.join.html_safe) %></ul>")
+          # get from localStorage
+          console.log('TODO: maybe get from local storage')
+          #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
     else
-      url = '<%= uploads_base64_path %>'
-    $.ajax
-      type: 'POST'
-      dataType: 'json'
-      url: url
-      data: data
-    .done (poiNote) ->
-        # TODO: unify json-format, until then avoid circular structure
-        Model.setupPoiForNote poiNote.poi
-        msg = { poi: poiNote.poi }
-        Model.instance().syncWithStorage msg, callback, poiNote
-    .fail (jqXHR, textStatus) ->
-        #$("#upload_error").html("<ul><-%= escape_javascript(@upload.errors.full_messages.map { |msg| content_tag(:li, msg) }.join.html_safe) %></ul>")
-        # get from localStorage
-        console.log('TODO: maybe get from local storage')
-        #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
+      if (Modernizr.localstorage)
+        poiId = parseInt $('#upload_form').attr('data-poiId')
+        if poiId? && poiId >= 0
+          uploadTargetId = APP.transfer().getUploadTargetId()
+        else
+          uploadTargetId = null
+        this._cachePoiNote poiId, uploadTargetId, callback
+      else
+        alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
 
-  saveEmbed: (data, callback, poiId = null) ->
-    # TODO save before sending - if offline send later
-    if poiId != null
-      url = '<%= upload_embed_path(id: ':id') %>'.replace(/:id/, poiId)
-      data._method = 'put'
+  saveEmbed: (data, callback, uploadTargetId = null) ->
+    if APP.isOnline()
+      if uploadTargetId? && uploadTargetId >= 0
+        url = '<%= upload_embed_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
+        data._method = 'put'
+      else
+        url = '<%= uploads_embed_path %>'
+      $.ajax
+        type: 'POST'
+        dataType: 'json'
+        url: url
+        data: data
+      .done (poiNote) ->
+          # TODO: unify json-format, until then avoid circular structure
+          Model.setupPoiForNote poiNote.poi
+          msg = { poi: poiNote.poi }
+          Model.instance().syncWithStorage msg, callback, poiNote
+      .fail (jqXHR, textStatus) ->
+          #$("#upload_error").html("<ul><-%= escape_javascript(@upload.errors.full_messages.map { |msg| content_tag(:li, msg) }.join.html_safe) %></ul>")
+          # get from localStorage
+          console.log('TODO: maybe get from local storage')
+          #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
     else
-      url = '<%= uploads_embed_path %>'
-    $.ajax
-      type: 'POST'
-      dataType: 'json'
-      url: url
-      data: data
-    .done (poiNote) ->
-        # TODO: unify json-format, until then avoid circular structure
-        Model.setupPoiForNote poiNote.poi
-        msg = { poi: poiNote.poi }
-        Model.instance().syncWithStorage msg, callback, poiNote
-    .fail (jqXHR, textStatus) ->
-        #$("#upload_error").html("<ul><-%= escape_javascript(@upload.errors.full_messages.map { |msg| content_tag(:li, msg) }.join.html_safe) %></ul>")
-        # get from localStorage
-        console.log('TODO: maybe get from local storage')
-        #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
+      if (Modernizr.localstorage)
+        poiId = parseInt $('#upload_form').attr('data-poiId')
+        if poiId? && poiId >= 0
+          uploadTargetId = APP.transfer().getUploadTargetId()
+        else
+          uploadTargetId = null
+        this._cachePoiNote poiId, uploadTargetId, callback
+      else
+        alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
 
-  savePlainText: (data, callback, poiId = null) ->
-    # TODO save before sending - if offline send later
-    if poiId != null
-      url = '<%= upload_plain_text_path(id: ':id') %>'.replace(/:id/, poiId)
-      data._method = 'put'
+  savePlainText: (data, callback, uploadTargetId = null) ->
+    if APP.isOnline()
+      if uploadTargetId? && uploadTargetId >= 0
+        url = '<%= upload_plain_text_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
+        data._method = 'put'
+      else
+        url = '<%= uploads_plain_text_path %>'
+      $.ajax
+        type: 'POST'
+        dataType: 'json'
+        url: url
+        data: data
+      .done (poiNote) ->
+          # TODO: unify json-format, until then avoid circular structure
+          Model.setupPoiForNote poiNote.poi
+          msg = { poi: poiNote.poi }
+          Model.instance().syncWithStorage msg, callback, poiNote
+      .fail (jqXHR, textStatus) ->
+          #$("#upload_error").html("<ul><-%= escape_javascript(@upload.errors.full_messages.map { |msg| content_tag(:li, msg) }.join.html_safe) %></ul>")
+          # get from localStorage
+          console.log('TODO: maybe get from local storage')
+          #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
     else
-      url = '<%= uploads_plain_text_path %>'
-    $.ajax
-      type: 'POST'
-      dataType: 'json'
-      url: url
-      data: data
-    .done (poiNote) ->
-        # TODO: unify json-format, until then avoid circular structure
-        Model.setupPoiForNote poiNote.poi
-        msg = { poi: poiNote.poi }
-        Model.instance().syncWithStorage msg, callback, poiNote
-    .fail (jqXHR, textStatus) ->
-        #$("#upload_error").html("<ul><-%= escape_javascript(@upload.errors.full_messages.map { |msg| content_tag(:li, msg) }.join.html_safe) %></ul>")
-        # get from localStorage
-        console.log('TODO: maybe get from local storage')
-        #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
+      if (Modernizr.localstorage)
+        poiId = parseInt $('#upload_form').attr('data-poiId')
+        if poiId? && poiId >= 0
+          uploadTargetId = APP.transfer().getUploadTargetId()
+        else
+          uploadTargetId = null
+        this._cachePoiNote poiId, uploadTargetId, callback
+      else
+        alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
+
+  _cachePoiNote: (poiId, uploadTargetId, callback) ->
+    console.log('caching poiNote ...')
+    #id = 'q.'+new Date().getTime()
+    id = -new Date().getTime()
+    if poiId != -1
+      storeKey = Comm.StorageController.poiKey {id: poiId}
+      # don't get from cache - since we're setting lat/lng/address later
+     #poi = Comm.StorageController.instance().get storeKey
+      poi = eval("(" + localStorage.getItem(storeKey) + ")")
+      location = Comm.StorageController.instance().getLocation poi.locationId
+      #uploadTargetId = APP.transfer().getUploadTargetId()
+    else
+      # TODO get nearby-location from localStore ('comm.locations')
+      location = { id: id,\
+                   # decimal-scale: 7
+                   lat: Math.round($("#location_latitude").val()*10000000)/10000000,\
+                   lng: Math.round($("#location_longitude").val()*10000000)/10000000,\
+                   address: 'TODO' }
+      Comm.StorageController.instance().saveLocation location, { poi: { 'id': id } }
+      poi = { id: id,\
+              locationId: id,\
+              notes: [] }
+      poiKey = Comm.StorageController.poiKey poi
+      localStorage.setItem poiKey, JSON.stringify(poi)
+    poi.lat = location.lat
+    poi.lng = location.lng
+    poi.address = location.address
+    poiNote = { id: id,\
+                user: { id: currentUser.id,\
+                        username: currentUser.username },\
+                text: $("#upload_comment_text").val() }
+    # TODO - different for upload-types
+    switch $('input[name=upload_type]:checked').val()
+      when 'plain_text' 
+        Comm.StorageController.instance().queueUpload poi, poiNote, callback, {}
+      when 'camera'
+        $('#media_input_display')[0].toBlob((blob) ->
+            Comm.StorageController.instance().queueUpload poi, poiNote, callback, { blob: blob, fileName: 'foto_'+currentUser.id+'.'+Math.abs(id) }
+          )
+      when 'file' 
+        inputFile = $('#fileupload')[0].files[0]
+        Comm.StorageController.instance().queueUpload poi, poiNote, callback, { blob: inputFile }
+      when 'embed' 
+        Comm.StorageController.instance().queueUpload poi, poiNote, callback, { embed: $('#embed').val() }
 
   saveUserFoto64: (data, callback) ->
     # TODO save before sending - if offline send later

@@ -7,7 +7,14 @@ class window.VoyageX.UploadHelper
   constructor: () ->
     UploadHelper._SINGLETON = this
 
+  getUploadTargetId: () ->
+    #commentsOnId = parseInt $('#upload_form').attr('data-commentsOnId')
+    commentsOnIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/(-?[0-9]+)/)
+    commentsOnId = (if commentsOnIdMatch? then parseInt(commentsOnIdMatch[1]) else null)
+
   @instance: () ->
+    unless UploadHelper._SINGLETON?
+      UploadHelper._SINGLETON = new UploadHelper()
     UploadHelper._SINGLETON
 
 jQuery ->
@@ -46,9 +53,9 @@ jQuery ->
     data = { location: { latitude: selLatLng[0], longitude: selLatLng[1] },\
              comment: $('#upload_comment').val() }
     callback.addToData data
-    uploadIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/(-?[0-9]+)/)
-    if uploadIdMatch?
-      callback.save data, callback.after, uploadIdMatch[1]
+    uploadTargetId = APP.transfer().getUploadTargetId()
+    if uploadTargetId?
+      callback.save data, callback.after, uploadTargetId
     else
       callback.save data, callback.after
 
@@ -73,11 +80,9 @@ jQuery ->
                                      (if perPoiEntry.poi.id >= 0 then perPoiEntry.poi else null),
                                      (if callback? then callback.cb(afterUploadPhoto) else afterUploadPhoto)
 
-  window.uploadPhoto = (uploadId = null, file = null, selLatLng = null, callback = null) ->
- #window.uploadPhoto = (uploadId = null, file = null, contentType = null, selLatLng = null, callback = null) ->
-    unless uploadId?
-      uploadIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/(-?[0-9]+)/)
-      uploadId = (if uploadIdMatch? then uploadIdMatch[1] else null)
+  window.uploadPhoto = (uploadTargetId = null, file = null, selLatLng = null, callback = null) ->
+    unless uploadTargetId?
+      uploadTargetId = APP.transfer().getUploadTargetId()
     unless selLatLng?
       selLatLng = APP.getSelectedPositionLatLng()
     unless file?
@@ -86,7 +91,6 @@ jQuery ->
     $("#location_latitude").val(selLatLng[0])
     $("#location_longitude").val(selLatLng[1])
     $("#upload_comment_text").val($("#upload_comment").val())
-    #Storage.Model.instance().savePoiNote prefix+'upload_form', afterUploadPhoto
     
     formData = new FormData()
     skipInputNames = ['location[latitude]','location[longitude]','poi_note[text]','poi_note[file]']
@@ -102,7 +106,7 @@ jQuery ->
             if $.inArray($(this).attr('name'), skipInputNames) == -1
               formData.append($(this).attr('name'), $(this).attr('value'))
         )(formData, skipInputNames)
-    Storage.Model.instance().savePoiNote formData, (if callback? then callback.cb(afterUploadPhoto) else afterUploadPhoto), uploadId, callback?
+    Storage.Model.instance().savePoiNote formData, (if callback? then callback.cb(afterUploadPhoto) else afterUploadPhoto), uploadTargetId, callback?
 
   uploadPhoto64 = () ->
     selLatLng = APP.getSelectedPositionLatLng()
@@ -112,9 +116,9 @@ jQuery ->
              file_comment: $('#upload_comment').val(),\
              file_data: fileData,\
              file_content_type: fileContentType }
-    uploadIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/(-?[0-9]+)/)
-    if uploadIdMatch?
-      Storage.Model.instance().savePoiNote64 data, afterUploadPhoto, uploadIdMatch[1]
+    uploadTargetId = APP.transfer().getUploadTargetId()
+    if uploadTargetId?
+      Storage.Model.instance().savePoiNote64 data, afterUploadPhoto, uploadTargetId
     else
       Storage.Model.instance().savePoiNote64 data, afterUploadPhoto
 
@@ -123,9 +127,9 @@ jQuery ->
     data = { location: { latitude: selLatLng[0], longitude: selLatLng[1] },\
              comment: $('#upload_comment').val(),\
              data: $('#embed').val() }
-    uploadIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/(-?[0-9]+)/)
-    if uploadIdMatch?
-      Storage.Model.instance().saveEmbed data, afterUploadEmbed, uploadIdMatch[1]
+    uploadTargetId = APP.transfer().getUploadTargetId()
+    if uploadTargetId?
+      Storage.Model.instance().saveEmbed data, afterUploadEmbed, uploadTargetId
     else
       Storage.Model.instance().saveEmbed data, afterUploadEmbed
 
@@ -154,9 +158,9 @@ jQuery ->
   $(document).on 'click', '#upload_button', (event) ->
     event.stopPropagation()
     event.preventDefault()
-    uploadIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/(-?[0-9]+)/)
-    if uploadIdMatch?
-      uploadPhoto uploadIdMatch[1]
+    uploadTargetId = APP.transfer().getUploadTargetId()
+    if uploadTargetId?
+      uploadPhoto uploadTargetId
     else
       uploadPhoto()
     

@@ -44,17 +44,19 @@ class UploadsController < ApplicationController
     # TODO: only notes for given poi are added - all other changes must be sent to client after_sync
     new_poi_notes = []
     poi_note_json_list = []
-    diff_added.each do |entry|
-      note_match = entry.match(/^note_([0-9]+)/)
-      next unless note_match.present?
-      poi_note = PoiNote.where(note_match[1].to_i).first
-      if poi_note.present?
-        if poi_note.poi == @poi
-          new_poi_notes << poi_note
-          poi_note_json_list << poi_note_json(poi_note)
+    if diff_added.present?
+      diff_added.each do |entry|
+        note_match = entry.match(/^note_([0-9]+)/)
+        next unless note_match.present?
+        poi_note = PoiNote.where(note_match[1].to_i).first
+        if poi_note.present?
+          if poi_note.poi == @poi
+            new_poi_notes << poi_note
+            poi_note_json_list << poi_note_json(poi_note)
+          end
+        else
+          Rails.logger.warn "poi_note[id=#{note_match[1]}] found in diff from user/branch #{@user.id}/#{vm.cur_branch} but not in db"
         end
-      else
-        Rails.logger.warn "poi_note[id=#{note_match[1]}] found in diff from user/branch #{@user.id}/#{vm.cur_branch} but not in db"
       end
     end
     params[:poi_note_ids].each do |poi_note_id|
@@ -105,6 +107,7 @@ class UploadsController < ApplicationController
     user = current_user || tmp_user
     poi = nearby_poi user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
     user.locations << poi.location unless user.locations.find {|l|l.id==poi.location.id}
+binding.pry
     is_new_poi = poi.notes.empty? # if not before then it was persisted? in nearby_poi
     # FIXME - if poi exists then add new note as comment to poi's initial poi_note and set comments_on
 

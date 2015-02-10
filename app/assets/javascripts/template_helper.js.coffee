@@ -3,7 +3,7 @@ class window.VoyageX.TemplateHelper
   @_SINGLETON = null
 
   @poiNoteInputHtml: (parentElementId, poi = null, poiNote = null) ->
-    html = $('#tmpl_poi_note_input').html()
+    #html = $('#tmpl_poi_note_input').html()
     formId = null
     html = TemplateHelper._updateIds 'tmpl_poi_note_input', (cur) ->
         if cur.match(/_form$/) != null
@@ -13,7 +13,7 @@ class window.VoyageX.TemplateHelper
     if poiNote != null && formId != null
       methodDiv = $('#'+formId+' > div').first()
       methodDiv.append('<input type="hidden" name="_method" value="put">')
-      $('#'+formId).attr('action', updateActionPathTmpl.replace(/:id/, poiNote.id))
+      $('#'+formId).attr('action', updateActionPathTmpl.replace(/:comments_on_id/g, poiNote.id))
 
   @poiNotePopupHtmlFromTmpl: (poiNote, i, poi = null, meta = null) ->
     unless meta?

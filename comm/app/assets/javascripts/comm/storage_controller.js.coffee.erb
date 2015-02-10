@@ -721,17 +721,24 @@ class window.Comm.StorageController
     console.log 'caching tile: '+storeKey
     this.storeTile xYZ, geoJSON, null, deferredModeParams
 
-  # storePath ... ['queue', timemillis]
-  queueUpload: (poi, poiNote, callback, fileInputId = null) ->
-    if fileInputId?
-      inputFile = $('#'+fileInputId)[0].files[0]
-      poiNote.attachment = { content_type: inputFile.type, url: null }
-      @_uploadQ.setPoiNote poi, poiNote
-      @_uploadQ.setCallback callback
-      @_uploadQ.setFile inputFile
-      @_uploadQ.storeUpload()
+  queueUpload: (poi, poiNote, callback, attachmentData) ->
+    @_uploadQ.setPoiNote poi, poiNote
+    @_uploadQ.setCallback callback
+    if attachmentData.fileName?
+      fileName = attachmentData.fileName
+    if attachmentData.blob?
+      unless fileName?
+        fileName = attachmentData.blob.name
+      poiNote.attachment = { content_type: attachmentData.blob.type, url: null }
+      @_uploadQ.setFile attachmentData.blob
+    else if attachmentData.embed?
+      @_uploadQ.setEmbed attachmentData.embed
+    else
+      @_uploadQ.setFile null
+    @_uploadQ.storeUpload()
+    
     uploadQKey = 'comm.uploadQ.poiNotes'
-    this.addToList uploadQKey, 'push', { id: poiNote.id, poiId: poi.id, fileName: inputFile.name }
+    this.addToList uploadQKey, 'push', { id: poiNote.id, poiId: poi.id, fileName: fileName }
   
   uploadQueue: (callback) ->
     uploadQKey = 'comm.uploadQ.poiNotes'
@@ -909,6 +916,7 @@ class Comm.UploadQ
     @_poiNote = null
     @_callback = null
     @_file = null
+    @_embed = null
 
   setPoiNote: (poi, poiNote) ->
     @_poi = poi
@@ -919,35 +927,30 @@ class Comm.UploadQ
 
   setFile: (file) ->
     @_file = file
+    @_embed = null
+
+  setEmbed: (embed) ->
+    @_embed = embed
+    @_file = null
 
   storeUpload: () ->
     unless Comm.StorageController.isFileBased()
-#    file = UploadQ.instance()._file
-#    #storePoiNoteAttachment @_poiNote, fileLoadedEvent.target.result
-#    base64ImgDataUrl = fileLoadedEvent.target.result
-#    unless Comm.StorageController.isFileBased()
-#      Comm.StorageController.instance().storePoiNoteAttachment @_poiNote, base64ImgDataUrl, deferredModeParams
-#      cacheStats()
-#    else
-#      # actually we could store base64 in file as well
-#      #Comm.StorageController.instance().storePoiNoteAttachment @_poiNote, base64ImgDataUrl, deferredModeParams
-#      $('#attachment_canvas')[0].toBlob((blob) ->
-#          Comm.StorageController.instance().storePoiNoteAttachment @_poiNote, blob, deferredModeParams
-#        )
+      # FIXME - not implemented
       Comm.StorageController.instance().storePoiNoteAttachment @_poiNote, base64ImgDataUrl, deferredModeParams
       cacheStats()
     else
-      deferredModeParams = { deferred: $.Deferred(),\
-                             promise: null }
-      deferredModeParams.promise = deferredModeParams.deferred.promise()
-      deferredModeParams.promise.then (url) ->
-          console.log 'UploadQ - storeUpload: attachmentUrl-promise resolved to: '+url
-          poi = UploadQ.instance()._poi
-          note = UploadQ.instance()._poiNote
-          note.attachment.url = url
-          loadStats = { numAdded: 1, numLeft: 0 }
-          Storage.Model._syncPoiNotes poi, Comm.StorageController.poiKey(poi), note, loadStats, UploadQ.instance()._callback
-      Comm.StorageController.instance().storePoiNoteAttachment @_poiNote, @_file, deferredModeParams
+      if @_file?
+        deferredModeParams = { deferred: $.Deferred(),\
+                               promise: null }
+        deferredModeParams.promise = deferredModeParams.deferred.promise()
+        deferredModeParams.promise.then (url) ->
+            console.log 'UploadQ - storeUpload: attachmentUrl-promise resolved to: '+url
+            poi = UploadQ.instance()._poi
+            note = UploadQ.instance()._poiNote
+            note.attachment.url = url
+            loadStats = { numAdded: 1, numLeft: 0 }
+            Storage.Model._syncPoiNotes poi, Comm.StorageController.poiKey(poi), note, loadStats, UploadQ.instance()._callback
+        Comm.StorageController.instance().storePoiNoteAttachment @_poiNote, @_file, deferredModeParams
 
   syncResponseCallback: (location, poi, origCallback) ->
     (cbPoi, cbNewPoiNotes) ->

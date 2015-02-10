@@ -8,6 +8,7 @@ class window.VoyageX.Main
   @_MARKER_MANAGER = null
   @_COMM_CHANNELS = ['system', 'talk', 'map_events', 'uploads']
   @_STORAGE_MODEL = null
+  @_UPLOAD_HELPER = null
 
   constructor: (cacheStrategy, view, mapOptions, offlineZooms, online) ->
     Main._SINGLETON = this
@@ -22,6 +23,7 @@ class window.VoyageX.Main
     @_curPOI = null
     #@_initPoisOnMap = []
     Main._STORAGE_MODEL = new Storage.Model()
+    Main._UPLOAD_HELPER = new VoyageX.UploadHelper()
     # at first the map need's to be initialized ...
     $(document).ready () ->
         APP._init cacheStrategy, view, mapOptions, offlineZooms
@@ -521,6 +523,9 @@ class window.VoyageX.Main
 
   view: () ->
     @_view
+
+  transfer: () ->
+    Main._UPLOAD_HELPER
 
   @instance: () ->
     Main._SINGLETON
