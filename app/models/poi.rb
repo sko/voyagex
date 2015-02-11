@@ -1,4 +1,5 @@
 class Poi < ActiveRecord::Base
+  belongs_to :commit#, dependent: :destroy
   belongs_to :location
   has_many :notes, class_name: 'PoiNote', inverse_of: :poi, dependent: :destroy
 

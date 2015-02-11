@@ -55,9 +55,9 @@ jQuery ->
     callback.addToData data
     uploadTargetId = APP.transfer().getUploadTargetId()
     if uploadTargetId?
-      callback.save data, callback.after, uploadTargetId
+      callback.save.call APP.model(), data, callback.after, uploadTargetId
     else
-      callback.save data, callback.after
+      callback.save.call APP.model(), data, callback.after
 
   window.batchUpload = (perPoiEntry, callback) ->
     formData = new FormData()
@@ -69,20 +69,19 @@ jQuery ->
         continue
       formData.append 'poi_note_ids[]', note.id
       formData.append 'poi_note['+note.id+'][text]', note.text
-      formData.append 'poi_note['+note.id+'][file]', perPoiEntry.files[note.id], perPoiEntry.fileNames[note.id]
+      formData.append 'poi_note['+note.id+'][file]', perPoiEntry.fileData[note.id].file, perPoiEntry.fileData[note.id].name
     uploadForm = $('#tmpl_poi_note_input #new_poi_note').first()
     uploadForm.find('input').each ((formData, skipInputNames) ->
         () ->
             if $.inArray($(this).attr('name'), skipInputNames) == -1
               formData.append($(this).attr('name'), $(this).attr('value'))
         )(formData, skipInputNames)
-    Storage.Model.instance().syncPoi formData,
+    APP.model().syncPoi formData,
                                      (if perPoiEntry.poi.id >= 0 then perPoiEntry.poi else null),
                                      (if callback? then callback.cb(afterUploadPhoto) else afterUploadPhoto)
 
-  window.uploadPhoto = (uploadTargetId = null, file = null, selLatLng = null, callback = null) ->
-    unless uploadTargetId?
-      uploadTargetId = APP.transfer().getUploadTargetId()
+  window.uploadPhoto = () ->
+    uploadTargetId = APP.transfer().getUploadTargetId()
     unless selLatLng?
       selLatLng = APP.getSelectedPositionLatLng()
     unless file?
@@ -98,15 +97,14 @@ jQuery ->
     formData.append('location[longitude]', selLatLng[1])
     formData.append('poi_note[text]', $("#upload_comment").val())
     formData.append('poi_note[file]', file, 'TODO_filename')
-#    unless file.type? && file.type != ''
-#      formData.append('poi_note[content_type]', contentType)
     uploadForm = $('#tmpl_poi_note_input #new_poi_note').first()
     uploadForm.find('input').each ((formData, skipInputNames) ->
         () ->
             if $.inArray($(this).attr('name'), skipInputNames) == -1
               formData.append($(this).attr('name'), $(this).attr('value'))
         )(formData, skipInputNames)
-    Storage.Model.instance().savePoiNote formData, (if callback? then callback.cb(afterUploadPhoto) else afterUploadPhoto), uploadTargetId, callback?
+   #APP.model().uploadPoiNote formData, afterUploadPhoto, uploadTargetId
+    APP.model().savePoiNote uploadTargetId, afterUploadPhoto, afterCachePhoto
 
   uploadPhoto64 = () ->
     selLatLng = APP.getSelectedPositionLatLng()
@@ -118,20 +116,20 @@ jQuery ->
              file_content_type: fileContentType }
     uploadTargetId = APP.transfer().getUploadTargetId()
     if uploadTargetId?
-      Storage.Model.instance().savePoiNote64 data, afterUploadPhoto, uploadTargetId
+      APP.model().savePoiNote64 data, afterUploadPhoto, uploadTargetId
     else
-      Storage.Model.instance().savePoiNote64 data, afterUploadPhoto
+      APP.model().savePoiNote64 data, afterUploadPhoto
 
-  uploadEmbed = () ->
-    selLatLng = APP.getSelectedPositionLatLng()
-    data = { location: { latitude: selLatLng[0], longitude: selLatLng[1] },\
-             comment: $('#upload_comment').val(),\
-             data: $('#embed').val() }
-    uploadTargetId = APP.transfer().getUploadTargetId()
-    if uploadTargetId?
-      Storage.Model.instance().saveEmbed data, afterUploadEmbed, uploadTargetId
-    else
-      Storage.Model.instance().saveEmbed data, afterUploadEmbed
+#  uploadEmbed = () ->
+#    selLatLng = APP.getSelectedPositionLatLng()
+#    data = { location: { latitude: selLatLng[0], longitude: selLatLng[1] },\
+#             comment: $('#upload_comment').val(),\
+#             data: $('#embed').val() }
+#    uploadTargetId = APP.transfer().getUploadTargetId()
+#    if uploadTargetId?
+#      APP.model().saveEmbed data, afterUploadEmbed, uploadTargetId
+#    else
+#      APP.model().saveEmbed data, afterUploadEmbed
 
   afterUpload = (poi, newNotes) ->
     $('#upload_comment').val('')
@@ -142,7 +140,7 @@ jQuery ->
       $("#upload_data_panel").panel("close")
     else
       uploadDataDialog.dialog("close")
-    APP.panPosition poi.lat, poi.lng, poi.address
+    #APP.panPosition poi.lat, poi.lng, poi.address
     VoyageX.View.addPoiNotes poi, newNotes
 
   # also called from iframe - that's why window.
@@ -151,6 +149,9 @@ jQuery ->
     $('#media_input_current').attr('src', '')
     afterUpload poi, newNotes
 
+  afterCachePhoto = (poi, newNote) ->
+    afterUploadPhoto poi, [newNote]
+
   window.afterUploadEmbed = (poi, newNotes) ->
     $('#embed').val('')
     afterUpload poi, newNotes
@@ -158,22 +159,21 @@ jQuery ->
   $(document).on 'click', '#upload_button', (event) ->
     event.stopPropagation()
     event.preventDefault()
-    uploadTargetId = APP.transfer().getUploadTargetId()
-    if uploadTargetId?
-      uploadPhoto uploadTargetId
-    else
-      uploadPhoto()
+    uploadPhoto()
     
   $(document).on 'click', '#media_input_upload_btn', (event) ->
     uploadPhoto64()
+
+  $(document).on 'click', '#embed_upload_btn', (event) ->
+#    uploadEmbed()
+    savePoI { addToData: (data) ->
+        data.data = $('#embed').val()
+      , save: APP.model().saveEmbed, after: afterUploadEmbed }
     
   $(document).on 'click', '#plain_text_upload_btn', (event) ->
     savePoI { addToData: (data) ->
         data.data = window.location.origin+'/assets/noise.gif'
-      , save: Storage.Model.instance().saveEmbed, after: afterUpload }
-    
-  $(document).on 'click', '#embed_upload_btn', (event) ->
-    uploadEmbed()
+      , save: APP.model().savePlainText, after: afterUpload }
     
   $(document).on 'click', '#user_foto_media_input_upload_btn', (event) ->
     fotoContentType = $('#user_foto_media_input_current').attr('src').match(/^data:([^;]+)/)[1]
@@ -181,7 +181,7 @@ jQuery ->
     data = { foto_data: fotoData,\
              foto_content_type: fotoContentType }
     stopCurrentVideo()
-    Storage.Model.instance().saveUserFoto64 data, (user) ->
+    APP.model().saveUserFoto64 data, (user) ->
         $('#'+curPrefix.current+'media_input_capture').attr('src', '')
         $('#'+curPrefix.current+'media_input_current').attr('src', '')
         $('.whoami-img').attr('src', user.foto.url)

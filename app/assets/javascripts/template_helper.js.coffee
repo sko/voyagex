@@ -3,17 +3,21 @@ class window.VoyageX.TemplateHelper
   @_SINGLETON = null
 
   @poiNoteInputHtml: (parentElementId, poi = null, poiNote = null) ->
-    #html = $('#tmpl_poi_note_input').html()
     formId = null
     html = TemplateHelper._updateIds 'tmpl_poi_note_input', (cur) ->
         if cur.match(/_form$/) != null
           formId = cur
     html = TemplateHelper._updateRefs 'tmpl_poi_note_input', html.replace(/:poi_id/, if poi? then poi.id else -1)
     $('#'+parentElementId).html(html)
-    if poiNote != null && formId != null
-      methodDiv = $('#'+formId+' > div').first()
-      methodDiv.append('<input type="hidden" name="_method" value="put">')
-      $('#'+formId).attr('action', updateActionPathTmpl.replace(/:comments_on_id/g, poiNote.id))
+    if formId != null
+      form = $('#'+formId)
+      if poiNote != null 
+        methodDiv = form.find('div').first()
+        methodDiv.append('<input type="hidden" name="_method" value="put">')
+        form.attr('action', updateActionPathTmpl.replace(/:comments_on_id/, poiNote.id))
+        form.attr('data-commentsonid', poiNote.id)
+      else
+        form.attr('data-commentsonid', -1)
 
   @poiNotePopupHtmlFromTmpl: (poiNote, i, poi = null, meta = null) ->
     unless meta?
@@ -31,10 +35,11 @@ class window.VoyageX.TemplateHelper
   @poiNotePopupEntryHtml: (poiNote, poiNoteTmpl, i, meta) ->
     if poiNote.user?
       username = poiNote.user.username
+      isCurrentUserNote = poiNote.user.id==currentUser.id
     else
       username = Comm.StorageController.instance().getUser(poiNote.userId).username
-    #toggle = if i%2==0 then 'left' else 'right'
-    toggle = if poiNote.userId==currentUser.id then 'left' else 'right'
+      isCurrentUserNote = poiNote.userId==currentUser.id
+    toggle = if isCurrentUserNote then 'left' else 'right'
     poiNoteTmpl.
     replace(/\{poi_note_id\}/g, poiNote.id).
     replace(/\{i\}/g, i).
@@ -327,7 +332,7 @@ class window.VoyageX.TemplateHelper
     scale = -1.0
     height = -1
     maxWidth = 100.0
-    switch upload.content_type.match(/^[^\/]+/)[0]
+    switch upload.content_type.match(/^[^:\/]+/)[0]
       when 'image' 
         scale = maxWidth/upload.width
         height = Math.round(upload.height*scale)
@@ -343,6 +348,12 @@ class window.VoyageX.TemplateHelper
           '<source src="'+upload.url+'" type="'+upload.content_type+'">'+
           'Your browser does not support the video element.'+
         '</video>'
+      when 'embed'
+        embedType = APP.model().getEmbedType upload.content
+        if embedType?
+          TemplateHelper._mediaFileTag {url: upload.content, content_type: upload.content_type.replace(/^[^:\/]+./, ''), width: maxWidth, height: maxWidth}, meta
+        else
+          'unable to display entity with embed_type: '+embedType
       else
         'unable to display entity with content_type: '+upload.content_type
 

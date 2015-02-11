@@ -191,8 +191,7 @@ data
     file = File.join(note_dir, 'data')
     File.open(file, 'w+') { |f| f.write(data) }
     
-    #attachment_dir = "#{work_dir}/poi_#{poi.id}/note_#{note.id}/attachment"
-    add_attachment poi, note#, attachment_dir unless File.exist? attachment_dir
+    add_attachment poi, note if note.attachment.present?
   end
 
   def add_attachment poi, note, attachment_dir = nil
@@ -229,8 +228,6 @@ data
       poi.notes.each do |note|
         note_dir = "#{vm.work_dir}/poi_#{poi.id}/note_#{note.id}"
         add_poi_note poi, note, note_dir unless File.exist? note_dir
-        #attachment_dir = "#{vm.work_dir}/poi_#{poi.id}/note_#{note.id}/attachment"
-        #add_attachment poi, note, attachment_dir unless File.exist? attachment_dir
       end
     end
     `git #{vm.git_args} add -A`

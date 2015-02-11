@@ -56,7 +56,11 @@ module PoiHelper
                       user: { id: poi_note.user.id,
                               username: poi_note.user.username },
                       text: poi_note.text }
-    poi_note_json[:poi] = poi_json poi_note.poi if with_poi
+    if with_poi
+      poi_note_json[:poi] = poi_json poi_note.poi
+    else
+      poi_note_json[:poiId] = poi_note.poi.id
+    end
     add_attachment_to_poi_note_json poi_note.attachment, poi_note_json if poi_note.attachment.present?
     poi_note_json
   end

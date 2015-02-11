@@ -40,22 +40,22 @@ ActiveRecord::Schema.define(version: 20150203114252) do
 
   create_table "commits", force: true do |t|
     t.integer  "user_id"
-    t.string   "hash"
+    t.string   "hash_id"
     t.datetime "timestamp"
-    t.integer  "local_time_millis"
+    t.integer  "local_time_secs"
   end
 
-  add_index "commits", ["hash"], name: "index_commits_on_hash", using: :btree
+  add_index "commits", ["hash_id"], name: "index_commits_on_hash_id", using: :btree
   add_index "commits", ["timestamp"], name: "index_commits_on_timestamp", using: :btree
 
   create_table "locations", force: true do |t|
-    t.decimal  "latitude",          precision: 10, scale: 7, null: false
-    t.decimal  "longitude",         precision: 10, scale: 7, null: false
+    t.decimal  "latitude",        precision: 10, scale: 7, null: false
+    t.decimal  "longitude",       precision: 10, scale: 7, null: false
     t.text     "address"
     t.datetime "created_at"
     t.datetime "updated_at"
     t.string   "commit_hash"
-    t.integer  "local_time_millis"
+    t.integer  "local_time_secs"
   end
 
   add_index "locations", ["latitude", "longitude"], name: "index_locations_on_latitude_and_longitude", using: :btree
@@ -80,7 +80,7 @@ ActiveRecord::Schema.define(version: 20150203114252) do
     t.datetime "created_at"
     t.datetime "updated_at"
     t.string   "commit_hash"
-    t.integer  "local_time_millis"
+    t.integer  "local_time_secs"
   end
 
   add_index "poi_notes", ["comments_on_id"], name: "index_poi_notes_on_comments_on_id", using: :btree
@@ -92,7 +92,7 @@ ActiveRecord::Schema.define(version: 20150203114252) do
     t.datetime "created_at"
     t.datetime "updated_at"
     t.string   "commit_hash"
-    t.integer  "local_time_millis"
+    t.integer  "local_time_secs"
   end
 
   create_table "roles", force: true do |t|
@@ -134,12 +134,12 @@ ActiveRecord::Schema.define(version: 20150203114252) do
   create_table "user_snapshots", force: true do |t|
     t.integer  "user_id"
     t.integer  "location_id"
-    t.decimal  "lat",             precision: 10, scale: 7
-    t.decimal  "lng",             precision: 10, scale: 7
+    t.decimal  "lat",         precision: 10, scale: 7
+    t.decimal  "lng",         precision: 10, scale: 7
     t.string   "address"
-    t.string   "cur_commit_hash"
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.integer  "commit_id"
   end
 
   add_index "user_snapshots", ["user_id"], name: "index_user_snapshots_on_user_id", using: :btree

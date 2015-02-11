@@ -1,4 +1,5 @@
 class PoiNote < ActiveRecord::Base
+  belongs_to :commit#, dependent: :destroy
   belongs_to :poi
   belongs_to :user
   belongs_to :attachment, class_name: 'Upload', inverse_of: :attached_to, dependent: :destroy

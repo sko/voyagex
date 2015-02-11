@@ -57,6 +57,23 @@ class window.VoyageX.MarkerManager
    #if meta then {marker: marker, isUserMarker: flags.isUserMarker, poi: APP.storage().getPoi(location.id), peer: flags.peer} else marker
     if meta then MarkerManager.metaJSON(m, {poi: APP.storage().getPoi(location.id), peer: flags.peer}) else marker
 
+  # replace can only be of same type (no flags). it's used to update location id after sync and poiid
+  replace: (location, withLocation = null) ->
+    for m, i in @_markers
+      if m.location().id == location.id
+        if withLocation?
+          m._location = withLocation
+        else
+          @_markers.splice i, 1
+          popup = m.target().getPopup()
+          if popup?
+            if popup._isOpen
+              m.target().closePopup()
+            m.target().unbindPopup()
+            @_map.removeLayer(popup)
+          @_map.removeLayer(m.target())
+        break
+
   sel: (replaceMarker, lat, lng, callBack) ->
     # if @_selectedMarker != null && replaceMarker == @_selectedMarker.target()
     #   @_map.removeLayer @_selectedMarker.target()

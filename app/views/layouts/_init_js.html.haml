@@ -9,7 +9,10 @@
   window.VoyageX.TILE_URL_TEMPLATE = '#{Leaflet.tile_layer}';
   window.VoyageX.USE_GLOBAL_SUBSCRIBE = #{USE_GLOBAL_SUBSCRIBE};
   window.VoyageX.SEARCH_RADIUS_METERS = #{tmp_user.search_radius_meters||100};
-  window.currentUser = { id: #{tmp_user.id}, username: '#{tmp_user.username}', homebaseLocationId: #{tmp_user.home_base.present? ? tmp_user.home_base.id : -1}, lastLocation: {lat: #{lat||'null'}, lng: #{lng||'null'}}, curCommitHash: '#{tmp_user.snapshot.cur_commit_hash}' };
+  - geometry = Paperclip::Geometry.from_file(tmp_user.foto) if user_signed_in? && tmp_user.foto.present?
+  - foto_width = geometry.present? ? geometry.width.to_i : -1
+  - foto_height = geometry.present? ? geometry.height.to_i : -1
+  window.currentUser = { id: #{tmp_user.id}, username: '#{tmp_user.username}', foto: {url: '#{tmp_user.foto.url}', width: #{foto_width}, height: #{foto_height}}, homebaseLocationId: #{tmp_user.home_base.present? ? tmp_user.home_base.id : -1}, lastLocation: {lat: #{lat||'null'}, lng: #{lng||'null'}}, curCommitHash: '#{tmp_user.snapshot.cur_commit.hash_id}' };
   - if current_user.present?
     window.VoyageX.CHANNEL_ENC_KEY = '#{current_user.comm_setting.channel_enc_key}';
     window.VoyageX.SYS_CHANNEL_ENC_KEY = '#{current_user.comm_setting.sys_channel_enc_key}';

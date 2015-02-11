@@ -52,6 +52,7 @@ class window.VoyageX.Main
         # handled in _peers.html.haml
         #Storage.Model.instance().loadPeers (peer) ->
         #  marker = Main.markerManager().add poi.location, Main._markerEventsCB, false
+       #APP.storage().saveUser { id: currentUser.id, username: currentUser.username }, { foto: currentUser.foto }
         APP.initPeers()
         if navigator.geolocation 
           navigator.geolocation.getCurrentPosition(APP._initPositionCB, (error) ->
@@ -120,8 +121,7 @@ class window.VoyageX.Main
     Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
     for n in [Main._MAP_CONTROL._minZoom..Main._MAP_CONTROL._maxZoom]
       Main._MAP_CONTROL._zooms.push n
-    APP.storage().uploadQueue (poiNote) ->
-        console.log 'Main - setOnline: uploaded Q-Entry'
+    APP.storage().uploadQueue()
     unless $('#network_state_online').attr('checked') == 'checked'
       $('#network_state_online').attr('checked', 'checked')
 
@@ -516,6 +516,9 @@ class window.VoyageX.Main
     Main._MAP_CONTROL.map()
 
   @markerManager: () ->
+    Main._MARKER_MANAGER
+
+  markers: () ->
     Main._MARKER_MANAGER
 
   model: () ->

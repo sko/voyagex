@@ -1,3 +1,72 @@
+_syncPoiNotes sichert und callback rendered startet rendering
+
+plan:
+1) _cachePoiNote
+2) send ajax
+3) done: syncWithStorage
+
+currently:
+poi-notes are saved before upload but displayed after upload. this is ok since if upload doesn't work thea are stil displayed
+
+
+savePoiNote
+  # offline
+  _cachePoiNote
+    (A) queueUpload
+      storeUpload
+        # files:
+        storePoiNoteAttachment
+          _syncPoiNotes
+            callback (afterUploadPhoto)
+        # embeds/text
+        _syncPoiNotes
+          callback (afterUploadPhoto)
+            addPoiNotes
+  # online
+  syncWithStorage !!!!!!!
+    _syncPoiNotes
+      callback (afterUploadPhoto)
+        addPoiNotes
+
+syncWithStorage !!!!!!!
+ 1) _viewPoiNoteAttachment
+    # direct or via getPoiNoteAttachment (if file-api)
+    _getPoiNoteAttachmentFile
+      attachmentUrl
+        if APP.isOnline()
+          cacheAttachment
+            _loadReadyBlob
+              storePoiNoteAttachment
+                ...
+  2) _syncPoiNotes
+    ...
+
+_loadReadyImage
+  storePoiNoteAttachment
+    batchUpload
+      syncPoi
+        syncResponseCallback #### (here the ids are updated)
+          afterUploadPhoto (is orig-cb)
+            addPoiNotes
+
+
+
+setOnline
+  uploadQueue
+    _getPoiNoteAttachmentFile
+
+ _uploadsCB
+  setupPoiForNote
+  syncWithStorage !!!!!!!
+
+
+von wo aufgerufen:
+_syncPoiNotes
+  StorageController - storeUpload 
+  Model - syncWithStorage
+
+
+
 Use this README file to introduce your application and point to useful places in the API for learning more.
 Run "rake doc:app" to generate API documentation for your models, controllers, helpers, and libraries.
 

@@ -10,6 +10,7 @@ class User < ActiveRecord::Base
   has_many :locations_users, dependent: :destroy
   has_many :locations, through: :locations_users
   has_many :uploads
+  has_many :commits
   has_one :comm_setting, inverse_of: :user, dependent: :destroy
   has_one :snapshot, class_name: 'UserSnapshot', inverse_of: :user, dependent: :destroy
   belongs_to :home_base, class_name: 'Location', foreign_key: :home_base_id

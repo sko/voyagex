@@ -238,31 +238,34 @@ class window.VoyageX.View
       scrollPane = poiNoteDiv.closest('.leaflet-popup-content').first()
       scrollPane.scrollTop(poiNoteOff.top)
 
+  @updatePoiNotes: (poi, newNotes) ->
+    console.log 'updatePoiNotes: TODO - rewrite ids, locationadress in popup and photonav/swiper...'
+
   @addPoiNotes: (poi, newNotes) ->
-    if poi.notes[0].attachment.content_type.match(/^[^\/]+/)[0] == 'image'
+    #if poi.notes[0].attachment.content_type.match(/^[^\/]+/)[0] == 'image'
+    mySwiper = window['myPoiSwiper'+poi.id]
+    if mySwiper?
+      swiperWrapper = $('#poi_swiper_'+poi.id+' .swiper-wrapper')
+      for note, i in newNotes
+        swiperSlideHtml = VoyageX.TemplateHelper.swiperSlideHtml poi, note
+        swiperWrapper.append(swiperSlideHtml)
+      #VoyageX.TemplateHelper.addPoiNotes poi, newNotes, APP.getMarker(poi)
+      #View.instance().scrollToPoiNote newNotes[0].id
+    else
+      # most likely a new poi
+      # create swiper
+      poisPreviewHtml = VoyageX.TemplateHelper.poisPreviewHTML [poi]
+      # TODO correct position
+      $('#pois_preview').prepend(poisPreviewHtml)
+      window['myPoiSwiper'+poi.id] = $('#poi_swiper_'+poi.id).swiper({
+        createPagination: false,
+        centeredSlides: true,
+        slidesPerView: 'auto',
+        onSlideClick: photoClicked
+      })
       mySwiper = window['myPoiSwiper'+poi.id]
-      if mySwiper?
-        swiperWrapper = $('#poi_swiper_'+poi.id+' .swiper-wrapper')
-        for note, i in newNotes
-          swiperSlideHtml = VoyageX.TemplateHelper.swiperSlideHtml poi, note
-          swiperWrapper.append(swiperSlideHtml)
-        #VoyageX.TemplateHelper.addPoiNotes poi, newNotes, APP.getMarker(poi)
-        #View.instance().scrollToPoiNote newNotes[0].id
-      else
-        # most likely a new poi
-        # create swiper
-        poisPreviewHtml = VoyageX.TemplateHelper.poisPreviewHTML [poi]
-        # TODO correct position
-        $('#pois_preview').prepend(poisPreviewHtml)
-        window['myPoiSwiper'+poi.id] = $('#poi_swiper_'+poi.id).swiper({
-          createPagination: false,
-          centeredSlides: true,
-          slidesPerView: 'auto',
-          onSlideClick: photoClicked
-        })
-        mySwiper = window['myPoiSwiper'+poi.id]
-      mySwiper.reInit()
-      #mySwiper.resizeFix()
+    mySwiper.reInit()
+    #mySwiper.resizeFix()
     for listener in View.instance()._commListeners.uploads
       listener(poi, newNotes)
     

@@ -88,6 +88,9 @@ class window.Comm.StorageController
     else
       null
   
+  # TODO - check for nearby-location
+  # TODO2 - lat: Math.round(location.lat*10000000)/10000000,\
+  #         lng: Math.round(location.lng*10000000)/10000000,\
   saveLocation: (location, flags = {}, locations = null) ->
     storeKey = 'comm.locations'
     unless locations?
@@ -722,41 +725,54 @@ class window.Comm.StorageController
     this.storeTile xYZ, geoJSON, null, deferredModeParams
 
   queueUpload: (poi, poiNote, callback, attachmentData) ->
-    @_uploadQ.setPoiNote poi, poiNote
-    @_uploadQ.setCallback callback
-    if attachmentData.fileName?
-      fileName = attachmentData.fileName
-    if attachmentData.blob?
-      unless fileName?
-        fileName = attachmentData.blob.name
-      poiNote.attachment = { content_type: attachmentData.blob.type, url: null }
-      @_uploadQ.setFile attachmentData.blob
-    else if attachmentData.embed?
-      @_uploadQ.setEmbed attachmentData.embed
-    else
-      @_uploadQ.setFile null
-    @_uploadQ.storeUpload()
-    
+    @_uploadQ.storeUpload(poi, poiNote, callback, attachmentData)
+
     uploadQKey = 'comm.uploadQ.poiNotes'
-    this.addToList uploadQKey, 'push', { id: poiNote.id, poiId: poi.id, fileName: fileName }
-  
-  uploadQueue: (callback) ->
+    this.addToList uploadQKey, 'push', { id: poiNote.id, poiId: poi.id, fileName: @_uploadQ.fileName() }
+    #this.addQEntry poi, poiNote
+
+  addQEntry: (poi, poiNote) ->
+    uploadQKey = 'comm.uploadQ.poiNotes'
+    #this.addToList uploadQKey, 'push', { id: poiNote.id, poiId: poi.id, fileName: @_uploadQ.fileName() }
+    qNoteEntry = { id: poiNote.id, filename: @_uploadQ.fileName() }
+    stored = localStorage.getItem(uploadQKey)
+    qEntries = eval("(" + stored + ")")
+    qEntry = qEntries[poi.locationId]
+    if qEntry?
+      if qEntry[poi.id]
+        qEntry[poi.id] << qNoteEntry
+      else
+        qEntry[poi.id] = [qNoteEntry]
+    else
+      qEntries[poi.locationId] = {}
+      qEntries[poi.locationId][poi.id] = [qNoteEntry]
+    localStorage.setItem(uploadQKey, JSON.stringify(qEntries))
+    qEntries
+
+  # called with params only for instant upload when app is online
+  uploadQueue: (qPoi = null, qNewNote = null) ->
     uploadQKey = 'comm.uploadQ.poiNotes'
     stored = localStorage.getItem(uploadQKey)
     qEntries = eval("(" + stored + ")")
+    if qPoi?
+      qEntries = [{note: qNewNote, poi: qPoi, fileName: qEntries[0].fileName}]
     if qEntries?
       perPoiList = {}
-      #for qEntry, idx in qEntries
-      for idxSub in [0..qEntries.length-1]
-        qEntry = qEntries[qEntries.length-1-idxSub]
-        poiKey = Comm.StorageController.poiKey {id: qEntry.poiId}
-        poi = Comm.StorageController.instance().get poiKey
+      for qEntry, idx in qEntries
+        # TODO - cache poi and location and don't load from localstorage for each q-entry (poiNote) 
+        #        better: store them right-away within poi context. (time is saved anyway) 
+        if qEntry.note?
+          poi = qEntry.poi
+          poiNote = qEntry.note
+        else
+          poiKey = Comm.StorageController.poiKey {id: qEntry.poiId}
+          poi = Comm.StorageController.instance().get poiKey
+          for n in poi.notes
+            if n.id == qEntry.id
+              poiNote = n
+              break
         location = Comm.StorageController.instance().getLocation poi.locationId
-        for n in poi.notes
-          if n.id == qEntry.id
-            poiNote = n
-            break
-        $("#upload_comment").val(poiNote.text)
+
         deferredModeParams = { deferred: $.Deferred(),\
                                promise: null }
         deferredModeParams.promise = deferredModeParams.deferred.promise()
@@ -765,23 +781,21 @@ class window.Comm.StorageController
                  unless perPoiList[poi.id]?
                    perPoiList[poi.id] = { poi: poi,\
                                           location: location,\
-                                          files: {},\
-                                          fileNames: {} }
-                 perPoiList[poi.id].files[poiNote.id] = file
-                 perPoiList[poi.id].fileNames[poiNote.id] = fileName
+                                          fileData: {} }
+                 perPoiList[poi.id].fileData[poiNote.id] = { file: file, name: fileName }
                  if isLast
                    for entryKey in Object.keys(perPoiList)
                      cb = { cb: (origCallback) ->
                                 Comm.UploadQ.instance().syncResponseCallback location, poi, origCallback }
                      batchUpload perPoiList[entryKey], cb
-        )(location, poi, poiNote, qEntry.fileName, perPoiList, idxSub==(qEntries.length-1))
+        )(location, poi, poiNote, qEntry.fileName, perPoiList, idx==(qEntries.length-1)) 
         this._getPoiNoteAttachmentFile poiNote, deferredModeParams
     true
 
   # reserved listKeys:
   # push: creates/uses an array for entries stored with storeKey
   # if an array is defined for a storeKey then there can't be any other objects defined aside (@see this.pop())
-  addToList: (storeKey, listKey, data, fifo = true, insertIndexCB = null) ->
+  addToList: (storeKey, listKey, data, fifo = true, insertPosCB = null) ->
     stored = localStorage.getItem(storeKey)
     if stored == null
       if listKey == 'push'
@@ -816,10 +830,10 @@ class window.Comm.StorageController
             else
               storedJSON.push data
         else
-          if insertIndexCB?
+          if insertPosCB?
             inserted = false
             for d, idx in storedJSON[listKey]
-              if insertIndexCB d, data
+              if insertPosCB d, data
                 storedJSON[listKey].splice idx, 0, data
                 inserted = true
                 break
@@ -916,14 +930,11 @@ class Comm.UploadQ
     @_poiNote = null
     @_callback = null
     @_file = null
+    @_fileName = null
     @_embed = null
 
-  setPoiNote: (poi, poiNote) ->
-    @_poi = poi
-    @_poiNote = poiNote
-
-  setCallback: (callback) ->
-    @_callback = callback
+  fileName: () ->
+    @_fileName
 
   setFile: (file) ->
     @_file = file
@@ -933,7 +944,25 @@ class Comm.UploadQ
     @_embed = embed
     @_file = null
 
-  storeUpload: () ->
+  # here the storing of the uploads will be completed.
+  # after everything is stored: callback will be called
+  storeUpload: (poi, poiNote, callback, attachmentData) ->
+    @_poi = poi
+    @_poiNote = poiNote
+    @_callback = callback
+    @_fileName = null
+    if attachmentData.fileName?
+      @_fileName = attachmentData.fileName
+    if attachmentData.blob?
+      unless @_fileName?
+        @_fileName = attachmentData.blob.name
+      poiNote.attachment = { content_type: attachmentData.blob.type, url: null }
+      this.setFile attachmentData.blob
+    else if attachmentData.embed?
+      this.setEmbed {content: attachmentData.embed, content_type: "embed:#{APP.model().getEmbedType(attachmentData.embed)}"}
+    else
+      this.setFile null
+
     unless Comm.StorageController.isFileBased()
       # FIXME - not implemented
       Comm.StorageController.instance().storePoiNoteAttachment @_poiNote, base64ImgDataUrl, deferredModeParams
@@ -948,48 +977,114 @@ class Comm.UploadQ
             poi = UploadQ.instance()._poi
             note = UploadQ.instance()._poiNote
             note.attachment.url = url
-            loadStats = { numAdded: 1, numLeft: 0 }
-            Storage.Model._syncPoiNotes poi, Comm.StorageController.poiKey(poi), note, loadStats, UploadQ.instance()._callback
+            #loadStats = { numAdded: 1, numLeft: 0 }
+            #Storage.Model._syncPoiNotes poi, Comm.StorageController.poiKey(poi), note, loadStats, UploadQ.instance()._callback
+            poiKey = Comm.StorageController.poiKey(poi)
+            storedPoi = Comm.StorageController.instance().addToList poiKey, 'notes', note, false, Storage.Model.noteSort()
+            poi.notes = storedPoi.notes
+            callback poi, note
         Comm.StorageController.instance().storePoiNoteAttachment @_poiNote, @_file, deferredModeParams
+      else
+        poi = UploadQ.instance()._poi
+        poiKey = Comm.StorageController.poiKey(poi)
+        note = UploadQ.instance()._poiNote
+        if @_embed?
+          note.attachment = @_embed
+          # store with attachment
+          storedPoi = Comm.StorageController.instance().addToList poiKey, 'notes', note, false, Storage.Model.noteSort()
+        else
+          storedPoi = Comm.StorageController.instance().addToList poiKey, 'notes', note, false, Storage.Model.noteSort()
+          # plain-text - stored without attachment
+          note.attachment = {content_type: 'image/gif', url: window.location.origin+'/assets/noise.gif'}
+        #if note.attachment?
+        #  note.attachment.content_type = (if @_embed? then 'embed' else 'text')
+        #loadStats = { numAdded: 1, numLeft: 0 }
+        #Storage.Model._syncPoiNotes poi, Comm.StorageController.poiKey(poi), note, loadStats, UploadQ.instance()._callback
+        poi.notes = storedPoi.notes
+        callback poi, note
 
   syncResponseCallback: (location, poi, origCallback) ->
+    # this method is called after batch-upload with the actually persisted poi/note-data
+    # from the backend. (especially the backend-ids)
     (cbPoi, cbNewPoiNotes) ->
-        # TODO: rename poi to cbPoi and new notes as well
+        qPoiId = poi.id
+        #oldIdMarker = APP.getMarker poi, true
+
         if location.id < 0
           location = APP.storage().resetLocation location, { id: cbPoi.locationId,\
                                                              lat: cbPoi.lat,\
                                                              lng: cbPoi.lng,\
                                                              address: cbPoi.address }, cbPoi
-        curNewPoiNoteIdx = 0
-        for n, idx in poi.notes
-          if n.id < 0
-            # there are as many notes with id < 0 as cbNewPoiNotes
-            # FIXME that's not true - there could be more notes added meanwhile from other users 
-            newNote = cbNewPoiNotes[curNewPoiNoteIdx]
-            ((poiNote, cbPoiNote) ->
-              APP.storage()._dirReaders.entries.poiNotes.entries.attachments.entry.getFile poiNote.id, {}, (fileEntry) ->
-                  fileEntry.moveTo APP.storage()._dirReaders.entries.poiNotes.entries.attachments.entry, cbPoiNote.id
-                , (e) ->
-                    console.log('syncResponseCallback - '+e)
-            )(n, newNote)
-            n.id = newNote.id
-            n.attachment.url = n.attachment.url.replace(/[^\/]+$/, newNote.id)
-            curNewPoiNoteIdx += 1
-        
+          location.poiId = cbPoi.id
+          APP.markers().replace {id: poi.locationId}, location
         if poi.id < 0
+          if poi.locationId >= 0
+            location.poiId = cbPoi.id
+            APP.markers().replace {id: poi.locationId}, location
           poiKey = Comm.StorageController.poiKey {id: poi.id}
           localStorage.removeItem poiKey
           poi.id = cbPoi.id
           poi.locationId = location.id
+        # 1) find first locally-added/unsynched poiNote
+        curNewPoiNoteIdx = 0
+        for n, idx in poi.notes
+          if n.id < 0
+            curNewPoiNoteIdx = idx
+            break
+        # 2) merge new notes into poi - new notes can be from local-user or from remote-user
+        #                               local-notes are marked with local_time_secs <-> -id
+        for cbN, cbIdx in cbNewPoiNotes
+          if cbN.local_time_secs?
+            # there are as many notes with id < 0 as cbNewPoiNotes
+            # FIXME that's not true - there could be more notes added meanwhile from other users 
+            # so use local_time_secs: <-> id in backend-response (cb)
+            qN = poi.notes[curNewPoiNoteIdx]
+            ((poiNote, cbPoiNote) ->
+              APP.storage()._dirReaders.entries.poiNotes.entries.attachments.entry.getFile poiNote.id, {}, (fileEntry) ->
+                  fileEntry.moveTo APP.storage()._dirReaders.entries.poiNotes.entries.attachments.entry, cbPoiNote.id
+                  # next can only be done after fiel is moved
+                  # the new note is passed on to display - use local file-system-url to work offline later
+                  cbPoiNote.attachment.url = poiNote.attachment.url
+                  attachment = $('#poi_notes_container > div[data-id='+cbPoiNote.id+'] img')
+                  if attachment.length >= 1
+                    attachment.attr('src', poiNote.attachment.url)
+                , (e) ->
+                    console.log('syncResponseCallback - '+e)
+            )(qN, cbN)
+            qN.id = cbN.id
+            qN.attachment.url = qN.attachment.url.replace(/[^\/]+$/, cbN.id)
+          else
+            # new note added by other user - inserted @ backend-calculated pos
+            # !! has to be updated in view
+            cbN.updateView = true
+            poi.notes.splice curNewPoiNoteIdx, 0, cbN
+            curNewPoiNoteIdx += 1
+          curNewPoiNoteIdx += 1
+        
         # save the poi with new id and new note-ids
         poiKey = Comm.StorageController.poiKey {id: poi.id}
         localStorage.setItem poiKey, JSON.stringify(poi)
 
-        uploadQKey = 'comm.uploadQ.poiNotes'
-        while (qEntry = APP.storage().pop(uploadQKey))?
-          console.log('syncResponseCallback - removing Q-entry')
+        UploadQ._removeFromQueue qPoiId
 
         origCallback cbPoi, cbNewPoiNotes
+
+  @_removeFromQueue: (qPoiId, qEntries = null) ->
+    uploadQKey = 'comm.uploadQ.poiNotes'
+    unless qEntries?
+      qEntries = eval("(" + localStorage.getItem(uploadQKey) + ")")
+    maxIdx = qEntries.length-1
+    for idxSub in [0..maxIdx]
+      i = maxIdx-idxSub
+      qEntry = qEntries[i]
+      if qEntry.poiId == qPoiId
+        console.log('removeFromQueue - removing Q-entry id: '+qEntry.id)
+        qEntries.splice i, 1
+        if qEntries.length >= 1
+          localStorage.setItem(uploadQKey, JSON.stringify(qEntries));
+        else
+          localStorage.removeItem(uploadQKey)
+    qEntries
 
   @instance: () ->
     @_SINGLETON

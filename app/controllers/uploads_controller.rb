@@ -39,6 +39,7 @@ class UploadsController < ApplicationController
       vm.add_location @poi.location
     end
     @user.locations << @poi.location unless @user.locations.find {|l|l.id==@poi.location.id}
+    is_new_poi =  @poi.notes.empty?
 
     # TODO: decide on merge-order-algorithm
     # TODO: only notes for given poi are added - all other changes must be sent to client after_sync
@@ -47,6 +48,7 @@ class UploadsController < ApplicationController
     if diff_added.present?
       diff_added.each do |entry|
         note_match = entry.match(/^note_([0-9]+)/)
+binding.pry
         next unless note_match.present?
         poi_note = PoiNote.where(note_match[1].to_i).first
         if poi_note.present?
@@ -59,20 +61,27 @@ class UploadsController < ApplicationController
         end
       end
     end
+    min_local_time_secs = -1
     params[:poi_note_ids].each do |poi_note_id|
-      upload = Upload.new(attached_to: PoiNote.new(poi: @poi, user: @user, text: params[:poi_note][poi_note_id][:text]))
+      poi_note_local_time_secs = (poi_note_id.to_i/1000).round.abs
+      min_local_time_secs = poi_note_local_time_secs if (min_local_time_secs == -1) || (poi_note_local_time_secs < min_local_time_secs)
+
+      upload = Upload.new(attached_to: PoiNote.new(poi: @poi, user: @user, text: params[:poi_note][poi_note_id][:text], local_time_secs: poi_note_local_time_secs))
       upload.attached_to.attachment = upload
       upload.build_entity params[:poi_note][poi_note_id][:file].content_type, file: params[:poi_note][poi_note_id][:file]
       @poi.notes << upload.attached_to
       new_poi_notes << upload.attached_to
     end
+    @poi.local_time_secs = min_local_time_secs if is_new_poi
 
     if @poi.save
       # vm
       vm.add_poi @poi
       
       (@poi.notes.length-params[:poi_note_ids].length..(@poi.notes.length-1)).each do |idx|
-        poi_note_json_list << poi_note_json(@poi.notes[idx])
+        # show local_time_secs only to creator
+        poi_note_json_list << poi_note_json(@poi.notes[idx], false).
+                              merge!(@poi.notes[idx].user==@user ? {local_time_secs: @poi.notes[idx].local_time_secs} : {})
         # vm
         vm.add_poi_note @poi, @poi.notes[idx]
       end
@@ -82,8 +91,11 @@ class UploadsController < ApplicationController
       
       @poi.update_attribute :commit_hash, cur_commit unless @poi.commit_hash.present?
       new_poi_notes.each {|p_n|p_n.update_attribute(:commit_hash, cur_commit) unless p_n.commit_hash.present?}
+      commit = @user.commits.create hash_id: cur_commit, timestamp: DateTime.now, local_time_secs: (params[:poi_note_ids].first.to_i/1000).round.abs
+      @user.snapshot.update_attribute :cur_commit, commit
       
-      @poi_json = poi_json @poi
+      @poi_json = poi_json(@poi).
+                  merge!(@poi.user==@user ? {local_time_secs: @poi.local_time_secs} : {})
       @poi_json[:user] = { id: @user.id }
       @poi_json[:notes] = poi_note_json_list
       
@@ -106,10 +118,9 @@ class UploadsController < ApplicationController
   def create
     user = current_user || tmp_user
     poi = nearby_poi user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
-    user.locations << poi.location unless user.locations.find {|l|l.id==poi.location.id}
-binding.pry
     is_new_poi = poi.notes.empty? # if not before then it was persisted? in nearby_poi
     # FIXME - if poi exists then add new note as comment to poi's initial poi_note and set comments_on
+    user.locations << poi.location unless user.locations.find {|l|l.id==poi.location.id}
 
     poi_note_params = { poi: poi, user: user, text: params[:poi_note][:text] }
     attached_to = PoiNote.new poi_note_params
@@ -122,14 +133,8 @@ binding.pry
     @upload.build_entity params[:poi_note][:file].content_type, file: params[:poi_note][:file]
 
     if @upload.save
-      vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, user, false#@user.is_admin
-      prev_commit = vm.cur_commit
-      vm.add_poi poi if is_new_poi
-      vm.add_poi_note poi, @upload.attached_to
-      vm.merge true, true
-      cur_commit = vm.cur_commit
-      poi.update_attribute :commit_hash, cur_commit unless poi.commit_hash.present?
-      @upload.attached_to.update_attribute :commit_hash, cur_commit
+      #vm
+      new_version user, poi, is_new_poi, @upload.attached_to
 
       @poi_note_json = poi_note_json @upload.attached_to
       #render "uploads/uploaded", layout: 'uploads', formats: [:html], locals: { resource: @upload, resource_name: :upload }
@@ -154,6 +159,9 @@ binding.pry
     upload.attached_to = comment
     comment.save
     
+    #vm
+    new_version user, @poi_note.poi, false, upload.attached_to
+
     @upload = comment.attachment
     @poi_note_json = poi_note_json @upload.attached_to
     
@@ -166,12 +174,17 @@ binding.pry
   def create_from_base64
     user = current_user || tmp_user
     poi = nearby_poi user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
+    is_new_poi = poi.notes.empty? # if not before then it was persisted? in nearby_poi
+    # FIXME - if poi exists then add new note as comment to poi's initial poi_note and set comments_on
     user.locations << poi.location unless user.locations.find {|l|l.id==poi.location.id}
     
     attachment_mapping = Upload.get_attachment_mapping params[:file_content_type]
     @upload = build_upload_base64 user, poi, attachment_mapping
     
     if @upload.attached_to.save
+      #vm
+      new_version user, poi, is_new_poi, @upload.attached_to
+
       if attachment_mapping.size >= 2
         # restore original content-type after imagemagick did it's job
         suffix = ".#{params[:file_content_type].match(/^[^\/]+\/([^\s;,]+)/)[1]}" rescue ''
@@ -201,6 +214,9 @@ binding.pry
     @poi_note.comments << @upload.attached_to
     @poi_note.save
 
+    #vm
+    new_version user, @poi_note.poi, false, @upload.attached_to
+
     if attachment_mapping.size >= 2
       # restore original content-type after imagemagick did it's job
       suffix = ".#{params[:file_content_type].match(/^[^\/]+\/([^\s;,]+)/)[1]}" rescue ''
@@ -218,6 +234,8 @@ binding.pry
   def create_from_embed
     user = current_user || tmp_user
     poi = nearby_poi user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
+    is_new_poi = poi.notes.empty? # if not before then it was persisted? in nearby_poi
+    # FIXME - if poi exists then add new note as comment to poi's initial poi_note and set comments_on
     user.locations << poi.location unless user.locations.find {|l|l.id==poi.location.id}
 
     @upload = Upload.new(attached_to: PoiNote.new(poi: poi, user: user, text: params[:comment]))
@@ -225,6 +243,9 @@ binding.pry
     @upload.build_entity 'text/*', text: params[:data], embed_type: UploadEntity::Embed.get_embed_type(params[:data])
     
     if @upload.attached_to.save
+      #vm
+      new_version user, poi, is_new_poi, @upload.attached_to
+
       #render "uploads/uploaded_base64", formats: [:js]
       @poi_note_json = poi_note_json @upload.attached_to
       render json: @poi_note_json.to_json
@@ -248,6 +269,9 @@ binding.pry
     @upload.attached_to = comment
     comment.save
     comment.reload
+
+    #vm
+    new_version user, @poi_note.poi, false, comment
     
     #render "uploads/uploaded_base64", formats: [:js]
     @poi_note_json = poi_note_json comment
@@ -259,11 +283,16 @@ binding.pry
   def create_from_plain_text
     user = current_user || tmp_user
     poi = nearby_poi user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
+    is_new_poi = poi.notes.empty? # if not before then it was persisted? in nearby_poi
+    # FIXME - if poi exists then add new note as comment to poi's initial poi_note and set comments_on
     user.locations << poi.location unless user.locations.find {|l|l.id==poi.location.id}
 
     poi_note = PoiNote.new(poi: poi, user: user, text: params[:comment])
     
     if poi_note.save
+      #vm
+      new_version user, poi, is_new_poi, poi_note
+
       #render "uploads/uploaded_base64", formats: [:js]
       @poi_note_json = poi_note_json poi_note
       render json: @poi_note_json.to_json
@@ -283,6 +312,9 @@ binding.pry
 
     comment = @poi_note.comments.build(poi: @poi_note.poi, user: user, text: params[:comment])
     comment.save
+    
+    #vm
+    new_version user, @poi_note.poi, false, comment
     
     #render "uploads/uploaded_base64", formats: [:js]
     @poi_note_json = poi_note_json comment
@@ -331,6 +363,20 @@ binding.pry
   end
 
   private
+
+  # TODO local_time_secs
+  def new_version user, poi, is_new_poi, poi_note, local_time_secs = nil
+    vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, user, false#@user.is_admin
+    prev_commit = vm.cur_commit
+    vm.add_poi poi if is_new_poi
+    vm.add_poi_note poi, poi_note
+    vm.merge true, true
+    cur_commit = vm.cur_commit
+    poi.update_attribute :commit_hash, cur_commit unless poi.commit_hash.present?
+    poi_note.update_attribute :commit_hash, cur_commit
+    commit = user.commits.create hash_id: cur_commit, timestamp: DateTime.now#, local_time_secs: params[:local_time_secs]
+    user.snapshot.update_attribute :cur_commit, commit
+  end
 
   def after_sync
     upload_msg = { type: 'poi_sync',
