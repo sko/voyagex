@@ -63,7 +63,11 @@ class window.Storage.Model
           console.log('TODO: errorhandling')
 
   loadPois: (lat, lng, callback) ->
-    if false && APP.isOnline()
+    # TODO - check cache since there could have been an offline period meanwhile
+    if Comm.StorageController.instance().hasQueue()
+      # get all pois via sync (TODO: add view-range for response)
+      alert('TODO: q')
+    if APP.isOnline()
       $.ajax
         type: 'GET'
         dataType: 'json'
@@ -85,7 +89,7 @@ class window.Storage.Model
     console.log('TODO: ...')
 
   # called from batch-upload to upload queue
-  syncPoi: (formData, poi = null, callback) ->
+  syncUploadCachedQPoiData: (formData, poi = null, callback) ->
     if poi?
       url = '<%= sync_poi_path(id: ':id') %>'.replace(/:id/, poi.notes[0].id)
       formData.append('_method', 'put')
@@ -108,9 +112,31 @@ class window.Storage.Model
       console.log('TODO: ?')
       #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
 
+  # sets up params for _cachePoiNote
+  savePoiNote: (doneCB, commitConf = null) ->
+    if (Modernizr.localstorage)
+      poiId = parseInt $('#upload_form').attr('data-poiId')
+      afterQCB = (qPoi, qNewPoiNote) ->
+          if APP.isOnline()
+            APP.storage().uploadQueue qPoi, qNewPoiNote
+          else
+            location = Comm.StorageController.instance().getLocation qPoi.locationId
+            qPoi.lat = location.lat
+            qPoi.lng = location.lng
+            qPoi.address = location.address
+            qNewPoiNote.user = currentUser
+            doneCB qPoi, qNewPoiNote
+      if commitConf?
+        afterQCB = ((afterQCB) ->
+            { commit: commitConf.getCommit(afterQCB) }
+        )(afterQCB)
+      this._cachePoiNote poiId, afterQCB
+    else
+      alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
+
   # @deprecated - instantly saves data only if offline - else uploads data first and saves on backend-response
-  # -> use savePoiNote(uploadTargetId) instead
-  uploadPoiNote: (formData, callback, uploadTargetId) ->
+  # -> use savePoiNote(offlineCallback) instead
+  uploadPoiNote: (formData, callback, uploadTargetId = null) ->
     if APP.isOnline()
       if uploadTargetId? && uploadTargetId >= 0
         url = '<%= upload_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
@@ -139,28 +165,13 @@ class window.Storage.Model
     else
       if (Modernizr.localstorage)
         poiId = parseInt $('#upload_form').attr('data-poiId')
-        this._cachePoiNote poiId, uploadTargetId, callback
+        this._cachePoiNote poiId, callback
       else
         alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
-
-  # sets up params for _cachePoiNote
-  savePoiNote: (uploadTargetId, onlineCallback, offlineCallback) ->
-    if (Modernizr.localstorage)
-      poiId = parseInt $('#upload_form').attr('data-poiId')
-      this._cachePoiNote poiId, uploadTargetId, (qPoi, qNewPoiNote) ->
-          if APP.isOnline()
-            APP.storage().uploadQueue qPoi, qNewPoiNote
-          else
-            location = Comm.StorageController.instance().getLocation qPoi.locationId
-            qPoi.lat = location.lat
-            qPoi.lng = location.lng
-            qPoi.address = location.address
-            qNewPoiNote.user = currentUser
-            offlineCallback qPoi, qNewPoiNote
-    else
-      alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
     
-  savePoiNote64: (data, callback, uploadTargetId = null) ->
+  # @deprecated - instantly saves data only if offline - else uploads data first and saves on backend-response
+  # -> use savePoiNote64(offlineCallback) instead
+  uploadPoiNote64: (data, callback, uploadTargetId = null) ->
     if APP.isOnline()
       if uploadTargetId? && uploadTargetId >= 0
         url = '<%= upload_base64_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
@@ -185,15 +196,13 @@ class window.Storage.Model
     else
       if (Modernizr.localstorage)
         poiId = parseInt $('#upload_form').attr('data-poiId')
-        if poiId? && poiId >= 0
-          uploadTargetId = APP.transfer().getUploadTargetId()
-        else
-          uploadTargetId = null
-        this._cachePoiNote poiId, uploadTargetId, callback
+        this._cachePoiNote poiId, callback
       else
         alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
 
-  saveEmbed: (data, callback, uploadTargetId = null) ->
+  # @deprecated - instantly saves data only if offline - else uploads data first and saves on backend-response
+  # -> use saveEmbed(offlineCallback) instead
+  uploadEmbed: (data, callback, uploadTargetId = null) ->
     if APP.isOnline()
       if uploadTargetId? && uploadTargetId >= 0
         url = '<%= upload_embed_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
@@ -218,15 +227,13 @@ class window.Storage.Model
     else
       if (Modernizr.localstorage)
         poiId = parseInt $('#upload_form').attr('data-poiId')
-        if poiId? && poiId >= 0
-          uploadTargetId = APP.transfer().getUploadTargetId()
-        else
-          uploadTargetId = null
-        this._cachePoiNote poiId, uploadTargetId, callback
+        this._cachePoiNote poiId, callback
       else
         alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
-
-  savePlainText: (data, callback, uploadTargetId = null) ->
+  
+  # @deprecated - instantly saves data only if offline - else uploads data first and saves on backend-response
+  # -> use saveEmbed(offlineCallback) instead
+  uploadPlainText: (data, callback, uploadTargetId = null) ->
     if APP.isOnline()
       if uploadTargetId? && uploadTargetId >= 0
         url = '<%= upload_plain_text_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
@@ -251,19 +258,14 @@ class window.Storage.Model
     else
       if (Modernizr.localstorage)
         poiId = parseInt $('#upload_form').attr('data-poiId')
-        if poiId? && poiId >= 0
-          uploadTargetId = APP.transfer().getUploadTargetId()
-        else
-          uploadTargetId = null
-        this._cachePoiNote poiId, uploadTargetId, callback
+        this._cachePoiNote poiId, callback
       else
         alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
 
   # saves locally created data with temp-id's to localStorage
   # the ids will be synchronized with backend-ids on backend-response/callback
-  _cachePoiNote: (poiId, uploadTargetId, callback) ->
+  _cachePoiNote: (poiId, callback) ->
     console.log('caching poiNote ...')
-    #id = 'q.'+new Date().getTime()
     id = -new Date().getTime()
     if poiId != -1
       storeKey = Comm.StorageController.poiKey {id: poiId}
@@ -271,35 +273,38 @@ class window.Storage.Model
      #poi = Comm.StorageController.instance().get storeKey
       poi = eval("(" + localStorage.getItem(storeKey) + ")")
       location = Comm.StorageController.instance().getLocation poi.locationId
-      #uploadTargetId = APP.transfer().getUploadTargetId()
     else
+      selLatLng = APP.getSelectedPositionLatLng()
       location = { id: id,\
-                   # decimal-scale: 7
-                   lat: Math.round($("#location_latitude").val()*10000000)/10000000,\
-                   lng: Math.round($("#location_longitude").val()*10000000)/10000000,\
+                   lat: selLatLng[0],\
+                   lng: selLatLng[1],\
                    address: 'TODO' }
       location = Comm.StorageController.instance().saveLocation location, { poi: { 'id': id } }
       poi = { id: id,\
               locationId: id,\
               userId: currentUser.id,\
               notes: [] }
-      poiKey = Comm.StorageController.poiKey poi
-      localStorage.setItem poiKey, JSON.stringify(poi)
+      Comm.StorageController.instance().storePoi poi, false
+    
     poiNote = { id: id,\
                 userId: currentUser.id,\
-                text: $("#upload_comment_text").val() }
-    switch $('input[name=upload_type]:checked').val()
-      when 'plain_text' 
-        Comm.StorageController.instance().queueUpload poi, poiNote, callback, {}
-      when 'camera'
-        $('#media_input_display')[0].toBlob((blob) ->
-            Comm.StorageController.instance().queueUpload poi, poiNote, callback, { blob: blob, fileName: 'foto_'+currentUser.id+'.'+Math.abs(id) }
-          )
-      when 'file' 
-        inputFile = $('#fileupload')[0].files[0]
-        Comm.StorageController.instance().queueUpload poi, poiNote, callback, { blob: inputFile }
-      when 'embed' 
-        Comm.StorageController.instance().queueUpload poi, poiNote, callback, { embed: $('#embed').val() }
+                text: $("#upload_comment").val() }
+
+    if typeof(callback) == 'object'
+      callback.commit(poi, poiNote)
+    else
+      switch $('input[name=upload_type]:checked').val()
+        when 'plain_text' 
+          Comm.StorageController.instance().queueUpload poi, poiNote, callback, {}
+        when 'camera'
+          $('#media_input_display')[0].toBlob((blob) ->
+              Comm.StorageController.instance().queueUpload poi, poiNote, callback, { blob: blob, fileName: 'foto_'+currentUser.id+'.'+Math.abs(id) }
+            )
+        when 'file' 
+          inputFile = $('#fileupload')[0].files[0]
+          Comm.StorageController.instance().queueUpload poi, poiNote, callback, { blob: inputFile }
+        when 'embed' 
+          Comm.StorageController.instance().queueUpload poi, poiNote, callback, { embed: $('#embed').val() }
 
   saveUserFoto64: (data, callback) ->
     # TODO save before sending - if offline send later
@@ -362,20 +367,25 @@ class window.Storage.Model
     # store user
     if note.user?
       Comm.StorageController.instance().saveUser note.user
-    # store image
-    attachmentUrl = Model._viewPoiNoteAttachment note
-    # @see leaflet-functionaltilelayer _loadTile: function / MapControl - drawTile
-    if (typeof attachmentUrl == 'string') 
-      console.log 'Model - syncWithStorage: attachmentUrl-string = '+attachmentUrl
+    if note.attachment? && (!note.attachment.content_type.match(/^embed:/))
+      # store image
+      attachmentUrl = Model._viewPoiNoteAttachment note
+      # @see leaflet-functionaltilelayer _loadTile: function / MapControl - drawTile
+      if (typeof attachmentUrl == 'string') 
+        console.log 'Model - syncWithStorage: attachmentUrl-string = '+attachmentUrl
+        loadStats.numLeft -= 1
+        Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, loadStats, callback
+      else if (typeof attachmentUrl.then == 'function') 
+        # Assume we are dealing with a promise.
+        attachmentUrl.then (url) ->
+            console.log 'Model - syncWithStorage: attachmentUrl-promise resolved to: '+url
+            note.attachment.url = url
+            loadStats.numLeft -= 1
+            Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, loadStats, callback
+    else
+      # embed, plain_text
       loadStats.numLeft -= 1
       Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, loadStats, callback
-    else if (typeof attachmentUrl.then == 'function') 
-      # Assume we are dealing with a promise.
-      attachmentUrl.then (url) ->
-          console.log 'Model - syncWithStorage: attachmentUrl-promise resolved to: '+url
-          note.attachment.url = url
-          loadStats.numLeft -= 1
-          Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, loadStats, callback
 
   @setupPoiForNote: (poi) ->
     storeKey = Comm.StorageController.poiKey {id: poi.id}
@@ -383,7 +393,7 @@ class window.Storage.Model
     unless storedPoi
       unless poi.notes?
         poi.notes = []
-      Model._storeWithSeparateLocation storeKey, poi
+      Comm.StorageController.instance().storePoi poi
 
   @_syncPois: (poi, callback, i) ->
     storeKey = Comm.StorageController.poiKey poi
@@ -401,20 +411,8 @@ class window.Storage.Model
     else
       unless poi.notes?
         poi.notes = []
-    Model._storeWithSeparateLocation storeKey, poi
+    Comm.StorageController.instance().storePoi poi
     callback poi
-
-  @_storeWithSeparateLocation: (poiKey, poi) ->
-    Comm.StorageController.instance().saveLocation {id: poi.locationId,\
-                                                    lat: poi.lat,\
-                                                    lng: poi.lng,\
-                                                    address: poi.address}, {poi: {id: poi.id}}
-    locationAttrs = ['lat','lng','address']
-    storePoi = {}
-    for key in Object.keys(poi)
-      if locationAttrs.indexOf(key) == -1
-        storePoi[key] = poi[key]
-    localStorage.setItem poiKey, JSON.stringify(storePoi)
 
   # - might be called multiple times within backend-response/callback for new poinotes (->loadStats)
   #   stores each note to localStorage (!)
@@ -428,7 +426,7 @@ class window.Storage.Model
     if existingPoi? 
       unless existingPoi.notes? && Model._findPoiNote(note, existingPoi.notes) >= 0
         # if poiNote is not already in poi's note-list
-        existingPoi = Model._storeWithoutPoi poiKey, note
+        existingPoi = Comm.StorageController.instance().storePoiNote existingPoi, note
       poi.notes = existingPoi.notes
     unless loadStats.numLeft >= 1
       if poi.notes? && poi.notes.length >= 1
@@ -437,33 +435,6 @@ class window.Storage.Model
       else
         newNotes = [note]
       callback poi, newNotes
-
-  # if there is a poi in the note (backend-push or view-object) then save without.
-  # TODO - prepare store-json when receiving the response - and then add view-attributes
-  #        or even better - use function-params for persistable entities
-  @_storeWithoutPoi: (poiKey, note) ->
-    if note.poi?
-      notePoi = note.poi
-      delete note.poi
-      poiNoteClone = eval("("+JSON.stringify(note)+")")
-      storedJSON = Model._storeWithSeparateUser poiKey, poiNoteClone
-      note.poi = notePoi
-      storedJSON
-    else
-      Model._storeWithSeparateUser poiKey, note
-
-  @_storeWithSeparateUser: (poiKey, note) ->
-    if note.user
-      Comm.StorageController.instance().saveUser note.user
-      user = note.user
-      delete note.user
-      note.userId = user.id
-      storedPoi = Comm.StorageController.instance().addToList poiKey, 'notes', note, false, Model.noteSort()
-      delete note.userId # FIXME - maybe it existed before?
-      note.user = user
-    else
-      storedPoi = Comm.StorageController.instance().addToList poiKey, 'notes', note, false, Model.noteSort()
-    storedPoi
   
   @noteSort: () ->
     (a, b) ->
@@ -544,14 +515,15 @@ class window.Storage.Model
 
   cacheAttachment: (poiNote, deferredModeParams = null) ->
     if Comm.StorageController.isFileBased()
-      #attachment = this._loadReadyImage poiNote, deferredModeParams
-      switch poiNote.attachment.content_type.match(/^[^\/]+/)[0]
-        when 'audio' 
-          attachment = this._loadReadyBlob poiNote, deferredModeParams
-        when 'image'
-          attachment = this._loadReadyImage poiNote, deferredModeParams
-        when 'video' 
-          attachment = this._loadReadyBlob poiNote, deferredModeParams
+      if poiNote.attachment?
+        switch poiNote.attachment.content_type.match(/^[^:\/]+/)[0]
+          when 'audio' 
+            attachment = this._loadReadyBlob poiNote, deferredModeParams
+          when 'image'
+            attachment = this._loadReadyImage poiNote, deferredModeParams
+          when 'video' 
+            attachment = this._loadReadyBlob poiNote, deferredModeParams
+      return ''
     else
       attachment = Comm.StorageController.instance().getPoiNoteAttachment poiNote, deferredModeParams
       unless attachment?
@@ -566,11 +538,11 @@ class window.Storage.Model
             attachment = this._loadReadyBlob poiNote, deferredModeParams
       attachment
 
-  getEmbedType: (code) ->
-    if code.match(/^</)?
+  getEmbedType: (content) ->
+    if content.match(/^</)?
       # youtube, ...
     else
-      suffixMatch = code.match(/[^.]+$/)
+      suffixMatch = content.match(/[^.]+$/)
       if suffixMatch?
         unless $.inArray(suffixMatch[0], ['jpg','jpeg','gif','png','webp']) == -1
           return "image/#{suffixMatch[0]}"

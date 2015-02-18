@@ -18,15 +18,15 @@ class Upload < ActiveRecord::Base
   end
 
   def build_entity content_type, build_params = {}
-    case content_type.match(/^[^\/]+/)[0]
+    case content_type.to_s.match(/^[^:\/]+/)[0]
     when 'audio'
       self.entity = UploadEntity::Mediafile.new(build_params.merge!(upload: self))
     when 'image'
       self.entity = UploadEntity::Mediafile.new(build_params.merge!(upload: self))
-    when 'text'
-      self.entity = UploadEntity::Embed.new(build_params.merge!(upload: self))
     when 'video'
       self.entity = UploadEntity::Mediafile.new(build_params.merge!(upload: self))
+    when 'embed'
+      self.entity = UploadEntity::Embed.new(build_params.merge!(upload: self))
     else
     end
   end

@@ -21,7 +21,9 @@ jQuery ->
 
   window.photoClicked = (swiper) ->
     #$('#current_address').html($(swiper.clickedSlide).attr('data-address'))
-    APP.showPOI $(swiper.clickedSlide).attr('data-poiId'), $(swiper.clickedSlide).attr('data-poiNoteId')
+    # test sync with using string instead of integer
+    #APP.showPOI $(swiper.clickedSlide).attr('data-poiId'), $(swiper.clickedSlide).attr('data-poiNoteId')
+    APP.showPOI parseInt($(swiper.clickedSlide).attr('data-poiId')), parseInt($(swiper.clickedSlide).attr('data-poiNoteId'))
 
   window.photoChanged = (swiper) ->
     #$('#current_address').html($(swiper.activeSlide()).attr('data-address'))

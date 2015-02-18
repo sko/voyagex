@@ -1,6 +1,12 @@
 class window.VoyageX.View
 
   @_SINGLETON = null
+  
+  @MAX_SWIPER_SLIDE_WIDTH = 300
+  @MAX_SWIPER_SLIDE_HEIGHT = 100.0
+  @MAX_POI_NOTE_ATTACHMENT_WIDTH = 300
+  @MAX_POI_NOTE_ATTACHMENT_HEIGHT = 100.0
+  @MISSING_ATTACHMENT_IMG_URL = '/assets/noise.gif'
 
   constructor: () ->
     View._SINGLETON = this

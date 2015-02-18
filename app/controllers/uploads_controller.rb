@@ -66,11 +66,21 @@ binding.pry
       poi_note_local_time_secs = (poi_note_id.to_i/1000).round.abs
       min_local_time_secs = poi_note_local_time_secs if (min_local_time_secs == -1) || (poi_note_local_time_secs < min_local_time_secs)
 
-      upload = Upload.new(attached_to: PoiNote.new(poi: @poi, user: @user, text: params[:poi_note][poi_note_id][:text], local_time_secs: poi_note_local_time_secs))
-      upload.attached_to.attachment = upload
-      upload.build_entity params[:poi_note][poi_note_id][:file].content_type, file: params[:poi_note][poi_note_id][:file]
-      @poi.notes << upload.attached_to
-      new_poi_notes << upload.attached_to
+      file = params[:poi_note][poi_note_id][:file]
+      if file.present? || (embed = params[:poi_note][poi_note_id][:embed]).present?
+        upload = Upload.new(attached_to: PoiNote.new(poi: @poi, user: @user, text: params[:poi_note][poi_note_id][:text], local_time_secs: poi_note_local_time_secs))
+        upload.attached_to.attachment = upload
+        if file.present?
+          upload.build_entity file.content_type, file: file
+        else
+          upload.build_entity :embed, text: embed[:content], embed_type: UploadEntity::Embed.get_embed_type(embed[:content])
+        end
+        poi_note = upload.attached_to
+      else
+        poi_note = PoiNote.new(poi: @poi, user: @user, text: params[:poi_note][poi_note_id][:text], local_time_secs: poi_note_local_time_secs)
+      end
+      @poi.notes << poi_note
+      new_poi_notes << poi_note
     end
     @poi.local_time_secs = min_local_time_secs if is_new_poi
 
@@ -110,7 +120,7 @@ binding.pry
 
       after_sync
     else
-      render json: { errors: @upload.errors.full_messages }, status: 401
+      render json: { errors: @poi.errors.full_messages }, status: 401
     end
   end
 
@@ -240,7 +250,7 @@ binding.pry
 
     @upload = Upload.new(attached_to: PoiNote.new(poi: poi, user: user, text: params[:comment]))
     @upload.attached_to.attachment = @upload
-    @upload.build_entity 'text/*', text: params[:data], embed_type: UploadEntity::Embed.get_embed_type(params[:data])
+    @upload.build_entity :embed, text: params[:data], embed_type: UploadEntity::Embed.get_embed_type(params[:data])
     
     if @upload.attached_to.save
       #vm
@@ -264,7 +274,7 @@ binding.pry
     user.locations << @poi_note.poi.location unless user.locations.find {|l|l.id==@poi_note.poi.location.id}
 
     @upload = Upload.new
-    @upload.build_entity 'text/*', text: params[:data], embed_type: UploadEntity::Embed.get_embed_type(params[:data])
+    @upload.build_entity :embed, text: params[:data], embed_type: UploadEntity::Embed.get_embed_type(params[:data])
     comment = @poi_note.comments.build(poi: @poi_note.poi, user: user, text: params[:comment], attachment: @upload)
     @upload.attached_to = comment
     comment.save

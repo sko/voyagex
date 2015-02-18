@@ -103,13 +103,17 @@ class window.Comm.Comm
       unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
         channelPath += VoyageX.PEER_CHANNEL_PREFIX +
                        if peer? then peer.peerPort.channel_enc_key else Comm.channelCallBacksJSON[channel.substr(1)].channel_enc_key
+      if message.cacheId?
+        delete message.cacheId
       client.publish(channelPath, message)
     else
       if (Modernizr.localstorage)
-        console.log('caching publish to '+channel)
-        # later send: @_storageController.pop('comm.publish')
-        cacheEntry = { channel: channel, message: message, peer: peer }
-        @_storageController.addToList('comm.publish', 'push', cacheEntry)
+        unless message.cacheId?
+          console.log('caching publish to '+channel)
+          # later send: @_storageController.pop('comm.publish')
+          message.cacheId = Math.round(Math.random()*1000000)
+          cacheEntry = { channel: channel, message: message, peer: peer }
+          @_storageController.addToList('comm.publish', 'push', cacheEntry)
       else
         alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
 

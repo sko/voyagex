@@ -1,8 +1,10 @@
 <% environment.context_class.instance_eval { include Rails.application.routes.url_helpers } %>
 
+# collects/sets-up upload-data from forms
 class window.VoyageX.UploadHelper
 
   @_SINGLETON = null
+  @CACHE_BEFORE_UPLOAD = true
 
   constructor: () ->
     UploadHelper._SINGLETON = this
@@ -11,6 +13,29 @@ class window.VoyageX.UploadHelper
     #commentsOnId = parseInt $('#upload_form').attr('data-commentsOnId')
     commentsOnIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/(-?[0-9]+)/)
     commentsOnId = (if commentsOnIdMatch? then parseInt(commentsOnIdMatch[1]) else null)
+
+  # uploadConfig: { add: () -> ..., done: afterCB }
+  upload: (uploadConf) ->
+    # used for offline-queueing
+    if UploadHelper.CACHE_BEFORE_UPLOAD
+      commitConf = { getCommit: (afterQCB) -> # called in savePoiNote
+                         (poi, poiNote) -> # called in _cachePoiNote
+                             uploadConf.setData (data) -> # commitCB
+                                 APP.storage().queueUpload poi,
+                                                           poiNote,
+                                                           afterQCB,
+                                                           data }
+      APP.model().savePoiNote  uploadConf.done, commitConf
+    else
+      selLatLng = APP.getSelectedPositionLatLng()
+      data = { location: { latitude: selLatLng[0], longitude: selLatLng[1] },\
+               comment: $('#upload_comment').val() }
+      uploadConfig.add data
+      uploadTargetId = APP.transfer().getUploadTargetId()
+      if uploadTargetId?
+        uploadConfig.do.call APP.model(), data, uploadConfig.done, uploadTargetId
+      else
+        uploadConfig.do.call APP.model(), data, uploadConfig.done
 
   @instance: () ->
     unless UploadHelper._SINGLETON?
@@ -40,25 +65,6 @@ jQuery ->
       $('#upload_embed_container').css('display', 'none')
       $('#upload_plain_text_container').css('display', 'block')
 
-  curSelVidSrcIdx = 0
-  switchCamera = () ->
-    if selectedCameraActive
-      stopCurrentVideo()
-    curSelVidSrcIdx = mediaManager.nextSelectedVideoSrcIdx()
-    takePhoto()
-
-  # callback: { addToData: () -> ..., after: afterCB }
-  savePoI = (callback) ->
-    selLatLng = APP.getSelectedPositionLatLng()
-    data = { location: { latitude: selLatLng[0], longitude: selLatLng[1] },\
-             comment: $('#upload_comment').val() }
-    callback.addToData data
-    uploadTargetId = APP.transfer().getUploadTargetId()
-    if uploadTargetId?
-      callback.save.call APP.model(), data, callback.after, uploadTargetId
-    else
-      callback.save.call APP.model(), data, callback.after
-
   window.batchUpload = (perPoiEntry, callback) ->
     formData = new FormData()
     formData.append 'location[latitude]', perPoiEntry.location.lat
@@ -69,67 +75,65 @@ jQuery ->
         continue
       formData.append 'poi_note_ids[]', note.id
       formData.append 'poi_note['+note.id+'][text]', note.text
-      formData.append 'poi_note['+note.id+'][file]', perPoiEntry.fileData[note.id].file, perPoiEntry.fileData[note.id].name
+      if perPoiEntry.fileData[note.id]?
+        formData.append 'poi_note['+note.id+'][file]', perPoiEntry.fileData[note.id].file, perPoiEntry.fileData[note.id].name
+      else if note.attachment? && note.attachment.content_type.match(/^embed:/)?
+        formData.append 'poi_note['+note.id+'][embed][content_type]', note.attachment.content_type
+        formData.append 'poi_note['+note.id+'][embed][content]', note.attachment.content
     uploadForm = $('#tmpl_poi_note_input #new_poi_note').first()
     uploadForm.find('input').each ((formData, skipInputNames) ->
         () ->
             if $.inArray($(this).attr('name'), skipInputNames) == -1
               formData.append($(this).attr('name'), $(this).attr('value'))
         )(formData, skipInputNames)
-    APP.model().syncPoi formData,
-                                     (if perPoiEntry.poi.id >= 0 then perPoiEntry.poi else null),
-                                     (if callback? then callback.cb(afterUploadPhoto) else afterUploadPhoto)
+    APP.model().syncUploadCachedQPoiData formData,
+                                         (if perPoiEntry.poi.id >= 0 then perPoiEntry.poi else null),
+                                         (if callback? then callback.cb(afterUploadPhoto) else afterUploadPhoto)
 
   window.uploadPhoto = () ->
-    uploadTargetId = APP.transfer().getUploadTargetId()
-    unless selLatLng?
-      selLatLng = APP.getSelectedPositionLatLng()
-    unless file?
-      file = $('#fileupload')[0].files[0]
-    # used for offline-queueing
-    $("#location_latitude").val(selLatLng[0])
-    $("#location_longitude").val(selLatLng[1])
-    $("#upload_comment_text").val($("#upload_comment").val())
-    
-    formData = new FormData()
-    skipInputNames = ['location[latitude]','location[longitude]','poi_note[text]','poi_note[file]']
-    formData.append('location[latitude]', selLatLng[0])
-    formData.append('location[longitude]', selLatLng[1])
-    formData.append('poi_note[text]', $("#upload_comment").val())
-    formData.append('poi_note[file]', file, 'TODO_filename')
-    uploadForm = $('#tmpl_poi_note_input #new_poi_note').first()
-    uploadForm.find('input').each ((formData, skipInputNames) ->
-        () ->
-            if $.inArray($(this).attr('name'), skipInputNames) == -1
-              formData.append($(this).attr('name'), $(this).attr('value'))
-        )(formData, skipInputNames)
-   #APP.model().uploadPoiNote formData, afterUploadPhoto, uploadTargetId
-    APP.model().savePoiNote uploadTargetId, afterUploadPhoto, afterCachePhoto
+    if VoyageX.UploadHelper.CACHE_BEFORE_UPLOAD
+      APP.model().savePoiNote afterCachePhoto
+    else
+      uploadTargetId = APP.transfer().getUploadTargetId()
+      unless selLatLng?
+        selLatLng = APP.getSelectedPositionLatLng()
+      unless file?
+        file = $('#fileupload')[0].files[0]
+      # used for offline-queueing
+      $("#location_latitude").val(selLatLng[0])
+      $("#location_longitude").val(selLatLng[1])
+      $("#upload_comment_text").val($("#upload_comment").val())
+      
+      formData = new FormData()
+      skipInputNames = ['location[latitude]','location[longitude]','poi_note[text]','poi_note[file]']
+      formData.append('location[latitude]', selLatLng[0])
+      formData.append('location[longitude]', selLatLng[1])
+      formData.append('poi_note[text]', $("#upload_comment").val())
+      formData.append('poi_note[file]', file, 'TODO_filename')
+      uploadForm = $('#tmpl_poi_note_input #new_poi_note').first()
+      uploadForm.find('input').each ((formData, skipInputNames) ->
+          () ->
+              if $.inArray($(this).attr('name'), skipInputNames) == -1
+                formData.append($(this).attr('name'), $(this).attr('value'))
+          )(formData, skipInputNames)
+      APP.model().uploadPoiNote formData, afterUploadPhoto, uploadTargetId
 
   uploadPhoto64 = () ->
-    selLatLng = APP.getSelectedPositionLatLng()
-    fileContentType = $('#media_input_current').attr('src').match(/^data:([^;]+)/)[1]
-    fileData = $('#media_input_current').attr('src').replace(/^data:image\/.+?base64,/,'')
-    data = { location: { latitude: selLatLng[0], longitude: selLatLng[1] },\
-             file_comment: $('#upload_comment').val(),\
-             file_data: fileData,\
-             file_content_type: fileContentType }
-    uploadTargetId = APP.transfer().getUploadTargetId()
-    if uploadTargetId?
-      APP.model().savePoiNote64 data, afterUploadPhoto, uploadTargetId
+    if VoyageX.UploadHelper.CACHE_BEFORE_UPLOAD
+      APP.model().savePoiNote afterCachePhoto
     else
-      APP.model().savePoiNote64 data, afterUploadPhoto
-
-#  uploadEmbed = () ->
-#    selLatLng = APP.getSelectedPositionLatLng()
-#    data = { location: { latitude: selLatLng[0], longitude: selLatLng[1] },\
-#             comment: $('#upload_comment').val(),\
-#             data: $('#embed').val() }
-#    uploadTargetId = APP.transfer().getUploadTargetId()
-#    if uploadTargetId?
-#      APP.model().saveEmbed data, afterUploadEmbed, uploadTargetId
-#    else
-#      APP.model().saveEmbed data, afterUploadEmbed
+      selLatLng = APP.getSelectedPositionLatLng()
+      fileContentType = $('#media_input_current').attr('src').match(/^data:([^;]+)/)[1]
+      fileData = $('#media_input_current').attr('src').replace(/^data:image\/.+?base64,/,'')
+      data = { location: { latitude: selLatLng[0], longitude: selLatLng[1] },\
+               file_comment: $('#upload_comment').val(),\
+               file_data: fileData,\
+               file_content_type: fileContentType }
+      uploadTargetId = APP.transfer().getUploadTargetId()
+      if uploadTargetId?
+        APP.model().uploadPoiNote64 data, afterUploadPhoto, uploadTargetId
+      else
+        APP.model().uploadPoiNote64 data, afterUploadPhoto
 
   afterUpload = (poi, newNotes) ->
     $('#upload_comment').val('')
@@ -152,28 +156,37 @@ jQuery ->
   afterCachePhoto = (poi, newNote) ->
     afterUploadPhoto poi, [newNote]
 
-  window.afterUploadEmbed = (poi, newNotes) ->
-    $('#embed').val('')
-    afterUpload poi, newNotes
-
   $(document).on 'click', '#upload_button', (event) ->
+    # don't send form
     event.stopPropagation()
     event.preventDefault()
     uploadPhoto()
     
   $(document).on 'click', '#media_input_upload_btn', (event) ->
-    uploadPhoto64()
+#    uploadPhoto64()
+    APP.transfer().upload { setData: (commitCB) ->
+        $('#media_input_display')[0].toBlob((blob) ->
+            commitCB { blob: blob, fileName: 'foto_'+currentUser.id }
+          )
+      , done: (poi, newNote) ->
+          $('#media_input_current').attr('src', '')
+          afterUpload poi, [newNote]
+      }
 
   $(document).on 'click', '#embed_upload_btn', (event) ->
-#    uploadEmbed()
-    savePoI { addToData: (data) ->
-        data.data = $('#embed').val()
-      , save: APP.model().saveEmbed, after: afterUploadEmbed }
+    APP.transfer().upload { setData: (commitCB) ->
+        commitCB { embed: $('#embed').val() }
+      , done: (poi, newNote) ->
+          $('#embed').val('')
+          afterUpload poi, [newNote]
+      }
     
   $(document).on 'click', '#plain_text_upload_btn', (event) ->
-    savePoI { addToData: (data) ->
-        data.data = window.location.origin+'/assets/noise.gif'
-      , save: APP.model().savePlainText, after: afterUpload }
+    APP.transfer().upload { setData: (commitCB) ->
+        commitCB {}
+      , done: (poi, newNote) ->
+          afterUpload poi, [newNote]
+      }
     
   $(document).on 'click', '#user_foto_media_input_upload_btn', (event) ->
     fotoContentType = $('#user_foto_media_input_current').attr('src').match(/^data:([^;]+)/)[1]
@@ -207,6 +220,7 @@ jQuery ->
     $(document).on 'click', '.hide-page-loading-msg', () ->
       $.mobile.loading( "hide" )
 
+  curSelVidSrcIdx = 0
   mediaManager = new VoyageX.MediaManager()
 
   # photo / video
@@ -215,6 +229,12 @@ jQuery ->
   mediaInputImage = null
   mediaInputCanvas = null
   selectedCameraActive = false
+
+  switchCamera = () ->
+    if selectedCameraActive
+      stopCurrentVideo()
+    curSelVidSrcIdx = mediaManager.nextSelectedVideoSrcIdx()
+    takePhoto()
 
   $(document).on 'click', '#switch_camera', (event) ->
     switchCamera()

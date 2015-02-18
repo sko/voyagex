@@ -243,11 +243,14 @@ class window.VoyageX.TemplateHelper
     html
 
   @swiperSlideHtml: (poi, poiNote) ->
-    maxHeight = 100.0
-    maxWidth = 300
-    if poiNote.attachment.height?
-      scale = maxHeight / poiNote.attachment.height
-      width = Math.round(poiNote.attachment.width * scale + 0.49)
+    maxHeight = VoyageX.View.MAX_SWIPER_SLIDE_HEIGHT
+    #maxWidth = 300
+    if poiNote.attachment?
+      if poiNote.attachment.height?
+        scale = maxHeight / poiNote.attachment.height
+        width = Math.round(poiNote.attachment.width * scale + 0.49)
+      else
+        width = 100
     else
       width = 100
    #swiperSlideTmpl = TemplateHelper._updateAttributes('tmpl_swiper_slide', ['src'], TemplateHelper._updateIds('tmpl_swiper_slide')).
@@ -329,9 +332,11 @@ class window.VoyageX.TemplateHelper
     html
   
   @_mediaFileTag: (upload, meta) ->
+    maxWidth = 100.0
+    unless upload?
+      return '<img src="'+VoyageX.View.MISSING_ATTACHMENT_IMG_URL+'" style="max-width:'+maxWidth+'px;max-height:'+maxWidth+'px;">'
     scale = -1.0
     height = -1
-    maxWidth = 100.0
     switch upload.content_type.match(/^[^:\/]+/)[0]
       when 'image' 
         scale = maxWidth/upload.width
@@ -358,6 +363,8 @@ class window.VoyageX.TemplateHelper
         'unable to display entity with content_type: '+upload.content_type
 
   @_attachmentPreviewUrl: (upload) ->
+    unless upload?
+      return window.location.origin+'/assets/noise.gif'
     switch upload.content_type.match(/^[^\/]+/)[0]
       when 'image'
         upload.url

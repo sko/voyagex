@@ -6,5 +6,5 @@ class PoiNote < ActiveRecord::Base
   belongs_to :comments_on, class_name: 'PoiNote'
   has_many :comments, class_name: 'PoiNote', foreign_key: :comments_on_id, dependent: :destroy
   
-  validates_associated :attachment
+  validates_associated :attachment, if: Proc.new { |note| note.attachment.present? }
 end

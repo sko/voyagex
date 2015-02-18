@@ -52,7 +52,8 @@ class window.VoyageX.Main
         # handled in _peers.html.haml
         #Storage.Model.instance().loadPeers (peer) ->
         #  marker = Main.markerManager().add poi.location, Main._markerEventsCB, false
-       #APP.storage().saveUser { id: currentUser.id, username: currentUser.username }, { foto: currentUser.foto }
+        if APP.signedIn()
+          APP.storage().saveUser { id: currentUser.id, username: currentUser.username }, { foto: currentUser.foto }
         APP.initPeers()
         if navigator.geolocation 
           navigator.geolocation.getCurrentPosition(APP._initPositionCB, (error) ->
@@ -97,6 +98,9 @@ class window.VoyageX.Main
 
   userName: () ->
     window.currentUser.username
+
+  signedIn: () ->
+    $('#menu_top div.logout-link').length >= 1
 
   isOnline: () ->
     if navigator.onLine

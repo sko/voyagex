@@ -16,13 +16,13 @@ module PoiHelper
     elsif upload.entity.is_a? UploadEntity::Embed
       case upload.entity.embed_type.match(/^[^\/]+/)[0]
       when 'image'
-        poi_note_json[:attachment] = { content_type: upload.entity.embed_type, id: upload.id, url: upload.entity.text, width: -1, height: -1 }
+        poi_note_json[:attachment] = { content_type: "embed:#{upload.entity.embed_type}", id: upload.id, content: upload.entity.text, width: -1, height: -1 }
       when 'audio'
-        poi_note_json[:attachment] = { content_type: upload.entity.embed_type, id: upload.id, url: upload.entity.text }
+        poi_note_json[:attachment] = { content_type: "embed:#{upload.entity.embed_type}", id: upload.id, content: upload.entity.text }
       when 'video'
-        poi_note_json[:attachment] = { content_type: upload.entity.embed_type, id: upload.id, url: upload.entity.text }
+        poi_note_json[:attachment] = { content_type: "embed:#{upload.entity.embed_type}", id: upload.id, content: upload.entity.text }
       else
-        poi_note_json[:attachment] = { content_type: 'unknown/unknown', id: upload.id, url: upload.entity.text }
+        poi_note_json[:attachment] = { content_type: 'embed:unknown/unknown', id: upload.id, content: upload.entity.text }
       end
     else
       poi_note_json[:attachment] = { content_type: 'unknown/unknown', id: upload.id, url: nil, width: -1, height: -1 }

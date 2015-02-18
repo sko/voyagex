@@ -9,7 +9,7 @@ class UploadEntity::Embed < ActiveRecord::Base
   validates :embed_type, presence: true
 
   def file
-    Struct.new(:url, :content_type).new text, UploadEntity::Embed.get_embed_type(text)
+    Struct.new(:url, :content_type).new text, "embed:#{UploadEntity::Embed.get_embed_type(text)}"
   end
 
   def self.get_embed_type text
