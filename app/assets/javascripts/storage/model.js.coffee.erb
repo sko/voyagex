@@ -66,7 +66,8 @@ class window.Storage.Model
     # TODO - check cache since there could have been an offline period meanwhile
     if Comm.StorageController.instance().hasQueue()
       # get all pois via sync (TODO: add view-range for response)
-      alert('TODO: q')
+      #alert('TODO: q')
+      console.log('TODO: handle queue in loadPois')
     if APP.isOnline()
       $.ajax
         type: 'GET'
@@ -105,8 +106,10 @@ class window.Storage.Model
       cache: false
       contentType: false
       processData: false
-    .done (poi) ->
-      callback poi, poi.notes
+    .done (res) ->
+      #callback poi, poi.notes
+      #alert('handled via system-callback')
+      console.log('res.message OK = '+(res.message=='OK'))
     .fail (jqXHR, textStatus) ->
       # get from localStorage
       console.log('TODO: ?')
@@ -266,7 +269,7 @@ class window.Storage.Model
   # the ids will be synchronized with backend-ids on backend-response/callback
   _cachePoiNote: (poiId, callback) ->
     console.log('caching poiNote ...')
-    id = -new Date().getTime()
+    id = -Math.round(new Date().getTime()/1000)
     if poiId != -1
       storeKey = Comm.StorageController.poiKey {id: poiId}
       # don't get from cache - since we're setting lat/lng/address later

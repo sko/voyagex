@@ -86,6 +86,7 @@ jQuery ->
             if $.inArray($(this).attr('name'), skipInputNames) == -1
               formData.append($(this).attr('name'), $(this).attr('value'))
         )(formData, skipInputNames)
+    # FIXME - orig callback is not afterUploadPhoto always
     APP.model().syncUploadCachedQPoiData formData,
                                          (if perPoiEntry.poi.id >= 0 then perPoiEntry.poi else null),
                                          (if callback? then callback.cb(afterUploadPhoto) else afterUploadPhoto)

@@ -843,6 +843,7 @@ class window.Comm.StorageController
                  if perPoiList.numLeft == 0
                    delete perPoiList.numLeft
                    for entryKey in Object.keys(perPoiList)
+                     # cb is only needed for sync with response - but now we use faye-callback
                      cb = { cb: (origCallback) ->
                                 Comm.UploadQ.instance().syncResponseCallback location, poi, origCallback }
                      batchUpload perPoiList[entryKey], cb

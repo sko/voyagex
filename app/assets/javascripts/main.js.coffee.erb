@@ -346,7 +346,7 @@ class window.VoyageX.Main
 #          unless poi.notes && poi.notes.length >= 1
           # dummy-poiNote for swiper - replaced when attachments are loaded
           unless poi.notes? && poi.notes.length >= 1
-            poi.notes = [{id: -1, attachment: {url: '/assets/loading_200x100.png', width: 200, height: 100}}]
+            poi.notes = [{id: -1, attachment: {url: '/assets/loading_200x100.png', content_type: 'image/png', width: 200, height: 100}}]
           Storage.Model.instance().loadPoiNotes poi.id, null, (poiClone) ->
               swiperDummy = $('#poi_swiper_'+poi.id+' [data-poiNoteId=-1]')
               if swiperDummy.length >= 1

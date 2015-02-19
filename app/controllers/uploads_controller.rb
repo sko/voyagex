@@ -19,6 +19,62 @@ class UploadsController < ApplicationController
   # sync pois that where edited offline
   def sync_poi
     @user = current_user || tmp_user
+    if params[:id].present?
+      @commented_poi_note = PoiNote.find(params[:id])
+      @poi = @commented_poi_note.poi
+      # if poi is deleted then create new one - tell user to replace old ...
+    else
+      @poi = nearby_poi @user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
+    end
+    @user.locations << @poi.location unless @user.locations.find {|l|l.id==@poi.location.id}
+    is_new_poi = @poi.notes.empty?
+
+    # TODO: decide on merge-order-algorithm
+    # TODO: only notes for given poi are added - all other changes must be sent to client after_sync
+    min_local_time_secs = -1
+    params[:poi_note_ids].each do |poi_note_id|
+      poi_note_local_time_secs = poi_note_id.to_i.abs # (poi_note_id.to_i/1000).round.abs
+      min_local_time_secs = poi_note_local_time_secs if (min_local_time_secs == -1) || (poi_note_local_time_secs < min_local_time_secs)
+
+      file = params[:poi_note][poi_note_id][:file]
+      if file.present? || (embed = params[:poi_note][poi_note_id][:embed]).present?
+        upload = Upload.new(attached_to: PoiNote.new(poi: @poi, user: @user, text: params[:poi_note][poi_note_id][:text], local_time_secs: poi_note_local_time_secs))
+        upload.attached_to.attachment = upload
+        if file.present?
+          upload.build_entity file.content_type, file: file
+        else
+          upload.build_entity :embed, text: embed[:content], embed_type: UploadEntity::Embed.get_embed_type(embed[:content])
+        end
+        poi_note = upload.attached_to
+      else
+        poi_note = PoiNote.new(poi: @poi, user: @user, text: params[:poi_note][poi_note_id][:text], local_time_secs: poi_note_local_time_secs)
+      end
+      @poi.notes << poi_note
+    end
+    @poi.local_time_secs = min_local_time_secs if is_new_poi
+
+    if @poi.save
+#      Resque.enqueue(PostSync, {action: 'sync_poi',
+#                                user_id: @user.id,
+#                                poi_id: @poi.id,
+#                                min_local_time_secs: min_local_time_secs})
+      PostCommit.new.sync_poi @user.id,
+                              @poi.id,
+                              min_local_time_secs
+
+      render json: { message: 'OK' }
+    else
+      render json: { errors: @poi.errors.full_messages }, status: 401
+    end
+  end
+
+  #
+  # TODO: 
+  # +) comment-on
+  #
+  # sync pois that where edited offline
+  def sync_poi_no_resque
+    @user = current_user || tmp_user
     # vm
     vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, @user, false#@user.is_admin
     prev_commit = vm.cur_commit
@@ -61,9 +117,10 @@ binding.pry
         end
       end
     end
+
     min_local_time_secs = -1
     params[:poi_note_ids].each do |poi_note_id|
-      poi_note_local_time_secs = (poi_note_id.to_i/1000).round.abs
+      poi_note_local_time_secs = poi_note_id.abs # (poi_note_id.to_i/1000).round.abs
       min_local_time_secs = poi_note_local_time_secs if (min_local_time_secs == -1) || (poi_note_local_time_secs < min_local_time_secs)
 
       file = params[:poi_note][poi_note_id][:file]
@@ -95,13 +152,14 @@ binding.pry
         # vm
         vm.add_poi_note @poi, @poi.notes[idx]
       end
+
       # vm
       vm.merge true, true
       cur_commit = vm.cur_commit
       
       @poi.update_attribute :commit_hash, cur_commit unless @poi.commit_hash.present?
       new_poi_notes.each {|p_n|p_n.update_attribute(:commit_hash, cur_commit) unless p_n.commit_hash.present?}
-      commit = @user.commits.create hash_id: cur_commit, timestamp: DateTime.now, local_time_secs: (params[:poi_note_ids].first.to_i/1000).round.abs
+      commit = @user.commits.create hash_id: cur_commit, timestamp: DateTime.now, local_time_secs: params[:poi_note_ids].first.to_i.abs # (params[:poi_note_ids].first.to_i/1000).round.abs
       @user.snapshot.update_attribute :cur_commit, commit
       
       @poi_json = poi_json(@poi).

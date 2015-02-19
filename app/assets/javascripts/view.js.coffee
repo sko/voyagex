@@ -57,6 +57,12 @@ class window.VoyageX.View
           $('#comm_peer_data').trigger("create")
     else if message.type == 'quit_subscription'
       $('#follow_me_'+message.peer.id).remove()
+    else if message.type == 'callback'
+      if message.channel == 'uploads'
+        delete message.channel
+        #message.type = message.action
+        #delete message.action
+        this._uploadsCB message
 
   _talkCB: (message) ->
     console.log 'got a talk - message: ' + message.type
@@ -101,7 +107,18 @@ class window.VoyageX.View
 
   _uploadsCB: (upload) ->
     console.log 'got an uploads - message: ' + upload.type
-    if upload.type == 'poi_note_upload'
+    if upload.type == 'callback'
+      # async backend response
+      if upload.action? && upload.action == 'poi_sync'
+        #uploadQKey = 'comm.uploadQ.poiNotes'
+        #stored = localStorage.getItem(uploadQKey)
+        #qEntries = eval("(" + stored + ")")
+        qPoiId = if upload.poi.local_time_secs? then -upload.poi.local_time_secs else upload.poi.id
+        poiKey = Comm.StorageController.poiKey {id: qPoiId}
+        poi = APP.storage().get poiKey
+        location = APP.storage().getLocation(poi.locationId)
+        Comm.UploadQ.instance().syncResponseCallback(location, poi, View.afterSyncPoiNotes)(upload.poi, upload.poi.notes)
+    else if upload.type == 'poi_note_upload'
       unless upload.poi_note.user.id == APP.userId()
         # TODO: unify json-format, until then avoid circular structure
         poi = upload.poi_note.poi
@@ -110,7 +127,7 @@ class window.VoyageX.View
         Storage.Model.instance().syncWithStorage msg, View.addPoiNotes, upload.poi_note
         APP.view().alert()
     else if upload.type == 'poi_sync'
-      unless upload.poi.user.id == APP.userId()
+      if upload.poi.user.id != APP.userId()
         delete upload.poi.user
         poi = upload.poi
         Storage.Model.setupPoiForNote poi
@@ -279,6 +296,9 @@ class window.VoyageX.View
     VoyageX.TemplateHelper.addPoiNotes poi, newNotes, APP.getMarker(poi)
     View.instance().scrollToPoiNote newNotes[0].id
     #APP.panPosition(poi.lat, poi.lng, poi.address)
+
+  @afterSyncPoiNotes: (poi, newNotes) ->
+    console.log 'afterSyncPoiNotes: TODO: update data (address, id, ...)'
 
   @addBookmark: (bookmarkLocation) ->
     View.instance().viewBookmarkNote bookmarkLocation

@@ -1,5 +1,21 @@
 _syncPoiNotes sichert und callback rendered startet rendering
 
+
+RAILS_ENV=stage PIDFILE=./tmp/pids/resque-worker.pid BACKGROUND=yes QUEUE=* rake environment resque:work
+RAILS_ENV=stage PIDFILE=./tmp/pids/resque-scheduler.pid BACKGROUND=yes rake resque:scheduler
+
+ps aux | grep resque
+resque_pids=`cat ./tmp/pids/resque-scheduler.pid && echo -n " " && cat ./tmp/pids/resque-worker.pid`
+echo $resque_pids
+kill $resque_pids
+ps aux | grep resque
+
+PIDFILE=./tmp/pids/resque-worker.pid BACKGROUND=yes QUEUE=* rake environment resque:work
+PIDFILE=./tmp/pids/resque-worker.pid BACKGROUND=yes QUEUE=post_commit rake environment resque:work
+PIDFILE=./tmp/pids/resque-scheduler.pid BACKGROUND=yes rake resque:scheduler
+
+
+
 plan:
 1) _cachePoiNote
 2) send ajax
