@@ -1,4 +1,5 @@
 module PoiHelper
+  include ApplicationHelper
 
   def add_attachment_to_poi_note_json upload, poi_note_json
     if upload.entity.is_a? UploadEntity::Mediafile
@@ -56,11 +57,7 @@ module PoiHelper
                       user: { id: poi_note.user.id,
                               username: poi_note.user.username },
                       text: poi_note.text }
-    if with_poi
-      poi_note_json[:poi] = poi_json poi_note.poi
-    else
-      poi_note_json[:poiId] = poi_note.poi.id
-    end
+    poi_note_json[:poi] = poi_json poi_note.poi if with_poi
     add_attachment_to_poi_note_json poi_note.attachment, poi_note_json if poi_note.attachment.present?
     poi_note_json
   end

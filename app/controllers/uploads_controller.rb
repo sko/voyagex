@@ -22,15 +22,14 @@ class UploadsController < ApplicationController
     if params[:id].present?
       @commented_poi_note = PoiNote.find(params[:id])
       @poi = @commented_poi_note.poi
-      # if poi is deleted then create new one - tell user to replace old ...
+      # if poi is meanwhile deleted by other user then create new one - tell user to replace old ...
     else
       @poi = nearby_poi @user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
     end
     @user.locations << @poi.location unless @user.locations.find {|l|l.id==@poi.location.id}
     is_new_poi = @poi.notes.empty?
 
-    # TODO: decide on merge-order-algorithm
-    # TODO: only notes for given poi are added - all other changes must be sent to client after_sync
+    new_poi_notes = []
     min_local_time_secs = -1
     params[:poi_note_ids].each do |poi_note_id|
       poi_note_local_time_secs = poi_note_id.to_i.abs # (poi_note_id.to_i/1000).round.abs
@@ -50,19 +49,26 @@ class UploadsController < ApplicationController
         poi_note = PoiNote.new(poi: @poi, user: @user, text: params[:poi_note][poi_note_id][:text], local_time_secs: poi_note_local_time_secs)
       end
       @poi.notes << poi_note
+      new_poi_notes << poi_note
     end
     @poi.local_time_secs = min_local_time_secs if is_new_poi
 
     if @poi.save
-#      Resque.enqueue(PostSync, {action: 'sync_poi',
-#                                user_id: @user.id,
-#                                poi_id: @poi.id,
-#                                min_local_time_secs: min_local_time_secs})
-      PostCommit.new.sync_poi @user.id,
-                              @poi.id,
-                              min_local_time_secs
+      Resque.enqueue(PostCommit, {action: 'sync_poi',
+                                  user_id: @user.id,
+                                  poi_id: @poi.id,
+                                  min_local_time_secs: min_local_time_secs})
+#      PostCommit.new.sync_poi @user.id,
+#                              @poi.id,
+#                              min_local_time_secs
+      note_json_list = new_poi_notes.collect{|note| poi_note_json(note, false).
+                                                    merge({local_time_secs: note.local_time_secs}) }
+      poi_json = poi_json(@poi).
+                 merge(is_new_poi && @poi.user==@user ? {local_time_secs: @poi.local_time_secs} : {}).
+                 merge(user: { id: @user.id }).
+                 merge(notes: note_json_list)
 
-      render json: { message: 'OK' }
+      render json: { message: 'OK', poi: poi_json }.to_json
     else
       render json: { errors: @poi.errors.full_messages }, status: 401
     end
@@ -163,7 +169,7 @@ binding.pry
       @user.snapshot.update_attribute :cur_commit, commit
       
       @poi_json = poi_json(@poi).
-                  merge!(@poi.user==@user ? {local_time_secs: @poi.local_time_secs} : {})
+                  merge(is_new_poi && @poi.user==@user ? {local_time_secs: @poi.local_time_secs} : {})
       @poi_json[:user] = { id: @user.id }
       @poi_json[:notes] = poi_note_json_list
       

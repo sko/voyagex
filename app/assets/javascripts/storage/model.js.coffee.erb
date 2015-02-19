@@ -107,9 +107,19 @@ class window.Storage.Model
       contentType: false
       processData: false
     .done (res) ->
-      #callback poi, poi.notes
-      #alert('handled via system-callback')
-      console.log('res.message OK = '+(res.message=='OK'))
+        console.log('res.message OK = '+(res.message=='OK'))
+        qPoiId = if res.poi.local_time_secs? then -res.poi.local_time_secs else res.poi.id
+        #poiKey = Comm.StorageController.poiKey {id: qPoiId}
+        #poi = APP.storage().get poiKey
+        poi = APP.storage().getPoi qPoiId
+        location = APP.storage().getLocation(poi.locationId)
+        Comm.UploadQ.instance().syncResponseCallback(location, poi, (cbPoi, cbNewNotes) ->
+            # add all old notes
+            for i in [0..poi.notes.length-cbNewNotes.length-1] by 1
+              cbPoi.notes.splice i, 0, poi.notes[i]
+            VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
+            APP.view().scrollToPoiNote cbNewNotes[cbNewNotes.length-1].id
+          )(res.poi, res.poi.notes)
     .fail (jqXHR, textStatus) ->
       # get from localStorage
       console.log('TODO: ?')
@@ -120,15 +130,19 @@ class window.Storage.Model
     if (Modernizr.localstorage)
       poiId = parseInt $('#upload_form').attr('data-poiId')
       afterQCB = (qPoi, qNewPoiNote) ->
-          if APP.isOnline()
-            APP.storage().uploadQueue qPoi, qNewPoiNote
-          else
+# old
+#          if APP.isOnline()
+#            APP.storage().uploadQueue qPoi, qNewPoiNote
+#          else
+          if true
             location = Comm.StorageController.instance().getLocation qPoi.locationId
             qPoi.lat = location.lat
             qPoi.lng = location.lng
             qPoi.address = location.address
             qNewPoiNote.user = currentUser
             doneCB qPoi, qNewPoiNote
+          if APP.isOnline()
+            APP.storage().uploadQueue qPoi, qNewPoiNote
       if commitConf?
         afterQCB = ((afterQCB) ->
             { commit: commitConf.getCommit(afterQCB) }
@@ -323,9 +337,9 @@ class window.Storage.Model
     .fail (jqXHR, textStatus) ->
         console.log('TODO: maybe get from local storage')
 
-  loadPoiNotes: (poiId, poiNoteId, callback) ->
+  loadPoiNotes: (poiId, poiNoteId, callback, useCache = true) ->
     poi = Comm.StorageController.instance().get Comm.StorageController.poiKey {id: poiId}
-    if poi? && poi.notes && poi.notes.length >= 1
+    if useCache && poi? && poi.notes && poi.notes.length >= 1
       # TODO now only returns stored poiNotes - but we have to check list for update
       if poiNoteId?
         for poiNote in poi.notes
@@ -345,7 +359,7 @@ class window.Storage.Model
         Model.setupPoiForNote msg.poi
         loadStats = { numAdded: msg.poi.notes.length, numLeft: msg.poi.notes.length }
         for note, i in msg.poi.notes
-          Model.instance().syncWithStorage msg, callback, note, loadStats#i+1, msg.poi.notes.length-1-i
+          Model.instance().syncWithStorage msg, callback, note, loadStats
     .fail (jqXHR, textStatus) ->
         # get from localStorage
         console.log('TODO: maybe get from local storage')
@@ -366,13 +380,18 @@ class window.Storage.Model
   # might be called multiple times within one backend-response (->loadStats)
   # stores attachment (!), sets loadStats-numLeft -1 and then calls _syncPoiNotes (with ready attachmentUrl
   # and loadStats)
-  syncWithStorage: (msg, callback, note, loadStats = {numAdded:1,numLeft:1}) ->
+  syncWithStorage: (msg, callback, note, loadStats = {numAdded:1,numLeft:1}, attachmentCached = false) ->
     # store user
     if note.user?
       Comm.StorageController.instance().saveUser note.user
+      note.userId = note.user.id
+      delete note.user
     if note.attachment? && (!note.attachment.content_type.match(/^embed:/))
       # store image
-      attachmentUrl = Model._viewPoiNoteAttachment note
+      if attachmentCached
+        attachmentUrl = note.attachment.url
+      else
+        attachmentUrl = Model._viewPoiNoteAttachment note
       # @see leaflet-functionaltilelayer _loadTile: function / MapControl - drawTile
       if (typeof attachmentUrl == 'string') 
         console.log 'Model - syncWithStorage: attachmentUrl-string = '+attachmentUrl
@@ -391,16 +410,18 @@ class window.Storage.Model
       Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, loadStats, callback
 
   @setupPoiForNote: (poi) ->
-    storeKey = Comm.StorageController.poiKey {id: poi.id}
-    storedPoi = Comm.StorageController.instance().get storeKey
+    #storeKey = Comm.StorageController.poiKey {id: poi.id}
+    #storedPoi = Comm.StorageController.instance().get storeKey
+    storedPoi = APP.storage().getPoi poi.id
     unless storedPoi
       unless poi.notes?
         poi.notes = []
       Comm.StorageController.instance().storePoi poi
 
   @_syncPois: (poi, callback, i) ->
-    storeKey = Comm.StorageController.poiKey poi
-    localPoiData = Comm.StorageController.instance().get storeKey
+    #storeKey = Comm.StorageController.poiKey poi
+    #localPoiData = Comm.StorageController.instance().get storeKey
+    localPoiData = APP.storage().getPoi poi.id
     if localPoiData?
       # TODO attributes / structure will not change. 
       # currently: take all from remote, only add local which are not part of response-poi
@@ -424,8 +445,9 @@ class window.Storage.Model
   #   reason for current way is that we have a list (of poiNotes) that shouldn't be run through more
   #   often than necessary
   @_syncPoiNotes: (poi, poiKey, note, loadStats, callback) ->
-    poiKey = Comm.StorageController.poiKey(poi)
-    existingPoi = Comm.StorageController.instance().get poiKey
+    #poiKey = Comm.StorageController.poiKey(poi)
+    #existingPoi = Comm.StorageController.instance().get poiKey
+    existingPoi = APP.storage().getPoi poi.id
     if existingPoi? 
       unless existingPoi.notes? && Model._findPoiNote(note, existingPoi.notes) >= 0
         # if poiNote is not already in poi's note-list

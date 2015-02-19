@@ -56,4 +56,6 @@ VoyageX::Application.configure do
   # enabled locales
   config.i18n.available_locales = [:en, :de]
 end
-#Faye.logger = lambda { |m| puts m }
+
+#Faye.logger = lambda { |m| Rails.logger.info m }
+FAYE_URL = 'http://voyagex.info.tm:3000/comm'

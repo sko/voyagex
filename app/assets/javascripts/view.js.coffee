@@ -110,14 +110,31 @@ class window.VoyageX.View
     if upload.type == 'callback'
       # async backend response
       if upload.action? && upload.action == 'poi_sync'
-        #uploadQKey = 'comm.uploadQ.poiNotes'
-        #stored = localStorage.getItem(uploadQKey)
-        #qEntries = eval("(" + stored + ")")
-        qPoiId = if upload.poi.local_time_secs? then -upload.poi.local_time_secs else upload.poi.id
-        poiKey = Comm.StorageController.poiKey {id: qPoiId}
-        poi = APP.storage().get poiKey
-        location = APP.storage().getLocation(poi.locationId)
-        Comm.UploadQ.instance().syncResponseCallback(location, poi, View.afterSyncPoiNotes)(upload.poi, upload.poi.notes)
+        # assume that sync already performed with backend-response - here we hava after-commit-faye-callback
+        currentUser.curCommitHash = upload.commit_hash
+        #qPoiId = if upload.poi.local_time_secs? then -upload.poi.local_time_secs else upload.poi.id
+        storedPoi = APP.storage().getPoi upload.poi.id
+        callback = ((oldNotes) ->
+            (cbPoi, cbNewNotes) ->
+                #  
+                # there could also be some new pois from other users! order might be mixed
+                #
+                location = APP.storage().getLocation(cbPoi.locationId)
+                newNotes = oldNotes.slice 0, oldNotes.length-cbNewNotes.length
+                for note, idx in cbNewNotes
+                  newNotes.push note
+                  if note.user?
+                    note.userId = note.user.id
+                    delete note.user
+                  delete note.local_time_secs
+                cbPoi.notes = newNotes
+                VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
+                APP.view().scrollToPoiNote cbNewNotes[cbNewNotes.length-1].id
+            )(storedPoi.notes)
+        # save attachments from new other user's notes
+        loadStats = { numAdded: upload.poi.notes.length, numLeft: upload.poi.notes.length }
+        for note in upload.poi.notes
+          Storage.Model.instance().syncWithStorage upload, callback, note, loadStats, note.local_time_secs?
     else if upload.type == 'poi_note_upload'
       unless upload.poi_note.user.id == APP.userId()
         # TODO: unify json-format, until then avoid circular structure

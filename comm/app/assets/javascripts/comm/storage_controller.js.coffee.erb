@@ -16,8 +16,8 @@ class window.Comm.StorageController
     @_tileMeta = null
     @_tileLoadQueue = {}
     @_tileImageContentType = 'image/webp'
-    @_storedFilesAreBase64 = false
     @_attachmentMeta = null
+    @_storedFilesAreBase64 = false
     @_grantedBytes = 0
     @_dirReaders = {}
     requestedBytes = Math.pow(2, 26) # 64MB
@@ -110,7 +110,7 @@ class window.Comm.StorageController
     location
   
   # after q-upload 
-  resetLocation: (oldLocation, newLocation, newPoi) ->
+  resetLocation: (oldLocation, newLocation, newPoi = null) ->
     storeKey = 'comm.locations'
     locations = eval("(" + localStorage.getItem(storeKey) + ")")
     flags = {}
@@ -284,19 +284,19 @@ class window.Comm.StorageController
       note.poi = notePoi
       storedJSON
     else
-      Storage.Model._storeWithSeparateUser poiKey, note
+      StorageController._storeWithSeparateUser poiKey, note
 
   @_storeWithSeparateUser: (poiKey, note) ->
     if note.user
-      Comm.StorageController.instance().saveUser note.user
+      StorageController.instance().saveUser note.user
       user = note.user
       delete note.user
       note.userId = user.id
-      storedPoi = Comm.StorageController.instance().addToList poiKey, 'notes', note, false, Storage.Model.noteSort()
+      storedPoi = StorageController.instance().addToList poiKey, 'notes', note, false, Storage.Model.noteSort()
       delete note.userId # FIXME - maybe it existed before?
       note.user = user
     else
-      storedPoi = Comm.StorageController.instance().addToList poiKey, 'notes', note, false, Storage.Model.noteSort()
+      storedPoi = StorageController.instance().addToList poiKey, 'notes', note, false, Storage.Model.noteSort()
     storedPoi
 
   # directory path for storing with file-api
@@ -318,13 +318,21 @@ class window.Comm.StorageController
               console.log('error when removing directory '+dirName+': ', e)
           )
 
-  getPoi: (locationId) ->
+  getPoiForLocation: (locationId) ->
     storeKey = 'comm.locations'
     locations = eval("(" + localStorage.getItem(storeKey) + ")")
     if locations? && locations.pois?
-      locations.pois[locationId]
+      poi = locations.pois[locationId]
+#      if poi?
+#        poiKey = StorageController.poiKey {id: poi.id}
+#        #eval("(" + localStorage.getItem(poiKey) + ")")
+#        this.get poiKey
     else
       null
+
+  getPoi: (poiId) ->
+    poiKey = StorageController.poiKey {id: poiId}
+    eval("(" + localStorage.getItem(poiKey) + ")")
 
   getPois: (callback = null) ->
     locations = this.get 'comm.locations'
@@ -820,13 +828,13 @@ class window.Comm.StorageController
           poi = qEntry.poi
           poiNote = qEntry.note
         else
-          poiKey = Comm.StorageController.poiKey {id: qEntry.poiId}
-          poi = Comm.StorageController.instance().get poiKey
+          poiKey = StorageController.poiKey {id: qEntry.poiId}
+          poi = StorageController.instance().get poiKey
           for n in poi.notes
             if n.id == qEntry.id
               poiNote = n
               break
-        location = Comm.StorageController.instance().getLocation poi.locationId
+        location = StorageController.instance().getLocation poi.locationId
 
         deferredModeParams = { deferred: $.Deferred(),\
                                promise: null }
@@ -1068,6 +1076,7 @@ class Comm.UploadQ
                                                              lng: cbPoi.lng,\
                                                              address: cbPoi.address }, cbPoi
           location.poiId = cbPoi.id
+          currentAddress = cbPoi.address
           APP.markers().replace {id: poi.locationId}, location
         if poi.id < 0
           if poi.locationId >= 0
@@ -1095,7 +1104,7 @@ class Comm.UploadQ
               ((poiNote, cbPoiNote) ->
                 APP.storage()._dirReaders.entries.poiNotes.entries.attachments.entry.getFile poiNote.id, {}, (fileEntry) ->
                     fileEntry.moveTo APP.storage()._dirReaders.entries.poiNotes.entries.attachments.entry, cbPoiNote.id
-                    # next can only be done after fiel is moved
+                    # next can only be done after file is moved
                     # the new note is passed on to display - use local file-system-url to work offline later
                     cbPoiNote.attachment.url = poiNote.attachment.url
                     attachment = $('#poi_notes_container > div[data-id='+cbPoiNote.id+'] img')

@@ -4,7 +4,7 @@ require 'resque/server'
 require 'resque/scheduler'
 require 'resque/server'
 
-Dir["#{Rails.root}/app/jobs/*.rb"].each { |file| require file }
+#Dir["#{Rails.root}/app/jobs/*.rb"].each { |file| require file }
 
 rails_root = Rails.root || File.dirname(__FILE__) + '/../..'
 resque_config = YAML.load_file(rails_root.to_s + '/config/resque.yml')

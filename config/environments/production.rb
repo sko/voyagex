@@ -87,3 +87,5 @@ VoyageX::Application.configure do
   # enabled locales
   config.i18n.available_locales = [:en, :de]
 end
+
+FAYE_URL = 'http://voyagex.info.tm:3000/comm'

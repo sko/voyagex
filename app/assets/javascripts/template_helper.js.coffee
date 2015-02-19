@@ -63,7 +63,7 @@ class window.VoyageX.TemplateHelper
                 #replace(/\{address\}/g, poi.address).
                 replace(/\{poi_notes\}/, poiNotesHtml)
 
-  @openPOINotePopup: (poi, marker = null) ->
+  @openPOINotePopup: (poi, marker = null, resetTitle = false) ->
     meta = {height: 0}
     popupHtml = TemplateHelper.poiNotePopupHtml(poi, meta)
     if marker == null
@@ -80,9 +80,9 @@ class window.VoyageX.TemplateHelper
     popup.setContent(popupHtml)
     marker.openPopup()
     VoyageX.Main.markerManager().userMarkerMouseOver false
-    if isNewPopup
+    if isNewPopup || resetTitle
       poiNoteContainer = $('#poi_notes_container')
-      TemplateHelper._addPopupTitle poiNoteContainer, marker, Comm.StorageController.instance().getLocation(poi.locationId), poi
+      TemplateHelper._addPopupTitle poiNoteContainer, marker, Comm.StorageController.instance().getLocation(poi.locationId), poi, resetTitle
     $('#poi_note_input').html('')
     TemplateHelper.poiNoteInputHtml('poi_note_input', poi, poi.notes[0])
 
@@ -282,10 +282,13 @@ class window.VoyageX.TemplateHelper
       replace(/\{commented_by_user\}/, 'TODO')
     html
 
-  @_addPopupTitle: (contentContainer, marker, location, poi) ->
-    popupContainer = contentContainer.closest('.leaflet-popup').first()
-    popupContainer.children('.leaflet-popup-close-button').on 'click', VoyageX.Main.closePopupCB(marker)
-    popupContainer.prepend('<span id="current_address" style="float: left; padding-left: 5px; font-size: 9px;">'+location.address+(if poi? then ' ('+poi.id+')' else '')+'</span>')
+  @_addPopupTitle: (contentContainer, marker, location, poi, resetTitle = false) ->
+    if resetTitle
+      $('#current_address').html(location.address+(if poi? then ' ('+poi.id+')' else ''))
+    else
+      popupContainer = contentContainer.closest('.leaflet-popup').first()
+      popupContainer.children('.leaflet-popup-close-button').on 'click', VoyageX.Main.closePopupCB(marker)
+      popupContainer.prepend('<span id="current_address" style="float: left; padding-left: 5px; font-size: 9px;">'+location.address+(if poi? then ' ('+poi.id+')' else '')+'</span>')
 
   @_updateIds: (rootElementId, callback = null) ->
     html = $('#'+rootElementId).html()

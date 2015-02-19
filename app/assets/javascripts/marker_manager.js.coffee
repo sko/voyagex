@@ -54,8 +54,8 @@ class window.VoyageX.MarkerManager
         #marker._icon.title = '<img src="'+flags.peer.foto.url+'" style="max-width: 35px;">'
       else
         marker._icon.title = location.address
-   #if meta then {marker: marker, isUserMarker: flags.isUserMarker, poi: APP.storage().getPoi(location.id), peer: flags.peer} else marker
-    if meta then MarkerManager.metaJSON(m, {poi: APP.storage().getPoi(location.id), peer: flags.peer}) else marker
+   #if meta then {marker: marker, isUserMarker: flags.isUserMarker, poi: APP.storage().getPoiForLocation(location.id), peer: flags.peer} else marker
+    if meta then MarkerManager.metaJSON(m, {poi: APP.storage().getPoiForLocation(location.id), peer: flags.peer}) else marker
 
   # replace can only be of same type (no flags). it's used to update location id after sync and poiid
   replace: (location, withLocation = null) ->
@@ -194,7 +194,7 @@ class VoyageX.Marker
 
 #  poi: ->
 #    #locations = eval("(" + localStorage.getItem(storeKey) + ")")
-#    if @_location.poiId? then getPoi(@_location.poi) else APP.storage().getPoi(@_location.id)
+#    if @_location.poiId? then getPoi(@_location.poi) else APP.storage().getPoiForLocation(@_location.id)
 
   isUserMarker: ->
     @_flags.isUserMarker
