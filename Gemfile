@@ -8,16 +8,17 @@ group :production, :staging, :development do
   gem 'comm', path: "comm"
 end
 
-gem 'mysql2'
+gem 'devise'
+#gem "devise-async"
+gem "geocoder"
 gem 'haml'                                 
 gem 'haml-rails'                                       
-gem 'resque-scheduler' 
 gem 'leaflet-rails'
-gem 'devise'
-gem "devise-async"
+gem 'mysql2'
+gem 'omniauth-facebook'
 gem "paperclip", "~> 4.2"
-gem "geocoder"
 gem 'rails-i18n', github: 'svenfuchs/rails-i18n'
+gem 'resque-scheduler' 
 
 #assets
 gem 'jquery-rails'

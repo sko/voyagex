@@ -3,8 +3,9 @@ bei allen backend-callbacks wo anschliessend gesichert wird nicht get (ausm cach
 _syncPoiNotes sichert und callback rendered startet rendering
 
 
-RAILS_ENV=stage PIDFILE=./tmp/pids/resque-worker.pid BACKGROUND=yes QUEUE=* rake environment resque:work
-RAILS_ENV=stage PIDFILE=./tmp/pids/resque-scheduler.pid BACKGROUND=yes rake resque:scheduler
+#RAILS_ENV=staging PIDFILE=./tmp/pids/resque-worker.pid BACKGROUND=yes QUEUE=* rake environment resque:work
+RAILS_ENV=staging PIDFILE=./tmp/pids/resque-worker.pid BACKGROUND=yes QUEUE=post_commit rake environment resque:work
+RAILS_ENV=staging PIDFILE=./tmp/pids/resque-scheduler.pid BACKGROUND=yes rake resque:scheduler
 
 ps aux | grep resque
 resque_pids=`cat ./tmp/pids/resque-scheduler.pid && echo -n " " && cat ./tmp/pids/resque-worker.pid`

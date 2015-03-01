@@ -32,6 +32,10 @@ class window.VoyageX.Main
 #          if !window.pageYOffset
 #            hideAddressBar()
 
+  #
+  # TODO - clean initialisation of all components in order to enable modularized usage auf single components
+  #        (when reused in another application)
+  #
   _init: (cacheStrategy, view, mapOptions, offlineZooms) ->
     APP._initState += 1
     switch APP._initState
@@ -41,12 +45,14 @@ class window.VoyageX.Main
             APP._init cacheStrategy, view, mapOptions, offlineZooms
           )
       when 2
+        # Communication initialisation (Faye-Client)
         APP._comm = new Comm.Comm(APP.userId(),
                                   [['/talk', view._talkCB, VoyageX.CHANNEL_ENC_KEY],
                                    ['/map_events', view._mapEventsCB, VoyageX.CHANNEL_ENC_KEY],
                                    ['/uploads', view._uploadsCB, VoyageX.CHANNEL_ENC_KEY]],
                                    VoyageX.SYS_CHANNEL_ENC_KEY,
                                    APP._systemCB)
+        # Map initialisation (LeafletJS)
         Main._MAP_CONTROL = new VoyageX.MapControl cacheStrategy, mapOptions, offlineZooms
         Main._MARKER_MANAGER = new VoyageX.MarkerManager(APP.map())
         # handled in _peers.html.haml

@@ -1,5 +1,15 @@
 VoyageX::Application.routes.draw do
-  devise_for :users, controllers: { registrations: "auth/registrations", sessions: "auth/sessions" }
+  devise_for :users,
+             controllers: { omniauth_callbacks: 'auth/omniauth_callbacks',
+                            registrations: "auth/registrations",
+                            sessions: "auth/sessions" }
+  devise_scope :user do
+    match '/auth/:provider', to: 'sessions#create', via: [:get, :post], as: :authentication
+    match '/auth/:provider/callback', to: 'sessions#create', via: [:get, :post], as: :authentication_callback
+    match '/auth/failure', to: 'sessions#failure', via: [:get, :post]
+    match '/auth/facebook/disconnect', to: 'users#disconnect_from_facebook', via: [:get, :post]
+    match '/auth/twitter/disconnect', to: 'users#disconnect_from_twitter', via: [:get, :post]
+  end
 
   mount Resque::Server, at: '/4hfg398dmmnrf/resque', as: :resque_admin
   

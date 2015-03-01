@@ -5,6 +5,21 @@ module UserHelper
   #
   #
   #
+  def self.fetch_gravatar(email, request)
+    host = 'www.gravatar.com'
+    port = 80
+    email_md5 = Digest::MD5.hexdigest(email)
+    path = "/avatar/#{email_md5}"
+    request_headers = { 'Accept-Language' => request.env['HTTP_ACCEPT_LANGUAGE'],
+                        'User-Agent' => request.env['HTTP_USER_AGENT'] }
+    extra_response_headers = ['Content-Disposition']
+    response = UserHelper.get_resource host, port, path, request_headers, extra_response_headers
+    response.match(/filename="#{email_md5}\./).present? ? response.body : nil
+  end
+
+  #
+  #
+  #
   def self.fetch_random_avatar(request)
     avatar_image_data = [nil,nil]
 bu = <<bu
@@ -74,6 +89,29 @@ query
       end
     end
     avatar_image_data
+  end
+
+  #
+  #
+  #
+  def self.get_resource host, port, path, request_headers = {}, extra_response_headers = []
+    response_data = Struct.new(:content_type, :body)
+    request = Net::HTTP::Get.new(target_path)
+    request.add_field("Host", target_host)
+    request_headers.each { |h, v| request.add_field(h.to_s, v) }
+    target_conn = Net::HTTP.new(target_host, port)
+    target_conn.start do |http|
+      http.request(request) do |response|
+        response_data.content_type = response.header["Content-Type"]
+        extra_response_headers.each { |h| response_data[h] = response.header[h.to_s] }
+        response_data.body = response.read_body
+        ## hack since response is not decoded with png
+        #cur_path = Rails.root.join('public', 'fotos', 'random_avatar')
+        #File.open(cur_path, 'wb'){|file| file.write(response.read_body)}
+        #response_data[1] = File.read(cur_path)
+      end
+    end
+    response_data
   end
 
 end

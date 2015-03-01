@@ -14,12 +14,7 @@ module Auth
           # email-change will trigger @user.send_confirmation_instructions
         end
       end
-#      t.integer :user_id
-#      t.integer :location_id
-#      t.float :lat
-#      t.float :lng
-#      t.string :cur_commit_hash
-      @user = User.new(user_params.merge!({search_radius_meters: 1000, snapshot: UserSnapshot.new(location: Location.default)})) unless @user.present?
+      @user = User.new(user_params.merge!({search_radius_meters: 1000, snapshot: UserSnapshot.new(location: Location.default, cur_commit: Commit.latest)})) unless @user.present?
       if @user.save
         avatar_image_data = UserHelper::fetch_random_avatar request
         cur_path = Rails.root.join('public', 'assets', 'fotos', 'random_avatar')

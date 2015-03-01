@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150203114252) do
+ActiveRecord::Schema.define(version: 20150224155747) do
 
   create_table "comm_peers", force: true do |t|
     t.integer  "comm_setting_id", null: false
@@ -47,6 +47,20 @@ ActiveRecord::Schema.define(version: 20150203114252) do
 
   add_index "commits", ["hash_id"], name: "index_commits_on_hash_id", using: :btree
   add_index "commits", ["timestamp"], name: "index_commits_on_timestamp", using: :btree
+
+  create_table "identities", force: true do |t|
+    t.integer  "user_id",               null: false
+    t.string   "provider",              null: false
+    t.string   "uid",                   null: false
+    t.string   "email"
+    t.string   "email_is_confirmed"
+    t.string   "auth_token"
+    t.datetime "auth_token_expires_at"
+    t.string   "auth_secret"
+  end
+
+  add_index "identities", ["provider", "uid"], name: "index_identities_on_provider_and_uid", using: :btree
+  add_index "identities", ["user_id"], name: "index_identities_on_user_id", using: :btree
 
   create_table "locations", force: true do |t|
     t.decimal  "latitude",        precision: 10, scale: 7, null: false

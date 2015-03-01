@@ -1,8 +1,9 @@
 $('#settings_form').attr('action', '<%= user_path id: tmp_user.id -%>')
-$('.login-link').each () ->
-  $(this).css('display', 'block')
-$('.reg-link').each () ->
-  $(this).css('display', 'block')
+#$('.login-link').each () ->
+#  $(this).css('display', 'block')
+#$('.reg-link').each () ->
+#  $(this).css('display', 'block')
+$('#sign_up_or_in').first().css('display', 'block')
 $('.logout-link').each () ->
   $(this).css('display', 'none')
 # you are always someone

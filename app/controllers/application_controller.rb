@@ -34,7 +34,7 @@ class ApplicationController < ActionController::Base
   end
 
 #protected
-#
+#  # @see skip_before_action
 #  def json_request?
 #    request.format.json?
 #  end

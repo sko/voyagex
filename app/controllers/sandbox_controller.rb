@@ -74,9 +74,9 @@ class SandboxController < ApplicationController
 
   # chrome://appcache-internals/
   def manifest
-    mf = Rails.root.join('app', 'views', 'sandbox', 'voyagex.mf')
-    render file: mf, formats: ['mf'], content_type: 'text/cache-manifest'
-    #render text: ''
+    #mf = Rails.root.join('app', 'views', 'sandbox', 'voyagex.mf')
+    #render file: mf, formats: ['mf'], content_type: 'text/cache-manifest'
+    render 'voyagex.mf', layout: false, content_type: 'text/cache-manifest'
   end
 
   private

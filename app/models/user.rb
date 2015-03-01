@@ -6,13 +6,16 @@ class User < ActiveRecord::Base
                                  "image/png",
                                  "image/gif",
                                  "image/webp"]
+  TEMP_EMAIL_PREFIX = 'verify@voyagex'
+  TEMP_EMAIL_REGEX = /\Averify@voyagex/
 
   has_many :locations_users, dependent: :destroy
   has_many :locations, through: :locations_users
   has_many :uploads
   has_many :commits
+  has_many :identities, dependent: :destroy
   has_one :comm_setting, inverse_of: :user, dependent: :destroy
-  has_one :snapshot, class_name: 'UserSnapshot', inverse_of: :user, dependent: :destroy
+  has_one :snapshot, class_name: 'UserSnapshot', dependent: :destroy
   belongs_to :home_base, class_name: 'Location', foreign_key: :home_base_id
 
   has_attached_file :foto,
@@ -30,7 +33,7 @@ class User < ActiveRecord::Base
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :trackable, :validatable,
          #:async,
-         :confirmable
+         :confirmable, :omniauthable
 
   def last_location
     locations.where(locations: {updated_at: locations.maximum(:updated_at)}).first||home_base||Location.default
@@ -58,6 +61,16 @@ class User < ActiveRecord::Base
     email == 'skoeller@gmx.de'
   end
 
+  SOCIAL_NETS_CONFIG.keys.each do |network|
+    define_method "#{network}_identity" do
+      identities.where(provider: network).first
+    end
+
+    define_method "connected_to_#{network}?" do
+      send("#{network}_identity").present?
+    end
+  end
+
   def self.admin
     User.where(email: 'skoeller@gmx.de').first
   end
@@ -65,4 +78,45 @@ class User < ActiveRecord::Base
   def self.create_tmp_user
     User.create(username: tmp_id, email: 'sko', )
   end
+
+  def self.find_for_oauth(auth, signed_in_resource = nil)
+    return nil unless auth.present?
+
+    identity = Identity.find_with_omniauth(auth)
+    auth_user = identity.user if identity.present?
+    
+    email_is_confirmed = auth.info.email && (auth.info.verified || auth.info.verified_email)
+    
+    if signed_in_resource.present?
+      user = signed_in_resource
+      if auth_user.present?
+        if auth_user != user
+          if (old_identity = user.identities.find{|i|i.provider==identity.provider}).present?
+            # user has 2nd identity @ same provider - probably re-registered there
+            old_identity.uid = identity.uid
+            identity = old_identity # old is already associated with user -> update
+          else
+            user.identities << identity 
+          end
+        end
+        identity.update_omniauth_attributes auth, email_is_confirmed
+      else
+        identity = Identity.build_with_omniauth user, auth, auth.info.email, email_is_confirmed
+      end
+    else
+      if auth_user.present?
+        user = auth_user
+        identity.update_omniauth_attributes auth, email_is_confirmed
+      else
+        email = auth.info.email
+        user =(email ? User.where(:email => email).first : nil) || User.new
+        identity = Identity.build_with_omniauth user, auth, email, email_is_confirmed
+      end
+    end
+
+    user.save!
+
+    user
+  end
+
 end

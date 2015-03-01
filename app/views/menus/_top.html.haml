@@ -23,15 +23,19 @@
               = image_tag tmp_user().foto.url, class: 'whoami-img', style: 'margin: 3px 0px -10px 0px; max-height: 45px;'
             .logout-link{style: "display: #{user_signed_in? ? 'block' : 'none'}; float: right;"}
               = link_to t('auth.sign_out'), destroy_user_session_path, class: 'navbar-inverse navbar-brand', data: { remote: "true", format: :js, method: :delete }
-          %li
-            .login-link{style: "display: #{user_signed_in? ? 'none' : 'block'}; float :left;"}
-              = link_to t('auth.sign_in'), '#', onclick: 'javascript:$("#sign_in_modal").dialog("open")', class: 'navbar-inverse navbar-brand'
-              /%button{onclick: 'javascript:$("#sign_in_modal").dialog("open")'}
-              /  #{t('auth.sign_in')}
-            .reg-link{style: "display: #{user_signed_in? ? 'none' : 'block'}; float :left;"}
-              = link_to t('auth.sign_up'), '#', onclick: 'javascript:$("#sign_up_modal").dialog("open")', class: 'navbar-inverse navbar-brand'
-              /%button{onclick: 'javascript:$("#sign_up_modal").dialog("open")'}
-              /  #{t('auth.sign_up')}
+          %li{id: :sign_up_or_in, style: "display: #{user_signed_in? ? 'none' : 'inline'};"}
+            .local_auth{style: "float: left;"}
+              %span
+                = link_to t('auth.sign_in'), '#', onclick: 'javascript:$("#sign_in_modal").dialog("open")', class: 'navbar-brand sign_opt'
+                /%button{onclick: 'javascript:$("#sign_in_modal").dialog("open")'}
+                /  #{t('auth.sign_in')}
+              %span
+                = link_to t('auth.sign_up'), '#', onclick: 'javascript:$("#sign_up_modal").dialog("open")', class: 'navbar-brand sign_opt'
+                /%button{onclick: 'javascript:$("#sign_up_modal").dialog("open")'}
+                /  #{t('auth.sign_up')}
+            .button.facebook_login
+              = link_to user_omniauth_authorize_path(:facebook) do
+                = image_tag '/assets/facebook-icon.png', style: 'width: 25px; height: 25px;'
           %li{style: 'padding: 15px 0px 0px 20px;'}
             - lcls = lang_change_links request, ['c']
             %span{style: 'float:left;'}
