@@ -18,8 +18,12 @@
     = csrf_meta_tags
     = javascript_include_tag "modernizr"
     = javascript_include_tag "preload.mobile"
-    = javascript_include_tag "/comm/faye-browser.js"
-    = javascript_include_tag "/assets/comm/channels.js"
+    - if Rails.env == 'development'
+      = javascript_include_tag "/comm/faye-browser.js"
+      = javascript_include_tag "/assets/comm/comm.js"
+      = javascript_include_tag "/assets/comm/storage_controller.js"
+    - else
+      = javascript_include_tag "/assets/comm/application.js"
   %body{data: {role: 'page'}}
     #ruler
     #menu_top{'data-role' => 'header', 'data-position' => 'fixed'}
@@ -59,7 +63,6 @@
     #panel_control
       -#{data: {role: 'footer', position: 'fixed'}}
       %span{style: 'text-align: left; z-index: 11 !important;'}
-        -#= link_to image_tag('/assets/arrow-up-right.png', style: 'width: 32px; height: 43px;'), photo_nav_path, data: { remote: "true", format: :js }
         = link_to image_tag('/assets/arrow-up-right.png', id: 'photo_nav_open_icon', style: 'width: 32px; height: 43px;', class: 'photo_nav_open_icon'), '#', onclick: 'javascript:APP.photoNav()'
         = link_to '', '#photo_nav_panel', id: 'open_photo_nav_btn', style: 'display: none;'
         = link_to '', '#upload_data_panel', id: 'open_upload_data_btn', style: 'display: none;'

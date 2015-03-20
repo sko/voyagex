@@ -1,5 +1,8 @@
 class User < ActiveRecord::Base
   
+  LETTERS = ('A'..'Z').to_a.freeze
+  NUMBERS = (0..9).to_a.freeze
+  MIXED = (LETTERS + NUMBERS).freeze
   ACCEPTED_FOTO_CONTENT_TYPES = ["application/octet-stream",
                                  "image/jpg",
                                  "image/jpeg",
@@ -14,7 +17,9 @@ class User < ActiveRecord::Base
   has_many :uploads
   has_many :commits
   has_many :identities, dependent: :destroy
-  has_one :comm_setting, inverse_of: :user, dependent: :destroy
+  has_many :users_groups, inverse_of: :user
+  has_many :groups, :through => :users_groups
+  has_one :comm_port, inverse_of: :user, dependent: :destroy
   has_one :snapshot, class_name: 'UserSnapshot', dependent: :destroy
   belongs_to :home_base, class_name: 'Location', foreign_key: :home_base_id
 
@@ -40,12 +45,12 @@ class User < ActiveRecord::Base
   end
 
   def follows
-    CommSetting.joins(:comm_peers).where(comm_peers: { peer_id: id, granted_by_peer: true })
+    CommPort.joins(:comm_peers).where(comm_peers: { peer_id: id, granted_by_peer: true })
   end
 
   def requested_grant_to_follow
     t = CommPeer.arel_table
-    CommSetting.joins(:comm_peers).where(t[:peer_id].eq(id).and(t[:granted_by_peer].eq(nil).or(t[:granted_by_peer].eq(false))))
+    CommPort.joins(:comm_peers).where(t[:peer_id].eq(id).and(t[:granted_by_peer].eq(nil).or(t[:granted_by_peer].eq(false))))
   end
 
   def set_base64_file file_json, content_type, file_name
@@ -75,8 +80,18 @@ class User < ActiveRecord::Base
     User.where(email: 'skoeller@gmx.de').first
   end
 
-  def self.create_tmp_user
-    User.create(username: tmp_id, email: 'sko', )
+  def self.rand_user
+    dummy_username = (0..6).map { MIXED[rand(MIXED.length)] }.join
+    dummy_password = (0..8).map { MIXED[rand(MIXED.length)] }.join
+    avatar_image_url = UserHelper::fetch_random_avatar
+    u = User.create(username: dummy_username,
+                    password: dummy_password,
+                    password_confirmation: dummy_password,
+                    email: ADMIN_EMAIL_ADDRESS.sub(/^[^@]+/, dummy_username),
+                    search_radius_meters: 1000,
+                    snapshot: UserSnapshot.new(location: Location.default, cur_commit: Commit.latest),
+                    foto: open(avatar_image_url, allow_redirections: :safe){|t|t.base_uri}
+      )
   end
 
   def self.find_for_oauth(auth, signed_in_resource = nil)
@@ -86,7 +101,7 @@ class User < ActiveRecord::Base
     auth_user = identity.user if identity.present?
     
     email_is_confirmed = auth.info.email && (auth.info.verified || auth.info.verified_email)
-    
+
     if signed_in_resource.present?
       user = signed_in_resource
       if auth_user.present?
@@ -108,9 +123,8 @@ class User < ActiveRecord::Base
         user = auth_user
         identity.update_omniauth_attributes auth, email_is_confirmed
       else
-        email = auth.info.email
-        user =(email ? User.where(:email => email).first : nil) || User.new
-        identity = Identity.build_with_omniauth user, auth, email, email_is_confirmed
+        user =(auth.info.email ? User.where(:email => auth.info.email).first : nil) || User.new
+        identity = Identity.build_with_omniauth user, auth, auth.info.email, email_is_confirmed
       end
     end
 

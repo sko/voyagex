@@ -365,17 +365,6 @@ class window.Storage.Model
         console.log('TODO: maybe get from local storage')
         #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
 
-  # TODO: dataType: 'json' and callback impl
-#  photoNav: (lat, lng, callback = null) ->
-#    $.ajax
-#      type: 'GET'
-#      dataType: 'script'
-#      url: '<%= photo_nav_path(lat: ':lat', lng: ':lng') %>'
-#           .replace(/:lat/, lat)
-#           .replace(/:lng/, lng)
-#    if callback?
-#      callback { pois: 'TODO' }
-
   # called for handling upload-response from backend - either currentUser or remoteUser
   # might be called multiple times within one backend-response (->loadStats)
   # stores attachment (!), sets loadStats-numLeft -1 and then calls _syncPoiNotes (with ready attachmentUrl

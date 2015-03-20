@@ -5,23 +5,27 @@ module UserHelper
   #
   #
   #
-  def self.fetch_gravatar(email, request)
+  def self.fetch_gravatar email, request = nil
     host = 'www.gravatar.com'
     port = 80
     email_md5 = Digest::MD5.hexdigest(email)
     path = "/avatar/#{email_md5}"
-    request_headers = { 'Accept-Language' => request.env['HTTP_ACCEPT_LANGUAGE'],
-                        'User-Agent' => request.env['HTTP_USER_AGENT'] }
     extra_response_headers = ['Content-Disposition']
-    response = UserHelper.get_resource host, port, path, request_headers, extra_response_headers
-    response.match(/filename="#{email_md5}\./).present? ? response.body : nil
+    if request.present?
+      request_headers = { 'Accept-Language' => request.env['HTTP_ACCEPT_LANGUAGE'],
+                          'User-Agent' => request.env['HTTP_USER_AGENT'] }
+      response = self.get_resource host, port, path, request_headers, extra_response_headers
+      response.extra_headers[extra_response_headers[0]].match(/filename="#{email_md5}\./).present? ? response : nil
+    else
+      response = self.head_resource host, port, path, {}, extra_response_headers
+      response.extra_headers[extra_response_headers[0]].match(/filename="#{email_md5}\./).present? ? "http#{port==443 ? 's' : ''}://#{host}:#{port}#{path}" : nil
+    end
   end
 
   #
   #
   #
-  def self.fetch_random_avatar(request)
-    avatar_image_data = [nil,nil]
+  def self.fetch_random_avatar request = nil
 bu = <<bu
 p00=
 p01=55
@@ -72,46 +76,74 @@ query
     target_host = "www3023ud.sakura.ne.jp"
     target_port = 80
     target_path = "/illustmaker/m.cgi?#{query_string}"
-    target_req = Net::HTTP::Get.new(target_path)
-    target_req.add_field("Host", target_host)
-    target_req.add_field("Accept-Language", request.env['HTTP_ACCEPT_LANGUAGE'])
-    target_req.add_field("User-Agent", request.env['HTTP_USER_AGENT'])
-    #puts "target_req:\n#{target_req}"
-    target_conn = Net::HTTP.new(target_host, target_port)
-    target_conn.start do |http|
-      http.request(target_req) do |target_res|
-        avatar_image_data[0] = target_res.header["Content-Type"]
-        avatar_image_data[1] = target_res.read_body
-        ## hack since response is not decoded with png
-        #cur_path = Rails.root.join('public', 'fotos', 'random_avatar')
-        #File.open(cur_path, 'wb'){|file| file.write(target_res.read_body)}
-        #avatar_image_data[1] = File.read(cur_path)
-      end
+
+    if request.present?
+      request_headers = { 'Accept-Language' => request.env['HTTP_ACCEPT_LANGUAGE'],
+                          'User-Agent' => request.env['HTTP_USER_AGENT'] }
+      response_data = self.get_resource target_host, target_port, target_path, request_headers
+      ## hack since response is not decoded with png
+      #cur_path = Rails.root.join('public', 'fotos', 'random_avatar')
+      #File.open(cur_path, 'wb'){|file| file.write(response_data.content)}
+      #response_data.content = File.read(cur_path)
+      response_data
+    else
+      "http#{target_port==443 ? 's' : ''}://#{target_host}:#{target_port}#{target_path}"
     end
-    avatar_image_data
+  end
+
+  #
+  # 
+  #
+  def self.get url, request_headers = {}, extra_response_headers = [], redirects = []
+    m = url.match(/^http(s?):\/\/([^:\/]+):?([^\/]*)(\/.*)/)
+    ssl = m[1] == 's'
+    get_resource m[2], m[3].present? ? m[3].to_i : (ssl ? 443 : 80), m[4], request_headers
+  end
+
+  #
+  #
+  #
+  def self.head_resource host, port, path, request_headers = {}, extra_response_headers = []
+    self.load_resource host, port, Net::HTTP::Head.new(path), request_headers, extra_response_headers
   end
 
   #
   #
   #
   def self.get_resource host, port, path, request_headers = {}, extra_response_headers = []
-    response_data = Struct.new(:content_type, :body)
-    request = Net::HTTP::Get.new(target_path)
-    request.add_field("Host", target_host)
+    self.load_resource host, port, Net::HTTP::Get.new(path), request_headers, extra_response_headers
+  end
+
+  #
+  #
+  #
+  def self.load_resource host, port, request, request_headers = {}, extra_response_headers = [], redirects = []
+    response_data = Struct.new(:response_code, :content_type, :extra_headers, :content, :redirects).new -1, nil, {}, nil, redirects
+    request.add_field("Host", host)
     request_headers.each { |h, v| request.add_field(h.to_s, v) }
-    target_conn = Net::HTTP.new(target_host, port)
+    target_conn = Net::HTTP.new(host, port)
+    if port == 443
+      target_conn.use_ssl = true
+      target_conn.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    end
     target_conn.start do |http|
       http.request(request) do |response|
-        response_data.content_type = response.header["Content-Type"]
-        extra_response_headers.each { |h| response_data[h] = response.header[h.to_s] }
-        response_data.body = response.read_body
-        ## hack since response is not decoded with png
-        #cur_path = Rails.root.join('public', 'fotos', 'random_avatar')
-        #File.open(cur_path, 'wb'){|file| file.write(response.read_body)}
-        #response_data[1] = File.read(cur_path)
+        response_data.response_code = response.code
+        if response.code  == '302'
+          response_data.redirects.push response.header["Location"]
+        else
+          response_data.content_type = response.header["Content-Type"]
+          extra_response_headers.each { |h| response_data.extra_headers[h] = response.header[h.to_s] }
+          response_data.content = response.read_body
+        end
       end
     end
-    response_data
+    if response_data.response_code  == '302'
+      return nil if redirects.size >= 3
+      self.get(response_data.redirects.last, request_headers, extra_response_headers, redirects)
+    else
+      response_data
+    end
   end
 
 end

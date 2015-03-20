@@ -1,8 +1,4 @@
 module ApplicationHelper
-  
-  LETTERS = ('A'..'Z').to_a.freeze
-  NUMBERS = (0..9).to_a.freeze
-  MIXED = (LETTERS + NUMBERS).freeze
 
   #
   #
@@ -49,18 +45,7 @@ module ApplicationHelper
     if check_session && session[:tmp_user_id].present?
       User.where(id: session[:tmp_user_id]).first || tmp_user(false)
     else
-      dummy_username = (0..6).map { MIXED[rand(MIXED.length)] }.join
-      dummy_password = (0..8).map { MIXED[rand(MIXED.length)] }.join
-      avatar_image_data = UserHelper::fetch_random_avatar request
-      cur_path = Rails.root.join('public', 'assets', 'fotos', 'random_avatar')
-      File.open(cur_path, 'wb'){|file| file.write(avatar_image_data[1])}
-      u = User.create(username: dummy_username,
-                      password: dummy_password,
-                      password_confirmation: dummy_password,
-                      email: ADMIN_EMAIL_ADDRESS.sub(/^[^@]+/, dummy_username),
-                      search_radius_meters: 1000,
-                      snapshot: UserSnapshot.new(location: Location.default, cur_commit: Commit.latest),
-                      foto: File.new(cur_path))
+      u = User.rand_user
       u.confirm!
       session[:tmp_user_id] = u.id
       u

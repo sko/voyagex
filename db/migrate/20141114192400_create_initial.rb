@@ -1,4 +1,24 @@
 LOAD_DATA_STATEMENTS = <<LDS
+CREATE DATABASE voyagex_development CHARACTER SET utf8  COLLATE utf8_unicode_ci;
+GRANT ALL ON voyagex_development.* TO sko_voyagex@localhost IDENTIFIED BY '76$sko';
+CREATE DATABASE voyagex_test CHARACTER SET utf8  COLLATE utf8_unicode_ci;
+GRANT ALL ON voyagex_test.* TO sko_voyagex@localhost IDENTIFIED BY '76$sko';
+
+dbName=voyagex_development &&
+outDir="/tmp" &&
+#rm -f $outDir/*_dump.sql &&
+#structureDump=$dbName"_structure_dump.sql" &&
+dataDump=$dbName"_data_dump.sql" &&
+#mysqldump -u root -p -d --result-file=$outDir/$structureDump --add-drop-table $dbName &&
+mysqldump -u root -p -t --result-file=$outDir/$dataDump $dbName
+
+dbName=voyagex_development &&
+outDir="/tmp" &&
+#structureDump=$dbName"_structure_dump.sql" &&
+dataDump=$dbName"_data_dump.sql" &&
+#mysql -u root -p $dbName < $outDir/$structureDump &&
+mysql -u root -p $dbName < $outDir/$dataDump
+
 delete from roles;
 load data local infile '/tmp/roles.csv' replace into table roles fields terminated by ',' optionally enclosed by '"' ignore 1 lines;
 delete from users;

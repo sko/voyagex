@@ -11,17 +11,17 @@ module Comm
     # this way they also can have a dialog whether they are interested at all
     def register
       @user = User.find(params[:user_id])
-      unless @user.comm_setting.present?
-        comm_setting = CommSetting.create(user: @user, channel_enc_key: enc_key, sys_channel_enc_key: enc_key)
-        @user.comm_setting = comm_setting
+      unless @user.comm_port.present?
+        comm_port = CommPort.create(user: @user, channel_enc_key: enc_key, sys_channel_enc_key: enc_key)
+        @user.comm_port = comm_port
       end
 
       if params[:subscribe_to_peers] == 'true'
         subscribe_user_to_peers @user
       end
       res = { user_id: @user.id,
-              sys_channel_enc_key: @user.comm_setting.sys_channel_enc_key,
-              channel_enc_key: @user.comm_setting.channel_enc_key }
+              sys_channel_enc_key: @user.comm_port.sys_channel_enc_key,
+              channel_enc_key: @user.comm_port.channel_enc_key }
       render json: res
     end
 
@@ -39,15 +39,15 @@ binding.pry
 
     def subscribe_user_to_peers user
       peers_data = []
-      User.joins(:comm_setting).where('comm_settings.channel_enc_key != ?', user.comm_setting.channel_enc_key).each do |peer|
-        peers_data << { channel_enc_key: peer.comm_setting.channel_enc_key, user: { id: peer.id, username: peer.username } }
+      User.joins(:comm_port).where('comm_ports.channel_enc_key != ?', user.comm_port.channel_enc_key).each do |peer|
+        peers_data << { channel_enc_key: peer.comm_port.channel_enc_key, user: { id: peer.id, username: peer.username } }
         # notify peer about user
-        msg = { type: :subscription_notification, peers: [channel_enc_key: user.comm_setting.channel_enc_key, user: { id: user.id, username: user.username }] }
-        Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer.comm_setting.channel_enc_key}", msg)
+        msg = { type: :subscription_notification, peers: [channel_enc_key: user.comm_port.channel_enc_key, user: { id: user.id, username: user.username }] }
+        Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer.comm_port.channel_enc_key}", msg)
       end
 #      # notify user about peers - but user doesn't have key now
 #      msg = { type: :subscription_notification, peers: peers_data }
-#      Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{user.comm_setting.channel_enc_key}", msg)
+#      Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{user.comm_port.channel_enc_key}", msg)
     end
 
   end

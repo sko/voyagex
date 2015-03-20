@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
   # s.add_dependency "jquery-rails"
   s.add_dependency "thin"
   #s.add_dependency "resque-scheduler"
-  s.add_dependency "faye-rails"
+  s.add_dependency "faye-rails", "2.0.0"
   s.add_dependency "faye-redis"
   s.add_dependency "haml"
   s.add_dependency "haml-rails"

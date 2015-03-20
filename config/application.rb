@@ -58,20 +58,6 @@ module VoyageX
 
     # Version of your assets, change this if you want to expire all your assets
     config.assets.version = '1.0'
-    
-    config.middleware.delete Rack::Lock
-    if Rails.env == 'production'
-        config.middleware.use FayeRails::Middleware,
-                              mount: '/comm',
-                              :timeout => 25,
-                              :engine  => {
-                                            :type  => Faye::Redis,
-                                            :host  => 'localhost'
-                                          } do
-          map '/**' => Comm::ChannelsController  
-          map :default => :block
-        end
-    end
   end
 end
 

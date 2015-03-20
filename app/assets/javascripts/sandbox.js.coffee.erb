@@ -74,31 +74,19 @@ jQuery ->
   $('#message').on 'keyup', (event) ->
     if (event.which == 13 || event.keyCode == 13)
       event.preventDefault()
-      endIdx = $(this).val().indexOf('\n---')
-      if endIdx == -1
-        publishText = $(this).val()
-      else
-        publishText = $(this).val().substr(0, endIdx)
+      publishText = $(this).val()
       APP.publishMessage(publishText)
-      #$(this).val('\n-------------------------\n'+$(this).val())
-      #$(this).selectRange(0) 
       VoyageX.View.addChatMessage { text: $('#message').val() }
 
   #$('.p2p_message').on 'keyup', (event) ->
   window.sendP2PChatMessage = (event) ->
     if (event.which == 13 || event.keyCode == 13)
       event.preventDefault()
-      endIdx = $(event.target).val().indexOf('\n---')
-      if endIdx == -1
-        publishText = $(event.target).val()
-      else
-        publishText = $(event.target).val().substr(0, endIdx)
+      publishText = $(event.target).val()
       peerChatContainer = $(event.target).closest('div[id^=peer_popup_]').first()
       peerId = parseInt peerChatContainer.attr('id').match(/[0-9]+$/)[0]
       peer = Comm.StorageController.instance().getUser peerId
       APP.p2pChatMessage(peer, publishText)
-      #$(event.target).val('\n-------------------------\n'+$(event.target).val())
-      #$(event.target).selectRange(0) 
       VoyageX.View.addChatMessage { text: $('#p2p_message_'+peerId).val() }, true, {peer: peer, chatContainer: peerChatContainer, msgInput: $(event.target)}
 
   $('#poi_notes_container').scrollpanel({

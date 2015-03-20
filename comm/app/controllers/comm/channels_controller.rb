@@ -18,19 +18,22 @@ module Comm
         Rails.logger.debug "###### Client #{client_id} subscribed to #{channel}."
         subscription_enc_key = channel.match(/^\/system#{PEER_CHANNEL_PREFIX}([^\/]+)/)
         if subscription_enc_key.present?
+          #
+          # when a client subscribes he gets a ready-notification
+          #
           begin
-            comm_setting = CommSetting.where(sys_channel_enc_key: subscription_enc_key[1]).first
-            Rails.logger.debug "###### Found User #{comm_setting.user.id} for Client #{client_id}. comm_setting.unsubscribe_ts = #{comm_setting.unsubscribe_ts}"
-            if comm_setting.unsubscribe_ts.present?
-              msg = { type: :unsubscribed_notification, old_client_id: comm_setting.current_faye_client_id, seconds_ago: ((DateTime.now - comm_setting.unsubscribe_ts.to_datetime) * 24 * 60 * 60).to_i }
+            comm_port = CommPort.where(sys_channel_enc_key: subscription_enc_key[1]).first
+            Rails.logger.debug "###### Found User #{comm_port.user.id} for Client #{client_id}. comm_port.unsubscribe_ts = #{comm_port.unsubscribe_ts}"
+            if comm_port.unsubscribe_ts.present?
+              msg = { type: :unsubscribed_notification, old_client_id: comm_port.current_faye_client_id, seconds_ago: ((DateTime.now - comm_port.unsubscribe_ts.to_datetime) * 24 * 60 * 60).to_i }
               Comm::ChannelsController.publish(channel, msg)
-              comm_setting.update_attributes(current_faye_client_id: client_id, unsubscribe_ts: nil)
+              comm_port.update_attributes(current_faye_client_id: client_id, unsubscribe_ts: nil)
             else
-              comm_setting.update_attribute(:current_faye_client_id, client_id)
+              comm_port.update_attribute(:current_faye_client_id, client_id)
             end
             # now that current_faye_client_id is set, the client can start to communicate
             # first it should register to it's own bidirectional channels
-            msg = { type: :ready_notification, channel_enc_key: comm_setting.channel_enc_key }
+            msg = { type: :ready_notification, channel_enc_key: comm_port.channel_enc_key }
            #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{subscription_enc_key[1]}", msg)
             Comm::ChannelsController.publish(channel, msg)
           rescue => e
@@ -46,9 +49,9 @@ module Comm
           begin
             # store info and send to client on next subscription
             # since unsubscribed client would'n receive it here
-            comm_setting = CommSetting.where(sys_channel_enc_key: subscription_enc_key[1]).first
-            Rails.logger.debug "###### Found User #{comm_setting.user.id} for Client #{client_id}."
-            comm_setting.update_attribute(:unsubscribe_ts, DateTime.now)
+            comm_port = CommPort.where(sys_channel_enc_key: subscription_enc_key[1]).first
+            Rails.logger.debug "###### Found User #{comm_port.user.id} for Client #{client_id}."
+            comm_port.update_attribute(:unsubscribe_ts, DateTime.now)
           rescue => e
             Rails.logger.error "!!!!!! #{e.message}"
           end
@@ -92,17 +95,17 @@ module Comm
           if subscription_enc_key.present?
             Rails.logger.debug "###### Inbound message: found subscription_enc_key '#{subscription_enc_key[1]}'"
             begin
-              user_comm_setting = CommSetting.where(current_faye_client_id: message['clientId']).first
-              if user_comm_setting.present?
-                target = CommSetting.where(channel_enc_key: subscription_enc_key[1]).first
+              user_comm_port = CommPort.where(current_faye_client_id: message['clientId']).first
+              if user_comm_port.present?
+                target = CommPort.where(channel_enc_key: subscription_enc_key[1]).first
                 # allow self-subscription so that others can communicate with me
                 granted = target.present? &&
                           (target.current_faye_client_id == message['clientId'] ||
-                           target.comm_peers.where(peer_id: user_comm_setting.user.id, granted_by_peer: true).present?)
+                           target.comm_peers.where(peer_id: user_comm_port.user.id, granted_by_peer: true).present?)
                 if granted
-                  Rails.logger.debug "###### Inbound message: allow subscription on channel #{message['subscription']} for user #{user_comm_setting.user.id}"
+                  Rails.logger.debug "###### Inbound message: allow subscription on channel #{message['subscription']} for user #{user_comm_port.user.id}"
                 else
-                  Rails.logger.debug "###### Inbound message: deny subscription on channel #{message['subscription']} for user #{user_comm_setting.user.id} because grant missing"
+                  Rails.logger.debug "###### Inbound message: deny subscription on channel #{message['subscription']} for user #{user_comm_port.user.id} because grant missing"
                   block_msg = 'grant required for subscription'
                 end
               else

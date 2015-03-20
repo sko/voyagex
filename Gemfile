@@ -1,12 +1,8 @@
 source 'https://rubygems.org'
 
-ruby '2.1.3'
+ruby '2.1.5'
 
 gem 'rails', '4.1.6'
-
-group :production, :staging, :development do
-  gem 'comm', path: "comm"
-end
 
 gem 'devise'
 #gem "devise-async"
@@ -16,6 +12,7 @@ gem 'haml-rails'
 gem 'leaflet-rails'
 gem 'mysql2'
 gem 'omniauth-facebook'
+gem 'open_uri_redirections'
 gem "paperclip", "~> 4.2"
 gem 'rails-i18n', github: 'svenfuchs/rails-i18n'
 gem 'resque-scheduler' 
@@ -67,4 +64,8 @@ group :test, :development do
   gem 'rspec-rails'
   gem 'shoulda-matchers'  # Shoulda Matchers for RSpec
   gem 'timecop'
+end
+
+group :production, :staging, :development do
+  gem 'comm', path: "comm"
 end

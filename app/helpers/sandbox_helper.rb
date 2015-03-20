@@ -64,4 +64,13 @@ module SandboxHelper
     end
   end
 
+  def peer_json c_p
+    last_loc = c_p.user.snapshot.location||nearby_location(Location.new(latitude: c_p.user.snapshot.lat, longitude: c_p.user.snapshot.lng), 10)
+    last_loc_poi = last_loc.persisted? ? Poi.where(location: last_loc).first : nearby_pois(last_loc, 10).first
+    geometry = Paperclip::Geometry.from_file(c_p.user.foto) if c_p.user.foto.present?
+    foto_width = geometry.present? ? geometry.width.to_i : -1
+    foto_height = geometry.present? ? geometry.height.to_i : -1
+    "{id: #{c_p.user.id}, username: '#{c_p.user.username}', lastLocation: {id: #{last_loc.id||'null'}, lat: #{last_loc.latitude}, lng: #{last_loc.longitude}, address: '#{shorten_address(last_loc, true)}'#{last_loc_poi.present? ? ", poiId: #{last_loc_poi.id}" : ''}}, foto: {url: '#{c_p.user.foto.url}', width: #{foto_width}, height: #{foto_height}}, peerPort: {id: #{c_p.id}, channel_enc_key: '#{c_p.channel_enc_key}'}}"
+  end
+
 end

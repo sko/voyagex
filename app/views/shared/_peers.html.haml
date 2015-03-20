@@ -14,65 +14,60 @@
     %th{colspan: 6}
       #{t('admin.i_follow')}
   %tbody#i_follow
-    - user.follows.each do |cs|
+    - user.follows.each do |c_p|
       - # on updates subscription is handled in controller
       - if @initial_subscribe == true
         %script
-          = render(partial: '/shared/subscriptions', formats: [:js], locals: { channel_enc_key: cs.channel_enc_key }).html_safe
-          -#APP.storage().saveUser({id: #{cs.user.id}, username: '#{cs.user.username}', peerPort: {id: #{cs.id}, channel_enc_key: '#{cs.channel_enc_key}'}});
-          - last_loc = cs.user.snapshot.location||nearby_location(Location.new(latitude: cs.user.snapshot.lat, longitude: cs.user.snapshot.lng), 10)
-          - last_loc_poi = last_loc.persisted? ? Poi.where(location: last_loc).first : nearby_pois(last_loc, 10).first
-          - geometry = Paperclip::Geometry.from_file(cs.user.foto) if cs.user.foto.present?
-          - foto_width = geometry.present? ? geometry.width.to_i : -1
-          - foto_height = geometry.present? ? geometry.height.to_i : -1
-          window.initArgs.peers.push({id: #{cs.user.id}, username: '#{cs.user.username}', lastLocation: {id: #{last_loc.id||'null'}, lat: #{last_loc.latitude}, lng: #{last_loc.longitude}, address: '#{shorten_address(last_loc, true)}'#{last_loc_poi.present? ? ", poiId: #{last_loc_poi.id}" : ''}}, foto: {url: '#{cs.user.foto.url}', width: #{foto_width}, height: #{foto_height}}, peerPort: {id: #{cs.id}, channel_enc_key: '#{cs.channel_enc_key}'}});
-      %tr{id: "i_follow_#{cs.id}", data: {channelEncKey: cs.channel_enc_key}}
+          = render(partial: '/shared/subscriptions', formats: [:js], locals: { channel_enc_key: c_p.channel_enc_key }).html_safe
+          -#APP.storage().saveUser({id: #{c_p.user.id}, username: '#{c_p.user.username}', peerPort: {id: #{c_p.id}, channel_enc_key: '#{c_p.channel_enc_key}'}});
+          window.initArgs.peers.push(#{peer_json(c_p)});
+      %tr{id: "i_follow_#{c_p.id}", data: {channelEncKey: c_p.channel_enc_key}}
         %td{width: 5}
           &nbsp;
         %td
-          = image_tag cs.user.foto.url, style: 'max-width: 35px !important;'
+          = image_tag c_p.user.foto.url, style: 'max-width: 35px !important;'
         %td{width: 15}
           &nbsp;
         %td
-          %span{style: 'float: left;'}
-            #{cs.user.username}
-          %span{style: 'padding-left: 10px;'}
-            = link_to 'reset connection', '#', onclick: "javascript:APP.resetConnection(#{cs.id});"
+          -#%span{style: 'float: left;'}
+          #{c_p.user.username}
+          -#%span{style: 'padding-left: 10px;'}
+          -#  = link_to 'reset connection', '#', onclick: "javascript:APP.resetConnection(#{c_p.id});"
         %td{width: 15}
           &nbsp;
         %td
-          = hidden_field_tag "follow[comm_peer_settings][#{cs.id.to_s}]", false, id: "i_follow_#{cs.id.to_s}.h"
-          = check_box_tag "follow[comm_peer_settings][#{cs.id.to_s}]", true, :checked, id: "i_follow_#{cs.id.to_s}"
-          = label_tag "i_follow_#{cs.id.to_s}", ''
+          = hidden_field_tag "follow[comm_peer_ports][#{c_p.id.to_s}]", false, id: "i_follow_#{c_p.id.to_s}.h"
+          = check_box_tag "follow[comm_peer_ports][#{c_p.id.to_s}]", true, :checked, id: "i_follow_#{c_p.id.to_s}"
+          = label_tag "i_follow_#{c_p.id.to_s}", ''
   - # peers followed by user and not granted
   %tr
     %th{colspan: 6}
       #{t('admin.i_want_to_follow')}
   %tbody#i_want_to_follow
-    - user.requested_grant_to_follow.each do |cs|
-      %tr{id: "i_want_to_follow_#{cs.id}"}
+    - user.requested_grant_to_follow.each do |c_p|
+      %tr{id: "i_want_to_follow_#{c_p.id}"}
         %td{width: 5}
           &nbsp;
         %td
-          = image_tag cs.user.foto.url, style: 'max-width: 35px !important;'
+          = image_tag c_p.user.foto.url, style: 'max-width: 35px !important;'
         %td{width: 15}
           &nbsp;
         %td
-          #{cs.user.username}
+          #{c_p.user.username}
         %td{width: 15}
           &nbsp;
         %td
-          = hidden_field_tag "follow[comm_peer_settings][#{cs.id.to_s}]", false, id: "i_want_to_follow_#{cs.id.to_s}.h"
-          = check_box_tag "follow[comm_peer_settings][#{cs.id.to_s}]", true, :checked, id: "i_want_to_follow_#{cs.id.to_s}"
-          = label_tag "i_want_to_follow_#{cs.id.to_s}", ''
+          = hidden_field_tag "follow[comm_peer_ports][#{c_p.id.to_s}]", false, id: "i_want_to_follow_#{c_p.id.to_s}.h"
+          = check_box_tag "follow[comm_peer_ports][#{c_p.id.to_s}]", true, :checked, id: "i_want_to_follow_#{c_p.id.to_s}"
+          = label_tag "i_want_to_follow_#{c_p.id.to_s}", ''
   - # peers not followed by user   / and comm_peers.id is null
   %tr
     %th{colspan: 6}
       #{t('admin.i_dont_follow')}
   %tbody#i_dont_follow
-    /- CommSetting.joins(:user).joins('left outer join comm_peers on comm_settings.id = comm_peers.comm_setting_id').where('comm_settings.user_id != ? and (comm_peers.peer_id is null or comm_peers.peer_id != ?) and current_sign_in_at is not null', user.id, user.id).order('users.username').each do |cs|
-    - User.joins(:comm_setting).where('`users`.id != ? and `users`.current_sign_in_at is not null and `comm_settings`.id not in (select `comm_peers`.comm_setting_id from `comm_peers` where `comm_peers`.peer_id = ?)', user.id, user.id).order('`users`.username').each do |u|
-      %tr{id: "i_dont_follow_#{u.comm_setting.id}"}
+    /- CommPort.joins(:user).joins('left outer join comm_peers on comm_ports.id = comm_peers.comm_port_id').where('comm_ports.user_id != ? and (comm_peers.peer_id is null or comm_peers.peer_id != ?) and current_sign_in_at is not null', user.id, user.id).order('users.username').each do |c_p|
+    - User.joins(:comm_port).where('`users`.id != ? and `users`.current_sign_in_at is not null and `comm_ports`.id not in (select `comm_peers`.comm_port_id from `comm_peers` where `comm_peers`.peer_id = ?)', user.id, user.id).order('`users`.username').each do |u|
+      %tr{id: "i_dont_follow_#{u.comm_port.id}"}
         %td{width: 5}
           &nbsp;
         %td
@@ -84,9 +79,9 @@
         %td{width: 15}
           &nbsp;
         %td
-          = hidden_field_tag "follow[comm_peer_settings][#{u.comm_setting.id.to_s}]", false, id: "i_dont_follow_#{u.comm_setting.id.to_s}.h"
-          = check_box_tag "follow[comm_peer_settings][#{u.comm_setting.id.to_s}]", true, false, id: "i_dont_follow_#{u.comm_setting.id.to_s}", style: 'float: left;'
-          = label_tag "i_dont_follow_#{u.comm_setting.id.to_s}", t('admin.check_to_follow')
+          = hidden_field_tag "follow[comm_peer_ports][#{u.comm_port.id.to_s}]", false, id: "i_dont_follow_#{u.comm_port.id.to_s}.h"
+          = check_box_tag "follow[comm_peer_ports][#{u.comm_port.id.to_s}]", true, false, id: "i_dont_follow_#{u.comm_port.id.to_s}", style: 'float: left;'
+          = label_tag "i_dont_follow_#{u.comm_port.id.to_s}", t('admin.check_to_follow')
   %tr
     %th{colspan: 6}
       <hr />
@@ -95,8 +90,11 @@
     %th{colspan: 6}
       #{t('admin.follow_me')}
   %tbody#follow_me
-    - if user.comm_setting.present?
-      - user.comm_setting.followers.order(:username).each do |u|
+    - if user.comm_port.present?
+      - user.comm_port.followers.order(:username).each do |u|
+        - if @initial_subscribe == true
+          %script
+            window.initArgs.peers.push(#{peer_json(u.comm_port)});
         %tr{id: "follow_me_#{u.id}"}
           %td{width: 5}
             &nbsp;
@@ -117,8 +115,8 @@
     %th{colspan: 6}
       #{t('admin.want_to_follow_me')}
   %tbody#want_to_follow_me
-    - if user.comm_setting.present?
-      - user.comm_setting.follow_grant_requests.order(:username).each do |u|
+    - if user.comm_port.present?
+      - user.comm_port.follow_grant_requests.order(:username).each do |u|
         %tr{id: "want_to_follow_me_#{u.id}"}
           %td{width: 5}
             &nbsp;

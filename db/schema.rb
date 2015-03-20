@@ -14,7 +14,7 @@
 ActiveRecord::Schema.define(version: 20150224155747) do
 
   create_table "comm_peers", force: true do |t|
-    t.integer  "comm_setting_id", null: false
+    t.integer  "comm_port_id",    null: false
     t.integer  "peer_id",         null: false
     t.datetime "created_at"
     t.datetime "updated_at"
@@ -23,9 +23,9 @@ ActiveRecord::Schema.define(version: 20150224155747) do
     t.text     "note_followed"
   end
 
-  add_index "comm_peers", ["comm_setting_id"], name: "index_comm_peers_on_comm_setting_id", using: :btree
+  add_index "comm_peers", ["comm_port_id"], name: "index_comm_peers_on_comm_port_id", using: :btree
 
-  create_table "comm_settings", force: true do |t|
+  create_table "comm_ports", force: true do |t|
     t.integer  "user_id",                null: false
     t.string   "channel_enc_key",        null: false
     t.datetime "created_at"
@@ -35,8 +35,8 @@ ActiveRecord::Schema.define(version: 20150224155747) do
     t.datetime "unsubscribe_ts"
   end
 
-  add_index "comm_settings", ["channel_enc_key"], name: "index_comm_settings_on_channel_enc_key", using: :btree
-  add_index "comm_settings", ["user_id"], name: "index_comm_settings_on_user_id", using: :btree
+  add_index "comm_ports", ["channel_enc_key"], name: "index_comm_ports_on_channel_enc_key", using: :btree
+  add_index "comm_ports", ["user_id"], name: "index_comm_ports_on_user_id", using: :btree
 
   create_table "commits", force: true do |t|
     t.integer  "user_id"
@@ -48,6 +48,13 @@ ActiveRecord::Schema.define(version: 20150224155747) do
   add_index "commits", ["hash_id"], name: "index_commits_on_hash_id", using: :btree
   add_index "commits", ["timestamp"], name: "index_commits_on_timestamp", using: :btree
 
+  create_table "groups", force: true do |t|
+    t.string   "name",       null: false
+    t.integer  "creator_id", null: false
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
   create_table "identities", force: true do |t|
     t.integer  "user_id",               null: false
     t.string   "provider",              null: false
@@ -57,14 +64,16 @@ ActiveRecord::Schema.define(version: 20150224155747) do
     t.string   "auth_token"
     t.datetime "auth_token_expires_at"
     t.string   "auth_secret"
+    t.datetime "created_at"
+    t.datetime "updated_at"
   end
 
   add_index "identities", ["provider", "uid"], name: "index_identities_on_provider_and_uid", using: :btree
   add_index "identities", ["user_id"], name: "index_identities_on_user_id", using: :btree
 
   create_table "locations", force: true do |t|
-    t.decimal  "latitude",        precision: 10, scale: 7, null: false
-    t.decimal  "longitude",       precision: 10, scale: 7, null: false
+    t.decimal  "latitude",        precision: 10, scale: 7
+    t.decimal  "longitude",       precision: 10, scale: 7
     t.text     "address"
     t.datetime "created_at"
     t.datetime "updated_at"
@@ -186,5 +195,18 @@ ActiveRecord::Schema.define(version: 20150224155747) do
 
   add_index "users", ["email"], name: "index_users_on_email", unique: true, using: :btree
   add_index "users", ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true, using: :btree
+
+  create_table "users_groups", force: true do |t|
+    t.integer  "user_id",              null: false
+    t.integer  "group_id",             null: false
+    t.integer  "invitation_sender_id", null: false
+    t.string   "confirmation_token"
+    t.datetime "confirmed_at"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "users_groups", ["group_id"], name: "index_users_groups_on_group_id", using: :btree
+  add_index "users_groups", ["user_id"], name: "index_users_groups_on_user_id", using: :btree
 
 end

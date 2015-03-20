@@ -25,33 +25,41 @@ class window.VoyageX.View
     else if message.type == 'subscription_grant_request'
       tr_template = $('#want_to_follow_me_template').html().
                     replace(/\{id\}/g, message.peer.id).
-                    replace(/\{username\}/g, message.peer.username)
+                    replace(/\{username\}/g, message.peer.username).
+                    replace(/tmpl-src/, 'src').
+                    replace(/\{foto_url\}/, message.peer.foto.url)
       $('#want_to_follow_me').append(tr_template)
       if window.isMobile()
         $('#comm_peer_data').trigger("create")
     else if message.type == 'subscription_granted'
-      $('#i_want_to_follow_'+message.peer.comm_setting_id).remove()
+      $('#i_want_to_follow_'+message.peer.comm_port_id).remove()
       tr_template = $('#i_follow_template').html().
-                    replace(/\{id\}/g, message.peer.comm_setting_id).
+                    replace(/\{id\}/g, message.peer.comm_port_id).
                     replace(/\{channel_enc_key\}/, message.peer.channel_enc_key).
-                    replace(/\{username\}/g, message.peer.username)
+                    replace(/\{username\}/g, message.peer.username).
+                    replace(/tmpl-src/, 'src').
+                    replace(/\{foto_url\}/, message.peer.foto.url)
       $('#i_follow').append(tr_template)
       if window.isMobile()
         $('#comm_peer_data').trigger("create")
     else if message.type == 'subscription_denied'
-      $('#i_want_to_follow_'+message.peer.comm_setting_id).remove()
+      $('#i_want_to_follow_'+message.peer.comm_port_id).remove()
       tr_template = $('#i_dont_follow_template').html().
-                    replace(/\{id\}/g, message.peer.comm_setting_id).
-                    replace(/\{username\}/g, message.peer.username)
+                    replace(/\{id\}/g, message.peer.comm_port_id).
+                    replace(/\{username\}/g, message.peer.username).
+                    replace(/tmpl-src/, 'src').
+                    replace(/\{foto_url\}/, message.peer.foto.url)
       $('#i_dont_follow').append(tr_template)
       if window.isMobile()
         $('#comm_peer_data').trigger("create")
     else if message.type == 'subscription_grant_revoked'
-      $('#i_follow_'+message.peer.comm_setting_id).remove()
+      $('#i_follow_'+message.peer.comm_port_id).remove()
       if $('#i_dont_follow > #i_dont_follow_'+message.peer.id).length == 0
         tr_template = $('#i_dont_follow_template').html().
-                      replace(/\{id\}/g, message.peer.comm_setting_id).
-                      replace(/\{username\}/g, message.peer.username)
+                      replace(/\{id\}/g, message.peer.comm_port_id).
+                      replace(/\{username\}/g, message.peer.username).
+                      replace(/tmpl-src/, 'src').
+                      replace(/\{foto_url\}/, message.peer.foto.url)
         $('#i_dont_follow').append(tr_template)
         if window.isMobile()
           $('#comm_peer_data').trigger("create")
@@ -259,7 +267,10 @@ class window.VoyageX.View
       else
         VoyageX.TemplateHelper.openP2PChat peerChatMeta.peer, [message.text]
     else
-      $('.chat_view').append '<div class="chat_message_sep"></div><div class="chat_message chat_message_'+meOrOther+' triangle-border '+leftOrRight+'">'+message.text+'</div>'
+      #$('.chat_view').append '<div class="chat_message_sep"></div><div class="chat_message chat_message_'+meOrOther+' triangle-border '+leftOrRight+'">'+message.text+'</div>'
+      user = if mine then currentUser else (if peerChatMeta? then peerChatMeta.peer else APP.storage().getUser(message.userId))
+      msgHtml = VoyageX.TemplateHelper.bcChatMsgHtml user, message.text, meOrOther
+      $('.chat_view').append '<div class="chat_message_sep"></div>'+msgHtml
       msgInput = $('#message')
     APP.view().scrollToLastChatMessage peerChatMeta
     #msgInput.val('\n-------------------------\n'+message.text+msgInput.val())
@@ -327,6 +338,9 @@ class window.VoyageX.View
         $('#location_bookmarks .bookmark-container').first().before(locationsBookmarksHTML)
       else
         $('#location_bookmarks table').first().append(locationsBookmarksHTML)
+
+  @editRadar: () ->
+    VoyageX.TemplateHelper.openRadarEditor()
 
   @instance: () ->
     @_SINGLETON

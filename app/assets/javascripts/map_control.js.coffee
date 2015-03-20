@@ -8,14 +8,13 @@ class window.VoyageX.MapControl
 #  @_COUNT = 0
 
   # zooms msut be sorted from lowest (f.ex. 1) to highest (f.ex. 16)
-  constructor: (cacheStrategy, mapOptions, offlineZooms) ->
+  constructor: (mapOptions, offlineZooms) ->
     MapControl._SINGLETON = this
     window.MC = this
     mapOptions.layers = [new L.TileLayer.Functional(VoyageX.MapControl.drawTile, {
         subdomains: mapOptions.subdomains
       })]
     @_mapOptions = mapOptions
-    @_cacheStrategy = cacheStrategy
     @_zooms = mapOptions.zooms
     @_minZoom = @_zooms[0]
     @_maxZoom = @_zooms[@_zooms.length - 1]
@@ -52,9 +51,10 @@ class window.VoyageX.MapControl
             y = parseInt(mC._map.project(mC._map.getCenter()).y/256)
             view = {zoom: mC._map.getZoom(), tile: {column: x, row: y}, subdomain: mC._mapOptions.subdomains[0]}
             mC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS
-        #posLatLng = VoyageX.MapControl.instance()._map.getCenter()
+        posLatLng = VoyageX.MapControl.instance()._map.getCenter()
         #position = {coords: {latitude: posLatLng.lat, longitude: posLatLng.lng}}
         #APP._initPositionCB(position, null, true)
+        APP.showPOIs posLatLng
     @_map.on('zoomend', (e) ->
         console.log '### map-event: zoomend ...'
         APP._zoomEnd(e);

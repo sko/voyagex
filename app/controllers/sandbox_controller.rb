@@ -3,13 +3,15 @@ class SandboxController < ApplicationController
   include ::GeoUtils
 
   # used when loading a location on the map 
-  def location
-    @location = Location.find(params[:location_id])
-    nearby_m = (tmp_user.search_radius_meters||20000)
-    load_location_data @location, nearby_m
-  end
+  # view-call (returns javascript)
+#  def location
+#    @location = Location.find(params[:location_id])
+#    nearby_m = (tmp_user.search_radius_meters||20000)
+#    load_location_data @location, nearby_m
+#  end
 
   # used from Model.js to act withLocation
+  # api-call
   def location_data
     location = Location.find(params[:location_id])
     location_json = {lat: location.latitude, lng: location.longitude, address: shorten_address(location)}
@@ -19,16 +21,11 @@ class SandboxController < ApplicationController
   end
 
   def index
-    unless tmp_user.comm_setting.present?
-      comm_setting = CommSetting.create(user: tmp_user, channel_enc_key: enc_key, sys_channel_enc_key: enc_key)
+    unless tmp_user.comm_port.present?
+      comm_port = CommPort.create(user: tmp_user, channel_enc_key: enc_key, sys_channel_enc_key: enc_key)
     end
     @initial_subscribe = true
-    unless tmp_user.foto.exists?
-      avatar_image_data = UserHelper::fetch_random_avatar request
-      cur_path = Rails.root.join('public', 'assets', 'fotos', 'random_avatar')
-      File.open(cur_path, 'wb'){|file| file.write(avatar_image_data[1])}
-      tmp_user.update_attribute :foto, File.new(cur_path)
-    end
+    tmp_user.update_attribute :foto, open(UserHelper::fetch_random_avatar, allow_redirections: :safe){|t|t.base_uri} unless tmp_user.foto.exists?
     if tmp_user.last_sign_in_ip.present?
       unless tmp_user.snapshot.cur_commit.present?
         vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, tmp_user, false#user.is_admin
@@ -65,12 +62,12 @@ class SandboxController < ApplicationController
 #   "metro_code"=>0}>
   end
 
-  def photo_nav
-    nearby_m = (tmp_user.search_radius_meters||20000)
-    location = Location.new latitude: params[:lat], longitude: params[:lng]
-# GOOD but now from template ...  load_location_data location, nearby_m
-    render "sandbox/photo_nav", layout: false, formats: [:js]
-  end
+#  def photo_nav
+#    nearby_m = (tmp_user.search_radius_meters||20000)
+#    location = Location.new latitude: params[:lat], longitude: params[:lng]
+## GOOD but now from template ...  load_location_data location, nearby_m
+#    render "sandbox/photo_nav", layout: false, formats: [:js]
+#  end
 
   # chrome://appcache-internals/
   def manifest

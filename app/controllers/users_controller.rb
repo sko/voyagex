@@ -3,38 +3,41 @@ class UsersController < ApplicationController
   include ApplicationHelper
   include PoiHelper
 
+  protect_from_forgery :except => :change_details 
+
   def update
     @user = User.find(params[:id])
     # FIXME @user = current_user
    # there's no subscribe here because @user would need grant first. he could try anyway - TODO?
     @un_subscribe = []
     if params[:follow].present?
-      peer_setting_ids = params[:follow][:comm_peer_settings].inject([[],[]]){|res,kv|kv[1]=='true'?res[0]<<kv[0]:res[1]<<kv[0];res}
-      peer_setting_ids[0].each do |peer_setting_id|
-        peer_setting = CommSetting.find peer_setting_id
-        unless peer_setting.comm_peers.find{|c_p|c_p.peer_id==@user.id}
-          peer_setting.comm_peers.create(peer_id: @user.id)
+      peer_port_ids = params[:follow][:comm_peer_ports].inject([[],[]]){|res,kv|kv[1]=='true'?res[0]<<kv[0]:res[1]<<kv[0];res}
+      peer_port_ids[0].each do |peer_port_id|
+        peer_port = CommPort.find peer_port_id
+        unless peer_port.comm_peers.find{|c_p|c_p.peer_id==@user.id}
+          peer_port.comm_peers.create(peer_id: @user.id)
           # notify peer that @user requests subscription-grant
-          peer_sys_channel_enc_key = peer_setting.sys_channel_enc_key
-          msg = { type: :subscription_grant_request, peer: { id: @user.id, username: @user.username, channel_enc_key: @user.comm_setting.channel_enc_key } }
+          peer_sys_channel_enc_key = peer_port.sys_channel_enc_key
+          msg = { type: :subscription_grant_request, peer: { id: @user.id, username: @user.username, channel_enc_key: @user.comm_port.channel_enc_key } }
+          add_foto_to_msg @user, msg
           Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
         end
       end
-      peer_setting_ids[1].each do |peer_setting_id|
-        peer_setting = CommSetting.find peer_setting_id
-        comm_peer = peer_setting.comm_peers.find{|c_p|c_p.peer_id==@user.id}
+      peer_port_ids[1].each do |peer_port_id|
+        peer_port = CommPort.find peer_port_id
+        comm_peer = peer_port.comm_peers.find{|c_p|c_p.peer_id==@user.id}
         if comm_peer.present?
           comm_peer.destroy
           if comm_peer.granted_by_peer
-            @un_subscribe << peer_setting.channel_enc_key 
+            @un_subscribe << peer_port.channel_enc_key 
             # notify peer that @user does not follow anymore
-            peer_sys_channel_enc_key = peer_setting.sys_channel_enc_key
-            msg = { type: :quit_subscription, peer: { id: @user.id, username: @user.username, channel_enc_key: @user.comm_setting.channel_enc_key } }
+            peer_sys_channel_enc_key = peer_port.sys_channel_enc_key
+            msg = { type: :quit_subscription, peer: { id: @user.id, username: @user.username, channel_enc_key: @user.comm_port.channel_enc_key } }
             Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
           #else
           #  # notify peer that @user does not request grant anymore
-          #  peer_sys_channel_enc_key = peer_setting.sys_channel_enc_key
-          #  msg = { type: :cancel_subscription_grant_request, peer: { id: @user.id, username: @user.username, channel_enc_key: @user.comm_setting.channel_enc_key } }
+          #  peer_sys_channel_enc_key = peer_port.sys_channel_enc_key
+          #  msg = { type: :cancel_subscription_grant_request, peer: { id: @user.id, username: @user.username, channel_enc_key: @user.comm_port.channel_enc_key } }
           #  Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
           end
         end
@@ -45,26 +48,28 @@ class UsersController < ApplicationController
       # when a peer requests a grant then a comm_peer is created with status granted_by_peer = false
       peer_ids = params[:grant][:comm_peers].inject([[],[]]){|res,kv|kv[1]=='true'?res[0]<<kv[0]:res[1]<<kv[0];res}
       peer_ids[0].each do |peer_id|
-        comm_peer = @user.comm_setting.comm_peers.find{|c_p|c_p.peer_id==peer_id.to_i}
+        comm_peer = @user.comm_port.comm_peers.find{|c_p|c_p.peer_id==peer_id.to_i}
         unless comm_peer.present? && comm_peer.granted_by_peer
           if comm_peer.present?
             comm_peer.update_attribute(:granted_by_peer, true)
           else
-            comm_peer = @user.comm_setting.comm_peers.create peer: User.find(peer_id)
+            comm_peer = @user.comm_port.comm_peers.create peer: User.find(peer_id)
           end
           # notify peer that his subscription-request is granted from @user
-          peer_sys_channel_enc_key = comm_peer.peer.comm_setting.sys_channel_enc_key
-          msg = { type: :subscription_granted, peer: { comm_setting_id: @user.comm_setting.id, username: @user.username, channel_enc_key:  @user.comm_setting.channel_enc_key } }
+          peer_sys_channel_enc_key = comm_peer.peer.comm_port.sys_channel_enc_key
+          msg = { type: :subscription_granted, peer: { comm_port_id: @user.comm_port.id, username: @user.username, channel_enc_key:  @user.comm_port.channel_enc_key } }
+          add_foto_to_msg @user, msg
           Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
         end
       end
       peer_ids[1].each do |peer_id|
-        comm_peer = @user.comm_setting.comm_peers.find{|c_p|c_p.peer_id==peer_id.to_i}
+        comm_peer = @user.comm_port.comm_peers.find{|c_p|c_p.peer_id==peer_id.to_i}
         if comm_peer.present?
           if comm_peer.granted_by_peer
             # collect message-data before destroy
-            peer_sys_channel_enc_key = comm_peer.peer.comm_setting.sys_channel_enc_key
-            msg = { type: :subscription_grant_revoked, peer: { comm_setting_id: @user.comm_setting.id, username: @user.username, channel_enc_key: @user.comm_setting.channel_enc_key } }
+            peer_sys_channel_enc_key = comm_peer.peer.comm_port.sys_channel_enc_key
+            msg = { type: :subscription_grant_revoked, peer: { comm_port_id: @user.comm_port.id, username: @user.username, channel_enc_key: @user.comm_port.channel_enc_key } }
+            add_foto_to_msg @user, msg
             comm_peer.destroy 
             # notify peer that his subscription-grant is revoked by @user
             Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
@@ -77,12 +82,13 @@ class UsersController < ApplicationController
       # only delete request if deny is set to true
       peer_ids[0].each do |peer_id|
         # comm_peer expected
-        comm_peer = @user.comm_setting.comm_peers.find{|c_p|c_p.peer_id==peer_id.to_i}
+        comm_peer = @user.comm_port.comm_peers.find{|c_p|c_p.peer_id==peer_id.to_i}
         if comm_peer.present?
           comm_peer.destroy
           # notify peer that his subscription-request is denied
-          peer_sys_channel_enc_key = comm_peer.peer.comm_setting.sys_channel_enc_key
-          msg = { type: :subscription_denied, peer: { comm_setting_id: @user.comm_setting.id, username: @user.username, channel_enc_key: @user.comm_setting.channel_enc_key } }
+          peer_sys_channel_enc_key = comm_peer.peer.comm_port.sys_channel_enc_key
+          msg = { type: :subscription_denied, peer: { comm_port_id: @user.comm_port.id, username: @user.username, channel_enc_key: @user.comm_port.channel_enc_key } }
+          add_foto_to_msg @user, msg
           Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
         end
       end
@@ -126,7 +132,7 @@ class UsersController < ApplicationController
           if params[:peer_id].present?
             comm_peer = CommPeer.where(peer_id: current_user.id).first
             comm_peer.update_attribute(:note_follower, params[:text]) if comm_peer.present?
-            user_json[:note] = {id: comm_peer.comm_setting.user.id}
+            user_json[:note] = {id: comm_peer.comm_port.user.id}
           else
             location = Location.find(params[:location_id])
             locations_user = current_user.locations_users.where(location_id: location.id).first
@@ -137,6 +143,12 @@ class UsersController < ApplicationController
             end
             user_json[:note] = {id: location.id, lat: location.latitude, lng:location.longitude, address:shorten_address(location)}
           end
+        when 'foto'
+          #current_user.update_attributes params.require(:user).permit!
+          current_user.update_attribute :foto, params[:foto]
+          #current_user.save
+          render template: '/users/changed_details', layout: false
+          return
         when 'foto_base64'
           attachment_mapping = Upload.get_attachment_mapping params[:foto_content_type]
           if attachment_mapping.size >= 2
@@ -156,6 +168,9 @@ class UsersController < ApplicationController
             geometry = Paperclip::Geometry.from_file(current_user.foto)
             user_json[:foto] = {url: current_user.foto.url, width: geometry.width.to_i, height: geometry.height.to_i}
           end
+        when 'radar'
+          current_user.update_attribute :home_base, params[:search_radius_meters]
+          user_json[:search_radius_meters] = search_radius_meters
         end
         render json: user_json.to_json
         return
@@ -169,6 +184,13 @@ class UsersController < ApplicationController
       end
     end
     render "users/change_username", formats: [:js], locals: { edit: false }
+  end
+
+  protected
+
+  def add_foto_to_msg user, msg
+    geometry = Paperclip::Geometry.from_file(user.foto)
+    msg[:peer][:foto] = {url: user.foto.url, width: geometry.width.to_i, height: geometry.height.to_i}
   end
 
 end

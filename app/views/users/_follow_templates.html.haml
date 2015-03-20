@@ -4,31 +4,43 @@
       %td{width: 5}
         &nbsp;
       %td
-        %span{style: 'float: left;'}
-          {username}
-        %span{style: 'padding-left: 10px;'}
-          = link_to 'reset connection', '#', onclick: "javascript:APP.resetConnection({id});"
+        %img{tmpl: {src: '{foto_url}'}, style: 'max-width: 35px !important;'}
       %td{width: 15}
         &nbsp;
       %td
-        = hidden_field_tag "follow[comm_peer_settings][{id}]", false, id: "i_follow_{id}.h"
-        = check_box_tag "follow[comm_peer_settings][{id}]", true, :checked, id: "i_follow_{id}"
+        -#%span{style: 'float: left;'}
+        {username}
+        -#%span{style: 'padding-left: 10px;'}
+        -#  = link_to 'reset connection', '#', onclick: "javascript:APP.resetConnection({id});"
+      %td{width: 15}
+        &nbsp;
+      %td
+        = hidden_field_tag "follow[comm_peer_ports][{id}]", false, id: "i_follow_{id}.h"
+        = check_box_tag "follow[comm_peer_ports][{id}]", true, :checked, id: "i_follow_{id}"
         %label{'for' => "i_follow_{id}"}
   %tbody#i_dont_follow_template
     %tr{id: "i_dont_follow_{id}"}
       %td{width: 5}
         &nbsp;
       %td
+        %img{tmpl: {src: '{foto_url}'}, style: 'max-width: 35px !important;'}
+      %td{width: 15}
+        &nbsp;
+      %td
         {username}
       %td{width: 15}
         &nbsp;
       %td
-        = hidden_field_tag "follow[comm_peer_settings][{id}].h", false, id: "i_dont_follow_{id}.h"
-        = check_box_tag "follow[comm_peer_settings][{id}]", true, false, id: "i_dont_follow_{id}", style: 'float: left;'
+        = hidden_field_tag "follow[comm_peer_ports][{id}].h", false, id: "i_dont_follow_{id}.h"
+        = check_box_tag "follow[comm_peer_ports][{id}]", true, false, id: "i_dont_follow_{id}", style: 'float: left;'
         %label{'for' => "i_dont_follow_{id}"} #{t('admin.check_to_follow')}
   %tbody#want_to_follow_me_template
     %tr{id: "want_to_follow_me_{id}"}
       %td{width: 5}
+        &nbsp;
+      %td
+        %img{tmpl: {src: '{foto_url}'}, style: 'max-width: 35px !important;'}
+      %td{width: 15}
         &nbsp;
       %td
         {username}

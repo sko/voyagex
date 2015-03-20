@@ -10,6 +10,12 @@ class AddVersioningInfos < ActiveRecord::Migration
     add_index :commits, :timestamp
     remove_column :user_snapshots, :cur_commit_hash, :string
     add_column :user_snapshots, :commit_id, :integer
+    
+    now = DateTime.now
+    user = User.admin
+    vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, user, false#@user.is_admin
+    commit = user.commits.create hash_id: vm.cur_commit, timestamp: now, local_time_secs: now.to_i
+    User.all.each {|u|UserSnapshot.create(user: u, location: Location.default, cur_commit: Commit.latest)}
 
     add_column :locations, :commit_hash, :string, nil: false
     add_column :locations, :local_time_secs, :integer

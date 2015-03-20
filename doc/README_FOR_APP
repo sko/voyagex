@@ -21,6 +21,31 @@ PIDFILE=./tmp/pids/resque-scheduler.pid BACKGROUND=yes rake resque:scheduler
 #PIDFILE=./tmp/pids/resque-worker.pid QUEUE=post_commit rake environment resque:work
 
 
+################# sync map-centers
+
+APP.map().panTo([52.4991249010282, 13.418726921081543])
+
+
+################# create comm_ports
+
+User.where('sign_in_count >= 1').each{|u|CommPort.create(user: u, channel_enc_key: enc_key, sys_channel_enc_key: enc_key)}
+
+
+################# create fotos
+User.where('sign_in_count >= 1').each{|u|u.update_attribute(:foto, open(UserHelper::fetch_random_avatar, allow_redirections: :safe){|t|t.base_uri}) unless u.foto.exists?}
+
+# single
+User.where('username = ?', 'homer').each{|u|u.update_attribute(:foto, open(UserHelper::fetch_random_avatar, allow_redirections: :safe){|t|t.base_uri})}
+User.where('username = ?', 't.schuemmer').each{|u|u.update_attribute(:foto, open(UserHelper::fetch_gravatar(u.email), allow_redirections: :safe){|t|t.base_uri})}
+
+
+################# set gravatar-foto
+User.where('username = ?', 'stephan').each{|u|u.update_attribute(:foto, open(UserHelper::fetch_gravatar(u.email), allow_redirections: :safe){|t|t.base_uri})}
+
+
+################# create snapshot-commits
+User.joins(:snapshot).where(user_snapshots: {commit_id: nil}).uniq.each{|u|u.snapshot.update_attribute(:cur_commit, Commit.latest)}
+
 
 plan:
 1) _cachePoiNote

@@ -10,7 +10,7 @@ class window.VoyageX.Main
   @_STORAGE_MODEL = null
   @_UPLOAD_HELPER = null
 
-  constructor: (cacheStrategy, view, mapOptions, offlineZooms, online) ->
+  constructor: (view, mapOptions, offlineZooms, online) ->
     Main._SINGLETON = this
     window.APP = this
     @_version = new VoyageX.Version [0, 1]
@@ -26,7 +26,7 @@ class window.VoyageX.Main
     Main._UPLOAD_HELPER = new VoyageX.UploadHelper()
     # at first the map need's to be initialized ...
     $(document).ready () ->
-        APP._init cacheStrategy, view, mapOptions, offlineZooms
+        APP._init view, mapOptions, offlineZooms
         # test for address-bar removal / fullscreen @see application.mobile as well
 #        if isMobile()
 #          if !window.pageYOffset
@@ -36,13 +36,13 @@ class window.VoyageX.Main
   # TODO - clean initialisation of all components in order to enable modularized usage auf single components
   #        (when reused in another application)
   #
-  _init: (cacheStrategy, view, mapOptions, offlineZooms) ->
+  _init: (view, mapOptions, offlineZooms) ->
     APP._initState += 1
     switch APP._initState
       when 1
         Main._STORAGE_CONTROLLER = new Comm.StorageController((initError) ->
             console.log 'StorageController initialized FileSystem with message: '+(if initError then 'FAILED' else 'OK')
-            APP._init cacheStrategy, view, mapOptions, offlineZooms
+            APP._init view, mapOptions, offlineZooms
           )
       when 2
         # Communication initialisation (Faye-Client)
@@ -53,7 +53,7 @@ class window.VoyageX.Main
                                    VoyageX.SYS_CHANNEL_ENC_KEY,
                                    APP._systemCB)
         # Map initialisation (LeafletJS)
-        Main._MAP_CONTROL = new VoyageX.MapControl cacheStrategy, mapOptions, offlineZooms
+        Main._MAP_CONTROL = new VoyageX.MapControl mapOptions, offlineZooms
         Main._MARKER_MANAGER = new VoyageX.MarkerManager(APP.map())
         # handled in _peers.html.haml
         #Storage.Model.instance().loadPeers (peer) ->
@@ -180,6 +180,7 @@ class window.VoyageX.Main
     window.initArgs.peers.splice(0, window.initArgs.peers.length)
     #delete window.initArgs.peers
 
+  # user-marker-tools
   bookmarkLocation: (poiId = -1) ->
     if poiId == -1
       posLatLng = this.getSelectedPositionLatLng()
@@ -192,6 +193,10 @@ class window.VoyageX.Main
       posLatLng = [locationData.lat, locationData.lng]
     #this.publishPosition true, posLatLng
     Storage.Model.instance().addBookmark posLatLng, VoyageX.View.addBookmark
+
+  # user-marker-tools
+  radarSettings: () ->
+    VoyageX.View.editRadar()
     
   #publishPosition: (bookmarkLocation = false, posLatLng = null, setHomeBase = false) ->
   publishPosition: () ->
@@ -208,7 +213,8 @@ class window.VoyageX.Main
   publishMessage: (publishText) ->
     @_comm.send('/talk', {type: 'message',\
                           userId: APP.userId(),\
-                          text: APP.userName()+': '+publishText})
+                          #text: APP.userName()+': '+publishText})
+                          text: publishText})
 
   p2pChatMessage: (peer, messageText) ->
     @_comm.send('/talk', {type: 'p2p-message',\
@@ -250,6 +256,16 @@ class window.VoyageX.Main
       Storage.Model.instance().withLocation location.id, (location) ->
           APP.loadLocation location, false
 
+  showPOIs: (location) ->
+    Storage.Model.instance().loadPois location.lat, location.lng, (poi) ->
+      location = {id: poi.locationId, lat: poi.lat, lng: poi.lng, address: poi.address, poiId: poi.id}
+      markerMeta = APP.getMarker poi, true
+      if markerMeta?
+        markerMeta.m.setLatLng poi.lat, poi.lng
+      else
+        Main.markerManager().add location, Main._markerEventsCB
+      #APP._initPoisOnMap.push poi
+
   showPOI: (poiId, poiNoteId) ->
     Storage.Model.instance().loadPoiNotes poiId, poiNoteId, (poi) ->
         #APP.panPosition(poi.lat, poi.lng, poi.address)
@@ -266,7 +282,7 @@ class window.VoyageX.Main
   _setSelectedPositionLatLng: (marker, lat, lng, address) ->
     poi = {lat: lat, lng: lng}
     if marker == null
-      marker = Main.markerManager().add poi.location, Main._markerEventsCB
+      marker = Main.markerManager().add poi, Main._markerEventsCB
     else
       marker = Main.markerManager().sel marker, lat, lng, Main._markerEventsCB
     @_selectedPosition.lat = lat
@@ -291,14 +307,7 @@ class window.VoyageX.Main
     #APP.map().setView [position.coords.latitude, position.coords.longitude], 16
     unless isReInit
       APP.publishPosition()
-    Storage.Model.instance().loadPois location.lat, location.lng, (poi) ->
-      location = {id: poi.locationId, lat: poi.lat, lng: poi.lng, address: poi.address, poiId: poi.id}
-      markerMeta = APP.getMarker poi, true
-      if markerMeta?
-        markerMeta.m.setLatLng poi.lat, poi.lng
-      else
-        Main.markerManager().add location, Main._markerEventsCB
-      #APP._initPoisOnMap.push poi
+    APP.showPOIs location
 
   _systemCB: (message) ->
     console.log 'got a system - message: ' + message.type
@@ -381,8 +390,8 @@ class window.VoyageX.Main
 
   markerControls: () ->
     marker = Main.markerManager().get()
-    address = null
-    APP._setSelectedPositionLatLng marker, marker._latlng.lat, marker._latlng.lng, address
+#    address = null
+#    APP._setSelectedPositionLatLng marker, marker._latlng.lat, marker._latlng.lng, address
     VoyageX.TemplateHelper.openMarkerControlsPopup()
 
   poiNoteInput: () ->

@@ -15,6 +15,7 @@
   var chatInputHeight = $(window).height() - $(".navbar-header").height() - chatViewHeight;
   $("head").append("<style type='text/css'>.chat_view {width:100%;height:"+chatViewHeight+"px !important;}</style>");
   $("head").append("<style type='text/css'>.chat_input, .chat_input_text {width:100%;height:"+chatInputHeight+"px !important;}</style>");
+
 #content_chat
   .chat_view
   .chat_input
@@ -35,21 +36,28 @@
     subdomains: ['a'],
     access_token: 'pk.eyJ1Ijoic3RlcGhhbmtvZWxsZXIiLCJhIjoiZEFHdnhwayJ9.AdtZiG5HGi5JAb64G1K-jA',
     max_zoom: 30 }
-    new VoyageX.Main(VoyageX.StorageStrategy.instance(), view, mapOptions, offlineZooms, true) 
+    new VoyageX.Main(view, mapOptions, offlineZooms, true) 
+
+#tmpl_bc_chat_msg{style: 'display: none;'}
+  %div{class: 'chat_message chat_message_{meOrOther} triangle-border {toggle}'}
+    %img{tmpl: {src: '{foto_url}'}, style: 'float: left; max-width: 35px !important;'}
+    {message}
 
 = render partial: 'tmpl_peer_popup'
 
 #tmpl_marker_controls{style: 'display: none;'}
   %div{tmpl: {id: 'marker_controls'}}
-    %div{style: 'width: 150px !important; height: 25px; padding: 0px 0px 5px 0px;'}
+    %div{style: 'width: 160px !important; height: 25px; padding: 0px 0px 5px 0px;'}
       %div{style: 'float: left; margin: 0px 0px 0px 5px;'}
         = link_to image_tag('/assets/add-marker.png', style: 'height: 25px;', title: t('pois.add'), alt: t('pois.add')), '#', onclick: "javascript:APP.poiNoteInput()"
       %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
         = link_to image_tag('/assets/add-bookmark.png', style: 'height: 25px;', title: t('pois.bookmark'), alt: t('pois.bookmark')), '#', onclick: "javascript:APP.bookmarkLocation()"
       %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
         = link_to image_tag('/assets/set-home.png', style: 'height: 23px;', title: t('admin.add_homebase'), alt: t('admin.add_homebase')), '#', onclick: "javascript:APP.setHomeBase()"
-      %div{style: 'float: left; margin: 0px 5px 0px 5px; padding: 0px;'}
+      %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
         = link_to image_tag('/assets/home.png', style: 'height: 23px;', title: t('admin.show_homebase'), alt: t('admin.show_homebase')), '#', onclick: "javascript:APP.loadLocation({id: currentUser.homebaseLocationId})"
+      %div{style: 'float: left; margin: 0px 5px 0px 5px; padding: 0px;'}
+        = link_to image_tag('/assets/radar.png', style: 'height: 23px;', title: 'radar-settings', alt: 'radar-settings'), '#', onclick: "javascript:APP.radarSettings()"
       %div{style: 'margin: 0px 0px 0px 5px; padding: 0px;'}
         = link_to image_tag('/assets/arrow-up-right.png', style: 'height: 23px;', title: 'navigator', alt: 'navigator', class: 'photo_nav_open_icon'), '#', onclick: "javascript:APP.photoNav()"
 
@@ -59,3 +67,23 @@
       Add Note
     %div{style: 'padding: 0px 0px 5px 0px;'}
       = text_area_tag :note, '{text}', id: 'note_{type}_{id}', class: :note_editor
+
+#tmpl_radar_editor{style: 'display: none;'}
+  .radar_editor
+    -#%div{data: {role: 'fieldcontain'}, style: 'float: left !important; padding: 0px;'}
+    = label_tag 'search_radius_input', 'Suchradius (meter)'
+    = form_tag set_user_detail_path(detail: :radar), method: :post, remote: true
+    = text_field_tag :search_radius_meters, '{search_radius_meters}', size: 7, maxlength: 7, data: {role: 'none'}
+    .search_radius{style: 'float: right; padding-left: 5px;'}
+      -#
+        %div{data: {role: 'fieldcontain'}}
+          %select{data: {role: 'flipswitch'}, onchange: 'toggleSearchRadiusDisplay(this)'}
+            %option{value: 'show'} show
+            %option{value: 'hide'} hide
+      %fieldset{data: {role: 'controlgroup'}, tmpl: {id: 'search_radius_display_fs'}}
+        %div
+          = radio_button_tag 'search_radius_display', 'show', false, id: '_nid_show', 'tmpl-id' => 'search_radius_display_show', data: {mini: true}, onclick: 'toggleSearchRadiusDisplay(this)'
+          = label_tag 'search_radius_display_show', 'show'
+        %div
+          = radio_button_tag 'search_radius_display', 'hide', true, id: '_nid_hide', 'tmpl-id' => 'search_radius_display_hide', data: {mini: true}, onclick: 'toggleSearchRadiusDisplay(this)'
+          = label_tag 'search_radius_display_hide', 'hide'

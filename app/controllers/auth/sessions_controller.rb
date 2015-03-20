@@ -2,19 +2,6 @@ module Auth
   class SessionsController < Devise::SessionsController  
     before_filter :ensure_params_exist, only: [:create]
 
-    def create
-      @user = User.find_for_database_authentication(email: params[:user][:email])
-      return invalid_login_attempt unless @user
-      if @user.valid_password?(params[:user][:password])
-        sign_in(@user)
-        session.delete(:tmp_user_id)
-        render "devise/sessions/success", layout: false, formats: [:js], locals: {resource: @user, resource_name: :user}
-      else
-        @user.errors.add ' ', t('devise.failure.invalid', authentication_keys: 'email')
-        render "devise/sessions/new", layout: false, formats: [:js], locals: { resource: @user, resource_name: :user }
-      end
-    end
-
     def new
       if request.xhr?
         render "devise/sessions/new", layout: false, formats: [:js], locals: { resource: User.new, resource_name: :user }
@@ -26,6 +13,19 @@ module Auth
         else
           redirect_to root_path(exec: 'show_login_dialog')
         end
+      end
+    end
+
+    def create
+      @user = User.find_for_database_authentication(email: params[:user][:email])
+      return invalid_login_attempt unless @user
+      if @user.valid_password?(params[:user][:password])
+        sign_in(@user)
+        session.delete(:tmp_user_id)
+        render "devise/sessions/success", layout: false, formats: [:js], locals: {resource: @user, resource_name: :user}
+      else
+        @user.errors.add ' ', t('devise.failure.invalid', authentication_keys: 'email')
+        render "devise/sessions/new", layout: false, formats: [:js], locals: { resource: @user, resource_name: :user }
       end
     end
     

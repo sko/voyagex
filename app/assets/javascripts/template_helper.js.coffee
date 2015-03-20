@@ -63,29 +63,6 @@ class window.VoyageX.TemplateHelper
                 #replace(/\{address\}/g, poi.address).
                 replace(/\{poi_notes\}/, poiNotesHtml)
 
-  @openPOINotePopup: (poi, marker = null, resetTitle = false) ->
-    meta = {height: 0}
-    popupHtml = TemplateHelper.poiNotePopupHtml(poi, meta)
-    if marker == null
-      marker = APP.getMarker poi
-    popup = marker.getPopup()
-    isNewPopup = !popup?
-    if isNewPopup
-      popup = L.popup {minWidth: 200, maxHeight: 300}
-      marker.bindPopup(popup)
-      marker.off('click', marker.togglePopup, marker)
-      # popupclose doesn't work if just popup is closed because of other marker's opening popup
-      marker.on 'popupclose', (event) -> 
-          console.log('openPOINotePopup: popupclose for '+VoyageX.Main.markerManager().toString(marker))
-    popup.setContent(popupHtml)
-    marker.openPopup()
-    VoyageX.Main.markerManager().userMarkerMouseOver false
-    if isNewPopup || resetTitle
-      poiNoteContainer = $('#poi_notes_container')
-      TemplateHelper._addPopupTitle poiNoteContainer, marker, Comm.StorageController.instance().getLocation(poi.locationId), poi, resetTitle
-    $('#poi_note_input').html('')
-    TemplateHelper.poiNoteInputHtml('poi_note_input', poi, poi.notes[0])
-
   @addPoiNotes: (poi, newNotes, marker) ->
     popup = marker.getPopup()
     if popup?
@@ -104,6 +81,26 @@ class window.VoyageX.TemplateHelper
     else
       TemplateHelper.openPOINotePopup poi, marker
 
+  @openPOINotePopup: (poi, marker = null, resetTitle = false) ->
+    meta = {height: 0}
+    popupHtml = TemplateHelper.poiNotePopupHtml(poi, meta)
+    if marker == null
+      marker = APP.getMarker poi
+    popup = marker.getPopup()
+    isNewPopup = !popup?
+    if isNewPopup
+      popup = L.popup {minWidth: 200, maxHeight: 300} #autoPan: false, 
+      marker.bindPopup(popup)
+      marker.off('click', marker.togglePopup, marker)
+    popup.setContent(popupHtml)
+    marker.openPopup()
+    VoyageX.Main.markerManager().userMarkerMouseOver false
+    if isNewPopup || resetTitle
+      poiNoteContainer = $('#poi_notes_container')
+      TemplateHelper._addPopupTitle poiNoteContainer, marker, Comm.StorageController.instance().getLocation(poi.locationId), poi, resetTitle
+    $('#poi_note_input').html('')
+    TemplateHelper.poiNoteInputHtml('poi_note_input', poi, poi.notes[0])
+
   @openPeerPopup: (peer, marker, messages = [], contentCallback = null) ->
     popupHtml = TemplateHelper._updateAttributes('tmpl_peer_popup', ['src'], TemplateHelper._updateIds('tmpl_peer_popup')).
     replace(/\{peer_id\}/g, peer.id).
@@ -111,18 +108,16 @@ class window.VoyageX.TemplateHelper
     popup = marker.getPopup()
     isNewPopup = !popup?
     if isNewPopup
-      popup = L.popup()# {minWidth: 200, maxHeight: 300}
+      popup = L.popup()# {autoPan: false, minWidth: 200, maxHeight: 300}
       marker.bindPopup(popup)
       marker.off('click', marker.togglePopup, marker)
-      # popupclose doesn't work if just popup is closed because of other marker's opening popup
-      marker.on 'popupclose', (event) -> 
-          console.log('openPeerPopup: popupclose for '+VoyageX.Main.markerManager().toString(marker))
     popup.setContent(if contentCallback? then contentCallback(popupHtml, peer, marker, messages) else popupHtml)
     marker.openPopup()
     VoyageX.Main.markerManager().userMarkerMouseOver false
-#    if isNewPopup
-#      peerPopup = $('#tmpl_peer_popup')
-#      TemplateHelper._addPopupTitle peerPopup, marker, Comm.StorageController.instance().getLocation(poi.locationId), poi
+    if isNewPopup
+      peerPopup = $('#peer_popup_'+peer.id)
+      popupContainer = peerPopup.closest('.leaflet-popup').first()
+      popupContainer.prepend('<span id="current_peer" style="float: left; padding-left: 5px; font-size: 9px;">'+peer.username+'</span>')
 
   @openMarkerControlsPopup: () ->
     marker = VoyageX.Main.markerManager().get()
@@ -130,13 +125,10 @@ class window.VoyageX.TemplateHelper
     popup = marker.getPopup()
     isNewPopup = !popup?
     if isNewPopup
-      marker.bindPopup popupHtml
+      popup = L.popup(autoPan: false)
+      marker.bindPopup popup
       marker.off('click', marker.togglePopup, marker)
-      # popupclose doesn't work if just popup is closed because of other marker's opening popup
-      marker.on 'popupclose', (event) ->
-          console.log('openMarkerControlsPopup: popupclose for '+VoyageX.Main.markerManager().toString(marker))
-    else
-      popup.setContent popupHtml
+    popup.setContent popupHtml
     marker.openPopup()
     if isNewPopup
       poiNoteContainer = $('#marker_controls')
@@ -153,6 +145,9 @@ class window.VoyageX.TemplateHelper
     popup = marker.getPopup()
     # note-editor is within existing popup - user, poi or peer - so it should already exist here
     popupHtml = popup.getContent()
+    if popupHtml.indexOf('radar_editor') != -1
+      #popupHtml = popupHtml.replace(/<div[^>]+class="radar_editor"(.|\n)+(<div[^>]+id="marker_controls")/, '$1')
+      popupHtml = popupHtml.replace(/<div[^>]+class="radar_editor"(.|\n)+/, '$1')
     editorHtml = callback target
     if popupHtml.indexOf('note_editor') == -1
       popup.setContent popupHtml + editorHtml
@@ -174,18 +169,21 @@ class window.VoyageX.TemplateHelper
 
   @p2PChatMsgHtml: (from, message, messageHtml = null) ->
     unless messageHtml?
-      messageHtml = $('#tmpl_p2p_chat_msg').html()
+      #messageHtml = $('#tmpl_p2p_chat_msg').html()
+      messageHtml = TemplateHelper._updateAttributes('tmpl_p2p_chat_msg', ['src'])
     toggle = if from.id==currentUser.id then 'left' else 'right'
     messageHtml.
     replace(/\{toggle\}/, toggle).
     replace(/\stmpl-toggle=['"]?[^'" >]+/g, '').
+    replace(/\{foto_url\}/, from.foto.url).
     replace(/\{message\}/, message)
 
   @p2PChatHtml: (peer, messages, p2pChatHtml = null) ->
     unless p2pChatHtml?
       p2pChatHtml = TemplateHelper._updateIds('tmpl_p2p_chat_container').
       replace(/\{peer_id\}/g, peer.id)
-    messageHtml = $('#tmpl_p2p_chat_msg').html()
+    #messageHtml = $('#tmpl_p2p_chat_msg').html()
+    messageHtml = TemplateHelper._updateAttributes('tmpl_p2p_chat_msg', ['src'])
     #i = $('.leaflet-popup .p2p_chat_msg').length
     newMessagesHtml = ''
     for msg, j in messages
@@ -225,6 +223,17 @@ class window.VoyageX.TemplateHelper
     $('.p2p_message').on 'keyup', (event) ->
         sendP2PChatMessage event
     VoyageX.Main.markerManager().userMarkerMouseOver false
+
+  @bcChatMsgHtml: (from, message, meOrOther, messageHtml = null) ->
+    unless messageHtml?
+      #messageHtml = $('#tmpl_bc_chat_msg').html()
+      messageHtml = TemplateHelper._updateAttributes('tmpl_bc_chat_msg', ['src'])
+    toggle = if from.id==currentUser.id then 'left' else 'right'
+    messageHtml.
+    replace(/\{meOrOther\}/, meOrOther).
+    replace(/\{toggle\}/, toggle).
+    replace(/\{foto_url\}/, from.foto.url).
+    replace(/\{message\}/, message)
 
   @poisPreviewHTML: (pois) ->
     html = ''
@@ -282,12 +291,37 @@ class window.VoyageX.TemplateHelper
       replace(/\{commented_by_user\}/, 'TODO')
     html
 
+  @radarSettingsHtml: () ->
+    TemplateHelper._updateIds('tmpl_radar_editor').
+    replace(/\{search_radius_meters\}/, VoyageX.SEARCH_RADIUS_METERS)
+
+  @openRadarEditor: () ->
+    marker = APP.getOpenPopupMarker()
+    unless marker?
+      marker = VoyageX.Main.markerManager().get()
+    popup = marker.getPopup()
+    # note-editor is within existing popup - user, poi or peer - so it should already exist here
+    popupHtml = popup.getContent()
+    if popupHtml.indexOf('note_editor') != -1
+      #popupHtml = popupHtml.replace(/<div[^>]+class="note_editor"(.|\n)+(<div[^>]+id="marker_controls")/, '$1')
+      popupHtml = popupHtml.replace(/<div[^>]+class="note_editor"(.|\n)+/, '$1')
+    editorHtml = TemplateHelper.radarSettingsHtml()
+    if popupHtml.indexOf('radar_editor') == -1
+      popup.setContent popupHtml + editorHtml
+      #$('#tmpl_radar_editor > .radar_editor').remove()
+    marker.openPopup()
+    #$('.leaflet-popup-content .search_radius fieldset').trigger('create');
+    $(popup._contentNode).find('> .radar_editor .search_radius fieldset').first().trigger('create');
+    #noteEditor = $('#'+typeId).closest('.radar_editor').first()
+    #noteEditor.closest('.leaflet-popup-content').first().scrollTop(noteEditor.offset().top)
+    #$('#'+typeId).focus()
+
   @_addPopupTitle: (contentContainer, marker, location, poi, resetTitle = false) ->
     if resetTitle
       $('#current_address').html(location.address+(if poi? then ' ('+poi.id+')' else ''))
     else
       popupContainer = contentContainer.closest('.leaflet-popup').first()
-      popupContainer.children('.leaflet-popup-close-button').on 'click', VoyageX.Main.closePopupCB(marker)
+      #popupContainer.children('.leaflet-popup-close-button').on 'click', VoyageX.Main.closePopupCB(marker)
       popupContainer.prepend('<span id="current_address" style="float: left; padding-left: 5px; font-size: 9px;">'+location.address+(if poi? then ' ('+poi.id+')' else '')+'</span>')
 
   @_updateIds: (rootElementId, callback = null) ->

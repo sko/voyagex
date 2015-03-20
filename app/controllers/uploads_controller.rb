@@ -179,8 +179,8 @@ binding.pry
       # http://stackoverflow.com/questions/552659/assigning-git-sha1s-without-git
       # "blob " + filesize + "\0" + data
 #      commit_hash = Digest::SHA1.new << "blob #{data.size}\0#{data}"
-#      @poi.update_attribute :commit_hash, commit_hash
-#      new_poi_notes.each {|p_n|p_n.update_attribute(:commit_hash, commit_hash)}
+#      @poi.update_attribute :commit_hash, commit_hash.to_s
+#      new_poi_notes.each {|p_n|p_n.update_attribute(:commit_hash, commit_hash.to_s)}
 
       after_sync
     else
@@ -189,6 +189,7 @@ binding.pry
   end
 
   # creates a poi with initial poi_note or adds poi_note to poi's initial poi_note
+  # @deprecated - sync_poi is used by client after saving data first locally
   def create
     user = current_user || tmp_user
     poi = nearby_poi user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
@@ -222,6 +223,7 @@ binding.pry
   end
 
   # adds a comment to a poi_note
+  # @deprecated - sync_poi is used by client after saving data first locally
   def update
     user = current_user || tmp_user
     @poi_note = PoiNote.find(params[:id])
@@ -245,6 +247,7 @@ binding.pry
     after_save
   end
 
+  # @deprecated - sync_poi is used by client after saving data first locally
   def create_from_base64
     user = current_user || tmp_user
     poi = nearby_poi user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
@@ -277,6 +280,7 @@ binding.pry
   end
 
   # adds a comment
+  # @deprecated - sync_poi is used by client after saving data first locally
   def update_from_base64
     user = current_user || tmp_user
     @poi_note = PoiNote.find(params[:id])
@@ -305,6 +309,7 @@ binding.pry
     after_save
   end
 
+  # @deprecated - sync_poi is used by client after saving data first locally
   def create_from_embed
     user = current_user || tmp_user
     poi = nearby_poi user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
@@ -332,6 +337,7 @@ binding.pry
   end
 
   # adds a comment
+  # @deprecated - sync_poi is used by client after saving data first locally
   def update_from_embed
     user = current_user || tmp_user
     @poi_note = PoiNote.find(params[:id])
@@ -354,6 +360,7 @@ binding.pry
     after_save
   end
 
+  # @deprecated - sync_poi is used by client after saving data first locally
   def create_from_plain_text
     user = current_user || tmp_user
     poi = nearby_poi user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
@@ -379,6 +386,7 @@ binding.pry
   end
 
   # adds a comment
+  # @deprecated - sync_poi is used by client after saving data first locally
   def update_from_plain_text
     user = current_user || tmp_user
     @poi_note = PoiNote.find(params[:id])
@@ -457,7 +465,7 @@ binding.pry
                    poi: @poi_json }
 
     channel_path = '/uploads'
-    channel_path += "#{PEER_CHANNEL_PREFIX}#{@user.comm_setting.channel_enc_key}" unless USE_GLOBAL_SUBSCRIBE
+    channel_path += "#{PEER_CHANNEL_PREFIX}#{@user.comm_port.channel_enc_key}" unless USE_GLOBAL_SUBSCRIBE
     Comm::ChannelsController.publish(channel_path, upload_msg)
   end
 
@@ -472,7 +480,7 @@ binding.pry
                    poi_note: @poi_note_json }
 
     channel_path = '/uploads'
-    channel_path += "#{PEER_CHANNEL_PREFIX}#{@upload.attached_to.user.comm_setting.channel_enc_key}" unless USE_GLOBAL_SUBSCRIBE
+    channel_path += "#{PEER_CHANNEL_PREFIX}#{@upload.attached_to.user.comm_port.channel_enc_key}" unless USE_GLOBAL_SUBSCRIBE
     Comm::ChannelsController.publish(channel_path, upload_msg)
   end
 end
