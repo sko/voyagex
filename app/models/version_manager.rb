@@ -21,8 +21,7 @@ class VersionManager
         #`git #{@git_args} checkout -b #{@master}`
         #`git #{@git_args} add README.md`
         #`git #{@git_args} commit -m 'initial commit'`
-        #{}`git #{@git_args} remote add origin https://github.com/sko/voyagex_data`
-        `git #{@git_args} remote add origin git@github.com:/sko/voyagex_data`
+        `git #{@git_args} remote add origin #{GIT_REMOTE_URL}`
         `git #{@git_args} fetch`
         `git #{@git_args} checkout #{@master}`
         #{}`git #{@git_args} config --global credential.helper cache`

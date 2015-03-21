@@ -93,7 +93,7 @@ class UsersController < ApplicationController
         end
       end
     end
-    @user.attributes = params[:user].permit!
+    @user.attributes = params[:user].permit! if params[:user].present?
     @user.save
   end
 

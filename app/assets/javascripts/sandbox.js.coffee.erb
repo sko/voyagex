@@ -1,11 +1,18 @@
 <% environment.context_class.instance_eval { include Rails.application.routes.url_helpers } %>
 
-jQuery ->
-  #window.markerManager = null
+class window.VoyageX.Sandbox
 
-  comm = null
+  @_SINGLETON = null
+
+  constructor: () ->
+    Sandbox._SINGLETON = this
+
+  @instance: () ->
+    unless Sandbox._SINGLETON?
+      Sandbox._SINGLETON = new Sandbox()
+    Sandbox._SINGLETON
   
-  window.toggleHomeTab = (selected) ->
+  toggleHomeTab: (selected) ->
     if selected.value == 'administration'
       $('#content_help').css('display', 'none')
       $('#administration').css('display', 'block')
@@ -18,6 +25,40 @@ jQuery ->
       $('#content_help').css('display', 'none')
       $('#administration').css('display', 'none')
       $('#stats').css('display', 'block')
+
+  toggleSearchRadiusDisplay: (selected) ->
+    if selected.id == 'search_radius_display_show'
+      window.showSearchRadius = true
+      #VoyageX.Main.markerManager()._showSearchRadius = true
+      VoyageX.Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, APP.map())
+    else
+      window.showSearchRadius = false
+      #VoyageX.Main.markerManager()._showSearchRadius = false
+      VoyageX.Main.markerManager().searchBounds(0, APP.map())
+
+  toggleNetworkState: (selected) ->
+    if selected.id == 'network_state_online'
+      APP.setOnline()
+      Comm.StorageController.instance()._tileLoadQueue = {}
+      APP.map()._resetView APP.map().getCenter(), APP.map().getZoom(), true
+    else
+      APP.setOffline()
+
+  toogleUserFotoUpload: () ->
+    if $('#user_foto_input_container').css('display') == 'none'
+      $('#whoami_img_container').css('display', 'none')
+      $('#user_foto_input_container').css('display', 'block')
+    else
+      $('#whoami_img_container').css('display', 'block')
+      $('#user_foto_input_container').css('display', 'none')
+
+jQuery ->
+  #window.markerManager = null
+
+  #comm = null
+  
+  window.toggleHomeTab = (selected) ->
+    VoyageX.Sandbox.instance().toggleHomeTab selected
 
   window.photoClicked = (swiper) ->
     #$('#current_address').html($(swiper.clickedSlide).attr('data-address'))
@@ -38,30 +79,13 @@ jQuery ->
 #  })
 
   window.toggleSearchRadiusDisplay = (selected) ->
-    if selected.id == 'search_radius_display_show'
-      window.showSearchRadius = true
-      #VoyageX.Main.markerManager()._showSearchRadius = true
-      VoyageX.Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, APP.map())
-    else
-      window.showSearchRadius = false
-      #VoyageX.Main.markerManager()._showSearchRadius = false
-      VoyageX.Main.markerManager().searchBounds(0, APP.map())
+    VoyageX.Sandbox.instance().toggleSearchRadiusDisplay selected
 
   window.toggleNetworkState = (selected) ->
-    if selected.id == 'network_state_online'
-      APP.setOnline()
-      Comm.StorageController.instance()._tileLoadQueue = {}
-      APP.map()._resetView APP.map().getCenter(), APP.map().getZoom(), true
-    else
-      APP.setOffline()
+    VoyageX.Sandbox.instance().toggleNetworkState selected
 
   window.toogleUserFotoUpload = () ->
-    if $('#user_foto_input_container').css('display') == 'none'
-      $('#whoami_img_container').css('display', 'none')
-      $('#user_foto_input_container').css('display', 'block')
-    else
-      $('#whoami_img_container').css('display', 'block')
-      $('#user_foto_input_container').css('display', 'none')
+    VoyageX.Sandbox.instance().toogleUserFotoUpload()
 
   window.openUploadCommentControls = () ->
     if window.isMobile()
@@ -75,7 +99,7 @@ jQuery ->
     if (event.which == 13 || event.keyCode == 13)
       event.preventDefault()
       publishText = $(this).val()
-      APP.publishMessage(publishText)
+      APP.bcChatMessage(publishText)
       VoyageX.View.addChatMessage { text: $('#message').val() }
 
   #$('.p2p_message').on 'keyup', (event) ->

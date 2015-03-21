@@ -3,4 +3,3 @@
 //
 //= require faye-browser
 //= require ./comm
-//= require ./storage_controller

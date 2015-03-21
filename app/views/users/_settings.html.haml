@@ -1,13 +1,14 @@
 %div
   %span#whoami_img_container
-    = link_to image_tag(tmp_user().foto.url, style: 'max-width: 150px;', class: 'whoami-img'), '#', onclick: 'javascript:toogleUserFotoUpload()'
+    = link_to image_tag(tmp_user().foto.url, style: 'max-width: 150px;', class: 'whoami-img'), '#', onclick: 'javascript:VoyageX.Sandbox.instance().toogleUserFotoUpload()'
   #user_foto_input_container{style: 'display:none;'}
     = render partial: '/users/foto', locals: {user: tmp_user()}
   = form_tag '', method: :post, remote: true do 
-    .group_settings{style: 'padding: 0px 0px 20px 0px;'}
-      #group_data{style: 'padding: 20px 0px 30px 0px;'}
-        = render partial: '/shared/groups', locals: {user: tmp_user}
-      = submit_tag 'Sichern', :class => "btn btn-sm"
+    -#
+      .group_settings{style: 'padding: 0px 0px 20px 0px;'}
+        #group_data{style: 'padding: 20px 0px 30px 0px;'}
+          = render partial: '/shared/groups', locals: {user: tmp_user}
+        = submit_tag 'Sichern', :class => "btn btn-sm"
   = form_for tmp_user, remote: true, method: :patch, :html => { :id => "settings_form" } do |f|
     .user_settings{style: 'padding: 0px 0px 20px 0px;'}
       #comm_peer_data{style: 'padding: 20px 0px 30px 0px;'}

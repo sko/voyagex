@@ -18,7 +18,9 @@
     - if Rails.env == 'development'
       = javascript_include_tag "/comm/faye-browser.js"
       = javascript_include_tag "/assets/comm/comm.js"
-      = javascript_include_tag "/assets/comm/storage_controller.js"
+    - elsif Rails.env == 'test'
+      -#= javascript_include_tag "/comm/faye-browser.js"
+      = javascript_include_tag "/assets/rspec/comm/comm.js"
     - else
       = javascript_include_tag "/assets/comm/application.js"
   %body

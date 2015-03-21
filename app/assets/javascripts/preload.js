@@ -12,6 +12,7 @@
 //= require buffer-loader
 //= require preload/util
 //= require version
+//= require storage/storage_controller
 //= require storage/model
 //= require template_helper
 //= require map_control

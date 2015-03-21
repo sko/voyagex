@@ -70,20 +70,23 @@
 
 #tmpl_radar_editor{style: 'display: none;'}
   .radar_editor
-    -#%div{data: {role: 'fieldcontain'}, style: 'float: left !important; padding: 0px;'}
-    = label_tag 'search_radius_input', 'Suchradius (meter)'
-    = form_tag set_user_detail_path(detail: :radar), method: :post, remote: true
-    = text_field_tag :search_radius_meters, '{search_radius_meters}', size: 7, maxlength: 7, data: {role: 'none'}
-    .search_radius{style: 'float: right; padding-left: 5px;'}
+    .search_radius{style: 'float: left; padding-left: 5px;'}
+      = label_tag 'search_radius_input', 'Suchradius (meter)'
+      %br
+      -#= form_tag set_user_detail_path(detail: :radar), method: :post, remote: true do
+        = text_field_tag :search_radius_meters, '{search_radius_meters}', size: 7, maxlength: 7, data: {role: 'none'}
+      %span#search_radius_meters>
+        {search_radius_meters}
+      %div{tmpl: {id: 'search_radius_ctrl'}}
+    %fieldset{data: {role: 'controlgroup'}, tmpl: {id: 'search_radius_display_fs'}}
       -#
         %div{data: {role: 'fieldcontain'}}
           %select{data: {role: 'flipswitch'}, onchange: 'toggleSearchRadiusDisplay(this)'}
             %option{value: 'show'} show
             %option{value: 'hide'} hide
-      %fieldset{data: {role: 'controlgroup'}, tmpl: {id: 'search_radius_display_fs'}}
-        %div
-          = radio_button_tag 'search_radius_display', 'show', false, id: '_nid_show', 'tmpl-id' => 'search_radius_display_show', data: {mini: true}, onclick: 'toggleSearchRadiusDisplay(this)'
-          = label_tag 'search_radius_display_show', 'show'
-        %div
-          = radio_button_tag 'search_radius_display', 'hide', true, id: '_nid_hide', 'tmpl-id' => 'search_radius_display_hide', data: {mini: true}, onclick: 'toggleSearchRadiusDisplay(this)'
-          = label_tag 'search_radius_display_hide', 'hide'
+      %div
+        = radio_button_tag 'search_radius_display', 'show', false, id: ':tmpl', 'tmpl-id' => 'search_radius_display_show', data: {mini: true}, onclick: 'toggleSearchRadiusDisplay(this)'
+        = label_tag 'search_radius_display_show', 'show'
+      %div
+        = radio_button_tag 'search_radius_display', 'hide', true, id: ':tmpl', 'tmpl-id' => 'search_radius_display_hide', data: {mini: true}, onclick: 'toggleSearchRadiusDisplay(this)'
+        = label_tag 'search_radius_display_hide', 'hide'

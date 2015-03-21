@@ -49,3 +49,4 @@ VoyageX::Application.configure do
 end
 
 FAYE_URL = 'http://test.host/comm'
+GIT_REMOTE_URL = 'github:/sko/voyagex_data'

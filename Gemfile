@@ -46,6 +46,7 @@ group :test do
   gem 'capybara-webkit'
   gem 'database_cleaner'
   gem 'factory_girl_rails'
+  gem 'vcr'
 end
 
 #group :staging, :development do

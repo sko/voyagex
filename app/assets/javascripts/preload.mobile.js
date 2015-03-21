@@ -1,8 +1,8 @@
 //= require jquery
 //= require debug
 //= require jquery_ujs
-//= require jquery-ui
 //= require jquery.mobile
+//= require jquery-ui
 //= require jquery.scrollpanel
 //= require swiper
 //= require leaflet
@@ -12,6 +12,7 @@
 //= require buffer-loader
 //= require preload/util
 //= require version
+//= require storage/storage_controller
 //= require storage/model
 //= require template_helper
 //= require map_control

@@ -3,6 +3,12 @@ bei allen backend-callbacks wo anschliessend gesichert wird nicht get (ausm cach
 _syncPoiNotes sichert und callback rendered startet rendering
 
 
+require 'factory_girl'
+FactoryGirl.load('spec/factories.rb')
+Capybara::Screenshot.screenshot_and_save_page
+
+
+
 #RAILS_ENV=staging PIDFILE=./tmp/pids/resque-worker.pid BACKGROUND=yes QUEUE=* rake environment resque:work
 RAILS_ENV=staging PIDFILE=./tmp/pids/resque-worker.pid BACKGROUND=yes QUEUE=post_commit rake environment resque:work
 RAILS_ENV=staging PIDFILE=./tmp/pids/resque-scheduler.pid BACKGROUND=yes rake resque:scheduler
@@ -29,6 +35,10 @@ APP.map().panTo([52.4991249010282, 13.418726921081543])
 ################# create comm_ports
 
 User.where('sign_in_count >= 1').each{|u|CommPort.create(user: u, channel_enc_key: enc_key, sys_channel_enc_key: enc_key)}
+
+
+################# cleanup fotos
+Dir.glob(Rails.root.join('public', 'assets', 'fotos', 'user_*')).each {|f|FileUtils.rm_rf(f) unless User.where(id: f.match(/([0-9]+)$/)[1]).first.present?}
 
 
 ################# create fotos

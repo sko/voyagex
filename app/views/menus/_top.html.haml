@@ -26,11 +26,11 @@
           %li{id: :sign_up_or_in, style: "display: #{user_signed_in? ? 'none' : 'inline'};"}
             .local_auth{style: "float: left;"}
               %span
-                = link_to t('auth.sign_in'), '#', onclick: 'javascript:$("#sign_in_modal").dialog("open")', class: 'navbar-brand sign_opt'
+                = link_to t('auth.sign_in'), '#', id: 'show_sign_in', onclick: 'javascript:$("#sign_in_modal").dialog("open")', class: 'navbar-brand sign_opt'
                 /%button{onclick: 'javascript:$("#sign_in_modal").dialog("open")'}
                 /  #{t('auth.sign_in')}
               %span
-                = link_to t('auth.sign_up'), '#', onclick: 'javascript:$("#sign_up_modal").dialog("open")', class: 'navbar-brand sign_opt'
+                = link_to t('auth.sign_up'), '#', id: 'show_sign_up', onclick: 'javascript:$("#sign_up_modal").dialog("open")', class: 'navbar-brand sign_opt'
                 /%button{onclick: 'javascript:$("#sign_up_modal").dialog("open")'}
                 /  #{t('auth.sign_up')}
             .button.facebook_login
@@ -46,16 +46,17 @@
           %li{style: 'padding: 0px 0px 0px 0px;'}
             = link_to image_tag('/assets/info.png', style: 'width: 25px;'), '#', onclick: 'javascript:VoyageX.NavBar.menuNavClick("help")'
       .info{style: 'margin: 15px 0px 0px 0px;'}
-        #search_radius{style: 'margin: -10px 0px 0px 10px; padding: 0px; float:left; color: white;'}
-          %div{style: 'float:left; font-size: 9px; padding-top: 5px;'}
-            radius:
-          %div{style: 'float: right; padding-left: 5px;'}
-            %div{style: 'height: 15px; font-size: 9px;'}
-              = radio_button_tag 'search_radius_display', 'show', false, onclick: 'toggleSearchRadiusDisplay(this)'
-              = label_tag 'search_radius_display_show', 'on'
-            %div{style: 'height: 15px; font-size: 9px;'}
-              = radio_button_tag 'search_radius_display', 'hide', true, onclick: 'toggleSearchRadiusDisplay(this)'
-              = label_tag 'search_radius_display_hide', 'off'
+        -# search_radius is now in usermarler-tool-popup
+          #search_radius{style: 'margin: -10px 0px 0px 10px; padding: 0px; float:left; color: white;'}
+            %div{style: 'float:left; font-size: 9px; padding-top: 5px;'}
+              radius:
+            %div{style: 'float: right; padding-left: 5px;'}
+              %div{style: 'height: 15px; font-size: 9px;'}
+                = radio_button_tag 'search_radius_display', 'show', false, onclick: 'toggleSearchRadiusDisplay(this)'
+                = label_tag 'search_radius_display_show', 'on'
+              %div{style: 'height: 15px; font-size: 9px;'}
+                = radio_button_tag 'search_radius_display', 'hide', true, onclick: 'toggleSearchRadiusDisplay(this)'
+                = label_tag 'search_radius_display_hide', 'off'
         #cache_info{style: 'float: left; margin: -8px 0px 0px 20px; font-size: 11px; padding: 0px; color: #ffffff;'}
           %div
             [

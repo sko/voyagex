@@ -132,16 +132,16 @@ class window.VoyageX.Main
     for n in [Main._MAP_CONTROL._minZoom..Main._MAP_CONTROL._maxZoom]
       Main._MAP_CONTROL._zooms.push n
     APP.storage().uploadQueue()
-    unless $('#network_state_online').attr('checked') == 'checked'
-      $('#network_state_online').attr('checked', 'checked')
+    unless $('#network_state_online').prop('checked')
+      $('#network_state_online').prop('checked', true)
 
   setOffline: () ->
     @_online = false
     Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
     for n in Main._MAP_CONTROL._offlineZooms
       Main._MAP_CONTROL._zooms.push n
-    unless $('#network_state_offline').attr('checked') == 'checked'
-      $('#network_state_offline').attr('checked', 'checked')
+    unless $('#network_state_offline').prop('checked')
+      $('#network_state_offline').prop('checked', true)
 
   resetConnection: (commSettingId) ->
     peerChannelEncKey = $('#i_follow_'+commSettingId).attr('data-channelEncKey')
@@ -210,13 +210,14 @@ class window.VoyageX.Main
                                 #setHomeBase: setHomeBase})
     $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').click()
 
-  publishMessage: (publishText) ->
+  bcChatMessage: (messageText) ->
+    APP.storage().addChatMessage messageText
     @_comm.send('/talk', {type: 'message',\
                           userId: APP.userId(),\
-                          #text: APP.userName()+': '+publishText})
-                          text: publishText})
+                          text: messageText})
 
   p2pChatMessage: (peer, messageText) ->
+    APP.storage().addChatMessage messageText, peer
     @_comm.send('/talk', {type: 'p2p-message',\
                           userId: APP.userId(),\
                           text: messageText}, peer)
@@ -275,6 +276,15 @@ class window.VoyageX.Main
       $("#photo_nav_panel").panel("close")
     else
       photoNavPanel.dialog("close")
+
+  setSearchRadius: (value) ->
+    unless $('#search_radius_display_show').prop('checked')
+      $('#search_radius_display_hide').prop('checked', false)
+      $('#search_radius_display_show').prop('checked', true)
+    VoyageX.SEARCH_RADIUS_METERS = value
+    sBs = searchBounds(APP.map().getCenter().lat, APP.map().getCenter().lng, VoyageX.SEARCH_RADIUS_METERS)
+    APP.map().fitBounds L.latLngBounds(L.latLng(sBs.lat_south, sBs.lng_west), L.latLng(sBs.lat_north, sBs.lng_east))
+    VoyageX.Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, APP.map())
 
   getSelectedPositionLatLng: () ->
     return [@_selectedPosition.lat, @_selectedPosition.lng]

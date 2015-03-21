@@ -59,3 +59,4 @@ end
 
 #Faye.logger = lambda { |m| Rails.logger.info m }
 FAYE_URL = 'http://voyagex.info.tm:3000/comm'
+GIT_REMOTE_URL = 'git@github.com:/sko/voyagex_data'

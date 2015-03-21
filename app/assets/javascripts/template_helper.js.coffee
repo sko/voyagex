@@ -311,10 +311,19 @@ class window.VoyageX.TemplateHelper
       #$('#tmpl_radar_editor > .radar_editor').remove()
     marker.openPopup()
     #$('.leaflet-popup-content .search_radius fieldset').trigger('create');
-    $(popup._contentNode).find('> .radar_editor .search_radius fieldset').first().trigger('create');
+    $(popup._contentNode).find('> .radar_editor > fieldset').first().trigger('create');
     #noteEditor = $('#'+typeId).closest('.radar_editor').first()
     #noteEditor.closest('.leaflet-popup-content').first().scrollTop(noteEditor.offset().top)
     #$('#'+typeId).focus()
+    $('#search_radius_ctrl').slider({
+        min: 100,
+        max: 5000,
+        step: 100,
+        value: VoyageX.SEARCH_RADIUS_METERS,
+        stop: (event, u) ->
+            APP.setSearchRadius u.value
+            $('#search_radius_meters').html VoyageX.SEARCH_RADIUS_METERS
+    })
 
   @_addPopupTitle: (contentContainer, marker, location, poi, resetTitle = false) ->
     if resetTitle
