@@ -80,8 +80,7 @@ class window.VoyageX.View
       when 'message'
         View.addChatMessage message, false
       when 'p2p-message'
-        peer = Comm.StorageController.instance().getUser parseInt(message.userId)
-        View.addChatMessage message, false, {peer: peer}
+        View.addChatMessage message, false, {peer: message.peer}
     for listener in View.instance()._commListeners.talk
       listener(message)
 
@@ -205,7 +204,7 @@ class window.VoyageX.View
         createPagination: false,
         centeredSlides: true,
         slidesPerView: 'auto',
-        onSlideClick: photoClicked
+        onSlideClick: APP.swiperPhotoClicked
       })
     if window.isMobile()
       $('#open_photo_nav_btn').click()
@@ -239,12 +238,17 @@ class window.VoyageX.View
     markerMeta = VoyageX.Main.markerManager().forPeer peer.id
     VoyageX.TemplateHelper.openPeerNoteEditor peer, markerMeta.target()
 
-  scrollToLastChatMessage: (peerChatMeta = null) ->
-    if peerChatMeta?
-      scrollPane = $('#peer_popup_'+peerChatMeta.peer.id+' > .p2p_chat_container > .p2p_chat_view').first()
-      msgDiv = scrollPane.find('.p2p_chat_msg').last()
+  # started from peer-tool-bar
+  openP2PChat: (peer) ->
+    VoyageX.TemplateHelper.openP2PChat peer
+    this.scrollToLastChatMessage peer, true
+
+  scrollToLastChatMessage: (lastSender, isP2P = false) ->
+    if isP2P
+      scrollPane = $('#peer_popup_'+lastSender.id+' > .p2p_chat_container > .p2p_chat_view').first()
+      msgDiv = $("div[class*='p2p_chat_msg']:not([class*=toggle])").last()
     else
-      msgDiv = $('.chat_message').last()
+      msgDiv = $("div[class*='chat_message']:not([class*=toggle])").last()
     msgDivOff = msgDiv.offset()
     if msgDivOff?
       unless scrollPane?
@@ -266,13 +270,14 @@ class window.VoyageX.View
         msgInput = peerChatMeta.msgInput
       else
         VoyageX.TemplateHelper.openP2PChat peerChatMeta.peer, [message.text]
+      APP.view().scrollToLastChatMessage peerChatMeta.peer, true
     else
       #$('.chat_view').append '<div class="chat_message_sep"></div><div class="chat_message chat_message_'+meOrOther+' triangle-border '+leftOrRight+'">'+message.text+'</div>'
-      user = if mine then currentUser else (if peerChatMeta? then peerChatMeta.peer else APP.storage().getUser(message.userId))
+      user = if mine then currentUser else (if peerChatMeta? then peerChatMeta.peer else message.peer)
       msgHtml = VoyageX.TemplateHelper.bcChatMsgHtml user, message.text, meOrOther
       $('.chat_view').append '<div class="chat_message_sep"></div>'+msgHtml
       msgInput = $('#message')
-    APP.view().scrollToLastChatMessage peerChatMeta
+      APP.view().scrollToLastChatMessage user
     #msgInput.val('\n-------------------------\n'+message.text+msgInput.val())
     if mine
       msgInput.val('')
@@ -312,7 +317,7 @@ class window.VoyageX.View
         createPagination: false,
         centeredSlides: true,
         slidesPerView: 'auto',
-        onSlideClick: photoClicked
+        onSlideClick: APP.swiperPhotoClicked
       })
       mySwiper = window['myPoiSwiper'+poi.id]
     mySwiper.reInit()

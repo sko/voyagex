@@ -60,24 +60,6 @@ jQuery ->
   window.toggleHomeTab = (selected) ->
     VoyageX.Sandbox.instance().toggleHomeTab selected
 
-  window.photoClicked = (swiper) ->
-    #$('#current_address').html($(swiper.clickedSlide).attr('data-address'))
-    # test sync with using string instead of integer
-    #APP.showPOI $(swiper.clickedSlide).attr('data-poiId'), $(swiper.clickedSlide).attr('data-poiNoteId')
-    APP.showPOI parseInt($(swiper.clickedSlide).attr('data-poiId')), parseInt($(swiper.clickedSlide).attr('data-poiNoteId'))
-
-  window.photoChanged = (swiper) ->
-    #$('#current_address').html($(swiper.activeSlide()).attr('data-address'))
-    `;` 
-  #  onSlideClick: window.photoClicked,
-#  window.mySwiper = $('#upload_preview_swiper').swiper({
-#    mode:'horizontal',
-#    loop: false,
-#    freeModeFluid: true,
-#    #onSlideClick: photoClicked,
-#    onSlideChangeEnd: photoChanged
-#  })
-
   window.toggleSearchRadiusDisplay = (selected) ->
     VoyageX.Sandbox.instance().toggleSearchRadiusDisplay selected
 
@@ -86,37 +68,3 @@ jQuery ->
 
   window.toogleUserFotoUpload = () ->
     VoyageX.Sandbox.instance().toogleUserFotoUpload()
-
-  window.openUploadCommentControls = () ->
-    if window.isMobile()
-      $("#open_upload_data_btn").click()
-    else
-      $('#upload_data_conrols').dialog('open')
-      if ! $('#upload_data_conrols').parent().hasClass('seethrough_panel')
-        $('#upload_data_conrols').parent().addClass('seethrough_panel')
-
-  $('#message').on 'keyup', (event) ->
-    if (event.which == 13 || event.keyCode == 13)
-      event.preventDefault()
-      publishText = $(this).val()
-      APP.bcChatMessage(publishText)
-      VoyageX.View.addChatMessage { text: $('#message').val() }
-
-  #$('.p2p_message').on 'keyup', (event) ->
-  window.sendP2PChatMessage = (event) ->
-    if (event.which == 13 || event.keyCode == 13)
-      event.preventDefault()
-      publishText = $(event.target).val()
-      peerChatContainer = $(event.target).closest('div[id^=peer_popup_]').first()
-      peerId = parseInt peerChatContainer.attr('id').match(/[0-9]+$/)[0]
-      peer = Comm.StorageController.instance().getUser peerId
-      APP.p2pChatMessage(peer, publishText)
-      VoyageX.View.addChatMessage { text: $('#p2p_message_'+peerId).val() }, true, {peer: peer, chatContainer: peerChatContainer, msgInput: $(event.target)}
-
-  $('#poi_notes_container').scrollpanel({
-      prefix: 'pcn-'
-    })
-    
-  $(document).on 'click', '#clear_cache', (event) ->
-    Comm.StorageController.instance().clearCache()
-    cacheStats()

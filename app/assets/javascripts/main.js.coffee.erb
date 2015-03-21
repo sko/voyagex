@@ -6,6 +6,7 @@ class window.VoyageX.Main
   @_STORAGE_CONTROLLER = null
   @_MAP_CONTROL = null
   @_MARKER_MANAGER = null
+  @_CHAT_CONTROL = null
   @_COMM_CHANNELS = ['system', 'talk', 'map_events', 'uploads']
   @_STORAGE_MODEL = null
   @_UPLOAD_HELPER = null
@@ -47,14 +48,15 @@ class window.VoyageX.Main
       when 2
         # Communication initialisation (Faye-Client)
         APP._comm = new Comm.Comm(APP.userId(),
-                                  [['/talk', view._talkCB, VoyageX.CHANNEL_ENC_KEY],
+                                  [['/talk', APP._talkCB, VoyageX.CHANNEL_ENC_KEY],
                                    ['/map_events', view._mapEventsCB, VoyageX.CHANNEL_ENC_KEY],
                                    ['/uploads', view._uploadsCB, VoyageX.CHANNEL_ENC_KEY]],
                                    VoyageX.SYS_CHANNEL_ENC_KEY,
                                    APP._systemCB)
         # Map initialisation (LeafletJS)
         Main._MAP_CONTROL = new VoyageX.MapControl mapOptions, offlineZooms
-        Main._MARKER_MANAGER = new VoyageX.MarkerManager(APP.map())
+        Main._MARKER_MANAGER = new VoyageX.MarkerManager APP.map()
+        Main._CHAT_CONTROL = new VoyageX.ChatControl()
         # handled in _peers.html.haml
         #Storage.Model.instance().loadPeers (peer) ->
         #  marker = Main.markerManager().add poi.location, Main._markerEventsCB, false
@@ -98,6 +100,12 @@ class window.VoyageX.Main
         $('#user_foto_input_type').buttonset()
         window.pingKey = -1
         #setTimeout "Comm.Comm.instance().pingBackend()", 5000
+        $('#poi_notes_container').scrollpanel({
+            prefix: 'pcn-'
+          })
+        $('#clear_cache').click () ->
+          Comm.StorageController.instance().clearCache()
+          cacheStats()
 
   userId: () ->
     window.currentUser.id
@@ -210,14 +218,35 @@ class window.VoyageX.Main
                                 #setHomeBase: setHomeBase})
     $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').click()
 
+  initBCChatMessages: () ->
+    conference = APP.storage().getChat()
+    entries = []
+    if conference?
+      entryKeys = Object.keys(conference).sort()
+      for entryKey, i in entryKeys
+        entries.push conference[entryKey]
+        userId = parseInt Object.keys(conference[entryKey])[0]
+        user = APP.storage().getUser userId
+        message = {peer: user, text: conference[entryKey][userId]}
+        VoyageX.View.addChatMessage message, user.id == currentUser.id
+    entries
+
+  initP2PChatMessages: (peer, messages) ->
+    chat = APP.storage().getChat peer
+    if chat?
+      msgKeys = Object.keys(chat).sort()
+      for msgKey, i in msgKeys
+        messages.push chat[msgKey]
+    messages
+
   bcChatMessage: (messageText) ->
-    APP.storage().addChatMessage messageText
+    APP.storage().addChatMessage messageText, currentUser
     @_comm.send('/talk', {type: 'message',\
                           userId: APP.userId(),\
                           text: messageText})
 
   p2pChatMessage: (peer, messageText) ->
-    APP.storage().addChatMessage messageText, peer
+    APP.storage().addChatMessage messageText, peer, true
     @_comm.send('/talk', {type: 'p2p-message',\
                           userId: APP.userId(),\
                           text: messageText}, peer)
@@ -348,6 +377,13 @@ class window.VoyageX.Main
     else if message.type == 'quit_subscription'
       true # do nothing
     APP._view._systemCB message
+  
+  _talkCB: (message) ->
+    peer = APP.storage().getUser parseInt(message.userId)
+    APP.storage().addChatMessage message.text, peer, message.type == 'p2p-message'
+    delete message.userId
+    message['peer'] = peer
+    APP._view._talkCB message
 
   panPosition: (lat, lng, address) ->
     APP._setSelectedPositionLatLng Main.markerManager().get(), lat, lng, address
@@ -398,11 +434,37 @@ class window.VoyageX.Main
 #      else
 #        alert('unknown photoNav-tab '+selectedTab)
 
+  swiperPhotoClicked: (swiper) ->
+    #$('#current_address').html($(swiper.clickedSlide).attr('data-address'))
+    # test sync with using string instead of integer
+    #APP.showPOI $(swiper.clickedSlide).attr('data-poiId'), $(swiper.clickedSlide).attr('data-poiNoteId')
+    APP.showPOI parseInt($(swiper.clickedSlide).attr('data-poiId')), parseInt($(swiper.clickedSlide).attr('data-poiNoteId'))
+
+  swiperPhotoChanged: (swiper) ->
+    #$('#current_address').html($(swiper.activeSlide()).attr('data-address'))
+    `;` 
+  #  onSlideClick: APP.swiperPhotoClicked,
+#  window.mySwiper = $('#upload_preview_swiper').swiper({
+#    mode:'horizontal',
+#    loop: false,
+#    freeModeFluid: true,
+#    #onSlideClick: APP.swiperPhotoClicked,
+#    onSlideChangeEnd: photoChanged
+#  })
+
   markerControls: () ->
     marker = Main.markerManager().get()
 #    address = null
 #    APP._setSelectedPositionLatLng marker, marker._latlng.lat, marker._latlng.lng, address
     VoyageX.TemplateHelper.openMarkerControlsPopup()
+
+  poiNoteControls: () ->
+    if window.isMobile()
+      $("#open_upload_data_btn").click()
+    else
+      $('#upload_data_conrols').dialog('open')
+      if ! $('#upload_data_conrols').parent().hasClass('seethrough_panel')
+        $('#upload_data_conrols').parent().addClass('seethrough_panel')
 
   poiNoteInput: () ->
     $('#poi_note_input').html('')
@@ -549,6 +611,9 @@ class window.VoyageX.Main
 
   markers: () ->
     Main._MARKER_MANAGER
+
+  chat: () ->
+    Main._CHAT_CONTROL
 
   model: () ->
     Main._STORAGE_MODEL

@@ -7,12 +7,12 @@
         %span
           /- popup_params = { data: { rel: 'popup', 'position-to' => 'window', 'data-role' => 'button' } }
           /= link_to t('uploads.add_comment'), '#upload_comment_conrols', popup_params
-          = link_to t('uploads.add_comment'), '#', onclick: 'javascript:openUploadCommentControls()'
+          = link_to t('uploads.add_comment'), '#', onclick: 'javascript:APP.poiNoteControls()'
         %span{style: 'float: right;'}
           = link_to t('pois.bookmark'), '#', onclick: 'javascript:APP.bookmarkLocation({poi_id})'
       - else
         %div{style: 'float: left; margin: 0px 0px 0px 5px;'}
-          = link_to image_tag('/assets/add-comment.png', style: 'height: 25px;', title: t('uploads.add_comment'), alt: t('uploads.add_comment')), '#', onclick: 'javascript:openUploadCommentControls()'
+          = link_to image_tag('/assets/add-comment.png', style: 'height: 25px;', title: t('uploads.add_comment'), alt: t('uploads.add_comment')), '#', onclick: 'javascript:APP.poiNoteControls()'
         %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
           = link_to image_tag('/assets/add-bookmark.png', style: 'height: 25px;', title: t('pois.bookmark'), alt: t('pois.bookmark')), '#', onclick: "javascript:APP.bookmarkLocation({poi_id})"
         %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}

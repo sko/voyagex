@@ -199,8 +199,11 @@ class window.VoyageX.TemplateHelper
       # $('#peer_popup_196')
       # $('#peer_popup_196 > .p2p_chat_container > .p2p_chat_view > p2p_chat_msg')
       if popupHtml.indexOf('p2p_chat_container') == -1
+        # maybe add-chat should go to APP (initChat())
+        APP.initP2PChatMessages peer, newMessages
         p2pChatHtml = TemplateHelper.p2PChatHtml peer, newMessages
       else
+        # chat opened - new messages from peer
         # only if popup is open
         #popupContainer = $('#peer_popup_'+peer.id)
         chatContainerContent = $('#peer_popup_'+peer.id+' > .p2p_chat_container').first().wrap('<p/>').parent().html()
@@ -220,8 +223,7 @@ class window.VoyageX.TemplateHelper
             containerRegexp = new RegExp('(<div[^>]* id=[\'"]peer_popup_'+peer.id+'[\'"][^>]*>)(.|[\\r\\n])+?(<div[^>]* class=[\'"]\\s*p2p_controls\\s*[\'"])')
             popupHtml = popupHtml.replace(containerRegexp, '$1'+p2pChatHtml+'$3')
           popupHtml
-    $('.p2p_message').on 'keyup', (event) ->
-        sendP2PChatMessage event
+    APP.chat().addP2PMsgInput $('#p2p_message_'+peer.id)
     VoyageX.Main.markerManager().userMarkerMouseOver false
 
   @bcChatMsgHtml: (from, message, meOrOther, messageHtml = null) ->

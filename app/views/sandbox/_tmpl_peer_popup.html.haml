@@ -1,12 +1,13 @@
 #tmpl_peer_popup{style: 'display: none;'}
   -#%div{tmpl: {id: 'peer_popup'}}
   %div{tmpl: {id: 'peer_popup_{peer_id}'}}
-    %img{tmpl: {src: '{peer_foto_url}'}, style: 'max-width: 35px !important;'}
     .p2p_controls
       %hr.controls_sep
       %div{style: 'width: 150px !important; height: 25px; padding: 0px 0px 5px 0px;'}
         %div{style: 'float: left; margin: 0px 0px 0px 5px;'}
-          = link_to image_tag('/assets/p2p-chat.png', style: 'height: 25px;', title: t('peers.chat'), alt: t('peers.chat')), '#', onclick: 'javascript:VoyageX.TemplateHelper.openP2PChat(Comm.StorageController.instance().getUser({peer_id}))'
+          %img{tmpl: {src: '{peer_foto_url}'}, style: 'max-height: 25px !important; max-width: 35px !important;'}
+        %div{style: 'float: left; margin: 0px 0px 0px 5px;'}
+          = link_to image_tag('/assets/p2p-chat.png', style: 'height: 25px;', title: t('peers.chat'), alt: t('peers.chat')), '#', onclick: 'javascript:APP.view().openP2PChat(Comm.StorageController.instance().getUser({peer_id}))'
         %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
           = link_to image_tag('/assets/add-note.png', style: 'height: 25px;', title: t('peers.add_note'), alt: t('peers.add_note')), '#', onclick: "javascript:APP.view().viewPeerNote(Comm.StorageController.instance().getUser({peer_id}))"
 
@@ -18,6 +19,6 @@
       = text_area_tag :p2p_message, '', id: nil, 'tmpl-id' => 'p2p_message_{peer_id}', class: [:p2p_chat_input, :p2p_message]
 
 #tmpl_p2p_chat_msg{style: 'display: none;'}
-  .triangle-border.p2p_chat_msg{class: '{toggle}', tmpl: {toggle: 'left|right'}, style: 'vertical-align: top;', data: {id: '{poi_note_id}', index: '{i}'}}
+  .triangle-border.p2p_chat_msg{class: '{toggle}', tmpl: {toggle: 'left|right'}, style: 'vertical-align: top;'}
     -#%img{tmpl: {src: '{foto_url}'}, style: 'float: left; max-width: 35px !important;'}
     {message}

@@ -16,7 +16,7 @@ $('#people_of_interest').html(peopleOfInterest)
 #  createPagination: false,
 #  centeredSlides: true,
 #  slidesPerView: 'auto',
-#  onSlideClick: photoClicked
+#  onSlideClick: APP.swiperPhotoClicked
 #})
 ## if first image is swipe-icon
 ##window.myPoiSwiper<%= poi.id -%>.swipeNext()

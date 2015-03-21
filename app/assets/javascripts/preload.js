@@ -17,6 +17,7 @@
 //= require template_helper
 //= require map_control
 //= require marker_manager
+//= require chat_control
 //= require media_manager
 //= require client_state
 //= require upload_helper

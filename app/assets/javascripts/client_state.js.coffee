@@ -38,6 +38,10 @@ class window.VoyageX.ClientState
             animate: false
           })
     this.refreshView()
+    # post-refresh
+    if view.key == 'chat'
+      if $('.chat_view').children().length == 0
+        APP.initBCChatMessages()
 
   refreshView: () ->
     for viewKey in Object.keys(@_views)

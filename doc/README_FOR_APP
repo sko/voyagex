@@ -1,3 +1,21 @@
+Marge: "Homer, hier ist ein Mann, der dir helfen will."
+Homer: "Batman?"
+Marge: "Nein, er sagt, er sei Wissenschaftler!"
+Homer: "Batman ist Wissenschaftler!"
+
+
+Burns: "Sie waren das? Wie können Sie nur so verantwortungslos sein?"
+Homer: "Das ist mein erster Arbeitstag!"
+Burns: "Ach so. Da ich Sie hier bisher noch nie gesehen hab, stimmt das womöglich."
+Smithers: "Aber Sir, das ist Homer Simpson, der arbeitet hier seit 10 Jahren!"
+Burns: "Ohh, ach wirklich? Wie kommen Sie dazu, mich so frech zu belügen?"
+Homer: "Das ist mein erster Tag!"
+Burns: "Hehehe, warum sagen Sie das nicht gleich?"
+
+
+
+all scroll -methods/logic should go from template-helper to view.
+
 bei allen backend-callbacks wo anschliessend gesichert wird nicht get (ausm cache) aufrufen
 
 _syncPoiNotes sichert und callback rendered startet rendering
