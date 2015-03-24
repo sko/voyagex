@@ -3,6 +3,7 @@
 class window.VoyageX.Main
   
   @_SINGLETON = null
+  @_BACKEND = null
   @_STORAGE_CONTROLLER = null
   @_MAP_CONTROL = null
   @_MARKER_MANAGER = null
@@ -41,6 +42,7 @@ class window.VoyageX.Main
     APP._initState += 1
     switch APP._initState
       when 1
+        Main._BACKEND = new VoyageX.Backend()
         Main._STORAGE_CONTROLLER = new Comm.StorageController((initError) ->
             console.log 'StorageController initialized FileSystem with message: '+(if initError then 'FAILED' else 'OK')
             APP._init view, mapOptions, offlineZooms
@@ -98,8 +100,7 @@ class window.VoyageX.Main
         APP._zoomEnd(null)
         cacheStats()
         $('#user_foto_input_type').buttonset()
-        window.pingKey = -1
-        #setTimeout "Comm.Comm.instance().pingBackend()", 5000
+        setTimeout "VoyageX.Main._BACKEND.pingBackend()", 5000
         $('#poi_notes_container').scrollpanel({
             prefix: 'pcn-'
           })
@@ -115,6 +116,9 @@ class window.VoyageX.Main
 
   signedIn: () ->
     $('#menu_top div.logout-link').length >= 1
+
+  register: (userId) ->
+    Main._BACKEND.register userId
 
   isOnline: () ->
     if navigator.onLine
@@ -593,6 +597,9 @@ class window.VoyageX.Main
       else
         APP._setSelectedPositionLatLng event.target, event.target._latlng.lat, event.target._latlng.lng, address
         APP.publishPosition()
+
+#  backend: () ->
+#    Main._BACKEND
 
   @commChannels: () ->
     Main._COMM_CHANNELS.slice(0)

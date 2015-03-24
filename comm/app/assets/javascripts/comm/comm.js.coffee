@@ -1,6 +1,3 @@
-<% environment.context_class.instance_eval { include Rails.application.routes.url_helpers } %>
-# Comm::Engine.routes.url_helpers
-
 # @unsubscribe on client:
 # https://github.com/faye/faye/issues/28
 # server might publish unsubscibe even if client didn't send - but the client will reconnect(resubscribe) then.
@@ -45,7 +42,7 @@ class window.Comm.Comm
       Comm.channelCallBacksJSON[pair[0].substr(1)] = { callback: pair[1], channel_enc_key: pair[2] }
 
     if (sysChannelEncKey == null)
-      this.register(@_user_id)
+      APP.register(@_user_id)
     else
       Comm.initSystemContext {sys_channel_enc_key: sysChannelEncKey}
     
@@ -58,40 +55,6 @@ class window.Comm.Comm
     #window.applicationCache.addEventListener "error", (e) ->
     #    alert("Error fetching manifest: a good chance we are offline")
     
-  checkPingResponse: (pingKey) ->
-    if window.pingKey != pingKey
-      if APP._online
-        APP.setOffline()
-        setTimeout "Comm.Comm.instance().pingBackend()", 5000
-
-  pingBackend: () ->
-    pingKey = Math.round(Math.random() * 100000)
-    $.ajax
-      type: 'GET'
-      url: '<%= comm_ping_path(key: ':key') %>'.replace(/:key/, pingKey)
-      dataType: 'script'
-    .done (user) ->
-        unless APP._online
-          APP.setOnline()
-    .fail (jqXHR, textStatus) ->
-        if APP._online
-          APP.setOffline()
-        setTimeout "Comm.Comm.instance().pingBackend()", 5000
-    setTimeout 'Comm.Comm.instance().checkPingResponse('+pingKey+')', 3000
-
-  register: (userId) ->
-    data = { _method: 'put',\
-             user_id: userId }
-    $.ajax
-      type: 'POST'
-      dataType: 'json'
-      url: '<%= comm_register_path %>'
-      data: data
-    .done (msg) ->
-        Comm.initSystemContext msg
-    .fail (jqXHR, textStatus) ->
-        alert('TODO: handle registration failure...')
-
   send: (channel, message, peer = null) ->
     # 1) client wants to publish before register-ajax-response set the enc_key
     #    1.1: store request and send after register (local storage)
@@ -115,23 +78,23 @@ class window.Comm.Comm
       else
         alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
 
-  @resetSystemContext: (userId) ->
-    Comm.instance()._user_id = userId
-    Comm.channelCallBacksJSON.system.channel_enc_key = null 
-    for channel in Object.keys(Comm.channelCallBacksJSON)
-      Comm.channelCallBacksJSON[channel].channel_enc_key = null
-    Comm.instance().register userId
-
-  @initSystemContext: (response) ->
-    Comm.channelCallBacksJSON.system.channel_enc_key = response.sys_channel_enc_key
+  @initSystemContext: (sys_channel_enc_key) ->
+    Comm.channelCallBacksJSON.system.channel_enc_key = sys_channel_enc_key
     channelPath = '/system'
     unless window.VoyageX.USE_GLOBAL_SUBSCRIBE 
-      channelPath += VoyageX.PEER_CHANNEL_PREFIX+response.sys_channel_enc_key
+      channelPath += VoyageX.PEER_CHANNEL_PREFIX+sys_channel_enc_key
     Comm.subscribeTo channelPath, Comm._systemSubscriptionListener
     # this is done via serverside publishing to systemchannel 
     # @see ChannelsController - system:monitor
     # @see Comm.subscribeTo - subscribe-callback
     # Comm.initChannelContexts response, Comm.channelCallBacksJSON
+
+  @resetSystemContext: (userId) ->
+    Comm.instance()._user_id = userId
+    Comm.channelCallBacksJSON.system.channel_enc_key = null 
+    for channel in Object.keys(Comm.channelCallBacksJSON)
+      Comm.channelCallBacksJSON[channel].channel_enc_key = null
+    APP.register userId
 
   @initChannelContexts: (initParams, channelCallBacks) ->
     Comm.subscribeTo '/ping', Comm._systemSubscriptionListener

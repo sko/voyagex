@@ -89,7 +89,7 @@ GEM
     coffee-script (2.3.0)
       coffee-script-source
       execjs
-    coffee-script-source (1.9.1)
+    coffee-script-source (1.8.0)
     cookiejar (0.3.2)
     daemons (1.2.1)
     database_cleaner (1.4.1)
@@ -349,6 +349,7 @@ DEPENDENCIES
   capybara-screenshot
   capybara-webkit
   coffee-rails
+  coffee-script-source (~> 1.8.0)
   comm!
   database_cleaner
   devise

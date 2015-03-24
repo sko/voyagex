@@ -29,14 +29,7 @@ class window.VoyageX.ClientState
       $('#message').selectRange(0)
     else if view.key == 'map'
       if VoyageX.Main.mapControl()?
-#        min = APP.map().getPixelBounds().min
-#        newBounds = L.bounds min, L.point(min.x+$('#map').width(), min.y+$('#map').height())
-#        APP.map().fitBounds L.latLngBounds(APP.map().unproject(newBounds.min), APP.map().unproject(newBounds.max))
-        APP.map().invalidateSize({
-            reset: true,
-            pan: false,
-            animate: false
-          })
+        VoyageX.Main.reload()
     this.refreshView()
     # post-refresh
     if view.key == 'chat'

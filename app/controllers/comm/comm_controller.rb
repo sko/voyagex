@@ -3,7 +3,8 @@ module Comm
     include ::AuthUtils
 
     def ping
-      #binding.pry
+      msg = { ping_key: params[:key] }
+      render json: msg
     end
 
     # we don't subscribe the users to a channel but rather push to them (on their system-channel)

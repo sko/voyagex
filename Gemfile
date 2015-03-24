@@ -34,8 +34,11 @@ gem 'modernizr-rails'
   gem 'uglifier'
 #end
 gem 'coffee-rails'
+# TODO: https://github.com/jashkenas/coffeescript/issues/3829
+gem "coffee-script-source", "~> 1.8.0"
 
-group :staging do
+#group :staging do
+group :staging, :production do
   # See https://github.com/sstephenson/execjs#readme for more supported runtimes
   gem 'therubyracer', :platforms => :ruby
 end

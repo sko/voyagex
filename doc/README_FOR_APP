@@ -14,6 +14,10 @@ Burns: "Hehehe, warum sagen Sie das nicht gleich?"
 
 
 
+google-scholar suche:
+gis preload algorithm
+
+
 all scroll -methods/logic should go from template-helper to view.
 
 bei allen backend-callbacks wo anschliessend gesichert wird nicht get (ausm cache) aufrufen

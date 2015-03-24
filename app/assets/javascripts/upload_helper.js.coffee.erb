@@ -37,35 +37,7 @@ class window.VoyageX.UploadHelper
       else
         uploadConfig.do.call APP.model(), data, uploadConfig.done
 
-  @instance: () ->
-    unless UploadHelper._SINGLETON?
-      UploadHelper._SINGLETON = new UploadHelper()
-    UploadHelper._SINGLETON
-
-jQuery ->
-  window.toggleUploadType = (selected) ->
-    if selected.value == 'file'
-      $('#upload_cam_container').css('display', 'none')
-      $('#upload_file_container').css('display', 'block')
-      $('#upload_embed_container').css('display', 'none')
-      $('#upload_plain_text_container').css('display', 'none')
-    else if selected.value == 'camera'
-      $('#upload_cam_container').css('display', 'block')
-      $('#upload_file_container').css('display', 'none')
-      $('#upload_embed_container').css('display', 'none')
-      $('#upload_plain_text_container').css('display', 'none')
-    else if selected.value == 'embed'
-      $('#upload_cam_container').css('display', 'none')
-      $('#upload_file_container').css('display', 'none')
-      $('#upload_embed_container').css('display', 'block')
-      $('#upload_plain_text_container').css('display', 'none')
-    else
-      $('#upload_cam_container').css('display', 'none')
-      $('#upload_file_container').css('display', 'none')
-      $('#upload_embed_container').css('display', 'none')
-      $('#upload_plain_text_container').css('display', 'block')
-
-  window.batchUpload = (perPoiEntry, callback) ->
+  batchUpload: (perPoiEntry, callback) ->
     formData = new FormData()
     formData.append 'location[latitude]', perPoiEntry.location.lat
     formData.append 'location[longitude]', perPoiEntry.location.lng
@@ -90,6 +62,40 @@ jQuery ->
     APP.model().syncUploadCachedQPoiData formData,
                                          (if perPoiEntry.poi.id >= 0 then perPoiEntry.poi else null),
                                          (if callback? then callback.cb(afterUploadPhoto) else afterUploadPhoto)
+
+  toggleUploadType: (selected) ->
+    if selected.value == 'file'
+      $('#upload_cam_container').css('display', 'none')
+      $('#upload_file_container').css('display', 'block')
+      $('#upload_embed_container').css('display', 'none')
+      $('#upload_plain_text_container').css('display', 'none')
+    else if selected.value == 'camera'
+      $('#upload_cam_container').css('display', 'block')
+      $('#upload_file_container').css('display', 'none')
+      $('#upload_embed_container').css('display', 'none')
+      $('#upload_plain_text_container').css('display', 'none')
+    else if selected.value == 'embed'
+      $('#upload_cam_container').css('display', 'none')
+      $('#upload_file_container').css('display', 'none')
+      $('#upload_embed_container').css('display', 'block')
+      $('#upload_plain_text_container').css('display', 'none')
+    else
+      $('#upload_cam_container').css('display', 'none')
+      $('#upload_file_container').css('display', 'none')
+      $('#upload_embed_container').css('display', 'none')
+      $('#upload_plain_text_container').css('display', 'block')
+
+  @instance: () ->
+    unless UploadHelper._SINGLETON?
+      UploadHelper._SINGLETON = new UploadHelper()
+    UploadHelper._SINGLETON
+
+jQuery ->
+  window.toggleUploadType = (selected) ->
+    APP.transfer().toggleUploadType selected
+
+  window.batchUpload = (perPoiEntry, callback) ->
+    APP.transfer().batchUpload perPoiEntry, callback
 
   window.uploadPhoto = () ->
     if VoyageX.UploadHelper.CACHE_BEFORE_UPLOAD
@@ -119,22 +125,22 @@ jQuery ->
           )(formData, skipInputNames)
       APP.model().uploadPoiNote formData, afterUploadPhoto, uploadTargetId
 
-  uploadPhoto64 = () ->
-    if VoyageX.UploadHelper.CACHE_BEFORE_UPLOAD
-      APP.model().savePoiNote afterCachePhoto
-    else
-      selLatLng = APP.getSelectedPositionLatLng()
-      fileContentType = $('#media_input_current').attr('src').match(/^data:([^;]+)/)[1]
-      fileData = $('#media_input_current').attr('src').replace(/^data:image\/.+?base64,/,'')
-      data = { location: { latitude: selLatLng[0], longitude: selLatLng[1] },\
-               file_comment: $('#upload_comment').val(),\
-               file_data: fileData,\
-               file_content_type: fileContentType }
-      uploadTargetId = APP.transfer().getUploadTargetId()
-      if uploadTargetId?
-        APP.model().uploadPoiNote64 data, afterUploadPhoto, uploadTargetId
-      else
-        APP.model().uploadPoiNote64 data, afterUploadPhoto
+  # uploadPhoto64 = () ->
+  #   if VoyageX.UploadHelper.CACHE_BEFORE_UPLOAD
+  #     APP.model().savePoiNote afterCachePhoto
+  #   else
+  #     selLatLng = APP.getSelectedPositionLatLng()
+  #     fileContentType = $('#media_input_current').attr('src').match(/^data:([^;]+)/)[1]
+  #     fileData = $('#media_input_current').attr('src').replace(/^data:image\/.+?base64,/,'')
+  #     data = { location: { latitude: selLatLng[0], longitude: selLatLng[1] },\
+  #              file_comment: $('#upload_comment').val(),\
+  #              file_data: fileData,\
+  #              file_content_type: fileContentType }
+  #     uploadTargetId = APP.transfer().getUploadTargetId()
+  #     if uploadTargetId?
+  #       APP.model().uploadPoiNote64 data, afterUploadPhoto, uploadTargetId
+  #     else
+  #       APP.model().uploadPoiNote64 data, afterUploadPhoto
 
   afterUpload = (poi, newNotes) ->
     $('#upload_comment').val('')

@@ -1,0 +1,56 @@
+<% environment.context_class.instance_eval { include Rails.application.routes.url_helpers } %>
+# Comm::Engine.routes.url_helpers
+
+if window.VoyageX?
+  window.VoyageX.Backend = {}
+else
+  window.VoyageX = { Backend: {} }
+
+class window.VoyageX.Backend
+  
+  @_SINGLETON = null
+  @_PING_INTERVAL_MILLIS = 5000
+  @_PING_CHECK_DELAY_MILLIS = 3000
+
+  constructor: () ->
+    Backend._SINGLETON = this
+    @_pingKey = -1
+
+  checkPingResponse: (pingKey) ->
+    if VoyageX.Backend.instance()._pingKey != pingKey
+      if APP._online
+        APP.setOffline()
+        setTimeout "VoyageX.Backend.instance().pingBackend()", Backend._PING_INTERVAL_MILLIS
+
+  pingBackend: () ->
+    pingKey = Math.round(Math.random() * 100000)
+    $.ajax
+      type: 'GET'
+      url: '<%= comm_ping_path(key: ':key') %>'.replace(/:key/, pingKey)
+      dataType: 'json'
+    .done (msg) ->
+        VoyageX.Backend.instance()._pingKey = msg.ping_key
+        unless APP._online
+          APP.setOnline()
+        setTimeout "VoyageX.Backend.instance().pingBackend()", Backend._PING_INTERVAL_MILLIS
+    .fail (jqXHR, textStatus) ->
+        if APP._online
+          APP.setOffline()
+        setTimeout "VoyageX.Backend.instance().pingBackend()", Backend._PING_INTERVAL_MILLIS
+    #setTimeout 'VoyageX.Backend.instance().checkPingResponse('+pingKey+')', Backend._PING_CHECK_DELAY_MILLIS
+
+  register: (userId) ->
+    data = { _method: 'put',\
+             user_id: userId }
+    $.ajax
+      type: 'POST'
+      dataType: 'json'
+      url: '<%= comm_register_path %>'
+      data: data
+    .done (msg) ->
+        Comm.Comm.initSystemContext msg.sys_channel_enc_key
+    .fail (jqXHR, textStatus) ->
+        alert('TODO: handle registration failure...')
+
+  @instance: () ->
+    Backend._SINGLETON

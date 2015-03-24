@@ -67,6 +67,16 @@ class window.VoyageX.MapControl
   map: () ->
     @_map
 
+  reload: () ->
+##    min = APP.map().getPixelBounds().min
+##    newBounds = L.bounds min, L.point(min.x+$('#map').width(), min.y+$('#map').height())
+#    APP.map().fitBounds L.latLngBounds(APP.map().unproject(newBounds.min), APP.map().unproject(newBounds.max))
+    APP.map().invalidateSize({
+        reset: true,
+        pan: false,
+        animate: false
+      })
+
   # google z/x/y
   # x ... parseInt(map.project(map.getCenter()).x/256)
   #
