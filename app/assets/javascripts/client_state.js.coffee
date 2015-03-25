@@ -27,9 +27,9 @@ class window.VoyageX.ClientState
     else if view.key == 'chat'
       $('#message').val('')
       $('#message').selectRange(0)
-    else if view.key == 'map'
-      if VoyageX.Main.mapControl()?
-        VoyageX.Main.reload()
+    #else if view.key == 'map'
+    #  if VoyageX.Main.mapControl()?
+    #    VoyageX.Main.mapControl().reload()
     this.refreshView()
     # post-refresh
     if view.key == 'chat'

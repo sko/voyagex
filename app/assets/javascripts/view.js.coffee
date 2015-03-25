@@ -13,7 +13,7 @@ class window.VoyageX.View
     @_commListeners = {}
     @_blinkArrowTO = null
     @_alertOn = false
-    for channel in ['talk', 'map_events', 'uploads']
+    for channel in VoyageX.Main._COMM_CHANNELS.slice(1)
       @_commListeners[channel] = []
 
   addListener: (channel, callBack) ->
@@ -84,6 +84,17 @@ class window.VoyageX.View
     for listener in View.instance()._commListeners.talk
       listener(message)
 
+  _radarCB: (radarEvent) ->
+    #
+    # draw path modus -> no positionieg
+    #
+    console.log 'got a radar - message: ' + radarEvent.type
+    if APP.userId() == radarEvent.userId# && radarEvent.type == 'move'
+      return null
+    View.instance().setPeerPosition radarEvent.userId, radarEvent.lat, radarEvent.lng
+    for listener in View.instance()._commListeners.radar
+      listener(radarEvent)
+
   _mapEventsCB: (mapEvent) ->
     console.log '_mapEventsCB: got a map_events - message: ' + mapEvent.type
     if APP.userId() == mapEvent.userId# && mapEvent.type == 'click'
@@ -99,16 +110,18 @@ class window.VoyageX.View
       #APP.map().setView [mapEvent.lat, mapEvent.lng], 16
     #poiId ... $('#pois_preview > .poi-preview-container[data-id=68]')
     #locationId ... $('#location_bookmarks .bookmark-container[data-id=4016]')
-    #TODO ... $('#people_of_interest')
-    sBs = searchBounds mapEvent.lat, mapEvent.lng, VoyageX.SEARCH_RADIUS_METERS
-    curUserLatLng = APP.getSelectedPositionLatLng()
-    if withinSearchBounds curUserLatLng[0], curUserLatLng[1], sBs
-      markerMeta = VoyageX.Main.markerManager().forPeer mapEvent.userId
-      markerMeta.target().setLatLng L.latLng(mapEvent.lat, mapEvent.lng)
-      unless true || APP.view()._alertOn
-        APP.view().alert()
-    else
-      console.log '_mapEventsCB: outside searchbounds ...'
+    #
+    # draw path modus -> no positionieg
+    # jedeer user kan 1 (current) path malen
+    # der path ist im localStorage (latLngs)
+    # es geht nur darum zu zeigen daß man malt
+    peer = APP.storage().getUser mapEvent.userId
+    path = APP.storage().getPath peer
+    if path?
+      path = APP.storage().addToPath peer, {lat: mapEvent.lat, lng: mapEvent.lng}, path
+      VoyageX.Main.mapControl().drawPath peer, path, true
+
+    View.instance().setPeerPosition mapEvent.userId, mapEvent.lat, mapEvent.lng
     for listener in View.instance()._commListeners.map_events
       listener(mapEvent)
 
@@ -160,6 +173,31 @@ class window.VoyageX.View
         for note in poi.notes
           Storage.Model.instance().syncWithStorage msg, View.addPoiNotes, note, loadStats
         APP.view().alert()
+
+  setPeerPosition: (userId, lat, lng) ->
+    #TODO ... $('#people_of_interest')
+    sBs = searchBounds lat, lng, VoyageX.SEARCH_RADIUS_METERS
+    curUserLatLng = APP.getSelectedPositionLatLng()
+    if withinSearchBounds curUserLatLng[0], curUserLatLng[1], sBs
+      markerMeta = VoyageX.Main.markerManager().forPeer userId
+      markerMeta.m.setLocation {lat: lat, lng: lng}
+      unless true || APP.view()._alertOn
+        APP.view().alert()
+    else
+      console.log '_mapEventsCB: outside searchbounds ...'
+    peer = APP.storage().getUser userId
+    path = APP.storage().getPath peer
+    if path?
+      path = APP.storage().addToPath peer, {lat: lat, lng: lng}, path
+      VoyageX.Main.mapControl().drawPath peer, path, true
+
+  setTraceCtrlIcon: (user, marker, state) ->
+    if state == 'start'
+      $('#trace-ctrl-start-'+user.id).css('display', 'none')
+      $('#trace-ctrl-stop-'+user.id).css('display', 'inline')
+    else
+      $('#trace-ctrl-start-'+user.id).css('display', 'inline')
+      $('#trace-ctrl-stop-'+user.id).css('display', 'none')
 
   # start with no params
   _blinkArrow: (iconSuffix = null, stop = false) ->
@@ -237,6 +275,10 @@ class window.VoyageX.View
   viewPeerNote: (peer) ->
     markerMeta = VoyageX.Main.markerManager().forPeer peer.id
     VoyageX.TemplateHelper.openPeerNoteEditor peer, markerMeta.target()
+
+  viewTracePath: (user, pathKey) ->
+    path = APP.storage().getPath user, pathKey, false
+    VoyageX.Main.mapControl().drawPath user, path
 
   # started from peer-tool-bar
   openP2PChat: (peer) ->
@@ -346,6 +388,9 @@ class window.VoyageX.View
 
   @editRadar: () ->
     VoyageX.TemplateHelper.openRadarEditor()
+
+  @editTracePaths: (user) ->
+    VoyageX.TemplateHelper.openTracePathEditor user
 
   @instance: () ->
     @_SINGLETON

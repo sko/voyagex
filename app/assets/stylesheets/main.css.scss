@@ -1,0 +1,17 @@
+// "bootstrap-sprockets" must be imported before "bootstrap" and "bootstrap/variables"
+@import "bootstrap-sprockets";
+@import "bootstrap/_variables";
+@import "bootstrap";
+
+@import "jquery-ui";
+@import "leaflet";
+@import "swiper";
+
+
+.edit_detail {
+  color: black !important;
+}
+
+.active {
+  color: white !important;
+}

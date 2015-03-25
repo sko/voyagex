@@ -8,7 +8,7 @@ class window.VoyageX.Main
   @_MAP_CONTROL = null
   @_MARKER_MANAGER = null
   @_CHAT_CONTROL = null
-  @_COMM_CHANNELS = ['system', 'talk', 'map_events', 'uploads']
+  @_COMM_CHANNELS = ['system', 'talk', 'map_events', 'uploads', 'radar']
   @_STORAGE_MODEL = null
   @_UPLOAD_HELPER = null
 
@@ -21,6 +21,8 @@ class window.VoyageX.Main
     @_navigatorOnline = online
     @_view = view
     @_comm = null
+    @_realPosition = {lat: -1.0, lng: -1.0}
+    @_watchRealPosition = null
     @_selectedPosition = {lat: -1.0, lng: -1.0, address: null}
     @_curPOI = null
     #@_initPoisOnMap = []
@@ -52,7 +54,8 @@ class window.VoyageX.Main
         APP._comm = new Comm.Comm(APP.userId(),
                                   [['/talk', APP._talkCB, VoyageX.CHANNEL_ENC_KEY],
                                    ['/map_events', view._mapEventsCB, VoyageX.CHANNEL_ENC_KEY],
-                                   ['/uploads', view._uploadsCB, VoyageX.CHANNEL_ENC_KEY]],
+                                   ['/uploads', view._uploadsCB, VoyageX.CHANNEL_ENC_KEY],
+                                   ['/radar', view._radarCB, VoyageX.CHANNEL_ENC_KEY]],
                                    VoyageX.SYS_CHANNEL_ENC_KEY,
                                    APP._systemCB)
         # Map initialisation (LeafletJS)
@@ -100,7 +103,7 @@ class window.VoyageX.Main
         APP._zoomEnd(null)
         cacheStats()
         $('#user_foto_input_type').buttonset()
-        setTimeout "VoyageX.Main._BACKEND.pingBackend()", 5000
+        #setTimeout "VoyageX.Main._BACKEND.pingBackend()", 5000
         $('#poi_notes_container').scrollpanel({
             prefix: 'pcn-'
           })
@@ -209,7 +212,35 @@ class window.VoyageX.Main
   # user-marker-tools
   radarSettings: () ->
     VoyageX.View.editRadar()
-    
+
+  toggleTrace: (user, pathKey) ->
+    path = APP.storage().getPath user, pathKey
+
+    if window.tTDblClick
+      isDoubleClick = true
+      if path?
+        APP.storage().stopTracePath user, path
+        APP.view().setTraceCtrlIcon user, marker, 'stop'
+      VoyageX.View.editTracePaths user
+      return true
+    else
+      window.tTDblClick = new Date().getTime()
+      setTimeout () ->
+          delete window.tTDblClick
+        , 500
+
+    marker = APP.getOpenPopupMarker true
+    if path?
+      APP.storage().stopTracePath user, path
+      APP.view().setTraceCtrlIcon user, marker, 'stop'
+    else
+      if user.id == currentUser.id 
+        position = {lat: APP._selectedPosition.lat, lng: APP._selectedPosition.lng}
+      else
+        position = {lat: marker.m.location().lat, lng: marker.m.location().lng}
+      APP.storage().startTracePath user, position
+      APP.view().setTraceCtrlIcon user, marker, 'start'
+
   #publishPosition: (bookmarkLocation = false, posLatLng = null, setHomeBase = false) ->
   publishPosition: () ->
     unless posLatLng?
@@ -220,6 +251,10 @@ class window.VoyageX.Main
                                 lng: posLatLng[1]})#,\
                                 #bookmarkLocation: bookmarkLocation,\
                                 #setHomeBase: setHomeBase})
+    path = APP.storage().getPath currentUser
+    if path?
+      path = APP.storage().addToPath currentUser, @_selectedPosition, path
+      VoyageX.Main.mapControl().drawPath currentUser, path, true
     $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').click()
 
   initBCChatMessages: () ->
@@ -295,7 +330,7 @@ class window.VoyageX.Main
       location = {id: poi.locationId, lat: poi.lat, lng: poi.lng, address: poi.address, poiId: poi.id}
       markerMeta = APP.getMarker poi, true
       if markerMeta?
-        markerMeta.m.setLatLng poi.lat, poi.lng
+        markerMeta.m.setLocation location
       else
         Main.markerManager().add location, Main._markerEventsCB
       #APP._initPoisOnMap.push poi
@@ -340,6 +375,7 @@ class window.VoyageX.Main
     $('#zoom_level').html('<span style="color:white;">zoom: '+APP.map().getZoom()+'</span>')
 
   _initPositionCB: (position, address = null, isReInit = false) ->
+    APP._setRealPosition(position) unless isReInit
     location = {lat: position.coords.latitude, lng: position.coords.longitude}
     if isReInit
       marker = Main.markerManager().get()
@@ -351,6 +387,55 @@ class window.VoyageX.Main
     unless isReInit
       APP.publishPosition()
     APP.showPOIs location
+
+  getRealPosition: () ->
+     { lat: APP._realPosition.lat, lng: APP._realPosition.lng }
+
+  _setRealPosition: (position) ->
+    moveSensorDistMeters = 25
+    searchBounds = window.searchBounds APP._realPosition.lat, APP._realPosition.lng, moveSensorDistMeters
+    unless window.withinSearchBounds position.coords.latitude, position.coords.longitude, searchBounds
+      APP._realPosition.lat = position.coords.latitude
+      APP._realPosition.lng = position.coords.longitude
+      @_comm.send('/radar', {type: 'move',\
+                             userId: APP.userId(),\
+                             lat: APP._realPosition.lat,\
+                             lng: APP._realPosition.lng})
+      path = APP.storage().getPath currentUser
+      if path?
+        path = APP.storage().addToPath currentUser, APP._realPosition, path
+        VoyageX.Main.mapControl().drawPath currentUser, path, true
+    if navigator.geolocation
+      # didn't work in real life on 20150325
+      # unless APP._watchRealPosition?
+      #   APP._watchRealPosition = navigator.geolocation.watchPosition APP._setRealPosition, (error) ->
+      #       switch error.code
+      #         when error.PERMISSION_DENIED
+      #           console.log 'ERROR: user did not share geolocation data - disable location-query ...'
+      #         when error.POSITION_UNAVAILABLE
+      #           console.log 'WARN: could not detect current position - retry ...'
+      #         when error.TIMEOUT
+      #           console.log 'WARN: retrieving position timedout - retry ...'
+      #         else
+      #           console.log 'ERROR: unknown error - disable location-query ...'
+      # alternative: poll position
+      setTimeout 'APP._queryRealPosition()', VoyageX.Backend._POS_QUERY_INTERVAL_MILLIS
+  
+  # @deprecated -> navigator.geolocation.watchPosition
+  _queryRealPosition: () ->
+    navigator.geolocation.getCurrentPosition(APP._setRealPosition, (error) ->
+        switch error.code
+          when error.PERMISSION_DENIED
+            console.log 'ERROR: user did not share geolocation data - disable location-query ...'
+          when error.POSITION_UNAVAILABLE
+            console.log 'WARN: could not detect current position - retry ...'
+            setTimeout 'APP._queryRealPosition()', VoyageX.Backend._POS_QUERY_INTERVAL_MILLIS
+          when error.TIMEOUT
+            console.log 'WARN: retrieving position timedout - retry ...'
+            setTimeout 'APP._queryRealPosition()', VoyageX.Backend._POS_QUERY_INTERVAL_MILLIS
+          else
+            console.log 'ERROR: unknown error - disable location-query ...'
+    , { enableHighAccuracy: true, timeout : 5000 })
 
   _systemCB: (message) ->
     console.log 'got a system - message: ' + message.type

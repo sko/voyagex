@@ -14,7 +14,12 @@
  *= require leaflet
  *= require swiper
  */
-
+/*
+@import "jquery-ui";
+@import "jquery.mobile";
+@import "leaflet";
+@import "swiper";
+*/
 .edit_detail {
   color: black !important;
 }

@@ -67,7 +67,7 @@ Dir.glob(Rails.root.join('public', 'assets', 'fotos', 'user_*')).each {|f|FileUt
 User.where('sign_in_count >= 1').each{|u|u.update_attribute(:foto, open(UserHelper::fetch_random_avatar, allow_redirections: :safe){|t|t.base_uri}) unless u.foto.exists?}
 
 # single
-User.where('username = ?', 'homer').each{|u|u.update_attribute(:foto, open(UserHelper::fetch_random_avatar, allow_redirections: :safe){|t|t.base_uri})}
+User.where('username = ?', 't.schuemmer').each{|u|u.update_attribute(:foto, open(UserHelper::fetch_random_avatar, allow_redirections: :safe){|t|t.base_uri})}
 User.where('username = ?', 't.schuemmer').each{|u|u.update_attribute(:foto, open(UserHelper::fetch_gravatar(u.email), allow_redirections: :safe){|t|t.base_uri})}
 
 

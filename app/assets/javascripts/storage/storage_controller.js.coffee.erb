@@ -305,6 +305,80 @@ class window.Comm.StorageController
       localStorage.setItem conferenceKey, JSON.stringify(conference)
       return conference
 
+  getPaths: (user) ->
+    storeKey = 'comm.users'
+    users = eval("(" + localStorage.getItem(storeKey) + ")")
+    users[user.id].paths
+
+  getPath: (user, pathKey = null, notDone = true) ->
+    storeKey = 'comm.users'
+    users = eval("(" + localStorage.getItem(storeKey) + ")")
+    paths = users[user.id].paths
+    if paths?
+      unless pathKey?
+        pathKeys = Object.keys(paths)
+        pathKey = pathKeys[pathKeys.length-1]
+      curPath = paths[pathKey]
+      if (!curPath) || (notDone && curPath.done) then null else curPath.entries
+    else
+      null
+
+  # no error-handling if user not in localStroage
+  # TODO - currently just next path is added without checking last path for done.
+  #        no way yet to continue path before last path
+  startTracePath: (user, position, db = {}) ->
+    storeKey = 'comm.users'
+    users = eval("(" + localStorage.getItem(storeKey) + ")")
+    paths = users[user.id].paths
+    unless paths?
+      paths = {}
+      users[user.id]['paths'] = paths
+    now = new Date().getTime()
+    path = {done: false, entries: [{timestamp: now, lat: position.lat, lng: position.lng}]}
+    paths[now] = path
+    localStorage.setItem storeKey, JSON.stringify(users)
+    db['users'] = users
+    path.entries
+
+  # creates path if none exists for user or selected path is done
+  # no error-handling if pathKey doesn't exist
+  addToPath: (user, position, path = null) ->
+    storeKey = 'comm.users'
+    users = eval("(" + localStorage.getItem(storeKey) + ")")
+    paths = users[user.id].paths
+    if paths?
+      if path?
+        pathKey = path[0].timestamp
+      else
+        pathKeys = Object.keys(paths)
+        pathKey = pathKeys[pathKeys.length-1]
+      curPath = paths[pathKey]
+    else
+      db = {}
+      curPath = startTracePath user, position, db
+      users = db.users
+    curPath.entries.push {timestamp: new Date().getTime(), lat: position.lat, lng: position.lng}
+    localStorage.setItem storeKey, JSON.stringify(users)
+    curPath.entries
+
+  # no error-handling if user not in localStroage
+  # no error-handling if paths doesn't exist
+  stopTracePath: (user, curPath = null) ->
+    storeKey = 'comm.users'
+    users = eval("(" + localStorage.getItem(storeKey) + ")")
+    paths = users[user.id].paths
+    if curPath?
+      path = paths[curPath[0].timestamp]
+    else
+      pathKeys = Object.keys(paths)
+      path = paths[pathKeys[pathKeys.length-1]]
+    if path.entries.length >= 2
+      path.done = true
+    else
+      delete paths[path.entries[0].timestamp]
+    localStorage.setItem storeKey, JSON.stringify(users)
+    paths.entries
+
   storePoi: (poi, flatten = true) ->
     poiKey = StorageController.poiKey poi
     if flatten

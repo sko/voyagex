@@ -21,7 +21,7 @@ class window.VoyageX.MarkerManager
       console.log('add: moving marker top/left +3px to visibility ...')
       posPoint = @_map.project L.latLng(location.lat, location.lng)
       movedLatLng = @_map.unproject L.point(posPoint.x+3, posPoint.y+3)
-      samePosMarker.setLatLng movedLatLng
+      samePosMarker.target().setLatLng movedLatLng
 
   add: (location, callBack, flags = {isUserMarker: false, peer: null}, meta = false) ->
     markerOps = { draggable: flags.isUserMarker,\
@@ -75,29 +75,25 @@ class window.VoyageX.MarkerManager
         break
 
   sel: (replaceMarker, lat, lng, callBack) ->
-    # if @_selectedMarker != null && replaceMarker == @_selectedMarker.target()
-    #   @_map.removeLayer @_selectedMarker.target()
     if replaceMarker == null
-      location = {lat: lat, lng: lng}
-      marker = this.add location, callBack, true
+      marker = this.add {lat: lat, lng: lng}, callBack, true
       @_selectedMarker = @_markers[@_markers.length - 1]
     else
       for m in @_markers
         if m.target() == replaceMarker
           @_selectedMarker = m
           break
-      unless @_selectedMarker?
+      if @_selectedMarker?
+        @_selectedMarker.setLocation {lat: lat, lng: lng}
+      else
         for m, idx in @_markers
           if m.isUserMarker()
-            # TODO clean up
             @_markers.splice idx, 1
             break
-        poi = {lat: lat, lng: lng}
-        @_selectedMarker = new VoyageX.Marker(replaceMarker, poi, {isUserMarker: true, peer: null})
+        @_selectedMarker = new VoyageX.Marker(replaceMarker, {lat: lat, lng: lng}, {isUserMarker: true, peer: null})
         @_markers.push @_selectedMarker
 
     @_selectedMarker.target().setZIndexOffset @_maxZIndex        
-    @_selectedMarker.setLatLng lat, lng
     @_selectedMarker.target()
 
   get: (meta = false) ->
@@ -192,6 +188,10 @@ class VoyageX.Marker
   location: ->
     @_location
 
+  setLocation: (location) ->
+    @_location = location
+    @_target.setLatLng(L.latLng(location.lat, location.lng))
+
 #  poi: ->
 #    #locations = eval("(" + localStorage.getItem(storeKey) + ")")
 #    if @_location.poiId? then getPoi(@_location.poi) else APP.storage().getPoiForLocation(@_location.id)
@@ -201,6 +201,3 @@ class VoyageX.Marker
 
   isPeerMarker: ->
     @_flags.peer?
-
-  setLatLng: (lat, lng) ->
-   @_target.setLatLng(L.latLng(lat, lng))

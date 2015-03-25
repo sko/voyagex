@@ -47,19 +47,23 @@
 
 #tmpl_marker_controls{style: 'display: none;'}
   %div{tmpl: {id: 'marker_controls'}}
-    %div{style: 'width: 160px !important; height: 25px; padding: 0px 0px 5px 0px;'}
-      %div{style: 'float: left; margin: 0px 0px 0px 5px;'}
-        = link_to image_tag('/assets/add-marker.png', style: 'height: 25px;', title: t('pois.add'), alt: t('pois.add')), '#', onclick: "javascript:APP.poiNoteInput()"
-      %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
-        = link_to image_tag('/assets/add-bookmark.png', style: 'height: 25px;', title: t('pois.bookmark'), alt: t('pois.bookmark')), '#', onclick: "javascript:APP.bookmarkLocation()"
-      %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
-        = link_to image_tag('/assets/set-home.png', style: 'height: 23px;', title: t('admin.add_homebase'), alt: t('admin.add_homebase')), '#', onclick: "javascript:APP.setHomeBase()"
-      %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
-        = link_to image_tag('/assets/home.png', style: 'height: 23px;', title: t('admin.show_homebase'), alt: t('admin.show_homebase')), '#', onclick: "javascript:APP.loadLocation({id: currentUser.homebaseLocationId})"
-      %div{style: 'float: left; margin: 0px 5px 0px 5px; padding: 0px;'}
-        = link_to image_tag('/assets/radar.png', style: 'height: 23px;', title: 'radar-settings', alt: 'radar-settings'), '#', onclick: "javascript:APP.radarSettings()"
-      %div{style: 'margin: 0px 0px 0px 5px; padding: 0px;'}
-        = link_to image_tag('/assets/arrow-up-right.png', style: 'height: 23px;', title: 'navigator', alt: 'navigator', class: 'photo_nav_open_icon'), '#', onclick: "javascript:APP.photoNav()"
+    %div{style: 'float: left; margin: 0px 0px 0px 5px;'}
+      = link_to image_tag('/assets/add-marker.png', style: 'height: 25px;', title: t('pois.add'), alt: t('pois.add')), '#', onclick: "javascript:APP.poiNoteInput()"
+    %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
+      = link_to image_tag('/assets/add-bookmark.png', style: 'height: 25px;', title: t('pois.bookmark'), alt: t('pois.bookmark')), '#', onclick: "javascript:APP.bookmarkLocation()"
+    %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
+      = link_to image_tag('/assets/set-home.png', style: 'height: 23px;', title: t('admin.add_homebase'), alt: t('admin.add_homebase')), '#', onclick: "javascript:APP.setHomeBase()"
+    %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
+      = link_to image_tag('/assets/home.png', style: 'height: 23px;', title: t('admin.show_homebase'), alt: t('admin.show_homebase')), '#', onclick: "javascript:APP.loadLocation({id: currentUser.homebaseLocationId})"
+    %div{style: 'float: left; margin: 0px 5px 0px 5px; padding: 0px;'}
+      = link_to image_tag('/assets/radar.png', style: 'height: 23px;', title: 'radar-settings', alt: 'radar-settings'), '#', onclick: "javascript:APP.radarSettings()"
+    %div{style: 'float: left; margin: 0px 5px 0px 5px; padding: 0px;'}
+      %span{id: 'trace-ctrl-start-{user_id}'}
+        = link_to image_tag('/assets/start_trace.png', style: 'height: 23px;', title: 'start-trace-me', alt: 'start-trace-me'), '#', onclick: "javascript:APP.toggleTrace(currentUser, {path_key})"
+      %span{id: 'trace-ctrl-stop-{user_id}', style: 'display: none;'}
+        = link_to image_tag('/assets/stop_trace.png', style: 'height: 23px;', title: 'stop-trace-me', alt: 'stop-trace-me'), '#', onclick: "javascript:APP.toggleTrace(currentUser, {path_key})"
+    %div{style: 'margin: 0px 0px 0px 5px; padding: 0px;'}
+      = link_to image_tag('/assets/arrow-up-right.png', style: 'height: 23px;', title: 'navigator', alt: 'navigator', class: 'photo_nav_open_icon'), '#', onclick: "javascript:APP.photoNav()"
 
 #tmpl_note_editor{style: 'display: none;'}
   .note_editor
@@ -90,3 +94,12 @@
       %div
         = radio_button_tag 'search_radius_display', 'hide', true, id: ':tmpl', 'tmpl-id' => 'search_radius_display_hide', data: {mini: true}, onclick: 'toggleSearchRadiusDisplay(this)'
         = label_tag 'search_radius_display_hide', 'hide'
+
+#tmpl_trace-path_editor{style: 'display: none;'}
+  .trace-path_editor
+    %div
+      {trace-paths}
+
+#tmpl_trace-path_entry{style: 'display: none;'}
+  %div.trace-path_entry
+    = link_to '{date}', '#showPath', onclick: "javascript:APP.view().viewTracePath(APP.storage().getUser({user_id}), '{path_key}')"

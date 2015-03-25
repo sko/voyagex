@@ -4,6 +4,7 @@
 //= require jquery.mobile
 //= require jquery-ui
 //= require jquery.scrollpanel
+//= require jquery-dateFormat
 //= require swiper
 //= require leaflet
 //= require Leaflet.LimitZoom

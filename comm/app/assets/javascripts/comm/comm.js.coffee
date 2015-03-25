@@ -44,7 +44,7 @@ class window.Comm.Comm
     if (sysChannelEncKey == null)
       APP.register(@_user_id)
     else
-      Comm.initSystemContext {sys_channel_enc_key: sysChannelEncKey}
+      Comm.initSystemContext sysChannelEncKey
     
     #window.addEventListener "offline", (e) ->
     #    alert("offline")

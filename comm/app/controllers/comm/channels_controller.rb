@@ -91,31 +91,32 @@ module Comm
         block_msg = nil
         Rails.logger.debug "###### Inbound message #{message}. (self: #{self.hash} / #{self.object_id})"
         if message['channel'].match(/^\/meta\/subscribe/).present?
-          subscription_enc_key = message['subscription'].match(/^.+?#{PEER_CHANNEL_PREFIX}([^\/]+)/)
-          if subscription_enc_key.present?
-            Rails.logger.debug "###### Inbound message: found subscription_enc_key '#{subscription_enc_key[1]}'"
-            begin
-              user_comm_port = CommPort.where(current_faye_client_id: message['clientId']).first
-              if user_comm_port.present?
-                target = CommPort.where(channel_enc_key: subscription_enc_key[1]).first
-                # allow self-subscription so that others can communicate with me
-                granted = target.present? &&
-                          (target.current_faye_client_id == message['clientId'] ||
-                           target.comm_peers.where(peer_id: user_comm_port.user.id, granted_by_peer: true).present?)
-                if granted
-                  Rails.logger.debug "###### Inbound message: allow subscription on channel #{message['subscription']} for user #{user_comm_port.user.id}"
-                else
-                  Rails.logger.debug "###### Inbound message: deny subscription on channel #{message['subscription']} for user #{user_comm_port.user.id} because grant missing"
-                  block_msg = 'grant required for subscription'
-                end
-              else
-                Rails.logger.debug "###### Inbound message: deny subscription on channel #{message['subscription']} because user not signed in"
-                block_msg = 'only subscribable for signed in users...'
-              end
-            rescue => e
-              Rails.logger.error "!!!!!! #{e.message}"
-            end
-          end
+          block_msg = ChannelsController::check_subscribe_permission message
+          # subscription_enc_key = message['subscription'].match(/^.+?#{PEER_CHANNEL_PREFIX}([^\/]+)/)
+          # if subscription_enc_key.present?
+          #   Rails.logger.debug "###### Inbound message: found subscription_enc_key '#{subscription_enc_key[1]}'"
+          #   begin
+          #     user_comm_port = CommPort.where(current_faye_client_id: message['clientId']).first
+          #     if user_comm_port.present?
+          #       target = CommPort.where(channel_enc_key: subscription_enc_key[1]).first
+          #       # allow self-subscription so that others can communicate with me
+          #       granted = target.present? &&
+          #                 (target.current_faye_client_id == message['clientId'] ||
+          #                  target.comm_peers.where(peer_id: user_comm_port.user.id, granted_by_peer: true).present?)
+          #       if granted
+          #         Rails.logger.debug "###### Inbound message: allow subscription on channel #{message['subscription']} for user #{user_comm_port.user.id}"
+          #       else
+          #         Rails.logger.debug "###### Inbound message: deny subscription on channel #{message['subscription']} for user #{user_comm_port.user.id} because grant missing"
+          #         block_msg = 'grant required for subscription'
+          #       end
+          #     else
+          #       Rails.logger.debug "###### Inbound message: deny subscription on channel #{message['subscription']} because user not signed in"
+          #       block_msg = 'only subscribable for signed in users...'
+          #     end
+          #   rescue => e
+          #     Rails.logger.error "!!!!!! #{e.message}"
+          #   end
+          # end
         end
         if block_msg.nil?
           pass
@@ -205,8 +206,83 @@ module Comm
         Rails.logger.debug "###### Client #{client_id} published #{data.inspect} to #{channel}."
       end
     end
+    
+    channel '/radar**' do
+      filter :in do
+        block_msg = nil
+        Rails.logger.debug "###### Inbound message #{message}. (self: #{self.hash} / #{self.object_id})"
+        if message['channel'].match(/^\/meta\/subscribe/).present?
+          block_msg = ChannelsController::check_subscribe_permission message
+        end
+        if block_msg.nil?
+          pass
+        else
+          block block_msg
+        end
+      end
+      monitor :subscribe do
+        Rails.logger.debug "###### Client #{client_id} subscribed to #{channel}."
+      end
+      monitor :unsubscribe do
+        Rails.logger.debug "###### Client #{client_id} unsubscribed from #{channel}."
+      end
+      monitor :publish do
+        Rails.logger.debug "###### Client #{client_id} published #{data.inspect} to #{channel}."
+        # begin
+        #   case data['type']
+        #   when 'move'
+        #     user = User.where(id: data['userId']).first
+        #     location = nearby_location Location.new(latitude: data['lat'], longitude: data['lng']), 10
+        #     if location.persisted?
+        #       user.snapshot.location = location
+        #       user.snapshot.lat = nil
+        #       user.snapshot.lng = nil
+        #       user.snapshot.address = nil
+        #     else
+        #       user.snapshot.location = nil
+        #       user.snapshot.lat = location.latitude
+        #       user.snapshot.lng = location.longitude
+        #       user.snapshot.address = shorten_address location, true
+        #     end
+        #     user.snapshot.save!
+        #   end
+        # rescue => e
+        #   Rails.logger.error "!!!!!! #{e.message}"
+        # end
+      end
+    end
 
     private
+
+    def self.check_subscribe_permission message
+      block_msg = nil
+      subscription_enc_key = message['subscription'].match(/^.+?#{PEER_CHANNEL_PREFIX}([^\/]+)/)
+      if subscription_enc_key.present?
+        Rails.logger.debug "###### Inbound message: found subscription_enc_key '#{subscription_enc_key[1]}'"
+        begin
+          user_comm_port = CommPort.where(current_faye_client_id: message['clientId']).first
+          if user_comm_port.present?
+            target = CommPort.where(channel_enc_key: subscription_enc_key[1]).first
+            # allow self-subscription so that others can communicate with me
+            granted = target.present? &&
+                      (target.current_faye_client_id == message['clientId'] ||
+                       target.comm_peers.where(peer_id: user_comm_port.user.id, granted_by_peer: true).present?)
+            if granted
+              Rails.logger.debug "###### Inbound message: allow subscription on channel #{message['subscription']} for user #{user_comm_port.user.id}"
+            else
+              Rails.logger.debug "###### Inbound message: deny subscription on channel #{message['subscription']} for user #{user_comm_port.user.id} because grant missing"
+              block_msg = 'grant required for subscription'
+            end
+          else
+            Rails.logger.debug "###### Inbound message: deny subscription on channel #{message['subscription']} because user not signed in"
+            block_msg = 'only subscribable for signed in users...'
+          end
+        rescue => e
+          Rails.logger.error "!!!!!! #{e.message}"
+        end
+      end
+      block_msg
+    end
 
     def check_read_permission channel
       channel_enc_key_match = channel.match(/_\$(.+)/)

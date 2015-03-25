@@ -102,9 +102,12 @@ class window.VoyageX.TemplateHelper
     TemplateHelper.poiNoteInputHtml('poi_note_input', poi, poi.notes[0])
 
   @openPeerPopup: (peer, marker, messages = [], contentCallback = null) ->
+    curPath = APP.storage().getPath peer
     popupHtml = TemplateHelper._updateAttributes('tmpl_peer_popup', ['src'], TemplateHelper._updateIds('tmpl_peer_popup')).
     replace(/\{peer_id\}/g, peer.id).
-    replace(/\{peer_foto_url\}/, peer.foto.url)
+    replace(/\{peer_name\}/g, peer.username).
+    replace(/\{peer_foto_url\}/, peer.foto.url).
+    replace(/\{path_key\}/g, if curPath? then "'"+curPath[0].timestamp+"'" else 'null')
     popup = marker.getPopup()
     isNewPopup = !popup?
     if isNewPopup
@@ -118,10 +121,14 @@ class window.VoyageX.TemplateHelper
       peerPopup = $('#peer_popup_'+peer.id)
       popupContainer = peerPopup.closest('.leaflet-popup').first()
       popupContainer.prepend('<span id="current_peer" style="float: left; padding-left: 5px; font-size: 9px;">'+peer.username+'</span>')
+    APP.view().setTraceCtrlIcon peer, marker, if curPath? then 'start' else 'stop'
 
   @openMarkerControlsPopup: () ->
     marker = VoyageX.Main.markerManager().get()
-    popupHtml = TemplateHelper._updateIds 'tmpl_marker_controls'
+    curPath = APP.storage().getPath currentUser
+    popupHtml = TemplateHelper._updateIds('tmpl_marker_controls').
+    replace(/\{user_id\}/g, currentUser.id).
+    replace(/\{path_key\}/g, if curPath? then "'"+curPath[0].timestamp+"'" else 'null')
     popup = marker.getPopup()
     isNewPopup = !popup?
     if isNewPopup
@@ -135,6 +142,7 @@ class window.VoyageX.TemplateHelper
       TemplateHelper._addPopupTitle poiNoteContainer, marker, {address: currentAddress}#Comm.StorageController.instance().getLocation(poi.locationId)
     else
       $('#current_address').html(currentAddress)
+    APP.view().setTraceCtrlIcon currentUser, marker, if curPath? then 'start' else 'stop'
 
   @noteHtml: (typeId, text) ->
     TemplateHelper._updateIds('tmpl_note_editor').
@@ -144,10 +152,11 @@ class window.VoyageX.TemplateHelper
   @editorFor: (target, marker, typeId, callback) ->
     popup = marker.getPopup()
     # note-editor is within existing popup - user, poi or peer - so it should already exist here
-    popupHtml = popup.getContent()
-    if popupHtml.indexOf('radar_editor') != -1
-      #popupHtml = popupHtml.replace(/<div[^>]+class="radar_editor"(.|\n)+(<div[^>]+id="marker_controls")/, '$1')
-      popupHtml = popupHtml.replace(/<div[^>]+class="radar_editor"(.|\n)+/, '$1')
+    popupHtml = TemplateHelper._resetMarkerControlsPopup popup, 'note_editor'
+#    popupHtml = popup.getContent()
+#    if popupHtml.indexOf('radar_editor') != -1
+#      #popupHtml = popupHtml.replace(/<div[^>]+class="radar_editor"(.|\n)+(<div[^>]+id="marker_controls")/, '$1')
+#      popupHtml = popupHtml.replace(/<div[^>]+class="radar_editor"(.|\n)+/, '$1')
     editorHtml = callback target
     if popupHtml.indexOf('note_editor') == -1
       popup.setContent popupHtml + editorHtml
@@ -303,16 +312,17 @@ class window.VoyageX.TemplateHelper
       marker = VoyageX.Main.markerManager().get()
     popup = marker.getPopup()
     # note-editor is within existing popup - user, poi or peer - so it should already exist here
-    popupHtml = popup.getContent()
-    if popupHtml.indexOf('note_editor') != -1
-      #popupHtml = popupHtml.replace(/<div[^>]+class="note_editor"(.|\n)+(<div[^>]+id="marker_controls")/, '$1')
-      popupHtml = popupHtml.replace(/<div[^>]+class="note_editor"(.|\n)+/, '$1')
+    popupHtml = TemplateHelper._resetMarkerControlsPopup popup, 'radar_editor'
+#    popupHtml = popup.getContent()
+#    if popupHtml.indexOf('note_editor') != -1
+#      #popupHtml = popupHtml.replace(/<div[^>]+class="note_editor"(.|\n)+(<div[^>]+id="marker_controls")/, '$1')
+#      popupHtml = popupHtml.replace(/<div[^>]+class="note_editor"(.|\n)+/, '$1')
     editorHtml = TemplateHelper.radarSettingsHtml()
     if popupHtml.indexOf('radar_editor') == -1
       popup.setContent popupHtml + editorHtml
       #$('#tmpl_radar_editor > .radar_editor').remove()
     marker.openPopup()
-    #$('.leaflet-popup-content .search_radius fieldset').trigger('create');
+    # init slider:
     $(popup._contentNode).find('> .radar_editor > fieldset').first().trigger('create');
     #noteEditor = $('#'+typeId).closest('.radar_editor').first()
     #noteEditor.closest('.leaflet-popup-content').first().scrollTop(noteEditor.offset().top)
@@ -326,6 +336,47 @@ class window.VoyageX.TemplateHelper
             APP.setSearchRadius u.value
             $('#search_radius_meters').html VoyageX.SEARCH_RADIUS_METERS
     })
+
+  @tracePathEditorHtml: (user, pathKey = null) ->
+    tracePathsHtml = ''
+    paths = APP.storage().getPaths user
+    pathKeys = Object.keys(paths)
+    for pathKey in pathKeys
+      path = paths[pathKey]
+      tracePathsHtml = TemplateHelper._updateIds('tmpl_trace-path_entry').
+      replace(/\{date\}/, $.format.date(new Date(path.entries[0].timestamp), 'dd.MM.yyyy HH:mm:ss')).
+      replace(/\{user_id\}/, user.id).
+      replace(/\{path_key\}/, path.entries[0].timestamp) + tracePathsHtml
+    TemplateHelper._updateIds('tmpl_trace-path_editor').
+    replace(/\{trace-paths\}/, tracePathsHtml)
+
+  @openTracePathEditor: (user, pathKey = null) ->
+    marker = APP.getOpenPopupMarker()
+    unless marker?
+      marker = VoyageX.Main.markerManager().get()
+    popup = marker.getPopup()
+    # note-editor is within existing popup - user, poi or peer - so it should already exist here
+    popupHtml = TemplateHelper._resetMarkerControlsPopup popup, 'trace-path_editor'
+    editorHtml = TemplateHelper.tracePathEditorHtml user
+    if popupHtml.indexOf('trace-path_editor') == -1
+      popup.setContent popupHtml + editorHtml
+      #$('#tmpl_radar_editor > .radar_editor').remove()
+    marker.openPopup()
+    # init slider:
+    $(popup._contentNode).find('> .radar_editor > fieldset').first().trigger('create');
+
+  @_resetMarkerControlsPopup: (popup, skipKey) ->
+    popupHtml = popup.getContent()
+    if skipKey == 'note_editor' || popupHtml.indexOf('note_editor') == -1
+      #popupHtml = popupHtml.replace(/<div[^>]+class="note_editor"(.|\n)+(<div[^>]+id="marker_controls")/, '$1')
+      popupHtml = popupHtml.replace(/<div[^>]+class="note_editor"(.|\n)+/, '$1')
+    if skipKey == 'radar_editor' || popupHtml.indexOf('radar_editor') == -1
+      #popupHtml = popupHtml.replace(/<div[^>]+class="radar_editor"(.|\n)+(<div[^>]+id="marker_controls")/, '$1')
+      popupHtml = popupHtml.replace(/<div[^>]+class="radar_editor"(.|\n)+/, '$1')
+    unless skipKey == 'trace-path_editor' || popupHtml.indexOf('trace-path_editor') == -1
+      #popupHtml = popupHtml.replace(/<div[^>]+class="trace-path_editor"(.|\n)+(<div[^>]+id="marker_controls")/, '$1')
+      popupHtml = popupHtml.replace(/<div[^>]+class="trace-path_editor"(.|\n)+/, '$1')
+    popupHtml
 
   @_addPopupTitle: (contentContainer, marker, location, poi, resetTitle = false) ->
     if resetTitle

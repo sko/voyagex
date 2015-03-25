@@ -72,7 +72,7 @@ class window.VoyageX.MapControl
 ##    newBounds = L.bounds min, L.point(min.x+$('#map').width(), min.y+$('#map').height())
 #    APP.map().fitBounds L.latLngBounds(APP.map().unproject(newBounds.min), APP.map().unproject(newBounds.max))
     APP.map().invalidateSize({
-        reset: true,
+        reset: false,
         pan: false,
         animate: false
       })
@@ -130,6 +130,18 @@ class window.VoyageX.MapControl
         y = parseInt(@_map.project(latLngOff).y/256)
         key = @_map.getZoom()+' / '+x+' / '+y
         $(tile).after('<div data-role="tileInfo" style="position: absolute; '+style+' z-index: 9999; opacity: 0.8; text-align: center; vertical-align: middle; border: 1px solid red; color: red; font-weight: bold;">'+key+'</div>')
+
+  drawPath: (user, path, append = false) ->
+    if append
+      if path.length >= 2
+        last = path[path.length-2]
+        current = path[path.length-1]
+        L.polyline([L.latLng(last.lat, last.lng), L.latLng(current.lat, current.lng)], {color: 'red'}).addTo(@_map)
+    else
+      for entry, idx in path
+        unless idx >= 1
+          continue
+        L.polyline([L.latLng(path[idx-1].lat, path[idx-1].lng), L.latLng(entry.lat, entry.lng)], {color: 'red'}).addTo(@_map)
 
   @instance: () ->
     @_SINGLETON
