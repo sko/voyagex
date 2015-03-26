@@ -44,8 +44,32 @@ class User < ActiveRecord::Base
     locations.where(locations: {updated_at: locations.maximum(:updated_at)}).first||home_base||Location.default
   end
 
+  def grant_to_follow peer
+    comm_peer = comm_port.comm_peers.where(peer: peer).first
+    unless comm_peer.present? && comm_peer.granted_by_peer
+      if comm_peer.present?
+        # might already be granted
+        comm_peer.update_attribute :granted_by_peer, true
+      else
+        comm_peer = comm_port.comm_peers.create peer: peer, granted_by_peer: true
+      end
+      return true
+    end
+    false
+  end
+
+  def follows? peer
+    follows.where(comm_ports: {user_id: peer.id}).present?
+  end
+
   def follows
-    CommPort.joins(:comm_peers).where(comm_peers: { peer_id: id, granted_by_peer: true })
+    #CommPort.joins(:comm_peers).where(comm_peers: { peer_id: id, granted_by_peer: true })
+    User.joins(comm_port: :comm_peers).where(comm_peers: { peer_id: id, granted_by_peer: true })
+  end
+
+  def request_grant_to_follow peer
+    peer_port = CommPort.where(user: peer).first
+    peer_port.comm_peers.create peer: self
   end
 
   def requested_grant_to_follow
@@ -62,7 +86,7 @@ class User < ActiveRecord::Base
     end
   end
 
-  def is_admin
+  def is_admin?
     email == 'skoeller@gmx.de'
   end
 

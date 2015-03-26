@@ -14,31 +14,31 @@
     %th{colspan: 6}
       #{t('admin.i_follow')}
   %tbody#i_follow
-    - user.follows.each do |c_p|
+    - user.follows.each do |u|
       - # on updates subscription is handled in controller
       - if @initial_subscribe == true
         %script
-          = render(partial: '/shared/subscriptions', formats: [:js], locals: { channel_enc_key: c_p.channel_enc_key }).html_safe
-          -#APP.storage().saveUser({id: #{c_p.user.id}, username: '#{c_p.user.username}', peerPort: {id: #{c_p.id}, channel_enc_key: '#{c_p.channel_enc_key}'}});
-          window.initArgs.peers.push(#{peer_json(c_p)});
-      %tr{id: "i_follow_#{c_p.id}", data: {channelEncKey: c_p.channel_enc_key}}
+          = render(partial: '/shared/subscriptions', formats: [:js], locals: { channel_enc_key: u.comm_port.channel_enc_key }).html_safe
+          -#APP.storage().saveUser({id: #{u.id}, username: '#{u.username}', peerPort: {id: #{u.comm_port.id}, channel_enc_key: '#{u.comm_port.channel_enc_key}'}});
+          window.initArgs.peers.push(#{peer_json(u.comm_port)});
+      %tr{id: "i_follow_#{u.comm_port.id}", data: {channelEncKey: u.comm_port.channel_enc_key}}
         %td{width: 5}
           &nbsp;
         %td
-          = image_tag c_p.user.foto.url, style: 'max-width: 35px !important;'
+          = image_tag u.foto.url, style: 'max-width: 35px !important;'
         %td{width: 15}
           &nbsp;
         %td
           -#%span{style: 'float: left;'}
-          #{c_p.user.username}
+          #{u.username}
           -#%span{style: 'padding-left: 10px;'}
-          -#  = link_to 'reset connection', '#', onclick: "javascript:APP.resetConnection(#{c_p.id});"
+          -#  = link_to 'reset connection', '#', onclick: "javascript:APP.resetConnection(#{u.comm_port.id});"
         %td{width: 15}
           &nbsp;
         %td
-          = hidden_field_tag "follow[comm_peer_ports][#{c_p.id.to_s}]", false, id: "i_follow_#{c_p.id.to_s}.h"
-          = check_box_tag "follow[comm_peer_ports][#{c_p.id.to_s}]", true, :checked, id: "i_follow_#{c_p.id.to_s}"
-          = label_tag "i_follow_#{c_p.id.to_s}", ''
+          = hidden_field_tag "follow[comm_peer_ports][#{u.comm_port.id.to_s}]", false, id: "i_follow_#{u.comm_port.id.to_s}.h"
+          = check_box_tag "follow[comm_peer_ports][#{u.comm_port.id.to_s}]", true, :checked, id: "i_follow_#{u.comm_port.id.to_s}"
+          = label_tag "i_follow_#{u.comm_port.id.to_s}", ''
   - # peers followed by user and not granted
   %tr
     %th{colspan: 6}

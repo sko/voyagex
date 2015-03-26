@@ -399,10 +399,10 @@ class window.VoyageX.Main
     unless window.withinSearchBounds position.coords.latitude, position.coords.longitude, searchBounds
       APP._realPosition.lat = position.coords.latitude
       APP._realPosition.lng = position.coords.longitude
-      @_comm.send('/radar', {type: 'move',\
-                             userId: APP.userId(),\
-                             lat: APP._realPosition.lat,\
-                             lng: APP._realPosition.lng})
+      APP._comm.send('/radar', {type: 'move',\
+                                userId: APP.userId(),\
+                                lat: APP._realPosition.lat,\
+                                lng: APP._realPosition.lng})
       path = APP.storage().getPath currentUser
       if path?
         path = APP.storage().addToPath currentUser, APP._realPosition, path
@@ -417,7 +417,7 @@ class window.VoyageX.Main
       #         when error.POSITION_UNAVAILABLE
       #           console.log 'WARN: could not detect current position - retry ...'
       #         when error.TIMEOUT
-      #           console.log 'WARN: retrieving position timedout - retry ...'
+      #           console.log 'WARN: query position timeout - retry ...'
       #         else
       #           console.log 'ERROR: unknown error - disable location-query ...'
       # alternative: poll position
@@ -433,7 +433,8 @@ class window.VoyageX.Main
             console.log 'WARN: could not detect current position - retry ...'
             setTimeout 'APP._queryRealPosition()', VoyageX.Backend._POS_QUERY_INTERVAL_MILLIS
           when error.TIMEOUT
-            console.log 'WARN: retrieving position timedout - retry ...'
+            console.log 'WARN: query position timeout - retry ...'
+            APP._comm.send('/system', {type: 'error', userId: APP.userId(), userName: APP.userName(), userFoto: currentUser.foto, msg: $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': query position timeout'})
             setTimeout 'APP._queryRealPosition()', VoyageX.Backend._POS_QUERY_INTERVAL_MILLIS
           else
             console.log 'ERROR: unknown error - disable location-query ...'
@@ -442,6 +443,7 @@ class window.VoyageX.Main
   _systemCB: (message) ->
     console.log 'got a system - message: ' + message.type
     if message.type == 'ready_notification'
+      systemInitCB()
       # subscribe to all channels stored in subscribeTo-buffer
       while (channelPath = subscribeTo.pop())
         i = channelPath.indexOf(VoyageX.PEER_CHANNEL_PREFIX)

@@ -48,15 +48,18 @@ class UsersController < ApplicationController
       # when a peer requests a grant then a comm_peer is created with status granted_by_peer = false
       peer_ids = params[:grant][:comm_peers].inject([[],[]]){|res,kv|kv[1]=='true'?res[0]<<kv[0]:res[1]<<kv[0];res}
       peer_ids[0].each do |peer_id|
-        comm_peer = @user.comm_port.comm_peers.find{|c_p|c_p.peer_id==peer_id.to_i}
-        unless comm_peer.present? && comm_peer.granted_by_peer
-          if comm_peer.present?
-            comm_peer.update_attribute(:granted_by_peer, true)
-          else
-            comm_peer = @user.comm_port.comm_peers.create peer: User.find(peer_id)
-          end
+        peer = User.find peer_id
+        if @user.grant_to_follow(peer)
+        # comm_peer = @user.comm_port.comm_peers.find{|c_p|c_p.peer_id==peer_id.to_i}
+        # unless comm_peer.present? && comm_peer.granted_by_peer
+        #   if comm_peer.present?
+        #     comm_peer.update_attribute(:granted_by_peer, true)
+        #   else
+        #     comm_peer = @user.comm_port.comm_peers.create peer: User.find(peer_id), :granted_by_peer, true
+        #   end
+        #  peer_sys_channel_enc_key = comm_peer.peer.comm_port.sys_channel_enc_key
+          peer_sys_channel_enc_key = peer.comm_port.sys_channel_enc_key
           # notify peer that his subscription-request is granted from @user
-          peer_sys_channel_enc_key = comm_peer.peer.comm_port.sys_channel_enc_key
           msg = { type: :subscription_granted, peer: { comm_port_id: @user.comm_port.id, username: @user.username, channel_enc_key:  @user.comm_port.channel_enc_key } }
           add_foto_to_msg @user, msg
           Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
@@ -103,8 +106,8 @@ class UsersController < ApplicationController
       if params[:location_id].present?
         # TODO
       else
-        current_user.follows.each do |cs|
-          peers_json << {peer_id: cs.user.id, port: {id: cs.id, channel_enc_key: cs.channel_enc_key}}
+        current_user.follows.each do |u|
+          peers_json << {peer_id: u.id, port: {id: u.comm_port.id, channel_enc_key: u.comm_port.channel_enc_key}}
         end
       end
     end

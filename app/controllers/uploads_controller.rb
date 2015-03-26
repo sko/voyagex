@@ -82,7 +82,7 @@ class UploadsController < ApplicationController
   def sync_poi_no_resque
     @user = current_user || tmp_user
     # vm
-    vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, @user, false#@user.is_admin
+    vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, @user, false#@user.is_admin?
     prev_commit = vm.cur_commit
     diff = vm.changed
     # TODO
@@ -448,7 +448,7 @@ binding.pry
 
   # TODO local_time_secs
   def new_version user, poi, is_new_poi, poi_note, local_time_secs = nil
-    vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, user, false#@user.is_admin
+    vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, user, false#@user.is_admin?
     prev_commit = vm.cur_commit
     vm.add_poi poi if is_new_poi
     vm.add_poi_note poi, poi_note

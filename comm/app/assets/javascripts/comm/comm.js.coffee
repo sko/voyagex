@@ -109,14 +109,14 @@ class window.Comm.Comm
       #Comm.unsubscribeFrom channelPath
       Comm.subscribeTo channelPath, channelCallBacks[channel].callback
 
-  @subscribeTo: (channel, callBack) ->
+  @subscribeTo: (channel, callBack, defaultCBMapping = true) ->
     unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
       r = new RegExp('^\/?talk'+VoyageX.PEER_CHANNEL_PREFIX+'(.*)')
       if (m = channel.match(r)) && (m[1] == Comm.channelCallBacksJSON.talk.channel_enc_key)
         channel = channel+'_p2p'
     # https://github.com/faye/faye/blob/master/javascript/protocol/client.js
     unless client._channels.hasSubscription(channel)
-      if channel.match(/^\/?system/)
+      if channel.match(/^\/?system/) && defaultCBMapping
         client.subscribe channel, Comm._systemSubscriptionListener
       else
         client.subscribe channel, callBack

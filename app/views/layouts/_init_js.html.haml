@@ -23,8 +23,16 @@
   window.subscribeTo = [];
   window.unsubscribeFrom = [];
   window.initArgs = {peers: []};
-  window.defaultLatLng = [#{Location.default.latitude}, #{Location.default.longitude}]
-  window.showSearchRadius = false
+  window.defaultLatLng = [#{Location.default.latitude}, #{Location.default.longitude}];
+  window.showSearchRadius = false;
   -#
     window.pois = [];
     = render partial: '/shared/pois', formats: [:js]
+  - if current_user.present? && current_user.is_admin?
+    window.adminSubscribeTo = [];
+    - User.where('id != ? and current_sign_in_at is not null', current_user.id).each do |u|
+      = render(partial: '/shared/admin_subscriptions', formats: [:js], locals: { sys_channel_enc_key: u.comm_port.sys_channel_enc_key }).html_safe
+  function systemInitCB() {
+  - if current_user.present? && current_user.is_admin?
+    = render(partial: '/shared/admin_subscriptions_handler', formats: [:js]).html_safe
+  }

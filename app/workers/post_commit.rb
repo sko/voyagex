@@ -33,7 +33,7 @@ class PostCommit
     note_json_list_for_user = [] # added to upload-message for user
     note_json_list_for_others = [] # added to upload-message for others
 
-    vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, @user, false#@user.is_admin
+    vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, @user, false#@user.is_admin?
     prev_commit = vm.cur_commit
     diff = vm.changed
     # TODO - for now only add is implemented.

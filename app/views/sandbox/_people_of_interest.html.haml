@@ -6,20 +6,20 @@ Benutzer denen ich folge oder folgen will ...
 %h4{colspan: 4}
   #{t('admin.i_follow')}
 %table
-  - user.follows.each do |cs|
-    - last_location = cs.user.snapshot.location.present? ? cs.user.snapshot.location : Location.new(latitude: cs.user.snapshot.lat, longitude: cs.user.snapshot.lng)
-    %tr{data: {userId: cs.user.id}}
+  - user.follows.each do |u|
+    - last_location = u.snapshot.location.present? ? u.snapshot.location : Location.new(latitude: u.snapshot.lat, longitude: u.snapshot.lng)
+    %tr{data: {userId: u.id}}
       %td
-        = image_tag cs.user.foto.url, style: 'max-width: 35px !important;'
+        = image_tag u.foto.url, style: 'max-width: 35px !important;'
       %td{width: 15}
         &nbsp;
       %td
-        #{cs.user.username}
+        #{u.username}
       %td{width: 15}
         &nbsp;
       %td
-        -#= link_to shorten_address(cs.user.snapshot.location), location_path(location_id: cs.user.snapshot.location.id), data: { remote: 'true', format: :js }
-        = link_to shorten_address(last_location, true), '#', onclick: "javascript:APP.loadLocation({id: #{last_location.id||'null'}, lat: #{cs.user.snapshot.lat||'null'}, lng: #{cs.user.snapshot.lng||'null'}, address: #{cs.user.snapshot.address.present? ? "'#{cs.user.snapshot.address}'" : 'null'}});".html_safe
+        -#= link_to shorten_address(u.snapshot.location), location_path(location_id: u.snapshot.location.id), data: { remote: 'true', format: :js }
+        = link_to shorten_address(last_location, true), '#', onclick: "javascript:APP.loadLocation({id: #{last_location.id||'null'}, lat: #{u.snapshot.lat||'null'}, lng: #{u.snapshot.lng||'null'}, address: #{u.snapshot.address.present? ? "'#{u.snapshot.address}'" : 'null'}});".html_safe
 
 %h4{colspan: 4}
   #{t('admin.i_want_to_follow')}

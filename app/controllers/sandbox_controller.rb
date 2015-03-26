@@ -28,7 +28,7 @@ class SandboxController < ApplicationController
     tmp_user.update_attribute :foto, open(UserHelper::fetch_random_avatar, allow_redirections: :safe){|t|t.base_uri} unless tmp_user.foto.exists?
     if tmp_user.last_sign_in_ip.present?
       unless tmp_user.snapshot.cur_commit.present?
-        vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, tmp_user, false#user.is_admin
+        vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, tmp_user, false#user.is_admin?
         cur_commit = Commit.where(hash_id: vm.cur_commit).first
         cur_commit = User.admin.commits.create(hash_id: vm.cur_commit, timestamp: DateTime.now) unless cur_commit.present?
         tmp_user.snapshot.update_attribute :cur_commit, cur_commit
