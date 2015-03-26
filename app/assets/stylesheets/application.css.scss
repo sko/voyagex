@@ -11,7 +11,23 @@
  *= require jquery-ui
  *= require leaflet
  *= require swiper
- *X=X require bootstrap/_variables
- *= require main
+ *X=X require sandbox
  *= require_self
  */
+
+// "bootstrap-sprockets" must be imported before "bootstrap" and "bootstrap/variables"
+@import "bootstrap-sprockets";
+@import "bootstrap";
+/*
+@import "jquery-ui";
+@import "leaflet";
+@import "swiper";
+@import "sandbox";
+*/
+.edit_detail {
+  color: black !important;
+}
+
+.active {
+  color: white !important;
+}

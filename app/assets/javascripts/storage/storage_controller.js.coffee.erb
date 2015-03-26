@@ -308,12 +308,12 @@ class window.Comm.StorageController
   getPaths: (user) ->
     storeKey = 'comm.users'
     users = eval("(" + localStorage.getItem(storeKey) + ")")
-    users[user.id].paths
+    if users[user.id]? then users[user.id].paths else null
 
   getPath: (user, pathKey = null, notDone = true) ->
     storeKey = 'comm.users'
     users = eval("(" + localStorage.getItem(storeKey) + ")")
-    paths = users[user.id].paths
+    paths = if users[user.id]? then users[user.id].paths else null
     if paths?
       unless pathKey?
         pathKeys = Object.keys(paths)

@@ -16,7 +16,7 @@ class UploadEntity::Mediafile < ActiveRecord::Base
   belongs_to :upload, inverse_of: :mediafile
   
   has_attached_file :file,
-                    url: '/assets/:attachment/:id/:style/:filename'
+                    url: '/uploads/:attachment/:id/:style/:filename'
   
   validates :upload, presence: true
   validates_attachment :file, presence: true

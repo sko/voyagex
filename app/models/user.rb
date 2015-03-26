@@ -24,7 +24,7 @@ class User < ActiveRecord::Base
   belongs_to :home_base, class_name: 'Location', foreign_key: :home_base_id
 
   has_attached_file :foto,
-                    url: '/assets/:attachment/user_:id/:style/:user_foto_file_id'
+                    url: '/uploads/:attachment/user_:id/:style/:user_foto_file_id'
   
   validates_attachment :foto, presence: true
   validates_attachment_content_type :foto, content_type: User::ACCEPTED_FOTO_CONTENT_TYPES
