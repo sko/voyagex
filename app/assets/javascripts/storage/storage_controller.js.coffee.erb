@@ -305,6 +305,9 @@ class window.Comm.StorageController
       localStorage.setItem conferenceKey, JSON.stringify(conference)
       return conference
 
+  pathKey: (path) ->
+    path[0].timestamp
+
   getPaths: (user) ->
     storeKey = 'comm.users'
     users = eval("(" + localStorage.getItem(storeKey) + ")")

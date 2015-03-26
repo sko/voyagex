@@ -346,7 +346,7 @@ class window.VoyageX.TemplateHelper
       tracePathsHtml = TemplateHelper._updateIds('tmpl_trace-path_entry').
       replace(/\{date\}/, $.format.date(new Date(path.entries[0].timestamp), 'dd.MM.yyyy HH:mm:ss')).
       replace(/\{user_id\}/, user.id).
-      replace(/\{path_key\}/, path.entries[0].timestamp) + tracePathsHtml
+      replace(/\{path_key\}/g, path.entries[0].timestamp) + tracePathsHtml
     TemplateHelper._updateIds('tmpl_trace-path_editor').
     replace(/\{trace-paths\}/, tracePathsHtml)
 

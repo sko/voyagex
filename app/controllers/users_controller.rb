@@ -168,9 +168,9 @@ class UsersController < ApplicationController
             geometry = Paperclip::Geometry.from_file(current_user.foto)
             user_json[:foto] = {url: current_user.foto.url, width: geometry.width.to_i, height: geometry.height.to_i}
           end
-        when 'radar'
-          current_user.update_attribute :home_base, params[:search_radius_meters]
-          user_json[:search_radius_meters] = search_radius_meters
+        when 'radar_settings'
+          current_user.update_attribute :search_radius_meters, params[:search_radius_meters]
+          user_json[:search_radius_meters] = params[:search_radius_meters]
         end
         render json: user_json.to_json
         return

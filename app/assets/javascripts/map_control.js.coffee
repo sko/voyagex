@@ -27,6 +27,7 @@ class window.VoyageX.MapControl
     @_cacheMissTiles = []
     @_saveCallsToFlushCount = 0
     @_showTileInfo = false
+    @_pathViewIds = {}
     @_map = new L.Map('map', mapOptions)
     @_map.whenReady () ->
         console.log '### map-event: ready ...'
@@ -132,16 +133,28 @@ class window.VoyageX.MapControl
         $(tile).after('<div data-role="tileInfo" style="position: absolute; '+style+' z-index: 9999; opacity: 0.8; text-align: center; vertical-align: middle; border: 1px solid red; color: red; font-weight: bold;">'+key+'</div>')
 
   drawPath: (user, path, append = false) ->
+    pathKey = APP.storage().pathKey path
+    unless @_pathViewIds.pathKey?
+      @_pathViewIds[pathKey] = []
     if append
       if path.length >= 2
         last = path[path.length-2]
         current = path[path.length-1]
-        L.polyline([L.latLng(last.lat, last.lng), L.latLng(current.lat, current.lng)], {color: 'red'}).addTo(@_map)
+        polyline = L.polyline([L.latLng(last.lat, last.lng), L.latLng(current.lat, current.lng)], {color: 'red'}).addTo(@_map)
+        pathViewId = polyline._container.innerHTML.match(/d="([^"]+)/)[1]
+        @_pathViewIds[pathKey].push pathViewId
     else
       for entry, idx in path
         unless idx >= 1
           continue
-        L.polyline([L.latLng(path[idx-1].lat, path[idx-1].lng), L.latLng(entry.lat, entry.lng)], {color: 'red'}).addTo(@_map)
+        curPolyline = L.polyline([L.latLng(path[idx-1].lat, path[idx-1].lng), L.latLng(entry.lat, entry.lng)], {color: 'red'}).addTo(@_map)
+        pathViewId = curPolyline._container.innerHTML.match(/d="([^"]+)/)[1]
+        @_pathViewIds[pathKey].push pathViewId
+  
+  hidePath: (pathKey) ->
+    #pathKey = APP.storage().pathKey path
+    for pathViewId in @_pathViewIds[pathKey]
+      $('path[d="'+pathViewId+'"]').closest('g').remove()
 
   @instance: () ->
     @_SINGLETON

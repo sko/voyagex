@@ -295,6 +295,17 @@ class window.VoyageX.Main
     Storage.Model.instance().setHomeBase @_selectedPosition.lat, @_selectedPosition.lng, (user) ->
         window.currentUser.homebaseLocationId = user.home_base.id
 
+  setSearchRadius: (value) ->
+    unless $('#search_radius_display_show').prop('checked')
+      $('#search_radius_display_hide').prop('checked', false)
+      $('#search_radius_display_show').prop('checked', true)
+    VoyageX.SEARCH_RADIUS_METERS = value
+    sBs = searchBounds(APP.map().getCenter().lat, APP.map().getCenter().lng, VoyageX.SEARCH_RADIUS_METERS)
+    APP.map().fitBounds L.latLngBounds(L.latLng(sBs.lat_south, sBs.lng_west), L.latLng(sBs.lat_north, sBs.lng_east))
+    VoyageX.Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, APP.map())
+    Storage.Model.instance().setRadarSettings (user) ->
+        `;`
+
   loadLocation: (location, fetch = true) ->
     if location.lat? || !fetch
       APP._initPositionCB { coords: { latitude: location.lat, longitude: location.lng } }, location.address, true
@@ -344,15 +355,6 @@ class window.VoyageX.Main
       $("#photo_nav_panel").panel("close")
     else
       photoNavPanel.dialog("close")
-
-  setSearchRadius: (value) ->
-    unless $('#search_radius_display_show').prop('checked')
-      $('#search_radius_display_hide').prop('checked', false)
-      $('#search_radius_display_show').prop('checked', true)
-    VoyageX.SEARCH_RADIUS_METERS = value
-    sBs = searchBounds(APP.map().getCenter().lat, APP.map().getCenter().lng, VoyageX.SEARCH_RADIUS_METERS)
-    APP.map().fitBounds L.latLngBounds(L.latLng(sBs.lat_south, sBs.lng_west), L.latLng(sBs.lat_north, sBs.lng_east))
-    VoyageX.Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, APP.map())
 
   getSelectedPositionLatLng: () ->
     return [@_selectedPosition.lat, @_selectedPosition.lng]

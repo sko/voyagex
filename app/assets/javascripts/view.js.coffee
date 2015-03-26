@@ -279,6 +279,11 @@ class window.VoyageX.View
   viewTracePath: (user, pathKey) ->
     path = APP.storage().getPath user, pathKey, false
     VoyageX.Main.mapControl().drawPath user, path
+    $('#hide_trace-path_'+pathKey).css 'display', 'inline'
+
+  hideTracePath: (pathKey) ->
+    VoyageX.Main.mapControl().hidePath pathKey
+    $('#hide_trace-path_'+pathKey).css 'display', 'none'
 
   # started from peer-tool-bar
   openP2PChat: (peer) ->

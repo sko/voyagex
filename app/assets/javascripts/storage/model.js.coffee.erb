@@ -19,6 +19,17 @@ class window.Storage.Model
     .fail (jqXHR, textStatus) ->
         console.log('TODO: errorhandling')
 
+  setRadarSettings: (callback) ->
+    $.ajax
+      type: 'POST'
+      dataType: 'json'
+      url: '<%= set_user_detail_path(detail: 'radar_settings') %>'
+      data: {search_radius_meters: VoyageX.SEARCH_RADIUS_METERS}
+    .done (user) ->
+        callback user
+    .fail (jqXHR, textStatus) ->
+        console.log('TODO: errorhandling')
+
   addBookmark: (latLng, callback) ->
     $.ajax
       type: 'POST'
