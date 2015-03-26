@@ -118,7 +118,7 @@ class window.VoyageX.Main
     window.currentUser.username
 
   signedIn: () ->
-    $('#menu_top div.logout-link').length >= 1
+    window.VoyageX.CHANNEL_ENC_KEY?
 
   register: (userId) ->
     Main._BACKEND.register userId
