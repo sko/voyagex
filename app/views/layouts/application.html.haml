@@ -17,12 +17,13 @@
     = javascript_include_tag "preload"
     - if Rails.env == 'development'
       = javascript_include_tag "/comm/faye-browser.js"
-      = javascript_include_tag "/assets/comm/comm.js"
+      = javascript_include_tag "comm/comm.js"
     - elsif Rails.env == 'test'
       -#= javascript_include_tag "/comm/faye-browser.js"
-      = javascript_include_tag "/assets/rspec/comm/comm.js"
+      -#= javascript_include_tag "rspec/comm/comm.js"
+      = javascript_include_tag "comm/comm.js"
     - else
-      = javascript_include_tag "/assets/comm/application.js"
+      = javascript_include_tag "comm/application.js"
   %body
     :javascript
       var mapWidth = $(window).width() - 13;
@@ -44,7 +45,7 @@
       &nbsp;
     #panel_control
       %span{style: 'text-align: left; z-index: 11 !important;'}
-      = link_to image_tag('/assets/arrow-up-right.png', id: 'photo_nav_open_icon', style: 'width: 32px; height: 43px;', class: 'photo_nav_open_icon'), '#', onclick: 'javascript:APP.photoNav()'
+      = link_to image_tag('arrow-up-right_off.png', id: 'photo_nav_open_icon', style: 'width: 32px; height: 43px;', class: 'photo_nav_open_icon'), '#', onclick: 'javascript:APP.photoNav()'
     = render partial: '/sandbox/photo_nav_panel'
     = javascript_include_tag "application"
     = javascript_include_tag params[:controller]

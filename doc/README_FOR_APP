@@ -13,6 +13,12 @@ Homer: "Das ist mein erster Tag!"
 Burns: "Hehehe, warum sagen Sie das nicht gleich?"
 
 
+replace: assets-preompile kate
+.+/assets/
+
+-[^.]+(\.[^.]+)$
+->
+\1
 
 google-scholar suche:
 gis preload algorithm
@@ -31,8 +37,8 @@ Capybara::Screenshot.screenshot_and_save_page
 
 
 
-#RAILS_ENV=staging PIDFILE=./tmp/pids/resque-worker.pid BACKGROUND=yes QUEUE=* rake environment resque:work
-RAILS_ENV=staging PIDFILE=./tmp/pids/resque-worker.pid BACKGROUND=yes QUEUE=post_commit rake environment resque:work
+# faye needs a queue too RAILS_ENV=staging PIDFILE=./tmp/pids/resque-worker.pid BACKGROUND=yes QUEUE=post_commit rake environment resque:work
+RAILS_ENV=staging PIDFILE=./tmp/pids/resque-worker.pid BACKGROUND=yes TERM_CHILD=1 QUEUE=* rake environment resque:work
 RAILS_ENV=staging PIDFILE=./tmp/pids/resque-scheduler.pid BACKGROUND=yes rake resque:scheduler
 
 ps aux | grep resque
@@ -42,7 +48,7 @@ kill $resque_pids
 ps aux | grep resque
 
 #PIDFILE=./tmp/pids/resque-worker.pid BACKGROUND=yes QUEUE=* rake environment resque:work
-PIDFILE=./tmp/pids/resque-worker.pid BACKGROUND=yes QUEUE=post_commit rake environment resque:work
+PIDFILE=./tmp/pids/resque-worker.pid BACKGROUND=yes TERM_CHILD=1 QUEUE=* rake environment resque:work
 PIDFILE=./tmp/pids/resque-scheduler.pid BACKGROUND=yes rake resque:scheduler
 
 # debug: run in foreground

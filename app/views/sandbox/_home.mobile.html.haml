@@ -31,9 +31,9 @@
   #lang_select{style: 'float: right;'}
     - lcls = lang_change_links request, ['c']
     %div{style: 'float: left; margin: 10px 10px 0px 20px;'}
-      = link_to image_tag("/assets/en.png", style: "border-width:0px;width:30px;height:20px;"), '#', onclick: "javascript:document.location.href=window.clientState.linkForView('#{lcls[0]}', 'en', '#{lcls[1]}');", :style => "color:#00dd;"
+      = link_to image_tag("en.png", style: "border-width:0px;width:30px;height:20px;"), '#', onclick: "javascript:document.location.href=window.clientState.linkForView('#{lcls[0]}', 'en', '#{lcls[1]}');", :style => "color:#00dd;"
     %div{style: 'float: right; margin: 10px 10px 0px 0px;'}
-      = link_to image_tag("/assets/de.png", style: "border-width:0px;width:30px;height:20px;"), '#', onclick: "javascript:document.location.href=window.clientState.linkForView('#{lcls[0]}', 'de', '#{lcls[1]}');", :style => "color:#00dd;"
+      = link_to image_tag("de.png", style: "border-width:0px;width:30px;height:20px;"), '#', onclick: "javascript:document.location.href=window.clientState.linkForView('#{lcls[0]}', 'de', '#{lcls[1]}');", :style => "color:#00dd;"
   = render partial: '/users/settings.mobile'
 = render partial: '/shared/uploads.mobile', locals: {resource: Upload.new, resource_name: :upload}
 = render partial: '/sandbox/stats.mobile'

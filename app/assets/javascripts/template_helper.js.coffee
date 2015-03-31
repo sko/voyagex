@@ -125,10 +125,10 @@ class window.VoyageX.TemplateHelper
 
   @openMarkerControlsPopup: () ->
     marker = VoyageX.Main.markerManager().get()
-    curPath = APP.storage().getPath currentUser
+    #curPath = APP.storage().getPath currentUser
     popupHtml = TemplateHelper._updateIds('tmpl_marker_controls').
-    replace(/\{user_id\}/g, currentUser.id).
-    replace(/\{path_key\}/g, if curPath? then "'"+curPath[0].timestamp+"'" else 'null')
+    replace(/\{user_id\}/g, currentUser.id)#.
+    #replace(/\{path_key\}/g, if curPath? then "'"+curPath[0].timestamp+"'" else 'null')
     popup = marker.getPopup()
     isNewPopup = !popup?
     if isNewPopup
@@ -142,7 +142,7 @@ class window.VoyageX.TemplateHelper
       TemplateHelper._addPopupTitle poiNoteContainer, marker, {address: currentAddress}#Comm.StorageController.instance().getLocation(poi.locationId)
     else
       $('#current_address').html(currentAddress)
-    APP.view().setTraceCtrlIcon currentUser, marker, if curPath? then 'start' else 'stop'
+    #APP.view().setTraceCtrlIcon currentUser, marker, if curPath? then 'start' else 'stop'
 
   @noteHtml: (typeId, text) ->
     TemplateHelper._updateIds('tmpl_note_editor').
@@ -302,9 +302,13 @@ class window.VoyageX.TemplateHelper
       replace(/\{commented_by_user\}/, 'TODO')
     html
 
-  @radarSettingsHtml: () ->
+  @radarSettingsHtml: (curPath) ->
+    pathKey = if curPath? then "'"+APP.storage().pathKey(curPath)+"'" else 'null'
+
     TemplateHelper._updateIds('tmpl_radar_editor').
-    replace(/\{search_radius_meters\}/, VoyageX.SEARCH_RADIUS_METERS)
+    replace(/\{search_radius_meters\}/, VoyageX.SEARCH_RADIUS_METERS).
+    replace(/\{user_id\}/g, currentUser.id).
+    replace(/\{path_key\}/g, pathKey)
 
   @openRadarEditor: () ->
     marker = APP.getOpenPopupMarker()
@@ -317,7 +321,8 @@ class window.VoyageX.TemplateHelper
 #    if popupHtml.indexOf('note_editor') != -1
 #      #popupHtml = popupHtml.replace(/<div[^>]+class="note_editor"(.|\n)+(<div[^>]+id="marker_controls")/, '$1')
 #      popupHtml = popupHtml.replace(/<div[^>]+class="note_editor"(.|\n)+/, '$1')
-    editorHtml = TemplateHelper.radarSettingsHtml()
+    curPath = APP.storage().getPath(currentUser)
+    editorHtml = TemplateHelper.radarSettingsHtml curPath
     if popupHtml.indexOf('radar_editor') == -1
       popup.setContent popupHtml + editorHtml
       #$('#tmpl_radar_editor > .radar_editor').remove()
@@ -336,6 +341,8 @@ class window.VoyageX.TemplateHelper
             APP.setSearchRadius u.value
             $('#search_radius_meters').html VoyageX.SEARCH_RADIUS_METERS
     })
+    APP.view().setRealPositionWatchedIcon if APP.isRealPositionWatched() then 'on' else 'off'
+    APP.view().setTraceCtrlIcon currentUser, marker, if curPath? then 'start' else 'stop'
 
   @tracePathEditorHtml: (user, pathKey = null) ->
     tracePathsHtml = ''
@@ -345,7 +352,7 @@ class window.VoyageX.TemplateHelper
       path = paths[pathKey]
       tracePathsHtml = TemplateHelper._updateIds('tmpl_trace-path_entry').
       replace(/\{date\}/, $.format.date(new Date(path.entries[0].timestamp), 'dd.MM.yyyy HH:mm:ss')).
-      replace(/\{user_id\}/, user.id).
+      replace(/\{user_id\}/g, user.id).
       replace(/\{path_key\}/g, path.entries[0].timestamp) + tracePathsHtml
     TemplateHelper._updateIds('tmpl_trace-path_editor').
     replace(/\{trace-paths\}/, tracePathsHtml)
@@ -433,7 +440,7 @@ class window.VoyageX.TemplateHelper
   @_mediaFileTag: (upload, meta) ->
     maxWidth = 100.0
     unless upload?
-      return '<img src="'+VoyageX.View.MISSING_ATTACHMENT_IMG_URL+'" style="max-width:'+maxWidth+'px;max-height:'+maxWidth+'px;">'
+      return '<img src="'+VoyageX.IMAGES_NOISE_PATH+'" style="max-width:'+maxWidth+'px;max-height:'+maxWidth+'px;">'
     scale = -1.0
     height = -1
     switch upload.content_type.match(/^[^:\/]+/)[0]
@@ -463,13 +470,13 @@ class window.VoyageX.TemplateHelper
 
   @_attachmentPreviewUrl: (upload) ->
     unless upload?
-      return window.location.origin+'/assets/noise.gif'
+      return window.location.origin+VoyageX.IMAGES_NOISE_PATH
     switch upload.content_type.match(/^[^\/]+/)[0]
       when 'image'
         upload.url
       when 'audio'
-        '/assets/audio-file.png'
+        VoyageX.IMAGES_PREVIEW_AUDIO_PATH
       when 'video'
-        '/assets/video-file.png'
+        VoyageX.IMAGES_PREVIEW_VIDEO_PATH
       else
-        '/assets/no-preview.png'
+        VoyageX.IMAGES_PREVIEW_NA_PATH

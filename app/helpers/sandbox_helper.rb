@@ -46,21 +46,21 @@ module SandboxHelper
       when 'image' 
         upload.file.url
       when 'audio'
-        '/assets/audio-file.png'
+        VoyageX.IMAGES_PREVIEW_AUDIO_PATH
       when 'video'
-        '/assets/video-file.png'
+        VoyageX.IMAGES_PREVIEW_VIDEO_PATH
       else
-        '/assets/no-preview.png'
+        VoyageX.IMAGES_PREVIEW_NA_PATH
       end
     elsif upload.entity.is_a? UploadEntity::Embed
       case upload.entity.embed_type.match(/^[^\/]+/)[0]
       when 'image' 
         upload.entity.text
       else
-        '/assets/no-preview.png'
+        VoyageX.IMAGES_PREVIEW_NA_PATH
       end
     else
-      '/assets/no-preview.png'
+      VoyageX.IMAGES_PREVIEW_NA_PATH
     end
   end
 

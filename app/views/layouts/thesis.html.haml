@@ -8,7 +8,7 @@
   %head
     %title Konzeption und Entwicklung einer Web-Anwendung für synchrone und asynchchrone kooperative Bearbeitung interaktiver Karten
     = csrf_meta_tags
-    %script{src: "/assets/jquery.js?body=1"}
-    %script{src: "/assets/jquery_ujs.js?body=1"}
+    = javascript_include_tag "jquery"
+    = javascript_include_tag "jquery_ujs"
   %body
     = yield

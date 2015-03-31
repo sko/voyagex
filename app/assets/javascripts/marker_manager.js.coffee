@@ -28,9 +28,9 @@ class window.VoyageX.MarkerManager
                   riseOnHover: true }
     unless flags.isUserMarker
       if flags.peer?
-        markerOps.icon = new L.Icon.Default({iconUrl: '/assets/marker-icon-yellow.png'})
+        markerOps.icon = new L.Icon.Default({iconUrl: VoyageX.IMAGES_MARKER_PEER_PATH})
       else
-        markerOps.icon = new L.Icon.Default({iconUrl: '/assets/marker-icon-red.png'})
+        markerOps.icon = new L.Icon.Default({iconUrl: VoyageX.IMAGES_MARKER_POI_PATH})
         this._checkVisible location
     marker = L.marker([location.lat, location.lng], markerOps)
     m = new VoyageX.Marker(marker, location, flags)
@@ -124,6 +124,12 @@ class window.VoyageX.MarkerManager
     else
       if @_userMarkerMouseOver
         @_userMarkerMouseOver = false
+
+  forUser: () ->
+    for m in @_markers
+      if m._flags.isUserMarker
+        return MarkerManager.metaJSON m, {}
+    null
 
   forPoi: (poiId) ->
     for m in @_markers

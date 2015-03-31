@@ -311,12 +311,10 @@ class window.Comm.StorageController
   getPaths: (user) ->
     storeKey = 'comm.users'
     users = eval("(" + localStorage.getItem(storeKey) + ")")
-    if users[user.id]? then users[user.id].paths else null
+    if users? then (if users[user.id]? then users[user.id].paths else null) else null
 
   getPath: (user, pathKey = null, notDone = true) ->
-    storeKey = 'comm.users'
-    users = eval("(" + localStorage.getItem(storeKey) + ")")
-    paths = if users[user.id]? then users[user.id].paths else null
+    paths = this.getPaths user
     if paths?
       unless pathKey?
         pathKeys = Object.keys(paths)
@@ -380,7 +378,19 @@ class window.Comm.StorageController
     else
       delete paths[path.entries[0].timestamp]
     localStorage.setItem storeKey, JSON.stringify(users)
-    paths.entries
+    path.entries
+
+  # no error-handling if user not in localStroage
+  # no error-handling if paths doesn't exist
+  deleteTracePath: (user, pathKey = null) ->
+    storeKey = 'comm.users'
+    users = eval("(" + localStorage.getItem(storeKey) + ")")
+    paths = users[user.id].paths
+    unless pathKey?
+      pathKeys = Object.keys(paths)
+      pathKey = pathKeys[pathKeys.length-1]
+    delete paths[pathKey]
+    localStorage.setItem storeKey, JSON.stringify(users)
 
   storePoi: (poi, flatten = true) ->
     poiKey = StorageController.poiKey poi

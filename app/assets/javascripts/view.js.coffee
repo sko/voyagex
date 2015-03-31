@@ -6,7 +6,6 @@ class window.VoyageX.View
   @MAX_SWIPER_SLIDE_HEIGHT = 100.0
   @MAX_POI_NOTE_ATTACHMENT_WIDTH = 300
   @MAX_POI_NOTE_ATTACHMENT_HEIGHT = 100.0
-  @MISSING_ATTACHMENT_IMG_URL = '/assets/noise.gif'
 
   constructor: () ->
     View._SINGLETON = this
@@ -65,12 +64,12 @@ class window.VoyageX.View
           $('#comm_peer_data').trigger("create")
     else if message.type == 'quit_subscription'
       $('#follow_me_'+message.peer.id).remove()
-    else if message.type == 'callback'
-      if message.channel == 'uploads'
-        delete message.channel
-        #message.type = message.action
-        #delete message.action
-        this._uploadsCB message
+    # else if message.type == 'callback'
+    #   if message.channel == 'uploads'
+    #     delete message.channel
+    #     #message.type = message.action
+    #     #delete message.action
+    #     this._uploadsCB message
 
   _talkCB: (message) ->
     console.log 'got a talk - message: ' + message.type
@@ -125,54 +124,54 @@ class window.VoyageX.View
     for listener in View.instance()._commListeners.map_events
       listener(mapEvent)
 
-  _uploadsCB: (upload) ->
-    console.log 'got an uploads - message: ' + upload.type
-    if upload.type == 'callback'
-      # async backend response
-      if upload.action? && upload.action == 'poi_sync'
-        # assume that sync already performed with backend-response - here we hava after-commit-faye-callback
-        currentUser.curCommitHash = upload.commit_hash
-        #qPoiId = if upload.poi.local_time_secs? then -upload.poi.local_time_secs else upload.poi.id
-        storedPoi = APP.storage().getPoi upload.poi.id
-        callback = ((oldNotes) ->
-            (cbPoi, cbNewNotes) ->
-                #  
-                # there could also be some new pois from other users! order might be mixed
-                #
-                location = APP.storage().getLocation(cbPoi.locationId)
-                newNotes = oldNotes.slice 0, oldNotes.length-cbNewNotes.length
-                for note, idx in cbNewNotes
-                  newNotes.push note
-                  if note.user?
-                    note.userId = note.user.id
-                    delete note.user
-                  delete note.local_time_secs
-                cbPoi.notes = newNotes
-                VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
-                APP.view().scrollToPoiNote cbNewNotes[cbNewNotes.length-1].id
-            )(storedPoi.notes)
-        # save attachments from new other user's notes
-        loadStats = { numAdded: upload.poi.notes.length, numLeft: upload.poi.notes.length }
-        for note in upload.poi.notes
-          Storage.Model.instance().syncWithStorage upload, callback, note, loadStats, note.local_time_secs?
-    else if upload.type == 'poi_note_upload'
-      unless upload.poi_note.user.id == APP.userId()
-        # TODO: unify json-format, until then avoid circular structure
-        poi = upload.poi_note.poi
-        Storage.Model.setupPoiForNote poi
-        msg = { poi: poi }
-        Storage.Model.instance().syncWithStorage msg, View.addPoiNotes, upload.poi_note
-        APP.view().alert()
-    else if upload.type == 'poi_sync'
-      if upload.poi.user.id != APP.userId()
-        delete upload.poi.user
-        poi = upload.poi
-        Storage.Model.setupPoiForNote poi
-        msg = { poi: poi }
-        loadStats = { numAdded: poi.notes.length, numLeft: poi.notes.length }
-        for note in poi.notes
-          Storage.Model.instance().syncWithStorage msg, View.addPoiNotes, note, loadStats
-        APP.view().alert()
+  # _uploadsCB: (upload) ->
+  #   console.log 'got an uploads - message: ' + upload.type
+  #   if upload.type == 'callback'
+  #     # async backend response
+  #     if upload.action? && upload.action == 'poi_sync'
+  #       # assume that sync already performed with backend-response - here we hava after-commit-faye-callback
+  #       currentUser.curCommitHash = upload.commit_hash
+  #       #qPoiId = if upload.poi.local_time_secs? then -upload.poi.local_time_secs else upload.poi.id
+  #       storedPoi = APP.storage().getPoi upload.poi.id
+  #       callback = ((oldNotes) ->
+  #           (cbPoi, cbNewNotes) ->
+  #               #  
+  #               # there could also be some new pois from other users! order might be mixed
+  #               #
+  #               location = APP.storage().getLocation(cbPoi.locationId)
+  #               newNotes = oldNotes.slice 0, oldNotes.length-cbNewNotes.length
+  #               for note, idx in cbNewNotes
+  #                 newNotes.push note
+  #                 if note.user?
+  #                   note.userId = note.user.id
+  #                   delete note.user
+  #                 delete note.local_time_secs
+  #               cbPoi.notes = newNotes
+  #               VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
+  #               APP.view().scrollToPoiNote cbNewNotes[cbNewNotes.length-1].id
+  #           )(storedPoi.notes)
+  #       # save attachments from new other user's notes
+  #       loadStats = { numAdded: upload.poi.notes.length, numLeft: upload.poi.notes.length }
+  #       for note in upload.poi.notes
+  #         Storage.Model.instance().syncWithStorage upload, callback, note, loadStats, note.local_time_secs?
+  #   else if upload.type == 'poi_note_upload'
+  #     unless upload.poi_note.user.id == APP.userId()
+  #       # TODO: unify json-format, until then avoid circular structure
+  #       poi = upload.poi_note.poi
+  #       Storage.Model.setupPoiForNote poi
+  #       msg = { poi: poi }
+  #       Storage.Model.instance().syncWithStorage msg, View.addPoiNotes, upload.poi_note
+  #       APP.view().alert()
+  #   else if upload.type == 'poi_sync'
+  #     if upload.poi.user.id != APP.userId()
+  #       delete upload.poi.user
+  #       poi = upload.poi
+  #       Storage.Model.setupPoiForNote poi
+  #       msg = { poi: poi }
+  #       loadStats = { numAdded: poi.notes.length, numLeft: poi.notes.length }
+  #       for note in poi.notes
+  #         Storage.Model.instance().syncWithStorage msg, View.addPoiNotes, note, loadStats
+  #       APP.view().alert()
 
   setPeerPosition: (userId, lat, lng) ->
     #TODO ... $('#people_of_interest')
@@ -199,37 +198,49 @@ class window.VoyageX.View
       $('#trace-ctrl-start-'+user.id).css('display', 'inline')
       $('#trace-ctrl-stop-'+user.id).css('display', 'none')
 
+  setRealPositionWatchedIcon: (state) ->
+    selected = $('#toggle_watch_position')
+    if state == 'on'
+      selected.attr('src', selected.attr('src').replace(/_off([.-])/, '_on$1'))
+    else
+      selected.attr('src', selected.attr('src').replace(/_on([.-])/, '_off$1'))
+
   # start with no params
-  _blinkArrow: (iconSuffix = null, stop = false) ->
+  # assets-compile: arrow-up-right_on.png -> arrow-up-right_on-ea4366b17dad061ef49336a4ae3e90b4.png
+  _blinkArrow: (setOn = true, stop = false) ->
+    if setOn
+      iconSuffix = '_on'
+    else
+      iconSuffix = '_off'
+
     target = $('.photo_nav_open_icon')
     if stop
       @_alertOn = false
       clearTimeout @_blinkArrowTO
       target.each () ->
-        $(this).attr('src', $(this).attr('src').replace(/(\.[^.]+|).png/, iconSuffix+'.png'))
+        $(this).attr('src', $(this).attr('src').replace(/_on([.-])/, '_off$1'))
       return true
     if @_alertOn
-      if iconSuffix?
+      if setOn
         target.each () ->
-          $(this).attr('src', $(this).attr('src').replace(/(\.[^.]+|).png/, iconSuffix+'.png'))
-        if iconSuffix == ''
-          @_blinkArrowTO = setTimeout "APP.view()._blinkArrow()", 500
-        else
-          unless stopSound?
-            window.stopSound = VoyageX.MediaManager.instance().playSound('/Treat.mp3', (event) ->
-                if event.msg == 'finished'
-                  `;`#window.stopSound = null
-              )
+          $(this).attr('src', $(this).attr('src').replace(/_off([.-])/, '_on$1'))
+        @_blinkArrowTO = setTimeout "APP.view()._blinkArrow(false)", 500
       else
-        this._blinkArrow '.on'
-        @_blinkArrowTO = setTimeout "APP.view()._blinkArrow('')", 500
+        target.each () ->
+          $(this).attr('src', $(this).attr('src').replace(/_on([.-])/, '_off$1'))
+        @_blinkArrowTO = setTimeout "APP.view()._blinkArrow()", 500
 
   alert: (stop = false) ->
     if stop
-      this._blinkArrow '', true
+      this._blinkArrow false, true
       window.stopSound = null
     else
       @_alertOn = true
+      unless stopSound?
+        window.stopSound = VoyageX.MediaManager.instance().playSound('/Treat.mp3', (event) ->
+            if event.msg == 'finished'
+              `;`#window.stopSound = null
+          )
       this._blinkArrow()
 
   previewPois: (pois) ->
@@ -309,23 +320,24 @@ class window.VoyageX.View
     else
       meOrOther = 'other'
       leftOrRight = 'right'
+    messageText = message.text.replace(/\n/g, '<br/>')
     if peerChatMeta?
       if mine
-        msgHtml = VoyageX.TemplateHelper.p2PChatMsgHtml currentUser, message.text
+        msgHtml = VoyageX.TemplateHelper.p2PChatMsgHtml currentUser, messageText
         peerChatMeta.chatContainer.find('.p2p_chat_view').first().append '<div class="chat_message_sep"></div>'+msgHtml
-        #<div class="chat_message chat_message_'+meOrOther+' triangle-border '+leftOrRight+'">'+message.text+'</div>'
+        #<div class="chat_message chat_message_'+meOrOther+' triangle-border '+leftOrRight+'">'+messageText+'</div>'
         msgInput = peerChatMeta.msgInput
       else
-        VoyageX.TemplateHelper.openP2PChat peerChatMeta.peer, [message.text]
+        VoyageX.TemplateHelper.openP2PChat peerChatMeta.peer, [messageText]
       APP.view().scrollToLastChatMessage peerChatMeta.peer, true
     else
-      #$('.chat_view').append '<div class="chat_message_sep"></div><div class="chat_message chat_message_'+meOrOther+' triangle-border '+leftOrRight+'">'+message.text+'</div>'
+      #$('.chat_view').append '<div class="chat_message_sep"></div><div class="chat_message chat_message_'+meOrOther+' triangle-border '+leftOrRight+'">'+messageText+'</div>'
       user = if mine then currentUser else (if peerChatMeta? then peerChatMeta.peer else message.peer)
-      msgHtml = VoyageX.TemplateHelper.bcChatMsgHtml user, message.text, meOrOther
+      msgHtml = VoyageX.TemplateHelper.bcChatMsgHtml user, messageText, meOrOther
       $('.chat_view').append '<div class="chat_message_sep"></div>'+msgHtml
       msgInput = $('#message')
       APP.view().scrollToLastChatMessage user
-    #msgInput.val('\n-------------------------\n'+message.text+msgInput.val())
+    #msgInput.val('\n-------------------------\n'+messageText+msgInput.val())
     if mine
       msgInput.val('')
       if window.isMobile()

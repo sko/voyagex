@@ -1,7 +1,10 @@
 class window.VoyageX.ClientState
 
   constructor: (view, uploadType, showCB, hideCB) ->
-    @_views = { map: { key: 'map' }, chat: { key: 'chat' }, home: {  key: 'home', uploadType: uploadType }, help: { key: 'help' } }
+    @_views = { map: { key: 'map' },\
+                chat: { key: 'chat' },\
+                home: {  key: 'home', uploadType: uploadType },\
+                help: { key: 'help' } }
     @_showCB = showCB
     @_hideCB = hideCB
     @_currentViewKey = null # view

@@ -56,6 +56,9 @@ window.showCacheFileView = () ->
   $('#cache_view').attr('src', 'filesystem:http://'+document.location.host+'/persistent/')
 
 
+window.trimPosVal = (latOrLng) ->
+  Math.round(latOrLng*10000000)/10000000
+
 window.searchBounds = (lat, lng, radiusMeters) ->
   if radiusMeters <= 0
     return null
@@ -77,13 +80,13 @@ window.searchBounds = (lat, lng, radiusMeters) ->
 
   diameterLat = meterLat * radiusMeters
   diameterLng = meterLng * radiusMeters
-  inner_square_half_side_length_lat = Math.round(Math.sqrt((2*diameterLat)**2) / 2*10000000)/10000000
-  inner_square_half_side_length_lng = Math.round(Math.sqrt((2*diameterLng)**2) / 2*10000000)/10000000
+  inner_square_half_side_length_lat = Math.sqrt((2*diameterLat)**2) / 2
+  inner_square_half_side_length_lng = Math.sqrt((2*diameterLng)**2) / 2
   
-  searchBounds = {lng_west: lng-inner_square_half_side_length_lng,\
-                  lng_east: lng+inner_square_half_side_length_lng,\
-                  lat_south: lat-inner_square_half_side_length_lat,\
-                  lat_north: lat+inner_square_half_side_length_lat}
+  { lng_west: trimPosVal(lng-inner_square_half_side_length_lng),\
+    lng_east: trimPosVal(lng+inner_square_half_side_length_lng),\
+    lat_south: trimPosVal(lat-inner_square_half_side_length_lat),\
+    lat_north: trimPosVal(lat+inner_square_half_side_length_lat) }
 
 window.withinSearchBounds = (lat, lng, searchBounds) ->
   lat >= searchBounds.lat_south && lat <= searchBounds.lat_north &&

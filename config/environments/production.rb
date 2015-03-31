@@ -35,6 +35,19 @@ Rails.application.configure do
   config.assets.digest = true
 
   default_url_options[:host] = 'voyagex.info.tm'
+  # Don't care if the mailer can't send
+  config.action_mailer.raise_delivery_errors = false
+  # sko: for devise
+  config.action_mailer.default_url_options = { host: 'voyagex.info.tm' }
+  config.action_mailer.smtp_settings = {
+    #:address              => "ctrl.info.tm",
+    #:port                 => 25,
+    :domain               => 'ctrl.info.tm',
+    #:user_name            => '<username>',
+    #:password             => '<password>',
+    #:authentication       => 'plain',
+    #:enable_starttls_auto => true
+  }
 
   # `config.assets.precompile` and `config.assets.version` have moved to config/initializers/assets.rb
 
@@ -81,7 +94,7 @@ Rails.application.configure do
   config.active_record.dump_schema_after_migration = false
 end
 
-#FAYE_URL = 'http://voyagex.info.tm:3000/comm'
+Faye.logger = lambda { |m| Rails.logger.info m }
 FAYE_URL = 'http://voyagex.info.tm/comm'
 GIT_REMOTE_URL = 'git@github.com:/sko/voyagex_data'
 

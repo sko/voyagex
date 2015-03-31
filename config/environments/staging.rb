@@ -1,4 +1,4 @@
-VoyageX::Application.configure do
+Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb
 
   # In the development environment your application's code is reloaded on
@@ -57,6 +57,6 @@ VoyageX::Application.configure do
   config.i18n.available_locales = [:en, :de]
 end
 
-#Faye.logger = lambda { |m| Rails.logger.info m }
-FAYE_URL = 'http://voyagex.info.tm:3000/comm'
+Faye.logger = lambda { |m| Rails.logger.info m if m.match(/connectiontype/i).present? }
+FAYE_URL = 'http://voyagex.info.tm/comm'
 GIT_REMOTE_URL = 'git@github.com:/sko/voyagex_data'

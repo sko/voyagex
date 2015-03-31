@@ -12,11 +12,11 @@
           = link_to t('pois.bookmark'), '#', onclick: 'javascript:APP.bookmarkLocation({poi_id})'
       - else
         %div{style: 'float: left; margin: 0px 0px 0px 5px;'}
-          = link_to image_tag('/assets/add-comment.png', style: 'height: 25px;', title: t('uploads.add_comment'), alt: t('uploads.add_comment')), '#', onclick: 'javascript:APP.poiNoteControls()'
+          = link_to image_tag('add-comment.png', style: 'height: 25px;', title: t('uploads.add_comment'), alt: t('uploads.add_comment')), '#', onclick: 'javascript:APP.poiNoteControls()'
         %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
-          = link_to image_tag('/assets/add-bookmark.png', style: 'height: 25px;', title: t('pois.bookmark'), alt: t('pois.bookmark')), '#', onclick: "javascript:APP.bookmarkLocation({poi_id})"
+          = link_to image_tag('add-bookmark.png', style: 'height: 25px;', title: t('pois.bookmark'), alt: t('pois.bookmark')), '#', onclick: "javascript:APP.bookmarkLocation({poi_id})"
         %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
-          = link_to image_tag('/assets/edit-note.png', style: 'height: 25px;', title: t('locations.view_note'), alt: t('locations.view_note')), '#', onclick: "javascript:APP.view().viewBookmarkNote(APP.storage().getLocation({location_id}))"
+          = link_to image_tag('edit-note.png', style: 'height: 25px;', title: t('locations.view_note'), alt: t('locations.view_note')), '#', onclick: "javascript:APP.view().viewBookmarkNote(APP.storage().getLocation({location_id}))"
 
 #tmpl_poi_note{style: 'display: none;'}
   .triangle-border.upload_comment{class: '{toggle}', tmpl: {toggle: 'left|right'}, style: 'vertical-align: top;', data: {id: '{poi_note_id}', index: '{i}'}}

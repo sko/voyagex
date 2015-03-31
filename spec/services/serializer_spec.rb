@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'spec_helper'
 
 #
 # wd=`pwd` && cd spec/tmp/serializer && gitk && cd $wd
