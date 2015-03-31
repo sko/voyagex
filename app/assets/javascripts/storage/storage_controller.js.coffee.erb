@@ -73,7 +73,7 @@ class window.Comm.StorageController
 
   getLocation: (locationId) ->
     storeKey = 'comm.locations'
-    locations = eval("(" + localStorage.getItem(storeKey) + ")")
+    locations = JSON.parse(localStorage.getItem(storeKey))
     if locations?
       location = locations[locationId]
       if location
@@ -94,7 +94,7 @@ class window.Comm.StorageController
   saveLocation: (location, flags = {}, locations = null) ->
     storeKey = 'comm.locations'
     unless locations?
-      locations = eval("(" + localStorage.getItem(storeKey) + ")")
+      locations = JSON.parse(localStorage.getItem(storeKey))
     unless locations
       locations = {}
     # decimal-scale: 7
@@ -114,7 +114,7 @@ class window.Comm.StorageController
   # after q-upload 
   resetLocation: (oldLocation, newLocation, newPoi = null) ->
     storeKey = 'comm.locations'
-    locations = eval("(" + localStorage.getItem(storeKey) + ")")
+    locations = JSON.parse(localStorage.getItem(storeKey))
     flags = {}
     if locations.homeBase? && locations.homeBase == oldLocation.id
       flags.homeBase = true
@@ -127,7 +127,7 @@ class window.Comm.StorageController
   
   getBookmark: (locationId) ->
     storeKey = 'comm.locations'
-    locations = eval("(" + localStorage.getItem(storeKey) + ")")
+    locations = JSON.parse(localStorage.getItem(storeKey))
     if locations.bookmarks?
       bookmark = locations.bookmarks[locationId]
       if bookmark?
@@ -139,7 +139,7 @@ class window.Comm.StorageController
 
   bookmark: (locationId, text = null) ->
     storeKey = 'comm.locations'
-    locations = eval("(" + localStorage.getItem(storeKey) + ")")
+    locations = JSON.parse(localStorage.getItem(storeKey))
     location = locations[locationId]
     #bookmark = {}
     # only bookmark existing locations
@@ -171,7 +171,7 @@ class window.Comm.StorageController
   
   bookmarks: (callback = null) ->
     storeKey = 'comm.locations'
-    locations = eval("(" + localStorage.getItem(storeKey) + ")")
+    locations = JSON.parse(localStorage.getItem(storeKey))
     #locations = this.get 'comm.locations'
     if locations.bookmarks?
       bookmarks = []
@@ -193,7 +193,7 @@ class window.Comm.StorageController
   
   pois: (searchBounds, callback = null) ->
     storeKey = 'comm.locations'
-    locations = eval("(" + localStorage.getItem(storeKey) + ")")
+    locations = JSON.parse(localStorage.getItem(storeKey))
     #locations = this.get 'comm.locations'
     if locations.pois?
       pois = []
@@ -207,7 +207,7 @@ class window.Comm.StorageController
               break
           else
             #poi = StorageController.instance().get poiKey
-            poi = eval("(" + localStorage.getItem(poiKey) + ")")
+            poi = JSON.parse(localStorage.getItem(poiKey))
             poi.lat = location.lat
             poi.lng = location.lng
             poi.address = location.address
@@ -225,7 +225,7 @@ class window.Comm.StorageController
   
   getUser: (userId) ->
     storeKey = 'comm.users'
-    users = eval("(" + localStorage.getItem(storeKey) + ")")
+    users = JSON.parse(localStorage.getItem(storeKey))
     user = if users? then users[userId] else null
     if user?
       user.id = userId
@@ -238,7 +238,7 @@ class window.Comm.StorageController
   # all unkodified attributes will be saved -> xUser
   saveUser: (user, flags = {}) ->
     storeKey = 'comm.users'
-    users = eval("(" + localStorage.getItem(storeKey) + ")")
+    users = JSON.parse(localStorage.getItem(storeKey))
     unless users
       users = {}
     xUser = users[user.id]
@@ -269,18 +269,18 @@ class window.Comm.StorageController
     if peer?
       # no error-handling if peer not in localStroage
       storeKey = 'comm.users'
-      users = eval("(" + localStorage.getItem(storeKey) + ")")
+      users = JSON.parse(localStorage.getItem(storeKey))
       return users[peer.id].chat
     else
       conferenceKey = 'comm.conference'
-      conference = eval("(" + localStorage.getItem(conferenceKey) + ")")
+      conference = JSON.parse(localStorage.getItem(conferenceKey))
       return conference
 
   addChatMessage: (messageText, peer, p2p = false) ->
     if p2p
       # no error-handling if peer not in localStroage
       storeKey = 'comm.users'
-      users = eval("(" + localStorage.getItem(storeKey) + ")")
+      users = JSON.parse(localStorage.getItem(storeKey))
       chat = users[peer.id].chat
       unless chat?
         chat = {}
@@ -293,7 +293,7 @@ class window.Comm.StorageController
       return chat
     else
       conferenceKey = 'comm.conference'
-      conference = eval("(" + localStorage.getItem(conferenceKey) + ")")
+      conference = JSON.parse(localStorage.getItem(conferenceKey))
       unless conference?
         conference = {}
       entry = {}
@@ -310,7 +310,7 @@ class window.Comm.StorageController
 
   getPaths: (user) ->
     storeKey = 'comm.users'
-    users = eval("(" + localStorage.getItem(storeKey) + ")")
+    users = JSON.parse(localStorage.getItem(storeKey))
     if users? then (if users[user.id]? then users[user.id].paths else null) else null
 
   getPath: (user, pathKey = null, notDone = true) ->
@@ -329,7 +329,7 @@ class window.Comm.StorageController
   #        no way yet to continue path before last path
   startTracePath: (user, position, db = {}) ->
     storeKey = 'comm.users'
-    users = eval("(" + localStorage.getItem(storeKey) + ")")
+    users = JSON.parse(localStorage.getItem(storeKey))
     paths = users[user.id].paths
     unless paths?
       paths = {}
@@ -345,7 +345,7 @@ class window.Comm.StorageController
   # no error-handling if pathKey doesn't exist
   addToPath: (user, position, path = null) ->
     storeKey = 'comm.users'
-    users = eval("(" + localStorage.getItem(storeKey) + ")")
+    users = JSON.parse(localStorage.getItem(storeKey))
     paths = users[user.id].paths
     if paths?
       if path?
@@ -366,7 +366,7 @@ class window.Comm.StorageController
   # no error-handling if paths doesn't exist
   stopTracePath: (user, curPath = null) ->
     storeKey = 'comm.users'
-    users = eval("(" + localStorage.getItem(storeKey) + ")")
+    users = JSON.parse(localStorage.getItem(storeKey))
     paths = users[user.id].paths
     if curPath?
       path = paths[curPath[0].timestamp]
@@ -384,7 +384,7 @@ class window.Comm.StorageController
   # no error-handling if paths doesn't exist
   deleteTracePath: (user, pathKey = null) ->
     storeKey = 'comm.users'
-    users = eval("(" + localStorage.getItem(storeKey) + ")")
+    users = JSON.parse(localStorage.getItem(storeKey))
     paths = users[user.id].paths
     unless pathKey?
       pathKeys = Object.keys(paths)
@@ -422,7 +422,7 @@ class window.Comm.StorageController
     if note.poi?
       notePoi = note.poi
       delete note.poi
-      poiNoteClone = eval("("+JSON.stringify(note)+")")
+      poiNoteClone = JSON.parse(JSON.stringify(note))
       storedJSON = Storage.Model._storeWithSeparateUser poiKey, poiNoteClone
       note.poi = notePoi
       storedJSON
@@ -463,19 +463,19 @@ class window.Comm.StorageController
 
   getPoiForLocation: (locationId) ->
     storeKey = 'comm.locations'
-    locations = eval("(" + localStorage.getItem(storeKey) + ")")
+    locations = JSON.parse(localStorage.getItem(storeKey))
     if locations? && locations.pois?
       poi = locations.pois[locationId]
 #      if poi?
 #        poiKey = StorageController.poiKey {id: poi.id}
-#        #eval("(" + localStorage.getItem(poiKey) + ")")
+#        #JSON.parse(localStorage.getItem(poiKey))
 #        this.get poiKey
     else
       null
 
   getPoi: (poiId) ->
     poiKey = StorageController.poiKey {id: poiId}
-    eval("(" + localStorage.getItem(poiKey) + ")")
+    JSON.parse(localStorage.getItem(poiKey))
 
   getPois: (callback = null) ->
     locations = this.get 'comm.locations'
@@ -529,7 +529,7 @@ class window.Comm.StorageController
                       if tileMeta == null
                         sC._tileMeta = { tilesByteSize: 0, numTiles: 0 }
                       else
-                        sC._tileMeta = eval("(" + tileMeta + ")")
+                        sC._tileMeta = JSON.parse(tileMeta)
                       #sC._tileDB[storeKey] = data.properties.data
                       sC._tileMeta.numTiles = sC._tileMeta.numTiles+1
                       sC._tileMeta.tilesByteSize = sC._tileMeta.tilesByteSize+data.properties.data.size
@@ -709,7 +709,7 @@ class window.Comm.StorageController
       if tileMeta == null
         @_tileMeta = { tilesByteSize: 0, numTiles: 0 }
       else
-        @_tileMeta = eval("(" + tileMeta + ")")
+        @_tileMeta = JSON.parse(tileMeta)
 
       storeKey = 'comm.tiles.'+data.properties.id
       stored = localStorage.getItem storeKey
@@ -765,7 +765,7 @@ class window.Comm.StorageController
       if attachmentMeta == null
         @_attachmentMeta = { bytes: 0, count: 0 }
       else
-        @_attachmentMeta = eval("(" + attachmentMeta + ")")
+        @_attachmentMeta = JSON.parse(attachmentMeta)
 
       storeKey = StorageController.poiNoteAttachmentKey poiNote
       stored = localStorage.getItem storeKey
@@ -796,7 +796,7 @@ class window.Comm.StorageController
                       if attachmentMeta == null
                         sC._attachmentMeta = { bytes: 0, count: 0 }
                       else
-                        sC._attachmentMeta = eval("(" + attachmentMeta + ")")
+                        sC._attachmentMeta = JSON.parse(attachmentMeta)
                       #sC._tileDB[storeKey] = data.properties.data
                       sC._attachmentMeta.count = sC._attachmentMeta.count+1
                       sC._attachmentMeta.bytes = sC._attachmentMeta.bytes+data.size
@@ -942,7 +942,7 @@ class window.Comm.StorageController
 #    #this.addToList uploadQKey, 'push', { id: poiNote.id, poiId: poi.id, fileName: @_uploadQ.fileName() }
 #    qNoteEntry = { id: poiNote.id, filename: @_uploadQ.fileName() }
 #    stored = localStorage.getItem(uploadQKey)
-#    qEntries = eval("(" + stored + ")")
+#    qEntries = JSON.parse(stored)
 #    qEntry = qEntries[poi.locationId]
 #    if qEntry?
 #      if qEntry[poi.id]
@@ -959,7 +959,7 @@ class window.Comm.StorageController
   uploadQueue: (qPoi = null, qNewNote = null) ->
     uploadQKey = 'comm.uploadQ.poiNotes'
     stored = localStorage.getItem(uploadQKey)
-    qEntries = eval("(" + stored + ")")
+    qEntries = JSON.parse(stored)
     if qPoi?
       qEntries = [{note: qNewNote, poi: qPoi, fileName: qEntries[0].fileName}]
     if qEntries?
@@ -1028,7 +1028,7 @@ class window.Comm.StorageController
       else
         storedJSON = @_jsonObjects[storeKey]
         unless storedJSON?
-          storedJSON = eval("(" + stored + ")")
+          storedJSON = JSON.parse(stored)
           @_jsonObjects[storeKey] = storedJSON
         if listKey == 'push'
           if data instanceof Array
@@ -1062,7 +1062,7 @@ class window.Comm.StorageController
   get: (storeKey, listKey = null) ->
     # FIXME @_jsonObjects is an internal cache-object and should not be exposed to concurrent access
     #       readonly but 'live' copy -> wrapper object! with methods getItem() for [] and real object 
-    @_jsonObjects[storeKey] || eval("(" + localStorage.getItem(storeKey) + ")")
+    @_jsonObjects[storeKey] || JSON.parse(localStorage.getItem(storeKey))
 
   getNumElements: (storeKey, listKey = null) ->
 #    # TODO listKey != null, id might not be available
@@ -1077,7 +1077,7 @@ class window.Comm.StorageController
     if tileMeta == null
       0
     else
-      @_tileMeta = eval("(" + tileMeta + ")").numTiles
+      @_tileMeta = JSON.parse(tileMeta).numTiles
 
   getByteSize: (storeKey, listKey = null) ->
     # TODO listKey != null
@@ -1087,7 +1087,7 @@ class window.Comm.StorageController
     if tileMeta == null
       0
     else
-      @_tileMeta = eval("(" + tileMeta + ")").tilesByteSize
+      @_tileMeta = JSON.parse(tileMeta).tilesByteSize
 
   delete: (storeKey, listKey = null) ->
     # TODO listKey != null
@@ -1105,7 +1105,7 @@ class window.Comm.StorageController
   pop: (storeKey) ->
     stored = localStorage.getItem(storeKey)
     unless stored == null
-      listEntries = eval("(" + stored + ")")
+      listEntries = JSON.parse(stored)
       if listEntries?
         listEntry = listEntries.pop()
         if listEntries.length >= 1
@@ -1277,7 +1277,7 @@ class Comm.UploadQ
   @_removeFromQueue: (qPoiId, qEntries = null) ->
     uploadQKey = 'comm.uploadQ.poiNotes'
     unless qEntries?
-      qEntries = eval("(" + localStorage.getItem(uploadQKey) + ")")
+      qEntries = JSON.parse(localStorage.getItem(uploadQKey))
     maxIdx = qEntries.length-1
     for idxSub in [0..maxIdx]
       i = maxIdx-idxSub
