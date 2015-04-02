@@ -371,18 +371,25 @@ class window.VoyageX.TemplateHelper
     marker.openPopup()
     # init slider:
     $(popup._contentNode).find('> .radar_editor > fieldset').first().trigger('create');
+    APP.view().setRealPositionWatchedIcon if APP.isRealPositionWatched() then 'on' else 'off'
 
   @_resetMarkerControlsPopup: (popup, skipKey) ->
     popupHtml = popup.getContent()
-    if skipKey == 'note_editor' || popupHtml.indexOf('note_editor') == -1
-      #popupHtml = popupHtml.replace(/<div[^>]+class="note_editor"(.|\n)+(<div[^>]+id="marker_controls")/, '$1')
-      popupHtml = popupHtml.replace(/<div[^>]+class="note_editor"(.|\n)+/, '$1')
-    if skipKey == 'radar_editor' || popupHtml.indexOf('radar_editor') == -1
-      #popupHtml = popupHtml.replace(/<div[^>]+class="radar_editor"(.|\n)+(<div[^>]+id="marker_controls")/, '$1')
+    if skipKey == 'note_editor'# || popupHtml.indexOf('note_editor') == -1
+      ##popupHtml = popupHtml.replace(/<div[^>]+class="note_editor"(.|\n)+(<div[^>]+id="marker_controls")/, '$1')
+      #popupHtml = popupHtml.replace(/<div[^>]+class="note_editor"(.|\n)+/, '$1')
       popupHtml = popupHtml.replace(/<div[^>]+class="radar_editor"(.|\n)+/, '$1')
-    unless skipKey == 'trace-path_editor' || popupHtml.indexOf('trace-path_editor') == -1
-      #popupHtml = popupHtml.replace(/<div[^>]+class="trace-path_editor"(.|\n)+(<div[^>]+id="marker_controls")/, '$1')
       popupHtml = popupHtml.replace(/<div[^>]+class="trace-path_editor"(.|\n)+/, '$1')
+    if skipKey == 'radar_editor'# || popupHtml.indexOf('radar_editor') == -1
+      ##popupHtml = popupHtml.replace(/<div[^>]+class="radar_editor"(.|\n)+(<div[^>]+id="marker_controls")/, '$1')
+      #popupHtml = popupHtml.replace(/<div[^>]+class="radar_editor"(.|\n)+/, '$1')
+      popupHtml = popupHtml.replace(/<div[^>]+class="note_editor"(.|\n)+/, '$1')
+      popupHtml = popupHtml.replace(/<div[^>]+class="trace-path_editor"(.|\n)+/, '$1')
+    if skipKey == 'trace-path_editor'# || popupHtml.indexOf('trace-path_editor') == -1
+      ##popupHtml = popupHtml.replace(/<div[^>]+class="trace-path_editor"(.|\n)+(<div[^>]+id="marker_controls")/, '$1')
+      #popupHtml = popupHtml.replace(/<div[^>]+class="trace-path_editor"(.|\n)+/, '$1')
+      popupHtml = popupHtml.replace(/<div[^>]+class="note_editor"(.|\n)+/, '$1')
+      #popupHtml = popupHtml.replace(/<div[^>]+class="radar_editor"(.|\n)+/, '$1')
     popupHtml
 
   @_addPopupTitle: (contentContainer, marker, location, poi, resetTitle = false) ->

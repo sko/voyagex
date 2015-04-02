@@ -30,7 +30,7 @@
     var view = new VoyageX.View();
     var offlineZooms = [4,8,12,16];
     var zooms = [#{(1..16).collect{|n|",#{n}"}.join.sub(/^,/,'')}];
-    var mapOptions = { center: new L.LatLng(#{51.3767}, #{7.49389}),
+    var mapOptions = { center: new L.LatLng(#{@lat||Location.default.latitude}, #{@lng||Location.default.longitude}),
     zooms: zooms,
     zoom: 16,
     subdomains: ['a'],
@@ -77,11 +77,11 @@
 #tmpl_radar_editor{style: 'display: none;'}
   .radar_editor
     .search_radius{style: 'float: left; padding-left: 5px;'}
-      = label_tag 'search_radius_input', 'Suchradius (meter)'
+      = label_tag 'search_radius_input', t('admin.search_radius')
       -#= form_tag set_user_detail_path(detail: :radar), method: :post, remote: true do
         = text_field_tag :search_radius_meters, '{search_radius_meters}', size: 7, maxlength: 7, data: {role: 'none'}
       %span#search_radius_meters>
-        {search_radius_meters}
+        {search_radius_meters} m
       %div{tmpl: {id: 'search_radius_ctrl'}}
     %fieldset{data: {role: 'controlgroup'}, tmpl: {id: 'search_radius_display_fs'}}
       -#
@@ -97,23 +97,13 @@
         = label_tag 'search_radius_display_hide', 'hide'
     %span{style: 'float: left;'}>
       GPS:&nbsp;
-    = image_tag 'locate_off.png', 'tmpl-id' => 'toggle_watch_position', onclick: 'toggleWatchPosition(this)', style: 'max-width: 30px; max-height: 30px;'
-    -#
-      %fieldset{data: {role: 'controlgroup'}, tmpl: {id: 'watch_position_fs'}}
-        -#
-          %div{data: {role: 'fieldcontain'}}
-            %select{data: {role: 'flipswitch'}, onchange: 'toggleWatchPosition(this)'}
-              %option{value: 'on'} Y
-              %option{value: 'off'} N
-        %div
-          = radio_button_tag 'watch_position', 'on', false, id: ':tmpl', 'tmpl-id' => 'watch_position_on', data: {mini: true}, onclick: 'toggleWatchPosition(this)'
-          = label_tag 'watch_position_on', 'on'
-        %div
-          = radio_button_tag 'watch_position', 'off', true, id: ':tmpl', 'tmpl-id' => 'watch_position_off', data: {mini: true}, onclick: 'toggleWatchPosition(this)'
-          = label_tag 'watch_position_off', 'off'
+    %span{tmpl: {id: 'toggle_watch_position_off'}}
+      = image_tag 'locate_off.png', onclick: "toggleWatchPosition('on')", style: 'max-width: 30px; max-height: 30px;'
+    %span{tmpl: {id: 'toggle_watch_position_on', style: 'display: none;'}}
+      = image_tag 'locate_on.png', onclick: "toggleWatchPosition('off')", style: 'max-width: 30px; max-height: 30px;'
     %div{style: 'float: right; margin: 0px 25px 0px 5px; padding: 0px;'}
       %span{style: 'float: left;'}>
-        Selbst:&nbsp;
+        #{t('admin.watch_position')}:&nbsp;
       %span{id: 'trace-ctrl-start-{user_id}'}
         = link_to image_tag('start_trace.png', style: 'height: 23px;', title: 'start-trace-me', alt: 'start-trace-me'), '#', onclick: "javascript:APP.toggleTrace(currentUser, {path_key})"
       %span{id: 'trace-ctrl-stop-{user_id}', style: 'display: none;'}

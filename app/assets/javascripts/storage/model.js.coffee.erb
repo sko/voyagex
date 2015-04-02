@@ -79,7 +79,7 @@ class window.Storage.Model
       # get all pois via sync (TODO: add view-range for response)
       #alert('TODO: q')
       console.log('TODO: handle queue in loadPois')
-    if APP.isOnline()
+    if APP.isBackendOnline()
       $.ajax
         type: 'GET'
         dataType: 'json'
@@ -142,7 +142,7 @@ class window.Storage.Model
       poiId = parseInt $('#upload_form').attr('data-poiId')
       afterQCB = (qPoi, qNewPoiNote) ->
 # old
-#          if APP.isOnline()
+#          if APP.isBackendOnline()
 #            APP.storage().uploadQueue qPoi, qNewPoiNote
 #          else
           if true
@@ -152,7 +152,7 @@ class window.Storage.Model
             qPoi.address = location.address
             qNewPoiNote.user = currentUser
             doneCB qPoi, qNewPoiNote
-          if APP.isOnline()
+          if APP.isBackendOnline()
             APP.storage().uploadQueue qPoi, qNewPoiNote
       if commitConf?
         afterQCB = ((afterQCB) ->
@@ -165,7 +165,7 @@ class window.Storage.Model
   # @deprecated - instantly saves data only if offline - else uploads data first and saves on backend-response
   # -> use savePoiNote(offlineCallback) instead
   uploadPoiNote: (formData, callback, uploadTargetId = null) ->
-    if APP.isOnline()
+    if APP.isBackendOnline()
       if uploadTargetId? && uploadTargetId >= 0
         url = '<%= upload_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
         formData.append('_method', 'put')
@@ -200,7 +200,7 @@ class window.Storage.Model
   # @deprecated - instantly saves data only if offline - else uploads data first and saves on backend-response
   # -> use savePoiNote64(offlineCallback) instead
   uploadPoiNote64: (data, callback, uploadTargetId = null) ->
-    if APP.isOnline()
+    if APP.isBackendOnline()
       if uploadTargetId? && uploadTargetId >= 0
         url = '<%= upload_base64_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
         data._method = 'put'
@@ -231,7 +231,7 @@ class window.Storage.Model
   # @deprecated - instantly saves data only if offline - else uploads data first and saves on backend-response
   # -> use saveEmbed(offlineCallback) instead
   uploadEmbed: (data, callback, uploadTargetId = null) ->
-    if APP.isOnline()
+    if APP.isBackendOnline()
       if uploadTargetId? && uploadTargetId >= 0
         url = '<%= upload_embed_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
         data._method = 'put'
@@ -262,7 +262,7 @@ class window.Storage.Model
   # @deprecated - instantly saves data only if offline - else uploads data first and saves on backend-response
   # -> use saveEmbed(offlineCallback) instead
   uploadPlainText: (data, callback, uploadTargetId = null) ->
-    if APP.isOnline()
+    if APP.isBackendOnline()
       if uploadTargetId? && uploadTargetId >= 0
         url = '<%= upload_plain_text_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
         data._method = 'put'

@@ -25,7 +25,7 @@ class SandboxController < ApplicationController
       comm_port = CommPort.create(user: tmp_user, channel_enc_key: enc_key, sys_channel_enc_key: enc_key)
     end
     @initial_subscribe = true
-    tmp_user.update_attribute :foto, open(UserHelper::fetch_random_avatar, allow_redirections: :safe){|t|t.base_uri} unless tmp_user.foto.exists?
+    tmp_user.update_attribute(:foto, UserHelper::fetch_random_avatar(request)) unless tmp_user.foto.exists?
     if tmp_user.last_sign_in_ip.present?
       unless tmp_user.snapshot.cur_commit.present?
         vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, tmp_user, false#user.is_admin?

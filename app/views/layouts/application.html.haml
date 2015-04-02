@@ -16,12 +16,13 @@
     = javascript_include_tag "modernizr"
     = javascript_include_tag "preload"
     - if Rails.env == 'development'
+      -# easier to debug ;)
       = javascript_include_tag "/comm/faye-browser.js"
       = javascript_include_tag "comm/comm.js"
     - elsif Rails.env == 'test'
-      -#= javascript_include_tag "/comm/faye-browser.js"
-      -#= javascript_include_tag "rspec/comm/comm.js"
-      = javascript_include_tag "comm/comm.js"
+      = javascript_include_tag "test/mock_init"
+      = javascript_include_tag "test/faye_client"
+      = javascript_include_tag "test/comm_comm"
     - else
       = javascript_include_tag "comm/application.js"
   %body

@@ -6,11 +6,8 @@ require 'spec_helper'
 describe 'Serializer', vcr: true do
 
   TEST_MASTER = true
-  SPEC_MASTER = 'spec/serializer'
-  WORK_DIR_ROOT = "#{Rails.root}/spec/tmp/serializer"
 
   before(:each) do
-    puts "############## before(:each) ..."
     @v_m_u_master = VersionManager.new SPEC_MASTER, WORK_DIR_ROOT, FactoryGirl.create(:user), true
     delete_branch SPEC_MASTER, @v_m_u_master, true
     init_master

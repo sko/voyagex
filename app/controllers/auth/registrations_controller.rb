@@ -15,7 +15,7 @@ module Auth
         end
       end
       @user = User.new(user_params.merge!({search_radius_meters: 1000,
-                                           foto: open(UserHelper::fetch_random_avatar, allow_redirections: :safe){|t|t.base_uri},
+                                           foto: UserHelper::fetch_random_avatar(request),
                                            snapshot: UserSnapshot.new(location: Location.default, cur_commit: Commit.latest)})) unless @user.present?
       if @user.save
         # user has to confirm email-address first, so no sign_in @user

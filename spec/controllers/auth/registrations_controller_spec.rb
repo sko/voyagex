@@ -13,7 +13,7 @@ describe Auth::RegistrationsController, type: :controller do
       it 'resonses with success' do
         expect {
           xhr :post, :create, user: {email: 'userX@gmy.de', password: 'secret78', password_confirmation: 'secret78'}
-          expect(response.body).to match /alert\('me gusto mucho'\)/
+          expect(response.body).to match /email-confirmation.+required before sign in.+resend confirmation instructions/
         }.to change(User, :count).by(1)
       end
     end

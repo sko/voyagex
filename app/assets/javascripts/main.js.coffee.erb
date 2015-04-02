@@ -31,7 +31,7 @@ class window.VoyageX.Main
     Main._UPLOAD_HELPER = new VoyageX.UploadHelper()
     # at first the map need's to be initialized ...
     $(document).ready () ->
-        APP._init view, mapOptions, offlineZooms
+        APP._init view, mapOptions, offlineZooms, window.VoyageX.TILE_HANDLER
         # test for address-bar removal / fullscreen @see application.mobile as well
 #        if isMobile()
 #          if !window.pageYOffset
@@ -41,14 +41,14 @@ class window.VoyageX.Main
   # TODO - clean initialisation of all components in order to enable modularized usage auf single components
   #        (when reused in another application)
   #
-  _init: (view, mapOptions, offlineZooms) ->
+  _init: (view, mapOptions, offlineZooms, tileHandler = null) ->
     APP._initState += 1
     switch APP._initState
       when 1
         Main._BACKEND = new VoyageX.Backend()
         Main._STORAGE_CONTROLLER = new Comm.StorageController((initError) ->
             console.log 'StorageController initialized FileSystem with message: '+(if initError then 'FAILED' else 'OK')
-            APP._init view, mapOptions, offlineZooms
+            APP._init view, mapOptions, offlineZooms, tileHandler
           )
       when 2
         # Communication initialisation (Faye-Client)
@@ -60,7 +60,7 @@ class window.VoyageX.Main
                                    VoyageX.SYS_CHANNEL_ENC_KEY,
                                    APP._systemCB)
         # Map initialisation (LeafletJS)
-        Main._MAP_CONTROL = new VoyageX.MapControl mapOptions, offlineZooms
+        Main._MAP_CONTROL = new VoyageX.MapControl mapOptions, offlineZooms, tileHandler
         Main._MARKER_MANAGER = new VoyageX.MarkerManager APP.map()
         Main._CHAT_CONTROL = new VoyageX.ChatControl()
         # handled in _peers.html.haml
@@ -104,7 +104,6 @@ class window.VoyageX.Main
         APP._zoomEnd(null)
         cacheStats()
         $('#user_foto_input_type').buttonset()
-        #setTimeout "VoyageX.Main._BACKEND.pingBackend()", 5000
         $('#poi_notes_container').scrollpanel({
             prefix: 'pcn-'
           })
@@ -123,6 +122,9 @@ class window.VoyageX.Main
 
   register: (userId) ->
     Main._BACKEND.register userId
+
+  isBackendOnline: () ->
+    navigator.onLine && VoyageX.Backend.instance().isOnline()
 
   isOnline: () ->
     if navigator.onLine
@@ -415,6 +417,7 @@ class window.VoyageX.Main
       if path?
         path = APP.storage().addToPath currentUser, APP._realPosition, path
         VoyageX.Main.mapControl().drawPath currentUser, path, true
+        APP.getUserMarker().setLocation {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
     APP.watchRealPosition()
   
   stopRealPositionWatch: () ->

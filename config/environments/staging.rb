@@ -55,8 +55,9 @@ Rails.application.configure do
 
   # enabled locales
   config.i18n.available_locales = [:en, :de]
-end
 
-Faye.logger = lambda { |m| Rails.logger.info m if m.match(/connectiontype/i).present? }
-FAYE_URL = 'http://voyagex.info.tm/comm'
-GIT_REMOTE_URL = 'git@github.com:/sko/voyagex_data'
+  Faye.logger = lambda { |m| Rails.logger.info m if m.match(/connectiontype/i).present? }
+  FAYE_URL = 'http://voyagex.info.tm/comm'
+  GIT_REMOTE_URL = 'git@github.com:/sko/voyagex_data'
+  COMM_ADAPTER = Comm::Manager.new
+end

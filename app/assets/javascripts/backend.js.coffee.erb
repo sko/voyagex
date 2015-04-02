@@ -17,6 +17,8 @@ class window.VoyageX.Backend
   constructor: () ->
     Backend._SINGLETON = this
     @_pingState = { pingKey: -1 }
+    @_online = false
+    setTimeout "VoyageX.Backend.instance().pingBackend()", Backend._PING_INTERVAL_MILLIS
     
     #window.addEventListener "offline", (e) ->
     #    alert("offline")
@@ -27,12 +29,13 @@ class window.VoyageX.Backend
     #window.applicationCache.addEventListener "error", (e) ->
     #    alert("Error fetching manifest: a good chance we are offline")
 
-  checkPingResponse: (pingKey) ->
+  _checkPingResponse: (pingKey) ->
     if VoyageX.Backend.instance()._pingState.pingKey != pingKey
+      #console.log 'Backend - _checkPingResponse: pingKey = '+pingKey
       VoyageX.Backend.instance()._pingState.pingKey = pingKey
       setTimeout "VoyageX.Backend.instance().pingBackend()", Backend._PING_INTERVAL_MILLIS
 
-  # navigator.onLine doesn't seem to work reliably
+  # backend needs it's own ping because app can be online when backend is down.
   pingBackend: () ->
     pingKey = Math.round(Math.random() * 100000)
     $.ajax
@@ -41,13 +44,18 @@ class window.VoyageX.Backend
       dataType: 'json'
     .done (msg) ->
         VoyageX.Backend.instance()._pingState.pingKey = msg.ping_key
+        VoyageX.Backend.instance()._online = true
         unless APP._online
           APP.setOnline()
         setTimeout "VoyageX.Backend.instance().pingBackend()", Backend._PING_INTERVAL_MILLIS
     .fail (jqXHR, textStatus) ->
+        VoyageX.Backend.instance()._online = false
         if APP._online
           APP.setOffline()
-        setTimeout 'VoyageX.Backend.instance().checkPingResponse('+pingKey+')', Backend._PING_CHECK_DELAY_MILLIS
+        setTimeout 'VoyageX.Backend.instance()._checkPingResponse('+pingKey+')', Backend._PING_CHECK_DELAY_MILLIS
+
+  isOnline: () ->
+    @_online
 
   register: (userId) ->
     data = { _method: 'put',\
@@ -66,7 +74,7 @@ class window.VoyageX.Backend
     Backend._SINGLETON
 
 
-  # checkPingResponse: (pingKey) ->
+  # _checkPingResponse: (pingKey) ->
   #   if window.pingKey != pingKey
   #     if APP._online
   #       APP.setOffline()
@@ -85,7 +93,7 @@ class window.VoyageX.Backend
   #       if APP._online
   #         APP.setOffline()
   #       setTimeout "Comm.Comm.instance().pingBackend()", 5000
-  #   setTimeout 'Comm.Comm.instance().checkPingResponse('+pingKey+')', 3000
+  #   setTimeout 'Comm.Comm.instance()._checkPingResponse('+pingKey+')', 3000
 
   # register: (userId) ->
   #   data = { _method: 'put',\

@@ -1,2 +1,2 @@
 window.pingKey = <%= params[:key] %>
-setTimeout "APP.backend().pingBackend()", 5000
+setTimeout "VoyageX.Backend.instance().pingBackend()", VoyageX.Backend._PING_INTERVAL_MILLIS

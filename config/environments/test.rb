@@ -41,7 +41,11 @@ Rails.application.configure do
   # config.action_view.raise_on_missing_translations = true
 
   default_url_options[:host] = 'localhost:3000'
-end
+  
+  #config.autoload_paths += %W(#{config.root}/lib/test)
+  Dir[Rails.root.join("lib/test/**/*.rb")].each { |f| require f }
 
-FAYE_URL = 'http://test.host/comm'
-GIT_REMOTE_URL = 'github:/sko/voyagex_data'
+  FAYE_URL = 'http://test.host/comm'
+  GIT_REMOTE_URL = 'github:/sko/voyagex_data'
+  COMM_ADAPTER = CommAdapterMock.new
+end

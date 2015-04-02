@@ -8,12 +8,14 @@ class window.VoyageX.MapControl
 #  @_COUNT = 0
 
   # zooms msut be sorted from lowest (f.ex. 1) to highest (f.ex. 16)
-  constructor: (mapOptions, offlineZooms) ->
+  constructor: (mapOptions, offlineZooms, tileHandler = null) ->
+    unless tileHandler?
+      tileHandler = new L.TileLayer.Functional(VoyageX.MapControl.drawTile, {
+          subdomains: mapOptions.subdomains
+        })
     MapControl._SINGLETON = this
     window.MC = this
-    mapOptions.layers = [new L.TileLayer.Functional(VoyageX.MapControl.drawTile, {
-        subdomains: mapOptions.subdomains
-      })]
+    mapOptions.layers = [tileHandler]
     @_mapOptions = mapOptions
     @_zooms = mapOptions.zooms
     @_minZoom = @_zooms[0]
@@ -393,7 +395,7 @@ class window.VoyageX.MapControl
             console.log 'prefetching lower-zoom tile: '+parentStoreKey
             readyImage = this.loadReadyImage parentTileUrl, curXYZ, deferredModeParams
 
-  # has to be done sequentially becaus we're using one canvas for all
+  # has to be done sequentially because we're using one canvas for all
   loadReadyImage: (imgUrl, xYZ, deferredModeParams = null) ->
     if deferredModeParams == null
       promise = true

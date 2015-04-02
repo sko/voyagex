@@ -109,17 +109,6 @@ class window.VoyageX.View
       #APP.map().setView [mapEvent.lat, mapEvent.lng], 16
     #poiId ... $('#pois_preview > .poi-preview-container[data-id=68]')
     #locationId ... $('#location_bookmarks .bookmark-container[data-id=4016]')
-    #
-    # draw path modus -> no positionieg
-    # jedeer user kan 1 (current) path malen
-    # der path ist im localStorage (latLngs)
-    # es geht nur darum zu zeigen daß man malt
-    peer = APP.storage().getUser mapEvent.userId
-    path = APP.storage().getPath peer
-    if path?
-      path = APP.storage().addToPath peer, {lat: mapEvent.lat, lng: mapEvent.lng}, path
-      VoyageX.Main.mapControl().drawPath peer, path, true
-
     View.instance().setPeerPosition mapEvent.userId, mapEvent.lat, mapEvent.lng
     for listener in View.instance()._commListeners.map_events
       listener(mapEvent)
@@ -199,11 +188,12 @@ class window.VoyageX.View
       $('#trace-ctrl-stop-'+user.id).css('display', 'none')
 
   setRealPositionWatchedIcon: (state) ->
-    selected = $('#toggle_watch_position')
     if state == 'on'
-      selected.attr('src', selected.attr('src').replace(/_off([.-])/, '_on$1'))
+      $('#toggle_watch_position_off').css('display', 'none')
+      $('#toggle_watch_position_on').css('display', 'inline')
     else
-      selected.attr('src', selected.attr('src').replace(/_on([.-])/, '_off$1'))
+      $('#toggle_watch_position_off').css('display', 'inline')
+      $('#toggle_watch_position_on').css('display', 'none')
 
   # start with no params
   # assets-compile: arrow-up-right_on.png -> arrow-up-right_on-ea4366b17dad061ef49336a4ae3e90b4.png
@@ -218,16 +208,16 @@ class window.VoyageX.View
       @_alertOn = false
       clearTimeout @_blinkArrowTO
       target.each () ->
-        $(this).attr('src', $(this).attr('src').replace(/_on([.-])/, '_off$1'))
+        $(this).attr('src', VoyageX.IMAGES_CTXNAVALERT_OFF_PATH)
       return true
     if @_alertOn
       if setOn
         target.each () ->
-          $(this).attr('src', $(this).attr('src').replace(/_off([.-])/, '_on$1'))
+          $(this).attr('src', VoyageX.IMAGES_CTXNAVALERT_ON_PATH)
         @_blinkArrowTO = setTimeout "APP.view()._blinkArrow(false)", 500
       else
         target.each () ->
-          $(this).attr('src', $(this).attr('src').replace(/_on([.-])/, '_off$1'))
+          $(this).attr('src', VoyageX.IMAGES_CTXNAVALERT_OFF_PATH)
         @_blinkArrowTO = setTimeout "APP.view()._blinkArrow()", 500
 
   alert: (stop = false) ->

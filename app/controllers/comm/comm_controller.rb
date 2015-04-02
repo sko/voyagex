@@ -26,16 +26,6 @@ module Comm
       render json: res
     end
 
-    def publish
-binding.pry
-      @user = User.find(params[:user_id])
-    end
-
-    def subscribe
-binding.pry
-      @user = User.find(params[:user_id])
-    end
-
     private
 
     def subscribe_user_to_peers user
@@ -44,7 +34,8 @@ binding.pry
         peers_data << { channel_enc_key: peer.comm_port.channel_enc_key, user: { id: peer.id, username: peer.username } }
         # notify peer about user
         msg = { type: :subscription_notification, peers: [channel_enc_key: user.comm_port.channel_enc_key, user: { id: user.id, username: user.username }] }
-        Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer.comm_port.channel_enc_key}", msg)
+        #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer.comm_port.channel_enc_key}", msg)
+        COMM_ADAPTER.send :system, peer.comm_port.channel_enc_key, msg
       end
 #      # notify user about peers - but user doesn't have key now
 #      msg = { type: :subscription_notification, peers: peers_data }

@@ -7,14 +7,21 @@ $('#sign_up_or_in').first().css('display', 'block')
 $('.logout-link').each () ->
   $(this).css('display', 'none')
 # you are always someone
-window.VoyageX.SEARCH_RADIUS_METERS = <%= tmp_user.search_radius_meters||100 %>
+<%
+geometry = Paperclip::Geometry.from_file(tmp_user.foto)
+foto_width = geometry.present? ? geometry.width.to_i : -1
+foto_height = geometry.present? ? geometry.height.to_i : -1
+%>
+window.VoyageX.SEARCH_RADIUS_METERS = <%= tmp_user.search_radius_meters||1000 %>
 window.currentUser = { id: <%= tmp_user.id -%>,\
                        username: '<%= tmp_user.username -%>',\
+                       foto: {url: '<%= tmp_user.foto.url -%>', width: <%= foto_width -%>, height: <%= foto_height -%>},\
                        homebaseLocationId: -1,\
                        lastLocation: {lat: <%= tmp_user.last_location.latitude -%>, lng: <%= tmp_user.last_location.longitude -%>},\
                        curCommitHash: null }
 $('.whoami').each () ->
   $(this).html("<%= escape_javascript(link_to t('auth.whoami', username: tmp_user.username), change_username_path, class: 'navbar-inverse navbar-brand', data: { remote: 'true', format: :js }) -%>")
+$('.whoami-img').attr('src', window.currentUser.foto.url)
 for channel in VoyageX.Main.commChannels()
   channelPath = '/'+channel
   unless window.VoyageX.USE_GLOBAL_SUBSCRIBE

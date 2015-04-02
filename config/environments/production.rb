@@ -92,9 +92,9 @@ Rails.application.configure do
 
   # Do not dump schema after migrations.
   config.active_record.dump_schema_after_migration = false
+
+  Faye.logger = lambda { |m| Rails.logger.info m }
+  FAYE_URL = 'http://voyagex.info.tm/comm'
+  GIT_REMOTE_URL = 'git@github.com:/sko/voyagex_data'
+  COMM_ADAPTER = Comm::Manager.new
 end
-
-Faye.logger = lambda { |m| Rails.logger.info m }
-FAYE_URL = 'http://voyagex.info.tm/comm'
-GIT_REMOTE_URL = 'git@github.com:/sko/voyagex_data'
-

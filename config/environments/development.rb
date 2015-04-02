@@ -40,8 +40,9 @@ Rails.application.configure do
 
   # Raises error for missing translations
   # config.action_view.raise_on_missing_translations = true
-end
 
-#Faye.logger = lambda { |m| Rails.logger.info m }
-FAYE_URL = 'http://localhost:3005/comm'
-GIT_REMOTE_URL = 'github:/sko/voyagex_data'
+  #Faye.logger = lambda { |m| Rails.logger.info m }
+  FAYE_URL = 'http://localhost:3005/comm'
+  GIT_REMOTE_URL = 'github:/sko/voyagex_data'
+  COMM_ADAPTER = Comm::Manager.new
+end

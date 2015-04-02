@@ -65,8 +65,19 @@ RSpec.configure do |config|
       DatabaseCleaner.clean
     end
   end
+
+  config.before(:all) do
+    # initialize admin and first commit
+    @admin = get_admin
+  end
 end
 
 Capybara.register_driver :rack_test do |app|
   Capybara::RackTest::Driver.new(app, browser: :chrome)
+end
+
+module UserHelper
+  def self.fetch_random_avatar request = nil
+    fixture_file_upload Rails.root.join('spec', 'support', 'images', 'foto.png'), 'image/png'
+  end
 end

@@ -77,18 +77,13 @@ query
     target_port = 80
     target_path = "/illustmaker/m.cgi?#{query_string}"
 
+    avatar_image_url = "http#{target_port==443 ? 's' : ''}://#{target_host}:#{target_port}#{target_path}"
+    request_options = {allow_redirections: :safe}
     if request.present?
-      request_headers = { 'Accept-Language' => request.env['HTTP_ACCEPT_LANGUAGE'],
-                          'User-Agent' => request.env['HTTP_USER_AGENT'] }
-      response_data = self.get_resource target_host, target_port, target_path, request_headers
-      ## hack since response is not decoded with png
-      #cur_path = Rails.root.join('public', 'fotos', 'random_avatar')
-      #File.open(cur_path, 'wb'){|file| file.write(response_data.content)}
-      #response_data.content = File.read(cur_path)
-      response_data
-    else
-      "http#{target_port==443 ? 's' : ''}://#{target_host}:#{target_port}#{target_path}"
+      request_options.merge!({ 'Accept-Language' => request.env['HTTP_ACCEPT_LANGUAGE'],
+                               'User-Agent' => request.env['HTTP_USER_AGENT'] })
     end
+    open(avatar_image_url, request_options){|t|t.base_uri}
   end
 
   #

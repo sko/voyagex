@@ -1,5 +1,5 @@
-- lat = tmp_user.snapshot.location.present? ? tmp_user.snapshot.location.latitude : tmp_user.snapshot.lat
-- lng = tmp_user.snapshot.location.present? ? tmp_user.snapshot.location.longitude : tmp_user.snapshot.lng
+- @lat = tmp_user.snapshot.location.present? ? tmp_user.snapshot.location.latitude : tmp_user.snapshot.lat
+- @lng = tmp_user.snapshot.location.present? ? tmp_user.snapshot.location.longitude : tmp_user.snapshot.lng
 = javascript_tag do
   -#window.scrollTo(0,1);
   window.DEBUG = false;
@@ -16,12 +16,12 @@
   window.VoyageX.IMAGES_PREVIEW_NA_PATH = '#{image_path('no-preview.png')}';
   window.VoyageX.IMAGES_NOISE_PATH = '#{image_path('noise.gif')}';
   window.VoyageX.IMAGES_SWIPER_LOADING_PATH = '#{image_path('loading_200x100.png')}';
-  -#window.VoyageX.IMAGES_CTXNAVALERT_ON_PATH = '#{image_path('arrow-up-right_on.png')}';
-  -#window.VoyageX.IMAGES_CTXNAVALERT_OFF_PATH = '#{image_path('arrow-up-right_off.png')}';
+  window.VoyageX.IMAGES_CTXNAVALERT_ON_PATH = '#{image_path('arrow-up-right_on.png')}';
+  window.VoyageX.IMAGES_CTXNAVALERT_OFF_PATH = '#{image_path('arrow-up-right_off.png')}';
   - geometry = Paperclip::Geometry.from_file(tmp_user.foto) if user_signed_in? && tmp_user.foto.present?
   - foto_width = geometry.present? ? geometry.width.to_i : -1
   - foto_height = geometry.present? ? geometry.height.to_i : -1
-  window.currentUser = { id: #{tmp_user.id}, username: '#{tmp_user.username}', foto: {url: '#{tmp_user.foto.url}', width: #{foto_width}, height: #{foto_height}}, homebaseLocationId: #{tmp_user.home_base.present? ? tmp_user.home_base.id : -1}, lastLocation: {lat: #{lat||'null'}, lng: #{lng||'null'}}, curCommitHash: '#{tmp_user.snapshot.cur_commit.hash_id}' };
+  window.currentUser = { id: #{tmp_user.id}, username: '#{tmp_user.username}', foto: {url: '#{tmp_user.foto.url}', width: #{foto_width}, height: #{foto_height}}, homebaseLocationId: #{tmp_user.home_base.present? ? tmp_user.home_base.id : -1}, lastLocation: {lat: #{@lat||'null'}, lng: #{@lng||'null'}}, curCommitHash: '#{tmp_user.snapshot.cur_commit.hash_id}' };
   - if current_user.present?
     window.VoyageX.CHANNEL_ENC_KEY = '#{current_user.comm_port.channel_enc_key}';
     window.VoyageX.SYS_CHANNEL_ENC_KEY = '#{current_user.comm_port.sys_channel_enc_key}';
@@ -32,7 +32,7 @@
   window.subscribeTo = [];
   window.unsubscribeFrom = [];
   window.initArgs = {peers: []};
-  window.defaultLatLng = [#{Location.default.latitude}, #{Location.default.longitude}];
+  window.defaultLatLng = [#{@lat||Location.default.latitude}, #{@lng||Location.default.longitude}];
   window.showSearchRadius = false;
   -#
     window.pois = [];

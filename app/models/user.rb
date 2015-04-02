@@ -87,7 +87,7 @@ class User < ActiveRecord::Base
   end
 
   def is_admin?
-    email == 'skoeller@gmx.de'
+    email == ADMIN_EMAIL_ADDRESS
   end
 
   SOCIAL_NETS_CONFIG.keys.each do |network|
@@ -101,20 +101,19 @@ class User < ActiveRecord::Base
   end
 
   def self.admin
-    User.where(email: 'skoeller@gmx.de').first
+    User.where(email: ADMIN_EMAIL_ADDRESS).first
   end
 
   def self.rand_user
     dummy_username = (0..6).map { MIXED[rand(MIXED.length)] }.join
     dummy_password = (0..8).map { MIXED[rand(MIXED.length)] }.join
-    avatar_image_url = UserHelper::fetch_random_avatar
     u = User.create(username: dummy_username,
                     password: dummy_password,
                     password_confirmation: dummy_password,
                     email: ADMIN_EMAIL_ADDRESS.sub(/^[^@]+/, dummy_username),
                     search_radius_meters: 1000,
                     snapshot: UserSnapshot.new(location: Location.default, cur_commit: Commit.latest),
-                    foto: open(avatar_image_url, allow_redirections: :safe){|t|t.base_uri}
+                    foto: UserHelper::fetch_random_avatar,
       )
   end
 
