@@ -57,6 +57,11 @@
       $("head").append("<style type='text/css'>#panel_control, #photo_nav_open_icon {position: fixed; top: "+panelCtrlTopOff+"px; width: 32px; height: 43px; z-index: 1000 !important;}</style>");
       $("head").append("<style type='text/css'>#photo_nav_panel {width:"+($(window).width()-0)+"px;}</style>");
       $("head").append("<style type='text/css'>#user_foto_media_input_current {width:"+Math.round($(window).width()*0.3)+"px;}</style>");
+    -# templates
+    = render partial: '/sandbox/photo_nav_panel.mobile'
+    = render partial: '/sandbox/media_input_panel'
+    -#= render partial: '/uploads/uploads.mobile'
+    = render partial: '/shared/uploads.mobile'#, locals: {resource: Upload.new, resource_name: :upload}
     #content{data: {role: 'content'}, style: 'padding: 0px !important;'}
       .auth{style: 'display:none;'}
         = render partial: '/auth/sign_in.mobile', locals: {resource: User.new, resource_name: :user}
@@ -73,9 +78,6 @@
         = link_to '', '#upload_data_panel', id: 'open_upload_data_btn', style: 'display: none;'
         = link_to '', '#attachment_view_panel', id: 'open_attachment_view_btn', style: 'display: none;'
     / panels nust be beginning or end in data-role: page
-    = render partial: '/sandbox/photo_nav_panel.mobile'
-    = render partial: '/sandbox/media_input_panel'
-    = render partial: '/uploads/uploads.mobile'
     #attachment_view_panel{data: {role: 'panel', animate: 'true', display: 'overlay'}}
     #attachment_view_panel_close_btn{style: 'display: none;'}
       %div{style: 'float: right; z-index: 9999; position: absolute; top: 5px; right: 5px; padding: 0px 0px 0px 10px;'}

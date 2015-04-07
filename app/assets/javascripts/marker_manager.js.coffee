@@ -111,9 +111,9 @@ class window.VoyageX.MarkerManager
     null
   
   @metaJSON: (marker, options) ->
-    {target: () ->
+    { target: () ->
         marker.target()
-      , m: marker, isUserMarker: marker.isUserMarker(), poi: options.poi, peer: options.peer}
+      , m: marker, isUserMarker: marker.isUserMarker(), poi: options.poi, peer: options.peer }
 
   userMarkerMouseOver: (enable = null) ->
     if enable == null

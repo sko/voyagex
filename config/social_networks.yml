@@ -5,3 +5,6 @@ social_networks:
   facebook:
     key: "674280899350070"
     secret: "8e16f4cc6ae9749f08b45601bb4bbe8b"
+  facebook_development:
+    key: "1014466245248402"
+    secret: "434cf4fbd9bdedd9925df26dab800512"

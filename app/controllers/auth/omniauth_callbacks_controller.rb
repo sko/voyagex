@@ -18,7 +18,10 @@ module Auth
     end
 
     SOCIAL_NETS_CONFIG.keys.each do |network|
+      next if network.match(/_#{Rails.env}$/).present?
+
       provides_callback_for network
+      provides_callback_for "#{network}_mobile"
     end
 
     # http://sourcey.com/rails-4-omniauth-using-devise-with-twitter-facebook-and-linkedin/

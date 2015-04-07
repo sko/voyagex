@@ -108,8 +108,7 @@ class window.VoyageX.Main
             prefix: 'pcn-'
           })
         $('#clear_cache').click () ->
-          Comm.StorageController.instance().clearCache()
-          cacheStats()
+          APP.clearCache()
 
   userId: () ->
     window.currentUser.id
@@ -137,7 +136,7 @@ class window.VoyageX.Main
         #    pan: false,
         #    animate: false
         #  })
-      @_online
+      @_online && this.isBackendOnline()
     else
       if @_navigatorOnline
         @_navigatorOnline = false
@@ -145,21 +144,27 @@ class window.VoyageX.Main
       false
 
   setOnline: () ->
-    @_online = true
-    Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
-    for n in [Main._MAP_CONTROL._minZoom..Main._MAP_CONTROL._maxZoom]
-      Main._MAP_CONTROL._zooms.push n
-    APP.storage().uploadQueue()
-    unless $('#network_state_online').prop('checked')
-      $('#network_state_online').prop('checked', true)
+    if this.isBackendOnline()
+      @_online = true
+      Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
+      for n in [Main._MAP_CONTROL._minZoom..Main._MAP_CONTROL._maxZoom]
+        Main._MAP_CONTROL._zooms.push n
+      APP.storage().uploadQueue()
+      unless $('#network_state_online').prop('checked')
+        $('#network_state_online').prop('checked', true)
 
   setOffline: () ->
-    @_online = false
-    Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
-    for n in Main._MAP_CONTROL._offlineZooms
-      Main._MAP_CONTROL._zooms.push n
-    unless $('#network_state_offline').prop('checked')
-      $('#network_state_offline').prop('checked', true)
+    if @_online
+      @_online = false
+      Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
+      for n in Main._MAP_CONTROL._offlineZooms
+        Main._MAP_CONTROL._zooms.push n
+      unless $('#network_state_offline').prop('checked')
+        $('#network_state_offline').prop('checked', true)
+
+  clearCache: () ->
+    Comm.StorageController.instance().clearCache()
+    cacheStats()
 
   resetConnection: (commSettingId) ->
     peerChannelEncKey = $('#i_follow_'+commSettingId).attr('data-channelEncKey')
@@ -202,14 +207,11 @@ class window.VoyageX.Main
   bookmarkLocation: (poiId = -1) ->
     if poiId == -1
       posLatLng = this.getSelectedPositionLatLng()
-      #APP.panPosition(poi.lat, poi.lng, poi.address)
-      APP.map().panTo(this.getSelectedPositionLatLng())
+      #APP.map().panTo(this.getSelectedPositionLatLng())
     else
-      #poiId = $('#poi_notes_container').attr('data-poiId')
       poi = APP.storage().get Comm.StorageController.poiKey({id: poiId})
       locationData = APP.storage().getLocation poi.locationId
       posLatLng = [locationData.lat, locationData.lng]
-    #this.publishPosition true, posLatLng
     Storage.Model.instance().addBookmark posLatLng, VoyageX.View.addBookmark
 
   # user-marker-tools
@@ -339,7 +341,7 @@ class window.VoyageX.Main
         #Main.markerManager().userMarkerMouseOver true
       if APP.map().getZoom() < 15
         APP.map().setZoom 15
-      #Main.markerManager().get().setLatLng(L.latLng(location.lat, location.lng))
+      #APP.getUserMarker(true).m.setLocation {lat: location.lat, lng: location.lng}
     else
       Storage.Model.instance().withLocation location.id, (location) ->
           APP.loadLocation location, false
@@ -398,6 +400,39 @@ class window.VoyageX.Main
       APP.publishPosition()
     APP.showPOIs location
 
+  # check if second-last path is inaccuracyFactor-times than both last and third last
+  # wenn die letzten beiden ungefähr gleich groß waren (fehler zurück)
+  # und die beiden davor ungefähr gleichgroß waren
+  # und der abstand vom letzten punkt zum 3 letzten punkt ungefähr so ist wie der vom 4 letzen zum 3. letzen
+  # dann vorlezzten punt entfernen.
+  # X-X-X-------X ... don't remove 
+  # X-X-------X-X ... remove 
+  # X-X-X-------X-------X ... don't remove 
+  # ?: also check @_moveSensorDistMeters
+  smoothenPath: (user, path) ->
+    if path.length >= 5
+      inaccuracyFactor1 = 1.25
+      inaccuracyFactor2 = 2.0
+      maxIdx = path.length - 1
+      fourthLastDist = L.latLng(path[maxIdx-4].lat, path[maxIdx-4].lng).distanceTo L.latLng(path[maxIdx-3].lat, path[maxIdx-3].lng)
+      thirdLastDist = L.latLng(path[maxIdx-3].lat, path[maxIdx-3].lng).distanceTo L.latLng(path[maxIdx-2].lat, path[maxIdx-2].lng)
+      factor1 = fourthLastDist / thirdLastDist
+      unless Math.max(factor1, 1/factor1) >= inaccuracyFactor1
+        secondLastDist = L.latLng(path[maxIdx-2].lat, path[maxIdx-2].lng).distanceTo L.latLng(path[maxIdx-1].lat, path[maxIdx-1].lng)
+        lastDist = L.latLng(path[maxIdx-1].lat, path[maxIdx-1].lng).distanceTo L.latLng(path[maxIdx].lat, path[maxIdx].lng)
+        factor2 = secondLastDist / lastDist
+        unless Math.max(factor2, 1/factor2) >= inaccuracyFactor1
+          factor3 = (lastDist+secondLastDist) / (thirdLastDist+fourthLastDist)
+          if factor3 >= inaccuracyFactor2
+            shortDist = L.latLng(path[maxIdx-2].lat, path[maxIdx-2].lng).distanceTo L.latLng(path[maxIdx].lat, path[maxIdx].lng)
+            factor4 = (thirdLastDist+fourthLastDist) / 2 / shortDist
+            unless shortDist >= (thirdLastDist+fourthLastDist)/2*inaccuracyFactor1
+              path = APP.storage().deleteFromPath user, APP.storage().pathKey(path), maxIdx-1
+              APP.view().hideTracePath APP.storage().pathKey(path)
+              VoyageX.Main.mapControl().drawPath currentUser, path
+              return true
+    false
+
   isRealPositionWatched: () ->
     APP._realPositionWatch?
 
@@ -416,8 +451,11 @@ class window.VoyageX.Main
       path = APP.storage().getPath currentUser
       if path?
         path = APP.storage().addToPath currentUser, APP._realPosition, path
-        VoyageX.Main.mapControl().drawPath currentUser, path, true
-        APP.getUserMarker().setLocation {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
+        unless APP.smoothenPath currentUser, path
+          # don't draw gps-location-error
+          VoyageX.Main.mapControl().drawPath currentUser, path, true
+          # don't set location unless user explicitely want's to by activating path (else might disturb work)
+          APP.getUserMarker(true).m.setLocation {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
     APP.watchRealPosition()
   
   stopRealPositionWatch: () ->
@@ -662,23 +700,18 @@ class window.VoyageX.Main
     VoyageX.TemplateHelper.openMarkerControlsPopup()
 
   poiNoteControls: () ->
-    if window.isMobile()
-      $("#open_upload_data_btn").click()
+    if isMobile()
+      $('#open_upload_data_btn').click()
     else
       $('#upload_data_conrols').dialog('open')
       if ! $('#upload_data_conrols').parent().hasClass('seethrough_panel')
         $('#upload_data_conrols').parent().addClass('seethrough_panel')
 
+  # sets up form
   poiNoteInput: () ->
     $('#poi_note_input').html('')
     VoyageX.TemplateHelper.poiNoteInputHtml('poi_note_input')
-    if isMobile()
-      $('#open_upload_data_btn').click()
-    else
-      #$('#poi_note_input').css('display', 'block')
-      $('#upload_data_conrols').dialog('open')
-      if ! $('#upload_data_conrols').parent().hasClass('seethrough_panel')
-        $('#upload_data_conrols').parent().addClass('seethrough_panel')
+    APP.poiNoteControls()
 
   getUserMarker: (meta = false) ->
     markerMeta = Main.markerManager().forUser()

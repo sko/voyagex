@@ -9,16 +9,16 @@ else
 class window.VoyageX.Backend
   
   @_SINGLETON = null
-  @_PING_INTERVAL_MILLIS = 5000
+  @_PING_INTERVAL_MILLIS = 10000
   @_PING_CHECK_DELAY_MILLIS = 3000
   @_POS_QUERY_INTERVAL_MILLIS = 20000
   @_POS_QUERY_TIMEOUT_MILLIS = 60000
 
   constructor: () ->
     Backend._SINGLETON = this
-    @_pingState = { pingKey: -1 }
+    @_pingState = { active: false, pingCount: 0, pingKey: -1 }
     @_online = false
-    setTimeout "VoyageX.Backend.instance().pingBackend()", Backend._PING_INTERVAL_MILLIS
+    setTimeout "VoyageX.Backend.instance().pingBackend()", 3000
     
     #window.addEventListener "offline", (e) ->
     #    alert("offline")
@@ -30,32 +30,48 @@ class window.VoyageX.Backend
     #    alert("Error fetching manifest: a good chance we are offline")
 
   _checkPingResponse: (pingKey) ->
-    if VoyageX.Backend.instance()._pingState.pingKey != pingKey
+    if Backend.instance()._pingState.pingKey != pingKey
       #console.log 'Backend - _checkPingResponse: pingKey = '+pingKey
-      VoyageX.Backend.instance()._pingState.pingKey = pingKey
+      Backend.instance()._pingState.pingKey = pingKey
       setTimeout "VoyageX.Backend.instance().pingBackend()", Backend._PING_INTERVAL_MILLIS
 
   # backend needs it's own ping because app can be online when backend is down.
   pingBackend: () ->
+    @_pingState.active ||= true
     pingKey = Math.round(Math.random() * 100000)
     $.ajax
       type: 'GET'
       url: '<%= comm_ping_path(key: ':key') %>'.replace(/:key/, pingKey)
       dataType: 'json'
     .done (msg) ->
-        VoyageX.Backend.instance()._pingState.pingKey = msg.ping_key
-        VoyageX.Backend.instance()._online = true
+        Backend.instance()._pingState.pingKey = msg.ping_key
+        Backend.instance()._online = true
         unless APP._online
           APP.setOnline()
-        setTimeout "VoyageX.Backend.instance().pingBackend()", Backend._PING_INTERVAL_MILLIS
+        Backend.instance()._pingState.active &&= (!APP._comm.isOnline())
+        if Backend.instance()._pingState.active
+          setTimeout "VoyageX.Backend.instance().pingBackend()", Backend._PING_INTERVAL_MILLIS
     .fail (jqXHR, textStatus) ->
-        VoyageX.Backend.instance()._online = false
+        Backend.instance()._online = false
         if APP._online
           APP.setOffline()
-        setTimeout 'VoyageX.Backend.instance()._checkPingResponse('+pingKey+')', Backend._PING_CHECK_DELAY_MILLIS
+        Backend.instance()._pingState.active &&= (!APP._comm.isOnline())
+        if Backend.instance()._pingState.active
+          setTimeout 'VoyageX.Backend.instance()._checkPingResponse('+pingKey+')', Backend._PING_CHECK_DELAY_MILLIS
 
+  # faye client takes some time to start up while backend already online
+  # first call might still 
   isOnline: () ->
-    @_online
+    online = @_online || APP._comm.isOnline()
+    if APP._comm.isOnline()
+      @_pingState.active &&= false
+    else
+      unless @_pingState.active
+        # assume backend is down when faye is down.
+        online = @_online = false
+        # also check Comm.Comm - constructor
+        this.pingBackend() # disable in development mode when binding pry
+    online
 
   register: (userId) ->
     data = { _method: 'put',\

@@ -466,7 +466,8 @@ binding.pry
 
     channel_path = '/uploads'
     channel_path += "#{PEER_CHANNEL_PREFIX}#{@user.comm_port.channel_enc_key}" unless USE_GLOBAL_SUBSCRIBE
-    Comm::ChannelsController.publish(channel_path, upload_msg)
+    #Comm::ChannelsController.publish(channel_path, upload_msg)
+    COMM_ADAPTER.send :uploads, @user.comm_port.channel_enc_key, upload_msg
   end
 
   def after_save
@@ -481,6 +482,7 @@ binding.pry
 
     channel_path = '/uploads'
     channel_path += "#{PEER_CHANNEL_PREFIX}#{@upload.attached_to.user.comm_port.channel_enc_key}" unless USE_GLOBAL_SUBSCRIBE
-    Comm::ChannelsController.publish(channel_path, upload_msg)
+    #Comm::ChannelsController.publish(channel_path, upload_msg)
+    COMM_ADAPTER.send :uploads, @upload.attached_to.user.comm_port.channel_enc_key, upload_msg
   end
 end

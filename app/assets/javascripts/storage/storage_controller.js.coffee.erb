@@ -1,3 +1,4 @@
+# window.open("data:text/json," + JSON.stringify(APP.storage().getUser(264)), "_v_x_json")
 class window.Comm.StorageController
 
   @_SINGLETON = null
@@ -361,6 +362,14 @@ class window.Comm.StorageController
     curPath.entries.push {timestamp: new Date().getTime(), lat: position.lat, lng: position.lng}
     localStorage.setItem storeKey, JSON.stringify(users)
     curPath.entries
+
+  deleteFromPath: (user, pathKey, index) ->
+    storeKey = 'comm.users'
+    users = JSON.parse(localStorage.getItem(storeKey))
+    paths = users[user.id].paths
+    paths[pathKey].entries.splice index, 1
+    localStorage.setItem storeKey, JSON.stringify(users)
+    paths[pathKey].entries
 
   # no error-handling if user not in localStroage
   # no error-handling if paths doesn't exist

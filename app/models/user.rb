@@ -91,11 +91,19 @@ class User < ActiveRecord::Base
   end
 
   SOCIAL_NETS_CONFIG.keys.each do |network|
+    next if network.match(/_#{Rails.env}$/).present?
+    
     define_method "#{network}_identity" do
+      identities.where(provider: network).first
+    end
+    define_method "#{network}_mobile_identity" do
       identities.where(provider: network).first
     end
 
     define_method "connected_to_#{network}?" do
+      send("#{network}_identity").present?
+    end
+    define_method "connected_to_#{network}_mobile?" do
       send("#{network}_identity").present?
     end
   end

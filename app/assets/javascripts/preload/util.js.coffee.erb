@@ -48,7 +48,7 @@ window.showCacheStats = (numTiles, tilesSize) ->
     if window.isMobile()
       fileSysLink = ' / <span style="color:'+color+';">[<a href="javascript:showCacheFileView();" style="color:'+color+';">show</a>]</span>'
     else
-      fileSysLink = ' / <span style="color:'+color+';">[<a href="filesystem:http://'+document.location.host+'/persistent/" style="color:'+color+';">show</a>]</span>'
+      fileSysLink = '' #' / <span style="color:'+color+';">[<a href="filesystem:http://'+document.location.host+'/persistent/" style="color:'+color+';">show</a>]</span>'
   $('#cache_stats').html('<span><span style="color:'+color+';">cache-size: '+Math.round(tilesSize / 1024)+' kB / #'+numTiles+' tiles</span>'+fileSysLink+'</span>')
 
 window.showCacheFileView = () ->

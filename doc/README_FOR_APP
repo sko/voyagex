@@ -13,6 +13,21 @@ Homer: "Das ist mein erster Tag!"
 Burns: "Hehehe, warum sagen Sie das nicht gleich?"
 
 
+################################## öffne Poi-Popup
+Main - showPOI: (poiId, poiNoteId) ->
+
+################################## öffne Poi-Create/Comment-Eingabe-Layer aus Poi-Marker
+Main - poiNoteControls: () ->
+
+################################## öffne Poi-Create/Comment-Eingabe-Layer aus Arbeistmarker
+Main - poiNoteInput()
+  TemplateHelper - poiNoteInputHtml
+
+
+
+TemplateHelper - openPOINotePopup
+  TemplateHelper - poiNoteInputHtml
+
 replace: assets-preompile kate
 .+/assets/
 

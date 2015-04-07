@@ -2,12 +2,21 @@
 // They will automatically be included in application.css.
 // You can use Sass (SCSS) here: http://sass-lang.com/
 
-.sign_opt {
+a.menu_link {
   font-size: 11px;
+  color: #9d9d9d;
+}
+a.menu_link:hover  {
+  color: #ffffff;
+  text-decoration: none;
 }
 
 #content {
   width: 100%;
+}
+
+.whoami-img {
+  max-width: 150px;
 }
 
 #content_chat {

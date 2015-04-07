@@ -21,7 +21,11 @@ window.currentUser = { id: <%= tmp_user.id -%>,\
                        curCommitHash: null }
 $('.whoami').each () ->
   $(this).html("<%= escape_javascript(link_to t('auth.whoami', username: tmp_user.username), change_username_path, class: 'navbar-inverse navbar-brand', data: { remote: 'true', format: :js }) -%>")
+$('#whoami_edit').show()
+$('#whoami_nedit').hide()
 $('.whoami-img').attr('src', window.currentUser.foto.url)
+$('#whoami_img_edit').hide()
+$('#whoami_img_nedit').show()
 for channel in VoyageX.Main.commChannels()
   channelPath = '/'+channel
   unless window.VoyageX.USE_GLOBAL_SUBSCRIBE

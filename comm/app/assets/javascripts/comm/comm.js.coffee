@@ -28,13 +28,21 @@ class window.Comm.Comm
 # 3) everything over faye
   constructor: (userId, channelCallBacksList, sysChannelEncKey, systemCallBack) ->
     Comm._SINGLETON = this
+    @_online = false
     @_user_id = userId
     @_storageController = window.Comm.StorageController.instance()
 
     client = new Faye.Client(document.location.origin+'/comm')
     # rather for debugging
     client.addExtension({ incoming: Comm._incoming, outgoing: Comm._outgoing })
-
+    client.on 'transport:down', () ->
+        window.Comm.Comm.instance()._online = false
+        # also check VoyageX.Backend - isOnline
+        unless VoyageX.Backend.instance()._pingState.active
+          window.VoyageX.Backend.instance().pingBackend() # disable in development mode when binding pry
+    client.on 'transport:up', () ->
+        window.Comm.Comm.instance()._online = true
+    
     # map callbacks to channels
     Comm.channelCallBacksJSON = new Object()
     Comm.channelCallBacksJSON['system'] = { callback: systemCallBack, channel_enc_key: sysChannelEncKey }
@@ -54,7 +62,11 @@ class window.Comm.Comm
     #  , false
     #window.applicationCache.addEventListener "error", (e) ->
     #    alert("Error fetching manifest: a good chance we are offline")
-    
+  
+  isOnline: () ->
+    #client._state == client.CONNECTED
+    @_online
+
   send: (channel, message, peer = null) ->
     # 1) client wants to publish before register-ajax-response set the enc_key
     #    1.1: store request and send after register (local storage)

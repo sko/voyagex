@@ -1,3 +1,5 @@
+require 'strategies/facebook_mobile'
+
 # Use this hook to configure devise mailer, warden hooks and so forth.
 # Many of these configuration options can be set straight in your model.
 Devise.setup do |config|
@@ -235,8 +237,13 @@ Devise.setup do |config|
   # Add a new OmniAuth provider. Check the wiki for more information on setting
   # up on your models and hooks.
   # config.omniauth :github, 'APP_ID', 'APP_SECRET', scope: 'user,public_repo'
-  config.omniauth :facebook, SOCIAL_NETS_CONFIG[:facebook][:key], SOCIAL_NETS_CONFIG[:facebook][:secret]
-
+  fb_conf_key = [:development].include?(Rails.env.to_sym) ? "facebook_#{Rails.env}".to_sym : :facebook
+  config.omniauth :facebook, SOCIAL_NETS_CONFIG[fb_conf_key][:key], SOCIAL_NETS_CONFIG[fb_conf_key][:secret]
+  config.omniauth :facebook_mobile, SOCIAL_NETS_CONFIG[fb_conf_key][:key], SOCIAL_NETS_CONFIG[fb_conf_key][:secret],
+      :name => 'facebook_mobile',
+      :client_options => {
+        :authorize_url => "https://m.facebook.com/dialog/oauth"
+      }
   # ==> Warden configuration
   # If you want to use other strategies, that are not supported by Devise, or
   # change the failure app, you can configure them inside the config.warden block.
@@ -260,3 +267,8 @@ Devise.setup do |config|
   # so you need to do it manually. For the users scope, it would be:
   # config.omniauth_path_prefix = '/my_engine/users/auth'
 end
+# module OmniAuth
+#   module Strategies
+#     autoload :FacebookMobile, Rails.root.join('lib', 'omni_auth', 'strategies', 'facebook_mobile') 
+#   end
+# end

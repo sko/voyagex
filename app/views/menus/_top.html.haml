@@ -22,61 +22,55 @@
               #{t('menu.home').html_safe}
             = link_to t('menu.home'), '#home', id: 'menu_home', onclick: "javascript:VoyageX.NavBar.menuNavClick('home')", class: 'navbar-brand'
           %li{style: 'padding: 0px 0px 0px 20px;'}
-            %span.whoami{style: 'float :left; color: #ffffff;'}
-              - if user_signed_in?
-                = link_to t('auth.whoami', username: tmp_user().username), change_username_path, class: 'navbar-inverse navbar-brand', data: { remote: "true", format: :js }
-              - else
-                %span{class: 'navbar-inverse navbar-brand'}
+            %span{style: 'float :left; color: #ffffff;'}
+              %span#whoami_edit{style: "display: #{user_signed_in? ? 'inline' : 'none'};"}>
+                = link_to change_username_path, class: 'navbar-inverse navbar-brand', data: { remote: "true", format: :js } do
+                  %span.whoami>
+                    = t('auth.whoami', username: tmp_user().username)
+              %span#whoami_nedit{style: "display: #{user_signed_in? ? 'none' : 'inline'};", class: 'navbar-inverse navbar-brand'}
+                %span.whoami>
                   #{t('auth.whoami', username: tmp_user().username).html_safe}
             %span.myfoto{style: 'float :left; z-index:1003;'}
               = image_tag tmp_user().foto.url, class: 'whoami-img', style: 'margin: 3px 0px -10px 0px; max-height: 45px;'
             .logout-link{style: "display: #{user_signed_in? ? 'block' : 'none'}; float: right;"}
               = link_to t('auth.sign_out'), destroy_user_session_path, class: 'navbar-inverse navbar-brand', data: { remote: "true", format: :js, method: :delete }
-          %li{id: :sign_up_or_in, style: "display: #{user_signed_in? ? 'none' : 'inline'};"}
+          %li{id: :sign_up_or_in, style: "display: #{user_signed_in? ? 'none' : 'inline'}; padding: 7px 0px 0px 0px;"}
             .local_auth{style: "float: left;"}
-              %span
-                = link_to t('auth.sign_in'), '#', id: 'show_sign_in', onclick: 'javascript:$("#sign_in_modal").dialog("open")', class: 'navbar-brand sign_opt'
-                /%button{onclick: 'javascript:$("#sign_in_modal").dialog("open")'}
-                /  #{t('auth.sign_in')}
-              %span
-                = link_to t('auth.sign_up'), '#', id: 'show_sign_up', onclick: 'javascript:$("#sign_up_modal").dialog("open")', class: 'navbar-brand sign_opt'
-                /%button{onclick: 'javascript:$("#sign_up_modal").dialog("open")'}
-                /  #{t('auth.sign_up')}
-            .button.facebook_login
-              = link_to user_omniauth_authorize_path(:facebook) do
-                = image_tag 'facebook-icon.png', style: 'width: 25px; height: 25px;'
-          %li{style: 'padding: 15px 0px 0px 20px;'}
+              .login-link
+                = link_to t('auth.sign_in'), '#', id: 'show_sign_in', onclick: 'javascript:$("#sign_in_modal").dialog("open")', class: 'sign_opt menu_link'
+                -#%button{onclick: 'javascript:$("#sign_in_modal").dialog("open")'}
+                -#  #{t('auth.sign_in')}
+              .reg-link
+                = link_to t('auth.sign_up'), '#', id: 'show_sign_up', onclick: 'javascript:$("#sign_up_modal").dialog("open")', class: 'sign_opt menu_link'
+                -#%button{onclick: 'javascript:$("#sign_up_modal").dialog("open")'}
+                -#  #{t('auth.sign_up')}
+            .omniauth-links{style: "float: right; margin: 5px 10px 0px 10px;"}
+              .button.facebook_login
+                = link_to user_omniauth_authorize_path(:facebook) do
+                  = image_tag 'facebook-icon.png', style: 'width: 25px; height: 25px;'
+          %li{style: 'padding: 5px 0px 0px 20px;'}
             - lcls = lang_change_links request, ['c']
-            %span{style: 'float:left;'}
-              = link_to image_tag("en.png", style: "border-width:0px;width:10px;height:10px;"), '#', onclick: "javascript:document.location.href=window.clientState.linkForView('#{lcls[0]}', 'en', '#{lcls[1]}');", :style => "color:#00dd;"
             %span
-              &nbsp;
+              = link_to image_tag("en.png", style: "border-width:0px;width:10px;height:10px;"), '#', onclick: "javascript:document.location.href=window.clientState.linkForView('#{lcls[0]}', 'en', '#{lcls[1]}');", :style => "color:#00dd;"
+            %br
+            %span
               = link_to image_tag("de.png", style: "border-width:0px;width:10px;height:10px;"), '#', onclick: "javascript:document.location.href=window.clientState.linkForView('#{lcls[0]}', 'de', '#{lcls[1]}');", :style => "color:#00dd;"
           %li{style: 'padding: 0px 0px 0px 0px;'}
             = link_to image_tag('info.png', style: 'width: 25px;'), '#', onclick: 'javascript:VoyageX.NavBar.menuNavClick("help")'
-      .info{style: 'margin: 15px 0px 0px 0px;'}
-        -# search_radius is now in usermarler-tool-popup
-          #search_radius{style: 'margin: -10px 0px 0px 10px; padding: 0px; float:left; color: white;'}
-            %div{style: 'float:left; font-size: 9px; padding-top: 5px;'}
-              radius:
-            %div{style: 'float: right; padding-left: 5px;'}
-              %div{style: 'height: 15px; font-size: 9px;'}
-                = radio_button_tag 'search_radius_display', 'show', false, onclick: 'toggleSearchRadiusDisplay(this)'
-                = label_tag 'search_radius_display_show', 'on'
-              %div{style: 'height: 15px; font-size: 9px;'}
-                = radio_button_tag 'search_radius_display', 'hide', true, onclick: 'toggleSearchRadiusDisplay(this)'
-                = label_tag 'search_radius_display_hide', 'off'
-        #cache_info{style: 'float: left; margin: -8px 0px 0px 20px; font-size: 11px; padding: 0px; color: #ffffff;'}
+      .info{style: 'margin: 7px 0px 0px 10px;'}
+        #tile_info{style: 'float: left; font-size: 11px; padding: 0px; color: #ffffff;'}
           %div
-            [
-            = link_to 'tile-info', '#', onclick: "javascript:VoyageX.Main.mapControl().showTileInfo();", :style => "color:#00dd;"
-            ]
+            = link_to 'tile-info', '#', onclick: "javascript:VoyageX.Main.mapControl().showTileInfo();", class: 'menu_link'
           %div
             %span#zoom_level
+        #cache_info{style: 'float: left; font-size: 11px; padding: 0px; color: #ffffff;'}
+          %span#cache_ctrls{style: 'float: left; margin-left: 10px;'}
+            = link_to 'Clear Cache', '#', onclick: "javascript:APP.clearCache();", class: 'menu_link'
+            \/
+            = link_to 'Show Cache', "filesystem:#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}/persistent/", class: 'menu_link'
+          %br
+          %div
             %span#cache_stats{style: 'margin-left: 10px;'}
-        %span#cache_ctrls{style: 'margin-left: 10px;'}
-          %button{id: 'clear_cache'}
-            Clear Cache
         #network_state_view{style: 'float:right; color: white; margin-top: -10px; padding: 0px;'}
           %div{style: 'height: 15px; font-size: 9px;'}
             = radio_button_tag 'network_state', 'online', true, onclick: 'toggleNetworkState(this)'

@@ -38,8 +38,10 @@ de:
     comment: Kommentar
     add_comment: Kommentieren
     add_comment_submit: Hinzufügen
+    plain_text: Text
     camera: Foto
     file: Datei
+    embed: Embed
   admin:
     search_radius: Suchradius
     i_follow: Ich folge

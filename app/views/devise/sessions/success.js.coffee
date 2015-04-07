@@ -30,7 +30,11 @@ window.currentUser = { id: <%= current_user.id -%>,\
                        curCommitHash: '<%= current_user.snapshot.cur_commit.hash_id -%>' }
 $('.whoami').each () ->
   $(this).html("<%= escape_javascript(link_to t('auth.whoami', username: current_user.username), change_username_path, class: 'navbar-inverse navbar-brand', data: { remote: 'true', format: :js }) -%>")
+$('#whoami_edit').show()
+$('#whoami_nedit').hide()
 $('.whoami-img').attr('src', window.currentUser.foto.url)
+$('#whoami_img_edit').show()
+$('#whoami_img_nedit').hide()
 $('#comm_peer_data').html("<%= j render(partial: 'shared/peers', locals: {user: current_user}) -%>")
 # temporary for photonav - will be changed to template like pois_preview
 $('#location_bookmarks').html("<%= j render(partial: 'sandbox/location_bookmarks', locals: {user: current_user}) -%>")

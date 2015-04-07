@@ -177,7 +177,8 @@ class window.VoyageX.View
     path = APP.storage().getPath peer
     if path?
       path = APP.storage().addToPath peer, {lat: lat, lng: lng}, path
-      VoyageX.Main.mapControl().drawPath peer, path, true
+      unless APP.smoothenPath peer, path
+        VoyageX.Main.mapControl().drawPath peer, path, true
 
   setTraceCtrlIcon: (user, marker, state) ->
     if state == 'start'

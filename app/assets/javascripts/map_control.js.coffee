@@ -210,15 +210,7 @@ class window.VoyageX.MapControl
       if view.zoom in mC._offlineZooms
         if deferredModeParams != null
           deferredModeParams.tileUrl = tileUrl
-        # _map maybe not ready on very first call
-        #if mC._map?
-        #  readyImage = mC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS, deferredModeParams
-        #else
-        #  readyImage = MapControl.loadAndPrefetch mC, [view.tile.column, view.tile.row, view.zoom], view.subdomain, deferredModeParams
         readyImage = MapControl.loadAndPrefetch mC, [view.tile.column, view.tile.row, view.zoom], view.subdomain, deferredModeParams
-        # next is in map-event-handlers ready, onmovend
-        #unless Comm.StorageController.isFileBased() || !mC._map?
-        #  mC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS, deferredModeParams
       else
         readyImage = tileUrl
         if deferredModeParams != null

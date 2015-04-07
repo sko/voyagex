@@ -38,8 +38,10 @@ en:
     comment: Comment
     add_comment: Comment
     add_comment_submit: Add
+    plain_text: Text
     camera: Camera
     file: File
+    embed: Embed
   admin:
     search_radius: Searchradius
     i_follow: I follow

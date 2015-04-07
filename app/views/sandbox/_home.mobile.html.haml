@@ -10,30 +10,45 @@
   #upload_message
   #upload_progress
 #administration
-  %span.whoami{style: 'float :left; padding: 13px 0px 13px 0px;'}
-    - if user_signed_in?
-      %span#whoami_img_container
-        = link_to image_tag(tmp_user().foto.url, style: 'max-width: 150px;', class: 'whoami-img'), '', onclick: 'javascript:toogleUserFotoUpload()'
-      #user_foto_input_container{style: 'display:none;'}
-        = render partial: '/users/foto.mobile', locals: {user: tmp_user()}
-      = link_to t('auth.whoami', username: tmp_user().username), change_username_path, data: { remote: "true", format: :js }
-    - else
-      %span
-        #{t('auth.whoami', username: tmp_user().username).html_safe}
-  .logout-link{style: "float: left; display: #{user_signed_in? ? 'block' : 'none'}; padding: 13px 0px 0px 0px;"}
-    = link_to t('auth.sign_out'), destroy_user_session_path, style: 'margin-left: 20px;', data: { remote: "true", format: :js, method: :delete }
-  #content_auth{style: 'float: left;'}
-    - popup_params = { data: { rel: 'popup', 'position-to' => 'window', 'data-role' => 'button' } }
-    .login-link{style: "display: #{user_signed_in? ? 'none' : 'block'}; float: left;"}
-      = link_to t('auth.sign_in'), '#sign_in_modal', popup_params
-    .reg-link{style: "display: #{user_signed_in? ? 'none' : 'block'}; margin-left: 20px;"}
-      = link_to t('auth.sign_up'), '#sign_up_modal', popup_params.merge(style: 'margin-left: 20px;')
+  %div{style: 'float :left; padding: 13px 0px 13px 0px;'}
+    %span#whoami_img_container
+      %span#whoami_img_edit{style: "display: #{user_signed_in? ? 'inline' : 'none'};"}
+        = link_to image_tag(tmp_user().foto.url, class: 'whoami-img'), '#edit_whoami_img', onclick: 'javascript:toogleUserFotoUpload()'
+      %span#whoami_img_nedit{style: "display: #{user_signed_in? ? 'none' : 'inline'};"}
+        = image_tag tmp_user().foto.url, class: 'whoami-img'
+    #user_foto_input_container{style: 'display:none;'}
+      = render partial: '/users/foto.mobile', locals: {user: tmp_user()}
+    %br
+    %span#whoami_edit{style: "display: #{user_signed_in? ? 'inline' : 'none'};"}>
+      = link_to change_username_path, data: { remote: "true", format: :js } do
+        %span.whoami>
+          = t('auth.whoami', username: tmp_user().username).html_safe
+    %span#whoami_nedit{style: "display: #{user_signed_in? ? 'none' : 'inline'};"}>
+      %span.whoami>
+        = t('auth.whoami', username: tmp_user().username).html_safe
+  .auth_ctrl{style: 'float: left; padding: 10px 0px 0px 5px;'}
+    .logout-link{style: "display: #{user_signed_in? ? 'block' : 'none'}; padding: 13px 0px 0px 0px;"}
+      = link_to t('auth.sign_out'), destroy_user_session_path, style: 'margin-left: 20px;', data: { remote: "true", format: :js, method: :delete }
+    #sign_up_or_in{style: "display: #{user_signed_in? ? 'none' : 'inline'};"}
+      - popup_params = { data: { rel: 'popup', 'position-to' => 'window', 'data-role' => 'button' } }
+      .login-link
+        = link_to t('auth.sign_in'), '#sign_in_modal', popup_params
+      %br
+      .reg-link
+        = link_to t('auth.sign_up'), '#sign_up_modal', popup_params
+      - if Rails.env.to_sym == :development
+        %br
+        .omniauth-links
+          .button.facebook_login
+            = link_to user_omniauth_authorize_path(:facebook, origin: "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}") do
+              = image_tag 'facebook-icon.png', style: 'width: 25px; height: 25px;'
   #lang_select{style: 'float: right;'}
     - lcls = lang_change_links request, ['c']
-    %div{style: 'float: left; margin: 10px 10px 0px 20px;'}
+    %div{style: 'margin: 10px 10px 0px 0px;'}
       = link_to image_tag("en.png", style: "border-width:0px;width:30px;height:20px;"), '#', onclick: "javascript:document.location.href=window.clientState.linkForView('#{lcls[0]}', 'en', '#{lcls[1]}');", :style => "color:#00dd;"
-    %div{style: 'float: right; margin: 10px 10px 0px 0px;'}
+    %br
+    %div{style: 'margin: 5px 10px 0px 0px;'}
       = link_to image_tag("de.png", style: "border-width:0px;width:30px;height:20px;"), '#', onclick: "javascript:document.location.href=window.clientState.linkForView('#{lcls[0]}', 'de', '#{lcls[1]}');", :style => "color:#00dd;"
   = render partial: '/users/settings.mobile'
-= render partial: '/shared/uploads.mobile', locals: {resource: Upload.new, resource_name: :upload}
+-#= render partial: '/shared/uploads.mobile', locals: {resource: Upload.new, resource_name: :upload}
 = render partial: '/sandbox/stats.mobile'
