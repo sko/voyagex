@@ -29,10 +29,10 @@
     :javascript
       var mapWidth = $(window).width() - 13;
       var mapHeight = Math.round($(window).height() - 51);
-      $("head").append("<style type='text/css'>#map {width:"+mapWidth+"px;height:"+mapHeight+"px;}</style>");
+      $("head").append("<style id='map_style' type='text/css'>#map {width:"+mapWidth+"px;height:"+mapHeight+"px;}</style>");
       $("head").append("<style type='text/css'>#cur_loc_addr {position: fixed; top: "+41+"px; height: 20px; z-index: 1000 !important;}</style>");
       var panelCtrlTopOff = $(window).height() - 41;
-      $("head").append("<style type='text/css'>#panel_control {position: fixed; top: "+panelCtrlTopOff+"px; height: 20px; z-index: 1000 !important;}</style>");
+      $("head").append("<style id='panel_control_style' type='text/css'>#panel_control {position: fixed; top: "+panelCtrlTopOff+"px; height: 20px; z-index: 1000 !important;}</style>");
     /%audio{id: "audio_notify"}
     /  %source{src: "/3rd_man_gugu.amr", type: "audio/amr"}
 

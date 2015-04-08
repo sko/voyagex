@@ -64,8 +64,8 @@ class window.Comm.Comm
     #    alert("Error fetching manifest: a good chance we are offline")
   
   isOnline: () ->
-    #client._state == client.CONNECTED
-    @_online
+    client._state == client.CONNECTED
+    #@_online
 
   send: (channel, message, peer = null) ->
     # 1) client wants to publish before register-ajax-response set the enc_key

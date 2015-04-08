@@ -59,6 +59,8 @@ class window.VoyageX.Main
                                    ['/radar', view._radarCB, VoyageX.CHANNEL_ENC_KEY]],
                                    VoyageX.SYS_CHANNEL_ENC_KEY,
                                    APP._systemCB)
+        #setTimeout "VoyageX.Backend.instance().pingBackend()", 3000
+        VoyageX.Backend.instance().pingBackend()
         # Map initialisation (LeafletJS)
         Main._MAP_CONTROL = new VoyageX.MapControl mapOptions, offlineZooms, tileHandler
         Main._MARKER_MANAGER = new VoyageX.MarkerManager APP.map()
@@ -82,6 +84,24 @@ class window.VoyageX.Main
 #       #  )
         #APP._initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
         if isMobile()
+          if window.isMobile()
+            fullscreenDialog = VoyageX.TemplateHelper._updateIds 'tmpl_fullscreen_dialog'
+            $('#system_dialog_panel').html(fullscreenDialog)
+            $('#open_system_dialog_btn').click()
+          # fs = confirm("Enable Fullscreen?");
+          # if fs
+          #   $('body')[0].webkitRequestFullscreen()
+#     $(document).on 'fullscreenchange', APP.fullscreenChanged
+#     $(document).on 'webkitfullscreenchange', APP.fullscreenChanged
+#     $(document).on 'mozfullscreenchange', APP.fullscreenChanged
+#     $(document).on 'MSFullscreenChange', APP.fullscreenChanged
+# document.addEventListener("fullscreenchange", FShandler);
+# document.addEventListener("webkitfullscreenchange", FShandler);
+# document.addEventListener("mozfullscreenchange", FShandler);
+# document.addEventListener("MSFullscreenChange", FShandler);    document.addEventListener("fullscreenerror", FSerrorhandler);
+#     document.addEventListener("webkitfullscreenerror", FSerrorhandler);
+#     document.addEventListener("mozfullscreenerror", FSerrorhandler);
+#     document.addEventListener("MSFullscreenError", FSerrorhandler);
           APP.map().invalidateSize({
               reset: true,
               pan: false,
@@ -161,6 +181,9 @@ class window.VoyageX.Main
         Main._MAP_CONTROL._zooms.push n
       unless $('#network_state_offline').prop('checked')
         $('#network_state_offline').prop('checked', true)
+
+  setFullScreen: () ->
+    window.currentUser.id
 
   clearCache: () ->
     Comm.StorageController.instance().clearCache()
@@ -625,6 +648,10 @@ class window.VoyageX.Main
         for note in poi.notes
           Storage.Model.instance().syncWithStorage msg, VoyageX.View.addPoiNotes, note, loadStats
         APP.view().alert()
+
+  _syncPoiCB: (cbPoi, cbNewNotes) ->
+    VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
+    APP.view().scrollToPoiNote cbNewNotes[cbNewNotes.length-1].id
 
   panPosition: (lat, lng, address) ->
     APP._setSelectedPositionLatLng Main.markerManager().get(), lat, lng, address

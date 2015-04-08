@@ -17,8 +17,9 @@ class window.VoyageX.Backend
   constructor: () ->
     Backend._SINGLETON = this
     @_pingState = { active: false, pingCount: 0, pingKey: -1 }
-    @_online = false
-    setTimeout "VoyageX.Backend.instance().pingBackend()", 3000
+    @_online = true
+    #setTimeout "VoyageX.Backend.instance().pingBackend()", 3000
+    #Backend.instance().pingBackend()
     
     #window.addEventListener "offline", (e) ->
     #    alert("offline")

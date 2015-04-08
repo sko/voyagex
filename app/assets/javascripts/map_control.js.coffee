@@ -5,7 +5,6 @@
 class window.VoyageX.MapControl
 
   @_SINGLETON = null
-#  @_COUNT = 0
 
   # zooms msut be sorted from lowest (f.ex. 1) to highest (f.ex. 16)
   constructor: (mapOptions, offlineZooms, tileHandler = null) ->
@@ -37,23 +36,21 @@ class window.VoyageX.MapControl
         #for poi in APP._initPoisOnMap
         #  marker = Main.markerManager().add poi.location, VoyageX.Main._markerEventsCB, false
         if APP.isOnline()
-          mC = VoyageX.MapControl.instance()
           unless Comm.StorageController.isFileBased()
-            x = parseInt(mC._map.project(mC._map.getCenter()).x/256)
-            y = parseInt(mC._map.project(mC._map.getCenter()).y/256)
-            view = {zoom: mC._map.getZoom(), tile: {column: x, row: y}, subdomain: mC._mapOptions.subdomains[0]}
-            mC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS
+            x = parseInt(MC._map.project(MC._map.getCenter()).x/256)
+            y = parseInt(MC._map.project(MC._map.getCenter()).y/256)
+            view = {zoom: MC._map.getZoom(), tile: {column: x, row: y}, subdomain: MC._mapOptions.subdomains[0]}
+            MC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS
     @_map.on 'moveend', (event) ->
         console.log '### map-event: moveend ...'
         if MapControl.instance()._showTileInfo
           MapControl.instance().showTileInfo false
         if APP.isOnline()
-          mC = VoyageX.MapControl.instance()
           unless Comm.StorageController.isFileBased()
-            x = parseInt(mC._map.project(mC._map.getCenter()).x/256)
-            y = parseInt(mC._map.project(mC._map.getCenter()).y/256)
-            view = {zoom: mC._map.getZoom(), tile: {column: x, row: y}, subdomain: mC._mapOptions.subdomains[0]}
-            mC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS
+            x = parseInt(MC._map.project(MC._map.getCenter()).x/256)
+            y = parseInt(MC._map.project(MC._map.getCenter()).y/256)
+            view = {zoom: MC._map.getZoom(), tile: {column: x, row: y}, subdomain: MC._mapOptions.subdomains[0]}
+            MC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS
         posLatLng = VoyageX.MapControl.instance()._map.getCenter()
         #position = {coords: {latitude: posLatLng.lat, longitude: posLatLng.lng}}
         #APP._initPositionCB(position, null, true)
@@ -74,7 +71,7 @@ class window.VoyageX.MapControl
 ##    min = APP.map().getPixelBounds().min
 ##    newBounds = L.bounds min, L.point(min.x+$('#map').width(), min.y+$('#map').height())
 #    APP.map().fitBounds L.latLngBounds(APP.map().unproject(newBounds.min), APP.map().unproject(newBounds.max))
-    APP.map().invalidateSize({
+    MC.map().invalidateSize({
         reset: false,
         pan: false,
         animate: false
@@ -169,19 +166,13 @@ class window.VoyageX.MapControl
       .replace('{s}', viewSubdomain)
 
   # plugged in via https://github.com/ismyrnow/Leaflet.functionaltilelayer
+  # offlineZoom-check is handled in tileUrl()
   @drawTile: (view) ->
-#    MapControl._COUNT += 1
-#    unless MapControl._COUNT <= 2
-#      return VoyageX.TILE_URL_TEMPLATE.replace('{z}', view.zoom).replace('{y}', view.tile.row).replace('{x}', view.tile.column).replace('{s}', view.subdomain)
-    mC = VoyageX.MapControl.instance()
     storeKey = Comm.StorageController.tileKey([view.tile.column, view.tile.row, view.zoom])
     console.log 'drawTile - ........................................'+storeKey
     if Comm.StorageController.isFileBased()
       # use File-API
-      # TODO ? maybe just query offline-zoom-files - see MapControl.tileUrl else of if view.zoom in mC._offlineZooms
-      # NO - because other zoom-levels may trigger some extra-action (liek prefetch ...)
-      deferredModeParams = { mC: mC,\
-                             view: view,\
+      deferredModeParams = { view: view,\
                              prefetchZoomLevels: true,\
                              save: true,\
                              fileStatusCB: MapControl._fileStatusDeferred,\
@@ -192,14 +183,14 @@ class window.VoyageX.MapControl
       deferredModeParams.promise
     else
       # use localStorage
-      stored = if view.zoom in mC._offlineZooms then Comm.StorageController.instance().getTile [view.tile.column, view.tile.row, view.zoom] else null
+      stored = Comm.StorageController.instance().getTile [view.tile.column, view.tile.row, view.zoom]
       unless stored?
-        VoyageX.MapControl.tileUrl mC, view
+        VoyageX.MapControl.tileUrl view
       else
         console.log 'using cached tile: '+storeKey
         stored
 
-  @tileUrl: (mC, view, deferredModeParams = null) ->
+  @tileUrl: (view, deferredModeParams = null) ->
     tileUrl = VoyageX.TILE_URL_TEMPLATE
               .replace('{z}', view.zoom)
               .replace('{y}', view.tile.row)
@@ -207,19 +198,18 @@ class window.VoyageX.MapControl
               .replace('{s}', view.subdomain)
     if APP.isOnline()
       # if current zoom-level is not offline-zoom-level then load from web
-      if view.zoom in mC._offlineZooms
+      if view.zoom in MC._offlineZooms
         if deferredModeParams != null
           deferredModeParams.tileUrl = tileUrl
-        readyImage = MapControl.loadAndPrefetch mC, [view.tile.column, view.tile.row, view.zoom], view.subdomain, deferredModeParams
+        readyImage = MapControl.loadAndPrefetch [view.tile.column, view.tile.row, view.zoom], view.subdomain, deferredModeParams
       else
         readyImage = tileUrl
         if deferredModeParams != null
-          #deferredModeParams.tileUrl = tileUrl
           Comm.StorageController.instance().resolveOnlineNotInOfflineZooms tileUrl, deferredModeParams
-        mC._prefetchZoomLevels [view.tile.column, view.tile.row, view.zoom], view.subdomain, deferredModeParams
+        MC._prefetchZoomLevels [view.tile.column, view.tile.row, view.zoom], view.subdomain, deferredModeParams
       readyImage
     else
-      readyImage = mC._notInCacheImage $('#tile_canvas')[0], view.tile.column, view.tile.row, view.zoom
+      readyImage = MC._notInCacheImage $('#tile_canvas')[0], view.tile.column, view.tile.row, view.zoom
       if deferredModeParams != null
         Comm.StorageController.instance().resolveOfflineNotInCache readyImage, deferredModeParams
       readyImage
@@ -227,15 +217,14 @@ class window.VoyageX.MapControl
   @_fileStatusDeferred: (deferredModeParams, created) ->
     xYZ = [deferredModeParams.view.tile.column, deferredModeParams.view.tile.row, deferredModeParams.view.zoom]
     console.log 'fileStatusCB (created = '+created+'): xYZ = '+xYZ
-    mC = deferredModeParams.mC
     if created
-      #if xYZ.toString() == mC._tileLoadQueue[0].xYZ.toString()
-      #if mC._saveCallsToFlushCount == mC._tileLoadQueue.length
-      tilesToSaveKeys = Object.keys(mC._tileLoadQueue)
-      if mC._saveCallsToFlushCount == tilesToSaveKeys.length
-        mC._saveCallsToFlushCount = 0
-#        #sorted = Object.keys(mC._tileLoadQueue)
-#        mC._tileLoadQueue = mC._tileLoadQueue.sort (a, b) ->
+      #if xYZ.toString() == MC._tileLoadQueue[0].xYZ.toString()
+      #if MC._saveCallsToFlushCount == MC._tileLoadQueue.length
+      tilesToSaveKeys = Object.keys(MC._tileLoadQueue)
+      if MC._saveCallsToFlushCount == tilesToSaveKeys.length
+        MC._saveCallsToFlushCount = 0
+#        #sorted = Object.keys(MC._tileLoadQueue)
+#        MC._tileLoadQueue = MC._tileLoadQueue.sort (a, b) ->
 #          if a.xYZ[0] > b.xYZ[0]
 #            -1
 #          else if a.xYZ[0] == b.xYZ[0]
@@ -245,45 +234,43 @@ class window.VoyageX.MapControl
 #              1
 #          else
 #            1
-        #for idx in [mC._tileLoadQueue-1..0]
-        for xY in Object.keys(mC._tileLoadQueue)
-        #while (e = mC._tileLoadQueue.pop())?
+        #for idx in [MC._tileLoadQueue-1..0]
+        for xY in Object.keys(MC._tileLoadQueue)
+        #while (e = MC._tileLoadQueue.pop())?
           #console.log '### _fileStatusDeferred: prefetching area for tileKey = '+e.xYZ
-          e = mC._tileLoadQueue[xY]
+          e = MC._tileLoadQueue[xY]
           #view = {zoom: e.xYZ[2], tile: {column: e.xYZ[0], row: e.xYZ[1]}, subdomain: e.viewSubdomain}
-          x = parseInt(mC._map.project(mC._map.getCenter()).x/256)
-          y = parseInt(mC._map.project(mC._map.getCenter()).y/256)
-          view = {zoom: mC._map.getZoom(), tile: {column: x, row: y}, subdomain: e.viewSubdomain}
+          x = parseInt(MC._map.project(MC._map.getCenter()).x/256)
+          y = parseInt(MC._map.project(MC._map.getCenter()).y/256)
+          view = {zoom: MC._map.getZoom(), tile: {column: x, row: y}, subdomain: e.viewSubdomain}
           #delete e.deferredModeParams.fileStatusCB
-          mC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS, e.deferredModeParams
-        mC._tileLoadQueue = {}
+          MC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS, e.deferredModeParams
+        MC._tileLoadQueue = {}
     else
-      #for e, idx in mC._tileLoadQueue
-      for xY in Object.keys(mC._tileLoadQueue)
-        e = mC._tileLoadQueue[xY]
+      #for e, idx in MC._tileLoadQueue
+      for xY in Object.keys(MC._tileLoadQueue)
+        e = MC._tileLoadQueue[xY]
         if e.xYZ.toString() == xYZ.toString()
           #console.log '### _fileStatusDeferred: removing tileKey = '+e.xYZ
           console.log '### _fileStatusDeferred: removing tileKey = '+e.xYZ
-          #mC._tileLoadQueue.splice idx, 1
-          delete mC._tileLoadQueue[xY]
+          #MC._tileLoadQueue.splice idx, 1
+          delete MC._tileLoadQueue[xY]
           mc._saveCallsToFlushCount -= 1
           break
  
-  @loadAndPrefetch: (mC, xYZ, viewSubdomain, deferredModeParams = null) ->
+  @loadAndPrefetch: (xYZ, viewSubdomain, deferredModeParams = null) ->
     if Comm.StorageController.isFileBased()
-      #mC._tileLoadQueue.splice(0, 0, {xYZ: xYZ, viewSubdomain: viewSubdomain, deferredModeParams: deferredModeParams})
-      mC._tileLoadQueue[xYZ[0]+'_'+xYZ[1]] = {xYZ: xYZ, viewSubdomain: viewSubdomain, deferredModeParams: deferredModeParams}
-      mC._saveCallsToFlushCount += 1
-    readyImage = mC.loadReadyImage MapControl.toUrl(xYZ, viewSubdomain), xYZ, deferredModeParams
+      MC._tileLoadQueue[xYZ[0]+'_'+xYZ[1]] = {xYZ: xYZ, viewSubdomain: viewSubdomain, deferredModeParams: deferredModeParams}
+      MC._saveCallsToFlushCount += 1
+    readyImage = MC.loadReadyImage MapControl.toUrl(xYZ, viewSubdomain), xYZ, deferredModeParams
     if deferredModeParams == null || deferredModeParams.prefetchZoomLevels
       unless deferredModeParams == null
         deferredModeParams.prefetchZoomLevels = false
-      mC._prefetchZoomLevels xYZ, viewSubdomain, deferredModeParams
+      MC._prefetchZoomLevels xYZ, viewSubdomain, deferredModeParams
     readyImage
 
   @notInCacheImage: (x, y, z) ->
-    mC = VoyageX.MapControl.instance()
-    mC._notInCacheImage $('#tile_canvas')[0], x, y, z
+    MC._notInCacheImage $('#tile_canvas')[0], x, y, z
 
   _prefetchZoomLevels: (xYZ, viewSubdomain, deferredModeParams = null) ->
     storeKey = Comm.StorageController.tileKey([xYZ[0], xYZ[1], xYZ[2]])
@@ -316,7 +303,6 @@ class window.VoyageX.MapControl
           storeKey = Comm.StorageController.tileKey([curXYZ[0], curXYZ[1], curXYZ[2]])
           if Comm.StorageController.isFileBased()
             prefetchParams = { loadTileDataCB: this.loadReadyImage,\
-                               mC: this,\
                                view: deferredModeParams.view,\
                                xYZ: curXYZ,\
                                tileUrl: MapControl.toUrl(curXYZ, view.subdomain),\
@@ -337,7 +323,7 @@ class window.VoyageX.MapControl
            #unless stored? && (deferredModeParams==null || !deferredModeParams.loadAndPrefetch?)
             unless stored?
               console.log 'prefetching area tile: '+storeKey
-              readyImage = MapControl.loadAndPrefetch MapControl.instance(), curXYZ, view.subdomain, deferredModeParams
+              readyImage = MapControl.loadAndPrefetch curXYZ, view.subdomain, deferredModeParams
 #              if addToX == 0 and addToY == 0
 #                centerTile = readyImage
 #            else
@@ -372,7 +358,6 @@ class window.VoyageX.MapControl
         parentStoreKey = Comm.StorageController.tileKey([curXYZ[0], curXYZ[1], curXYZ[2]])
         if Comm.StorageController.isFileBased()
           prefetchParams = { loadTileDataCB: this.loadReadyImage,\
-                             mC: this,\
                              view: deferredModeParams.view,\
                              xYZ: curXYZ,\
                              tileUrl: MapControl.toUrl(curXYZ, viewSubdomain),\
@@ -394,9 +379,8 @@ class window.VoyageX.MapControl
       deferred = $.Deferred()
     img = new Image
     img.crossOrigin = ''
-    mC = this
     img.onload = (event) ->
-      base64ImgDataUrl = mC._toBase64 $('#tile_canvas')[0], this # event.target
+      base64ImgDataUrl = MC._toBase64 $('#tile_canvas')[0], this # event.target
       unless Comm.StorageController.isFileBased()
         Comm.StorageController.instance().storeImage xYZ, base64ImgDataUrl, deferredModeParams
         cacheStats()
@@ -427,13 +411,13 @@ class window.VoyageX.MapControl
     canvas.toDataURL(@_tileImageContentType)
 
   _notInCacheImage: (canvas, x, y, z) ->
-    pixelOriginX = parseInt(APP.map().getPixelOrigin().x/256)
-    pixelOriginY = parseInt(APP.map().getPixelOrigin().y/256)
-    #pixelOriginX = parseInt(APP.map().getPixelBounds().min.x/256)
-    #pixelOriginY = parseInt(APP.map().getPixelBounds().min.y/256)
+    pixelOriginX = parseInt(MC.map().getPixelOrigin().x/256)
+    pixelOriginY = parseInt(MC.map().getPixelOrigin().y/256)
+    #pixelOriginX = parseInt(MC.map().getPixelBounds().min.x/256)
+    #pixelOriginY = parseInt(MC.map().getPixelBounds().min.y/256)
     @_cacheMissTiles.push {top: (y-pixelOriginY)*256, left: (x-pixelOriginX)*256}
-    #@_cacheMissTiles.push {top: (pixelOriginY-y)*256+parseInt(APP.map().project(APP.map().getCenter()).x-APP.map().getPixelOrigin().x),\
-    #                       left: (pixelOriginX-x)*256+parseInt(APP.map().project(APP.map().getCenter()).y-APP.map().getPixelOrigin().y)}
+    #@_cacheMissTiles.push {top: (pixelOriginY-y)*256+parseInt(MC.map().project(MC.map().getCenter()).x-MC.map().getPixelOrigin().x),\
+    #                       left: (pixelOriginX-x)*256+parseInt(MC.map().project(MC.map().getCenter()).y-MC.map().getPixelOrigin().y)}
 
     canvas.width = 256
     canvas.height = 256

@@ -1,0 +1,15 @@
+#tmpl_system_dialog_container{style: 'display: none;'}
+  #tmpl_fullscreen_dialog{style: 'display: none;'}
+    %center
+      Fullscreen erlauben? Die Steuerung befindet sich im
+      = image_tag 'arrow-up-right_off.png', style: 'max-width: 35px; max-height; 70px;'
+      Panel
+      %br
+      %span{style: 'float: left;'}
+        .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{tmpl: {id: 'enable_fullscreen'}}
+          .ui-button-text
+            Yes
+      %span
+        .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{tmpl: {id: 'disable_fullscreen'}}
+          .ui-button-text
+            No

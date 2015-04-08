@@ -187,15 +187,15 @@ class window.Comm.FileUtils
           # one mor check for asynchronous request - that's because of prefetch mit compete
           loadQueueEntry = FileUtils.instance()._tileLoadQueue[FileUtils.tileKey(xYZ)]
           unless loadQueueEntry? && (!loadQueueEntry.storeFile)
-            VoyageX.MapControl.tileUrl deferredModeParams.mC, deferredModeParams.view, deferredModeParams
+            VoyageX.MapControl.tileUrl deferredModeParams.view, deferredModeParams
             loadQueueEntry.deferred = true
           else
             console.log('TODO: _getTileFile - if this is logged then loadQueueEntry-check is necessary')
         else
           if prefetchMode == 1
-            VoyageX.MapControl.loadAndPrefetch deferredModeParams.mC, xYZ, deferredModeParams.view.subdomain, deferredModeParams
+            VoyageX.MapControl.loadAndPrefetch xYZ, deferredModeParams.view.subdomain, deferredModeParams
           else
-            deferredModeParams.mC.loadReadyImage deferredModeParams.tileUrl, xYZ, deferredModeParams
+            MC.loadReadyImage deferredModeParams.tileUrl, xYZ, deferredModeParams
       )
 
   _savePoiNoteAttachmentFile: (poiNote, dirReader, data, deferredModeParams) ->

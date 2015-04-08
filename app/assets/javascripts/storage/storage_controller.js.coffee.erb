@@ -472,7 +472,7 @@ class window.Comm.StorageController
 
   getPoiForLocation: (locationId) ->
     storeKey = 'comm.locations'
-    locations = JSON.parse(localStorage.getItem(storeKey))
+    locations = JSON.parse localStorage.getItem(storeKey)
     if locations? && locations.pois?
       poi = locations.pois[locationId]
 #      if poi?
@@ -646,15 +646,15 @@ class window.Comm.StorageController
           # one mor check for asynchronous request - that's because of prefetch mit compete
           loadQueueEntry = StorageController.instance()._tileLoadQueue[StorageController.tileKey(xYZ)]
           unless loadQueueEntry? && (!loadQueueEntry.storeFile)
-            VoyageX.MapControl.tileUrl deferredModeParams.mC, deferredModeParams.view, deferredModeParams
+            VoyageX.MapControl.tileUrl deferredModeParams.view, deferredModeParams
             loadQueueEntry.deferred = true
           else
             console.log('TODO: _getTileFile - if this is logged then loadQueueEntry-check is necessary')
         else
           if prefetchMode == 1
-            VoyageX.MapControl.loadAndPrefetch deferredModeParams.mC, xYZ, deferredModeParams.view.subdomain, deferredModeParams
+            VoyageX.MapControl.loadAndPrefetch xYZ, deferredModeParams.view.subdomain, deferredModeParams
           else
-            deferredModeParams.mC.loadReadyImage deferredModeParams.tileUrl, xYZ, deferredModeParams
+            MC.loadReadyImage deferredModeParams.tileUrl, xYZ, deferredModeParams
       )
 
   _checkedTileLoadQueue: (xYZ, promise, checkStoreFile, storeFile, callback) ->
@@ -939,6 +939,9 @@ class window.Comm.StorageController
     uploadQKey = 'comm.uploadQ.poiNotes'
     localStorage.getItem(uploadQKey)?
 
+  @queueUpload: (poi, poiNote, callback, attachmentData) ->
+    APP.storage().queueUpload poi, poiNote, callback, attachmentData
+
   queueUpload: (poi, poiNote, callback, attachmentData) ->
     uploadQKey = 'comm.uploadQ.poiNotes'
     this.addToList uploadQKey, 'push', { id: poiNote.id, poiId: poi.id, fileName: @_uploadQ.fileName() }
@@ -1004,9 +1007,11 @@ class window.Comm.StorageController
                    delete perPoiList.numLeft
                    for entryKey in Object.keys(perPoiList)
                      # cb is only needed for sync with response - but now we use faye-callback
-                     cb = { cb: (origCallback) ->
-                                Comm.UploadQ.instance().syncResponseCallback location, poi, origCallback }
-                     batchUpload perPoiList[entryKey], cb
+                     # origCallback = window.afterUploadPhoto = (poi, newNotes) defined in upload_helper
+                     # .cb is called from UploadHelper-batchupload when APP.model().syncUploadCachedQPoiData
+                     #cb = { cb: (origCallback) ->
+                     #           Comm.UploadQ.instance().syncResponseCallback location, poi, origCallback }
+                     batchUpload perPoiList[entryKey]#, cb
         )(location, poi, poiNote, qEntry.fileName, perPoiList) 
         if poiNote.attachment? && (!poiNote.attachment.content_type.match(/^embed:/)?)
           this._getPoiNoteAttachmentFile poiNote, deferredModeParams
@@ -1150,7 +1155,7 @@ class Comm.UploadQ
     UploadQ._SINGLETON = this
     @_poi = null
     @_poiNote = null
-    @_callback = null
+    #@_callback = null
     @_file = null
     @_fileName = null
     @_embed = null
@@ -1171,7 +1176,7 @@ class Comm.UploadQ
   storeUpload: (poi, poiNote, callback, attachmentData) ->
     @_poi = poi
     @_poiNote = poiNote
-    @_callback = callback
+    #@_callback = callback
     @_fileName = null
     if attachmentData.fileName?
       @_fileName = attachmentData.fileName
@@ -1215,10 +1220,12 @@ class Comm.UploadQ
         callback poi, note
 
   # this method provides the method to handle the backend-response to a syncUpload
-  syncResponseCallback: (location, poi, origCallback) ->
-    # this method is called after batch-upload with the actually persisted poi/note-data
-    # from the backend. (especially the backend-ids)
-    (cbPoi, cbNewPoiNotes) ->
+ #syncResponseCallback: (location, poi, origCallback) ->
+  # syncResponseCallback: (location, poi) ->
+  #   # this method is called after batch-upload with the actually persisted poi/note-data
+  #   # from the backend. (especially the backend-ids)
+  #   (cbPoi, cbNewPoiNotes) ->
+  syncResponseCallback: (location, poi, cbPoi, cbNewPoiNotes) ->
         qPoiId = poi.id
         #oldIdMarker = APP.getMarker poi, true
 
@@ -1281,7 +1288,12 @@ class Comm.UploadQ
 
         UploadQ._removeFromQueue qPoiId
 
-        origCallback cbPoi, cbNewPoiNotes
+       #origCallback cbPoi, cbNewPoiNotes
+        # add all old notes
+        for i in [0..poi.notes.length-cbNewPoiNotes.length-1] by 1
+          cbPoi.notes.splice i, 0, poi.notes[i]
+
+        APP._syncPoiCB cbPoi, cbNewPoiNotes
 
   @_removeFromQueue: (qPoiId, qEntries = null) ->
     uploadQKey = 'comm.uploadQ.poiNotes'

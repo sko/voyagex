@@ -14,30 +14,33 @@ class window.VoyageX.UploadHelper
     commentsOnIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/(-?[0-9]+)/)
     commentsOnId = (if commentsOnIdMatch? then parseInt(commentsOnIdMatch[1]) else null)
 
-  # uploadConfig: { add: () -> ..., done: afterCB }
-  upload: (uploadConf) ->
+  # uploadStrategy: { add: () -> ..., done: afterCB }
+  upload: (uploadStrategy) ->
     # used for offline-queueing
     if UploadHelper.CACHE_BEFORE_UPLOAD
-      commitConf = { getCommit: (afterQCB) -> # called in savePoiNote
-                         (poi, poiNote) -> # called in _cachePoiNote
-                             uploadConf.setData (data) -> # commitCB
-                                 APP.storage().queueUpload poi,
-                                                           poiNote,
-                                                           afterQCB,
-                                                           data }
-      APP.model().savePoiNote  uploadConf.done, commitConf
+      # complexity because of asynchronous-data prepare (blob)
+      # data to save is set by uploadStrategy 
+      transactionConf = { getTransaction: (afterSaveCB) -> # @see Model - savePoiNote
+                              (poi, poiNote, saveCB) -> # @see Model - _queuePoiNote <=> queue (poi, poiNote, saveCB)
+                                  uploadStrategy.saveData (data) -> # saveDataCB
+                                      saveCB poi,
+                                             poiNote,
+                                             afterSaveCB,
+                                             data }
+      APP.model().savePoiNote uploadStrategy.done, transactionConf
     else
       selLatLng = APP.getSelectedPositionLatLng()
       data = { location: { latitude: selLatLng[0], longitude: selLatLng[1] },\
                comment: $('#upload_comment').val() }
-      uploadConfig.add data
+      uploadStrategy.add data
       uploadTargetId = APP.transfer().getUploadTargetId()
       if uploadTargetId?
-        uploadConfig.do.call APP.model(), data, uploadConfig.done, uploadTargetId
+        uploadStrategy.do.call APP.model(), data, uploadStrategy.done, uploadTargetId
       else
-        uploadConfig.do.call APP.model(), data, uploadConfig.done
+        uploadStrategy.do.call APP.model(), data, uploadStrategy.done
 
-  batchUpload: (perPoiEntry, callback) ->
+ #batchUpload: (perPoiEntry, callback) ->
+  batchUpload: (perPoiEntry) ->
     formData = new FormData()
     formData.append 'location[latitude]', perPoiEntry.location.lat
     formData.append 'location[longitude]', perPoiEntry.location.lng
@@ -60,8 +63,8 @@ class window.VoyageX.UploadHelper
         )(formData, skipInputNames)
     # FIXME - orig callback is not afterUploadPhoto always
     APP.model().syncUploadCachedQPoiData formData,
-                                         (if perPoiEntry.poi.id >= 0 then perPoiEntry.poi else null),
-                                         (if callback? then callback.cb(afterUploadPhoto) else afterUploadPhoto)
+                                         (if perPoiEntry.poi.id >= 0 then perPoiEntry.poi else null)#,
+                                         #(if callback? then callback.cb(afterUploadPhoto) else afterUploadPhoto)
 
   toggleUploadType: (selected) ->
     if selected.value == 'file'
@@ -171,9 +174,9 @@ jQuery ->
     
   $(document).on 'click', '#media_input_upload_btn', (event) ->
 #    uploadPhoto64()
-    APP.transfer().upload { setData: (commitCB) ->
+    APP.transfer().upload { saveData: (saveDataCB) ->
         $('#media_input_display')[0].toBlob((blob) ->
-            commitCB { blob: blob, fileName: 'foto_'+currentUser.id }
+            saveDataCB { blob: blob, fileName: 'foto_'+currentUser.id }
           )
       , done: (poi, newNote) ->
           $('#media_input_current').attr('src', '')
@@ -181,16 +184,16 @@ jQuery ->
       }
 
   $(document).on 'click', '#embed_upload_btn', (event) ->
-    APP.transfer().upload { setData: (commitCB) ->
-        commitCB { embed: $('#embed').val() }
+    APP.transfer().upload { saveData: (saveDataCB) ->
+        saveDataCB { embed: $('#embed').val() }
       , done: (poi, newNote) ->
           $('#embed').val('')
           afterUpload poi, [newNote]
       }
     
   $(document).on 'click', '#plain_text_upload_btn', (event) ->
-    APP.transfer().upload { setData: (commitCB) ->
-        commitCB {}
+    APP.transfer().upload { saveData: (saveDataCB) ->
+        saveDataCB {}
       , done: (poi, newNote) ->
           afterUpload poi, [newNote]
       }
