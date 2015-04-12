@@ -17,8 +17,9 @@ class window.VoyageX.Main
     window.APP = this
     @_version = new VoyageX.Version [0, 1]
     @_initState = 0
-    @_online = online
-    @_navigatorOnline = online
+    window.forceOffline = false
+    @_online = online && (!forceOffline)
+    @_navigatorOnline = @_online
     @_view = view
     @_comm = null
     @_realPosition = {lat: -1.0, lng: -1.0}
@@ -52,6 +53,7 @@ class window.VoyageX.Main
           )
       when 2
         # Communication initialisation (Faye-Client)
+        
         APP._comm = new Comm.Comm(APP.userId(),
                                   [['/talk', APP._talkCB, VoyageX.CHANNEL_ENC_KEY],
                                    ['/map_events', view._mapEventsCB, VoyageX.CHANNEL_ENC_KEY],
@@ -59,8 +61,8 @@ class window.VoyageX.Main
                                    ['/radar', view._radarCB, VoyageX.CHANNEL_ENC_KEY]],
                                    VoyageX.SYS_CHANNEL_ENC_KEY,
                                    APP._systemCB)
-        #setTimeout "VoyageX.Backend.instance().pingBackend()", 3000
-        VoyageX.Backend.instance().pingBackend()
+        unless forceOffline
+          VoyageX.Backend.instance().pingBackend()
         # Map initialisation (LeafletJS)
         Main._MAP_CONTROL = new VoyageX.MapControl mapOptions, offlineZooms, tileHandler
         Main._MARKER_MANAGER = new VoyageX.MarkerManager APP.map()
@@ -69,7 +71,19 @@ class window.VoyageX.Main
         #Storage.Model.instance().loadPeers (peer) ->
         #  marker = Main.markerManager().add poi.location, Main._markerEventsCB, false
         if APP.signedIn()
-          APP.storage().saveUser { id: currentUser.id, username: currentUser.username }, { foto: currentUser.foto }
+          #APP.storage().saveUser { id: currentUser.id, username: currentUser.username }, { foto: currentUser.foto }
+          userPhotoUrl = Storage.Model._viewUserFoto currentUser
+          if (typeof userPhotoUrl == 'string') 
+            currentUser.foto.url = userPhotoUrl
+            APP.storage().saveUser { id: currentUser.id, username: currentUser.username }, { foto: currentUser.foto }
+            $('.whoami-img').attr('src', userPhotoUrl)
+          else if (typeof userPhotoUrl.then == 'function')
+            # Assume we are dealing with a promise.
+            userPhotoUrl.then (url) ->
+                currentUser.foto.url = userPhotoUrl
+                # overwrite url
+                APP.storage().saveUser { id: currentUser.id, username: currentUser.username }, { foto: currentUser.foto }
+                $('.whoami-img').attr('src', url)
         APP.initPeers()
         if navigator.geolocation 
           navigator.geolocation.getCurrentPosition(APP._initPositionCB, (error) ->
@@ -88,20 +102,6 @@ class window.VoyageX.Main
             fullscreenDialog = VoyageX.TemplateHelper._updateIds 'tmpl_fullscreen_dialog'
             $('#system_dialog_panel').html(fullscreenDialog)
             $('#open_system_dialog_btn').click()
-          # fs = confirm("Enable Fullscreen?");
-          # if fs
-          #   $('body')[0].webkitRequestFullscreen()
-#     $(document).on 'fullscreenchange', APP.fullscreenChanged
-#     $(document).on 'webkitfullscreenchange', APP.fullscreenChanged
-#     $(document).on 'mozfullscreenchange', APP.fullscreenChanged
-#     $(document).on 'MSFullscreenChange', APP.fullscreenChanged
-# document.addEventListener("fullscreenchange", FShandler);
-# document.addEventListener("webkitfullscreenchange", FShandler);
-# document.addEventListener("mozfullscreenchange", FShandler);
-# document.addEventListener("MSFullscreenChange", FShandler);    document.addEventListener("fullscreenerror", FSerrorhandler);
-#     document.addEventListener("webkitfullscreenerror", FSerrorhandler);
-#     document.addEventListener("mozfullscreenerror", FSerrorhandler);
-#     document.addEventListener("MSFullscreenError", FSerrorhandler);
           APP.map().invalidateSize({
               reset: true,
               pan: false,
@@ -185,6 +185,20 @@ class window.VoyageX.Main
   setFullScreen: () ->
     window.currentUser.id
 
+  setProvider: (providerParts) ->
+    if providerParts? && (providerParts!='')
+      parts = providerParts.split('.')
+      provider = parts[0]
+      variant = parts[1]
+      VoyageX.TILE_URL_TEMPLATE = L.TileLayer.Provider.providers[provider].url.replace(/\{variant\}/, variant)
+      if L.TileLayer.Provider.providers[provider].options.ext?
+        VoyageX.TILE_URL_TEMPLATE = VoyageX.TILE_URL_TEMPLATE.replace(/\{ext\}/, L.TileLayer.Provider.providers[provider].options.ext)
+      #$(APP.map()._tilePane).find('.leaflet-layer').first().remove()
+      APP.map().removeLayer(VoyageX.Main.mapControl()._mapOptions.layers[0])
+      APP.storage().clearCache {tiles: true}
+      layer = L.tileLayer.provider(providerParts).addTo(APP.map())
+      VoyageX.Main.mapControl()._mapOptions.layers.splice 0, 1, layer
+
   clearCache: () ->
     Comm.StorageController.instance().clearCache()
     cacheStats()
@@ -217,7 +231,22 @@ class window.VoyageX.Main
           APP.storage().saveLocation lastLocation
       # ---------------------
       peer.lastLocationId = lastLocation.id
-      APP.storage().saveUser peer, {peerPort: peerPort, foto: peer.foto}
+      APP.refreshUserPhoto peer, {peerPort: peerPort, foto: peer.foto}, (user, flags) ->
+          APP.storage().saveUser user, flags
+      # userPhotoUrl = Storage.Model._viewUserFoto peer
+      # if (typeof userPhotoUrl == 'string') 
+      #   peer.foto.url = userPhotoUrl
+      #   APP.storage().saveUser peer, {peerPort: peerPort, foto: peer.foto}
+      #   $('img[name=peer_photo_'+p.id+']').attr 'src', userPhotoUrl
+      # else if (typeof userPhotoUrl.then == 'function')
+      #   ((p, pp) -> 
+      #     # Assume we are dealing with a promise.
+      #     userPhotoUrl.then (url) ->
+      #         p.foto.url = url
+      #         # overwrite url
+      #         APP.storage().saveUser p, {peerPort: pp, foto: p.foto}
+      #         $('img[name=peer_photo_'+p.id+']').attr 'src', url
+      #   )(peer, peerPort)
       # ---------------------
       if callback?
         callback peer
@@ -225,6 +254,36 @@ class window.VoyageX.Main
       marker = APP.getPeerMarker peer, lastLocation
     window.initArgs.peers.splice(0, window.initArgs.peers.length)
     #delete window.initArgs.peers
+
+  refreshUserPhoto: (user, flags = null, saveCB = null) ->
+    unless flags?
+      flags = { foto: user.foto }
+    userPhotoUrl = Storage.Model.userPhotoUrl user
+    if (typeof userPhotoUrl == 'string') 
+      user.foto.url = userPhotoUrl
+      if saveCB?
+        saveCB user, flags
+      else
+        APP.storage().saveUser { id: user.id, username: user.username }, flags
+      if flags.peerPort?
+        $('img[name=peer_photo_'+user.id+']').attr 'src', userPhotoUrl
+      else
+        $('.whoami-img').attr('src', userPhotoUrl)
+    else if (typeof userPhotoUrl.then == 'function')
+      unless flags.peerPort?
+        $('.whoami-img').attr('src', VoyageX.IMAGES_SWIPER_LOADING_PATH)
+      # Assume we are dealing with a promise.
+      userPhotoUrl.then (url) ->
+          user.foto.url = userPhotoUrl
+          # overwrite url
+          if saveCB?
+            saveCB user, flags
+          else
+            APP.storage().saveUser { id: user.id, username: user.username }, flags
+          if flags.peerPort?
+            $('img[name=peer_photo_'+user.id+']').attr 'src', url
+          else
+            $('.whoami-img').attr('src', url)
 
   # user-marker-tools
   bookmarkLocation: (poiId = -1) ->

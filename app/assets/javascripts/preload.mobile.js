@@ -1,4 +1,5 @@
 //= require jquery
+//= require modernizr
 //= require debug
 //= require jquery_ujs
 //= require jquery.mobile
@@ -9,6 +10,7 @@
 //= require leaflet
 //= require Leaflet.LimitZoom
 //= require leaflet.functionaltilelayer
+//= require leaflet-providers
 //= require canvas-toBlob
 //= require buffer-loader
 //= require preload/util

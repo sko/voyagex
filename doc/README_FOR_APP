@@ -13,6 +13,10 @@ Homer: "Das ist mein erster Tag!"
 Burns: "Hehehe, warum sagen Sie das nicht gleich?"
 
 
+################################## find all mediafiles actually used in app
+grep -oR "[^ '\"]\\+\\.\\(png\\|gif\\|jpe\\?g\\|mp3\\|mpeg\\)" app/ | sed "s/^.\\+://" | sort
+
+
 ################################## öffne Poi-Popup
 Main - showPOI: (poiId, poiNoteId) ->
 
@@ -22,6 +26,19 @@ Main - poiNoteControls: () ->
 ################################## öffne Poi-Create/Comment-Eingabe-Layer aus Arbeistmarker
 Main - poiNoteInput()
   TemplateHelper - poiNoteInputHtml
+
+
+Model - syncWithStorage
+  Model - _viewPoiNoteAttachment # deferredModeParams created
+    Model - attachmentUrl
+      Model - cacheAttachment # for poi_notes
+        Model - _loadReadyUserPhoto
+          Storage - storeUserPhoto
+            FileUtils - _storeAsFile
+
+
+Storage - getPoiNoteAttachment
+  Storage - _getPoiNoteAttachmentFile
 
 
 

@@ -20,12 +20,12 @@
         %script
           = render(partial: '/shared/subscriptions', formats: [:js], locals: { channel_enc_key: u.comm_port.channel_enc_key }).html_safe
           -#APP.storage().saveUser({id: #{u.id}, username: '#{u.username}', peerPort: {id: #{u.comm_port.id}, channel_enc_key: '#{u.comm_port.channel_enc_key}'}});
-          window.initArgs.peers.push(#{peer_json(u.comm_port)});
+          window.addPeerToInitArgs(#{peer_json(u.comm_port)});
       %tr{id: "i_follow_#{u.comm_port.id}", data: {channelEncKey: u.comm_port.channel_enc_key}}
         %td{width: 5}
           &nbsp;
         %td
-          = image_tag u.foto.url, style: 'max-width: 35px !important;'
+          = image_tag u.foto.url, name: "peer_photo_#{u.id}", style: 'max-width: 35px !important;'
         %td{width: 15}
           &nbsp;
         %td
@@ -94,12 +94,12 @@
       - user.comm_port.followers.order(:username).each do |u|
         - if @initial_subscribe == true
           %script
-            window.initArgs.peers.push(#{peer_json(u.comm_port)});
+            window.addPeerToInitArgs(#{peer_json(u.comm_port)});
         %tr{id: "follow_me_#{u.id}"}
           %td{width: 5}
             &nbsp;
           %td
-            = image_tag u.foto.url, style: 'max-width: 35px !important;'
+            = image_tag u.foto.url, name: "peer_photo_#{u.id}", style: 'max-width: 35px !important;'
           %td{width: 15}
             &nbsp;
           %td

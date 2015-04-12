@@ -100,51 +100,6 @@ jQuery ->
   window.batchUpload = (perPoiEntry, callback) ->
     APP.transfer().batchUpload perPoiEntry, callback
 
-  window.uploadPhoto = () ->
-    if VoyageX.UploadHelper.CACHE_BEFORE_UPLOAD
-      APP.model().savePoiNote afterCachePhoto
-    else
-      uploadTargetId = APP.transfer().getUploadTargetId()
-      unless selLatLng?
-        selLatLng = APP.getSelectedPositionLatLng()
-      unless file?
-        file = $('#fileupload')[0].files[0]
-      # used for offline-queueing
-      $("#location_latitude").val(selLatLng[0])
-      $("#location_longitude").val(selLatLng[1])
-      $("#upload_comment_text").val($("#upload_comment").val())
-      
-      formData = new FormData()
-      skipInputNames = ['location[latitude]','location[longitude]','poi_note[text]','poi_note[file]']
-      formData.append('location[latitude]', selLatLng[0])
-      formData.append('location[longitude]', selLatLng[1])
-      formData.append('poi_note[text]', $("#upload_comment").val())
-      formData.append('poi_note[file]', file, 'TODO_filename')
-      uploadForm = $('#tmpl_poi_note_input #new_poi_note').first()
-      uploadForm.find('input').each ((formData, skipInputNames) ->
-          () ->
-              if $.inArray($(this).attr('name'), skipInputNames) == -1
-                formData.append($(this).attr('name'), $(this).attr('value'))
-          )(formData, skipInputNames)
-      APP.model().uploadPoiNote formData, afterUploadPhoto, uploadTargetId
-
-  # uploadPhoto64 = () ->
-  #   if VoyageX.UploadHelper.CACHE_BEFORE_UPLOAD
-  #     APP.model().savePoiNote afterCachePhoto
-  #   else
-  #     selLatLng = APP.getSelectedPositionLatLng()
-  #     fileContentType = $('#media_input_current').attr('src').match(/^data:([^;]+)/)[1]
-  #     fileData = $('#media_input_current').attr('src').replace(/^data:image\/.+?base64,/,'')
-  #     data = { location: { latitude: selLatLng[0], longitude: selLatLng[1] },\
-  #              file_comment: $('#upload_comment').val(),\
-  #              file_data: fileData,\
-  #              file_content_type: fileContentType }
-  #     uploadTargetId = APP.transfer().getUploadTargetId()
-  #     if uploadTargetId?
-  #       APP.model().uploadPoiNote64 data, afterUploadPhoto, uploadTargetId
-  #     else
-  #       APP.model().uploadPoiNote64 data, afterUploadPhoto
-
   afterUpload = (poi, newNotes) ->
     $('#upload_comment').val('')
     if $.mobile
@@ -170,10 +125,14 @@ jQuery ->
     # don't send form
     event.stopPropagation()
     event.preventDefault()
-    uploadPhoto()
+    APP.transfer().upload { saveData: (saveDataCB) ->
+        saveDataCB { blob: $('#fileupload')[0].files[0] }
+      , done: (poi, newNote) ->
+          $('#media_input_current').attr('src', '')
+          afterUpload poi, [newNote]
+      }
     
   $(document).on 'click', '#media_input_upload_btn', (event) ->
-#    uploadPhoto64()
     APP.transfer().upload { saveData: (saveDataCB) ->
         $('#media_input_display')[0].toBlob((blob) ->
             saveDataCB { blob: blob, fileName: 'foto_'+currentUser.id }
@@ -199,6 +158,9 @@ jQuery ->
       }
     
   $(document).on 'click', '#user_foto_media_input_upload_btn', (event) ->
+    # don't send form
+    event.stopPropagation()
+    event.preventDefault()
     fotoContentType = $('#user_foto_media_input_current').attr('src').match(/^data:([^;]+)/)[1]
     fotoData = $('#user_foto_media_input_current').attr('src').replace(/^data:image\/.+?base64,/,'')
     data = { foto_data: fotoData,\
@@ -207,7 +169,9 @@ jQuery ->
     APP.model().saveUserFoto64 data, (user) ->
         $('#'+curPrefix.current+'media_input_capture').attr('src', '')
         $('#'+curPrefix.current+'media_input_current').attr('src', '')
-        $('.whoami-img').attr('src', user.foto.url)
+        #$('.whoami-img').attr('src', user.foto.url)
+        currentUser.foto.url = user.foto.url
+        APP.refreshUserPhoto currentUser
         toogleUserFotoUpload()
 
   if $.mobile

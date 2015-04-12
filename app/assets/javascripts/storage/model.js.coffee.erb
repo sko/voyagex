@@ -79,7 +79,7 @@ class window.Storage.Model
       # get all pois via sync (TODO: add view-range for response)
       #alert('TODO: q')
       console.log('TODO: handle queue in loadPois')
-    if APP.isBackendOnline()
+    if APP.isOnline()
       $.ajax
         type: 'GET'
         dataType: 'json'
@@ -124,13 +124,6 @@ class window.Storage.Model
         # same poi as in params for syncUploadCachedQPoiData
         poi = APP.storage().getPoi qPoiId
         location = APP.storage().getLocation(poi.locationId)
-        # Comm.UploadQ.instance().syncResponseCallback(location, poi, (cbPoi, cbNewNotes) ->
-        #     # add all old notes
-        #     for i in [0..poi.notes.length-cbNewNotes.length-1] by 1
-        #       cbPoi.notes.splice i, 0, poi.notes[i]
-        #     VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
-        #     APP.view().scrollToPoiNote cbNewNotes[cbNewNotes.length-1].id
-        #   )(res.poi, res.poi.notes)
         Comm.UploadQ.instance().syncResponseCallback(location, poi, res.poi, res.poi.notes)
     .fail (jqXHR, textStatus) ->
       # get from localStorage
@@ -148,7 +141,7 @@ class window.Storage.Model
           qPoi.address = location.address
           qNewPoiNote.user = currentUser
           doneCB qPoi, qNewPoiNote
-          if APP.isBackendOnline()
+          if APP.isOnline()
             APP.storage().uploadQueue qPoi, qNewPoiNote
       if transactionConf?
         this._queuePoiNote poiId, transactionConf.getTransaction(afterSaveCB)
@@ -160,7 +153,7 @@ class window.Storage.Model
   # @deprecated - instantly saves data only if offline - else uploads data first and saves on backend-response
   # -> use savePoiNote(offlineCallback) instead
   uploadPoiNote: (formData, callback, uploadTargetId = null) ->
-    if APP.isBackendOnline()
+    if APP.isOnline()
       if uploadTargetId? && uploadTargetId >= 0
         url = '<%= upload_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
         formData.append('_method', 'put')
@@ -195,7 +188,7 @@ class window.Storage.Model
   # @deprecated - instantly saves data only if offline - else uploads data first and saves on backend-response
   # -> use savePoiNote64(offlineCallback) instead
   uploadPoiNote64: (data, callback, uploadTargetId = null) ->
-    if APP.isBackendOnline()
+    if APP.isOnline()
       if uploadTargetId? && uploadTargetId >= 0
         url = '<%= upload_base64_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
         data._method = 'put'
@@ -226,7 +219,7 @@ class window.Storage.Model
   # @deprecated - instantly saves data only if offline - else uploads data first and saves on backend-response
   # -> use saveEmbed(offlineCallback) instead
   uploadEmbed: (data, callback, uploadTargetId = null) ->
-    if APP.isBackendOnline()
+    if APP.isOnline()
       if uploadTargetId? && uploadTargetId >= 0
         url = '<%= upload_embed_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
         data._method = 'put'
@@ -257,7 +250,7 @@ class window.Storage.Model
   # @deprecated - instantly saves data only if offline - else uploads data first and saves on backend-response
   # -> use saveEmbed(offlineCallback) instead
   uploadPlainText: (data, callback, uploadTargetId = null) ->
-    if APP.isBackendOnline()
+    if APP.isOnline()
       if uploadTargetId? && uploadTargetId >= 0
         url = '<%= upload_plain_text_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
         data._method = 'put'
@@ -314,54 +307,26 @@ class window.Storage.Model
 
   _queuePoiNote: (poiId, beforeSaveCB) ->
     console.log('caching poiNote ...')
-    queueData = this._preparePoiNote poiId
-    #beforeSaveCB.queue queueData.poi, queueData.poiNote, APP.storage().queueUpload
-    beforeSaveCB queueData.poi, queueData.poiNote, Comm.StorageController.queueUpload
+    storeData = this._preparePoiNote poiId
+    beforeSaveCB storeData.poi, storeData.poiNote, Comm.StorageController.storeUpload
 
   # saves locally created data with temp-id's to localStorage
   # the ids will be synchronized with backend-ids on backend-response/callback
   _cachePoiNote: (poiId, afterSaveCB) ->
-    # console.log('caching poiNote ...')
-    # id = -Math.round(new Date().getTime()/1000)
-    # if poiId != -1
-    #   storeKey = Comm.StorageController.poiKey {id: poiId}
-    #   # don't get from cache - since we're setting lat/lng/address later
-    #  #poi = APP.storage().get storeKey
-    #   poi = JSON.parse localStorage.getItem(storeKey)
-    #   location = APP.storage().getLocation poi.locationId
-    # else
-    #   selLatLng = APP.getSelectedPositionLatLng()
-    #   location = { id: id,\
-    #                lat: selLatLng[0],\
-    #                lng: selLatLng[1],\
-    #                address: 'TODO' }
-    #   location = APP.storage().saveLocation location, { poi: { 'id': id } }
-    #   poi = { id: id,\
-    #           locationId: id,\
-    #           userId: currentUser.id,\
-    #           notes: [] }
-    #   APP.storage().storePoi poi, false
-    
-    # poiNote = { id: id,\
-    #             userId: currentUser.id,\
-    #             text: $("#upload_comment").val() }
-    queueData = this._preparePoiNote poiId
+    storeData = this._preparePoiNote poiId
 
-    #if typeof(afterSaveCB) == 'object'
-    #  afterSaveCB.commit(poi, poiNote)
-    #else
     switch $('input[name=upload_type]:checked').val()
       when 'plain_text' 
-        APP.storage().queueUpload queueData.poi, queueData.poiNote, afterSaveCB, {}
+        APP.storage().storeUpload storeData.poi, storeData.poiNote, afterSaveCB, {}
       when 'camera'
         $('#media_input_display')[0].toBlob((blob) ->
-            APP.storage().queueUpload queueData.poi, queueData.poiNote, afterSaveCB, { blob: blob, fileName: 'foto_'+currentUser.id+'.'+Math.abs(id) }
+            APP.storage().storeUpload storeData.poi, storeData.poiNote, afterSaveCB, { blob: blob, fileName: 'foto_'+currentUser.id+'.'+Math.abs(id) }
           )
       when 'file' 
         inputFile = $('#fileupload')[0].files[0]
-        APP.storage().queueUpload queueData.poi, queueData.poiNote, afterSaveCB, { blob: inputFile }
+        APP.storage().storeUpload storeData.poi, storeData.poiNote, afterSaveCB, { blob: inputFile }
       when 'embed' 
-        APP.storage().queueUpload queueData.poi, queueData.poiNote, afterSaveCB, { embed: $('#embed').val() }
+        APP.storage().storeUpload storeData.poi, storeData.poiNote, afterSaveCB, { embed: $('#embed').val() }
 
   saveUserFoto64: (data, callback) ->
     # TODO save before sending - if offline send later
@@ -541,12 +506,14 @@ class window.Storage.Model
       console.log '_viewPoiNoteAttachment - ........................................'+storeKey
       # TODO ? maybe just query offline-zoom-files - see MapControl.tileUrl else of if view.zoom in mC._offlineZooms
       # NO - because other zoom-levels may trigger some extra-action (liek prefetch ...)
-      deferredModeParams = { attachmentUrl: Model.attachmentUrl,\
-                             poiNote: poiNote,\
+      deferred = $.Deferred()
+      deferredModeParams = { fileUrl: Model.attachmentUrl,\
+                             fileMeta: poiNote.attachment,\
+                             fileOwner: poiNote,\
                              save: true,\
-                             deferred: $.Deferred(),\
-                             promise: null }
-      deferredModeParams.promise = deferredModeParams.deferred.promise()
+                             update: true,\
+                             deferred: deferred,\
+                             promise: deferred.promise() }
       APP.storage().getPoiNoteAttachment poiNote, deferredModeParams
       deferredModeParams.promise
     else
@@ -555,14 +522,64 @@ class window.Storage.Model
       unless stored?
         Model.attachmentUrl poiNote
       else
-        console.log 'using cached tile: '+storeKey
+        console.log 'using cached poiNoteAttachment: '+storeKey
         stored
    
   @attachmentUrl: (poiNote, deferredModeParams = null) ->
     if APP.isOnline()
-      readyImage = Model._SINGLETON.cacheAttachment poiNote, deferredModeParams
+      readyImage = APP.model().cacheAttachment poiNote, deferredModeParams
     else
-      readyImage = Model._SINGLETON._notInCacheImage $('#attachment_canvas')[0], poiNote
+      readyImage = APP.model()._notInCacheImage $('#attachment_canvas')[0], poiNote.attachment
+      if deferredModeParams != null
+        APP.storage().resolveOfflineNotInCache readyImage, deferredModeParams
+      readyImage
+
+  @_viewUserFoto: (user) ->
+    storeKey = Comm.StorageController.userPhotoKey user
+    if Comm.StorageController.isFileBased()
+      # use File-API
+      console.log '_viewUserFoto - ........................................'+storeKey
+      # TODO ? maybe just query offline-zoom-files - see MapControl.tileUrl else of if view.zoom in mC._offlineZooms
+      # NO - because other zoom-levels may trigger some extra-action (liek prefetch ...)
+      deferred = $.Deferred()
+      deferredModeParams = { fileUrl: Model.userPhotoUrl,\
+                             fileMeta: user.foto,\
+                             fileOwner: user,\
+                             save: true,\
+                             update: true,\
+                             deferred: deferred,\
+                             promise: deferred.promise() }
+      APP.storage().getUserPhoto user, deferredModeParams
+      deferredModeParams.promise
+    else
+      # use localStorage
+      stored = APP.storage().getUserPhoto user
+      unless stored?
+        Model.userPhotoUrl user
+      else
+        console.log 'using cached userPoto: '+storeKey
+        stored
+
+  @userPhotoUrl: (user, deferredModeParams = null) ->
+    if APP.isOnline()
+      if Comm.StorageController.isFileBased()
+        unless deferredModeParams?
+          deferred = $.Deferred()
+          deferredModeParams = { fileUrl: Model.userPhotoUrl,\
+                                 fileMeta: user.foto,\
+                                 fileOwner: user,\
+                                 save: true,\
+                                 update: true,\
+                                 deferred: deferred,\
+                                 promise: deferred.promise() }
+        APP.model()._loadReadyUserPhoto user, deferredModeParams
+        deferredModeParams.promise
+      else
+        readyImage = APP.storage().getUserPhoto user, deferredModeParams
+        unless readyImage?
+          readyImage = APP.model()._loadReadyUserPhoto user, deferredModeParams
+    else
+      readyImage = APP.model()._notInCacheImage $('#user_foto_canvas')[0], user.foto
       if deferredModeParams != null
         APP.storage().resolveOfflineNotInCache readyImage, deferredModeParams
       readyImage
@@ -574,7 +591,7 @@ class window.Storage.Model
           when 'audio' 
             attachment = this._loadReadyBlob poiNote, deferredModeParams
           when 'image'
-            attachment = this._loadReadyImage poiNote, deferredModeParams
+            attachment = this._loadReadyPoiNoteImage poiNote, deferredModeParams
           when 'video' 
             attachment = this._loadReadyBlob poiNote, deferredModeParams
       return ''
@@ -582,12 +599,12 @@ class window.Storage.Model
       attachment = APP.storage().getPoiNoteAttachment poiNote, deferredModeParams
       unless attachment?
         #console.log 'cacheAttachment - '+Comm.StorageController.poiNoteAttachmentKey(poiNote)
-        #attachment = this._loadReadyImage poiNote, deferredModeParams
+        #attachment = this._loadReadyPoiNoteImage poiNote, deferredModeParams
         switch poiNote.attachment.content_type.match(/^[^\/]+/)[0]
           when 'audio' 
             attachment = this._loadReadyBlob poiNote, deferredModeParams
           when 'image'
-            attachment = this._loadReadyImage poiNote, deferredModeParams
+            attachment = this._loadReadyPoiNoteImage poiNote, deferredModeParams
           when 'video' 
             attachment = this._loadReadyBlob poiNote, deferredModeParams
       attachment
@@ -607,7 +624,41 @@ class window.Storage.Model
   @instance: () ->
     Model._SINGLETON
 
+  # load image from url and save
   # has to be done sequentially becaus we're using one canvas for all
+  _loadReadyPoiNoteImage: (poiNote, deferredModeParams = null) ->
+    APP.model()._loadReadyImage poiNote.attachment.url, (image) ->
+        base64ImgDataUrl = APP.model()._toBase64 $('#attachment_canvas')[0], poiNote.attachment, image
+        unless Comm.StorageController.isFileBased()
+          APP.storage().storePoiNoteAttachment poiNote, base64ImgDataUrl, deferredModeParams
+          cacheStats()
+        else
+          # actually we could store base64 in file as well
+          #APP.storage().storePoiNoteAttachment poiNote, base64ImgDataUrl, deferredModeParams
+          $('#attachment_canvas')[0].toBlob((blob) ->
+              APP.storage().storePoiNoteAttachment poiNote, blob, deferredModeParams
+            )
+        base64ImgDataUrl
+      , deferredModeParams
+
+  # load image from url and save
+  # has to be done sequentially becaus we're using one canvas for all
+  _loadReadyUserPhoto: (user, deferredModeParams = null) ->
+    APP.model()._loadReadyImage user.foto.url, (image) ->
+        base64ImgDataUrl = APP.model()._toBase64 $('#user_foto_canvas')[0], user.foto, image
+        unless Comm.StorageController.isFileBased()
+          APP.storage().storeUserPhoto user, base64ImgDataUrl, deferredModeParams
+          cacheStats()
+        else
+          # actually we could store base64 in file as well
+          #APP.storage().storePoiNoteAttachment poiNote, base64ImgDataUrl, deferredModeParams
+          $('#user_foto_canvas')[0].toBlob((blob) ->
+              APP.storage().storeUserPhoto user, blob, deferredModeParams
+            )
+        base64ImgDataUrl
+      , deferredModeParams
+
+  # load binary data (video, audio, ...) from url and save
   _loadReadyBlob: (poiNote, deferredModeParams = null) ->
     unless Comm.StorageController.isFileBased()
       # can't convert audio to data:uri ... TODO
@@ -630,59 +681,52 @@ class window.Storage.Model
         console.log('TODO: errorhandling')
     null
 
+  # load image from url and save
+  # imageMeta: {id, url, width, height}
   # has to be done sequentially becaus we're using one canvas for all
-  _loadReadyImage: (poiNote, deferredModeParams = null) ->
-    #if window.location.host != poiNote.attachment.url.match(/^https?:\/\/([^\/]+)/)[1]
-    urlHostMatch = poiNote.attachment.url.match(/^https?:\/\/([^\/]+)/)
+  _loadReadyImage: (imageUrl, onLoadCB, deferredModeParams = null) ->
+    #if window.location.host != imageUrl.match(/^https?:\/\/([^\/]+)/)[1]
+    urlHostMatch = imageUrl.match(/^https?:\/\/([^\/]+)/)
     if urlHostMatch? # && window.location.host != urlHostMatch[1]
-      console.log '_loadReadyImage - returning crossOrigin-url for poiNote['+poiNote.id+'].attachment: '+poiNote.attachment.url
+      console.log '_loadReadyImage - returning crossOrigin-url for: '+imageUrl
       if deferredModeParams?
-        deferredModeParams.deferred.resolve poiNote.attachment.url
-      return poiNote.attachment.url
+        deferredModeParams.deferred.resolve imageUrl
+      return imageUrl
     if deferredModeParams == null
       promise = true
       deferred = $.Deferred()
     img = new Image
     img.crossOrigin = ''
-    #img.crossOrigin = poiNote.attachment.url.match(/^https?:\/\/([^\/]+)/)[1]
+    #img.crossOrigin = imageUrl.match(/^https?:\/\/([^\/]+)/)[1]
     img.onload = (event) ->
-      base64ImgDataUrl = Model._SINGLETON._toBase64 $('#attachment_canvas')[0], poiNote, this # event.target
-      unless Comm.StorageController.isFileBased()
-        APP.storage().storePoiNoteAttachment poiNote, base64ImgDataUrl, deferredModeParams
-        cacheStats()
-      else
-        # actually we could store base64 in file as well
-        #APP.storage().storePoiNoteAttachment poiNote, base64ImgDataUrl, deferredModeParams
-        $('#attachment_canvas')[0].toBlob((blob) ->
-            APP.storage().storePoiNoteAttachment poiNote, blob, deferredModeParams
-          )
+      base64ImgDataUrl = onLoadCB this #event.target
       if promise
         deferred.resolve(base64ImgDataUrl)
     if promise
       readyImg = deferred.promise()
-      img.src = poiNote.attachment.url
+      img.src = imageUrl
       readyImg
     else
-      img.src = poiNote.attachment.url
+      img.src = imageUrl
       null
 
-  _toBase64: (canvas, poiNote, image) ->
-    canvas.width = poiNote.attachment.width
-    canvas.height = poiNote.attachment.height
+  _toBase64: (canvas, imageMeta, image) ->
+    canvas.width = imageMeta.width
+    canvas.height = imageMeta.height
     context = canvas.getContext('2d')
     context.drawImage(image, 0, 0)
-    canvas.toDataURL(poiNote.attachment.content_type)
+    canvas.toDataURL(imageMeta.content_type)
 
-  _notInCacheImage: (canvas, poiNote) ->
-    canvas.width = poiNote.attachment.width
-    canvas.height = poiNote.attachment.height
+  _notInCacheImage: (canvas, imageMeta) ->
+    canvas.width = imageMeta.width
+    canvas.height = imageMeta.height
     context = canvas.getContext('2d')
     context.fillStyle = "black";
-    context.fillRect(0,0,poiNote.attachment.width,poiNote.attachment.height);
+    context.fillRect(0,0,imageMeta.width,imageMeta.height);
     context.fillStyle = "white";
-    context.fillRect(1,1,poiNote.attachment.width-2,poiNote.attachment.height-2);
+    context.fillRect(1,1,imageMeta.width-2,imageMeta.height-2);
     context.fillStyle = "blue";
     context.font = "bold 16px Arial";
     context.fillText("Not Cached", 100, 80);
-    context.fillText(poiNote.attachment.content_type, 40, 110);
+    context.fillText(imageMeta.content_type, 40, 110);
     canvas.toDataURL(@_tileImageContentType)

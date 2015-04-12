@@ -18,6 +18,8 @@
   window.VoyageX.IMAGES_SWIPER_LOADING_PATH = '#{image_path('loading_200x100.png')}';
   window.VoyageX.IMAGES_CTXNAVALERT_ON_PATH = '#{image_path('arrow-up-right_on.png')}';
   window.VoyageX.IMAGES_CTXNAVALERT_OFF_PATH = '#{image_path('arrow-up-right_off.png')}';
+  window.VoyageX.SOUNDS_ALERT_PATH = '#{asset_path('Treat.mp3')}';
+  window.VoyageX.SOUNDS_MSG_IN_PATH = '#{asset_path('3rd_man_gugu.mp3')}'; // Drop.mp3
   - geometry = Paperclip::Geometry.from_file(tmp_user.foto) if user_signed_in? && tmp_user.foto.present?
   - foto_width = geometry.present? ? geometry.width.to_i : -1
   - foto_height = geometry.present? ? geometry.height.to_i : -1
@@ -37,6 +39,14 @@
   -#
     window.pois = [];
     = render partial: '/shared/pois', formats: [:js]
+  function addPeerToInitArgs(peer) {
+  var i=0;
+  for (; i< window.initArgs.peers.length ; i++) {
+  if (window.initArgs.peers[i].id == peer.id) return false;
+  }
+  window.initArgs.peers.push(peer);
+  return true;
+  }
   - if current_user.present? && current_user.is_admin?
     window.adminSubscribeTo = [];
     - User.where('id != ? and current_sign_in_at is not null', current_user.id).each do |u|

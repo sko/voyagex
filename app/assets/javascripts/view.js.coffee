@@ -228,7 +228,7 @@ class window.VoyageX.View
     else
       @_alertOn = true
       unless stopSound?
-        window.stopSound = VoyageX.MediaManager.instance().playSound('/Treat.mp3', (event) ->
+        window.stopSound = VoyageX.MediaManager.instance().playSound(VoyageX.SOUNDS_ALERT_PATH, (event) ->
             if event.msg == 'finished'
               `;`#window.stopSound = null
           )

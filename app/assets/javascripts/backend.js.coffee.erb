@@ -14,10 +14,9 @@ class window.VoyageX.Backend
   @_POS_QUERY_INTERVAL_MILLIS = 20000
   @_POS_QUERY_TIMEOUT_MILLIS = 60000
 
-  constructor: () ->
+  constructor: (forceOffline = false) ->
     Backend._SINGLETON = this
-    @_pingState = { active: false, pingCount: 0, pingKey: -1 }
-    @_online = true
+    @_state = { online: !forceOffline, pingActive: false, pingCount: 0, pingKey: -1, forceOffline: forceOffline }
     #setTimeout "VoyageX.Backend.instance().pingBackend()", 3000
     #Backend.instance().pingBackend()
     
@@ -31,47 +30,48 @@ class window.VoyageX.Backend
     #    alert("Error fetching manifest: a good chance we are offline")
 
   _checkPingResponse: (pingKey) ->
-    if Backend.instance()._pingState.pingKey != pingKey
+    if Backend.instance()._state.pingKey != pingKey
       #console.log 'Backend - _checkPingResponse: pingKey = '+pingKey
-      Backend.instance()._pingState.pingKey = pingKey
+      Backend.instance()._state.pingKey = pingKey
       setTimeout "VoyageX.Backend.instance().pingBackend()", Backend._PING_INTERVAL_MILLIS
 
   # backend needs it's own ping because app can be online when backend is down.
   pingBackend: () ->
-    @_pingState.active ||= true
+    @_state.pingActive ||= true
     pingKey = Math.round(Math.random() * 100000)
     $.ajax
       type: 'GET'
       url: '<%= comm_ping_path(key: ':key') %>'.replace(/:key/, pingKey)
       dataType: 'json'
     .done (msg) ->
-        Backend.instance()._pingState.pingKey = msg.ping_key
-        Backend.instance()._online = true
+        Backend.instance()._state.pingKey = msg.ping_key
+        Backend.instance()._state.online = true
         unless APP._online
           APP.setOnline()
-        Backend.instance()._pingState.active &&= (!APP._comm.isOnline())
-        if Backend.instance()._pingState.active
+        Backend.instance()._state.pingActive &&= (!APP._comm.isOnline())
+        if Backend.instance()._state.pingActive
           setTimeout "VoyageX.Backend.instance().pingBackend()", Backend._PING_INTERVAL_MILLIS
     .fail (jqXHR, textStatus) ->
-        Backend.instance()._online = false
+        Backend.instance()._state.online = false
         if APP._online
           APP.setOffline()
-        Backend.instance()._pingState.active &&= (!APP._comm.isOnline())
-        if Backend.instance()._pingState.active
+        Backend.instance()._state.pingActive &&= (!APP._comm.isOnline())
+        if Backend.instance()._state.pingActive
           setTimeout 'VoyageX.Backend.instance()._checkPingResponse('+pingKey+')', Backend._PING_CHECK_DELAY_MILLIS
 
   # faye client takes some time to start up while backend already online
   # first call might still 
   isOnline: () ->
-    online = @_online || APP._comm.isOnline()
+    online = @_state.online || APP._comm.isOnline()
     if APP._comm.isOnline()
-      @_pingState.active &&= false
+      @_state.pingActive &&= false
     else
-      unless @_pingState.active
+      unless @_state.pingActive
         # assume backend is down when faye is down.
-        online = @_online = false
+        online = @_state.online = false
         # also check Comm.Comm - constructor
-        this.pingBackend() # disable in development mode when binding pry
+        unless @_state.forceOffline
+          this.pingBackend()
     online
 
   register: (userId) ->
@@ -90,37 +90,3 @@ class window.VoyageX.Backend
   @instance: () ->
     Backend._SINGLETON
 
-
-  # _checkPingResponse: (pingKey) ->
-  #   if window.pingKey != pingKey
-  #     if APP._online
-  #       APP.setOffline()
-  #       setTimeout "Comm.Comm.instance().pingBackend()", 5000
-
-  # pingBackend: () ->
-  #   pingKey = Math.round(Math.random() * 100000)
-  #   $.ajax
-  #     type: 'GET'
-  #     url: '<%= comm_ping_path(key: ':key') %>'.replace(/:key/, pingKey)
-  #     dataType: 'script'
-  #   .done (user) ->
-  #       unless APP._online
-  #         APP.setOnline()
-  #   .fail (jqXHR, textStatus) ->
-  #       if APP._online
-  #         APP.setOffline()
-  #       setTimeout "Comm.Comm.instance().pingBackend()", 5000
-  #   setTimeout 'Comm.Comm.instance()._checkPingResponse('+pingKey+')', 3000
-
-  # register: (userId) ->
-  #   data = { _method: 'put',\
-  #            user_id: userId }
-  #   $.ajax
-  #     type: 'POST'
-  #     dataType: 'json'
-  #     url: '<%= comm_register_path %>'
-  #     data: data
-  #   .done (msg) ->
-  #       Comm.initSystemContext msg
-  #   .fail (jqXHR, textStatus) ->
-  #       alert('TODO: handle registration failure...')

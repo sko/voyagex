@@ -62,10 +62,14 @@ $(document).on 'click', '#enable_fullscreen', (event) ->
   toggleFullScreen true
   $("#fullscreen_dialog").hide();
   $("#system_dialog_panel").panel("close");
+  $('#fullscreen_mode_icon_on').hide()
+  $('#fullscreen_mode_icon_off').show()
 
 $(document).on 'click', '#disable_fullscreen', (event) ->
   $("#fullscreen_dialog").hide();
   $("#system_dialog_panel").panel("close");
+  $('#fullscreen_mode_icon_on').show()
+  $('#fullscreen_mode_icon_off').hide()
 
 window.toggleFullScreen = (activate) ->
   if activate
@@ -78,8 +82,8 @@ window.toggleFullScreen = (activate) ->
       b.mozRequestFullScreen()
     else if (b.msRequestFullscreen)
       b.msRequestFullscreen()
-    $('#fullscreen_mode_icon_off').show()
     $('#fullscreen_mode_icon_on').hide()
+    $('#fullscreen_mode_icon_off').show()
     VoyageX.NavBar._checkDims.o = if window.orientation==0 then 'portrait' else 'landscape'
     VoyageX.NavBar._checkDims.n = 1
     setTimeout('checkDims()', 500)
@@ -92,8 +96,8 @@ window.toggleFullScreen = (activate) ->
       document.mozCancelFullScreen()
     else if (document.msExitFullscreen) 
       document.msExitFullscreen()
-    $('#fullscreen_mode_icon_off').hide()
     $('#fullscreen_mode_icon_on').show()
+    $('#fullscreen_mode_icon_off').hide()
     VoyageX.NavBar._checkDims.o = if window.orientation==0 then 'portrait' else 'landscape'
     VoyageX.NavBar._checkDims.n = 1
     setTimeout('checkDims()', 500)

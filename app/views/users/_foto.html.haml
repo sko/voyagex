@@ -29,5 +29,5 @@
     #user_foto_upload_file_controls
       %span{style: 'float: left;'}
       = file_field_tag 'foto', id: :user_foto_fileupload, accept: User::ACCEPTED_FOTO_CONTENT_TYPES.join(',')
-      %button.show-page-loading-msg{tmpl: {id: 'upload_button'}, data: {type: 'json', theme: 'a', textonly: 'false', textvisible: 'true', msgtext: 'Loading'}}
+      %button.show-page-loading-msg{id: 'user_foto_upload_button', data: {type: 'json', theme: 'a', textonly: 'false', textvisible: 'true', msgtext: 'Loading'}}
         #{t('uploads.upload').html_safe}

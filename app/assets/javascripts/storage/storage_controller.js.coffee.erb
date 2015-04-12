@@ -1,8 +1,10 @@
+//= require storage/file_utils
+
 # window.open("data:text/json," + JSON.stringify(APP.storage().getUser(264)), "_v_x_json")
 class window.Comm.StorageController
 
   @_SINGLETON = null
-  @_FS = null
+  #@_FS = null
 
   constructor: (fsInitCB) ->
     unless Modernizr.localstorage
@@ -17,48 +19,15 @@ class window.Comm.StorageController
     @_jsonObjects = {}
     @_tileDB = {}
     @_tileMeta = null
-    @_tileLoadQueue = {}
-    @_tileImageContentType = 'image/webp'
+    #@_tileLoadQueue = {}
+    #@_tileImageContentType = 'image/webp'
     @_attachmentMeta = null
-    @_storedFilesAreBase64 = false
-    @_grantedBytes = 0
-    @_dirReaders = {}
+    @_fotoMeta = null
+    #@_storedFilesAreBase64 = false
+    #@_grantedBytes = 0
+    #@_dirReaders = {}
     requestedBytes = Math.pow(2, 26) # 64MB
-    try
-      fileAPISupport = `navigator.webkitPersistentStorage !== undefined`
-    catch error
-      fileAPISupport = false
-    console.log('StorageController.constructor - fileAPISupport = '+fileAPISupport)
-    if fileAPISupport
-      window.webkitStorageInfo.queryUsageAndQuota(webkitStorageInfo.PERSISTENT, 
-          (used, remaining) ->
-              console.log("Used quota: " + used + ", remaining quota: " + remaining)
-          , (e) ->
-              console.log('Error', e)
-          )
-      # @deprecated
-      #window.webkitStorageInfo.queryUsageAndQuota(webkitStorageInfo.PERSISTENT,  (used, remaining) ->
-      #window.webkitStorageInfo.requestQuota(webkitStorageInfo.PERSISTENT, requestedBytes, (grantedBytes) ->
-      navigator.webkitPersistentStorage.requestQuota(requestedBytes, (grantedBytes) ->
-          #window.webkitRequestFileSystem(PERSISTENT, grantedBytes, StorageController.onInitFs, StorageController.onFsError)
-          # @deprecated
-          window.webkitRequestFileSystem(webkitStorageInfo.PERSISTENT, grantedBytes, (fs) ->
-                console.log('filesystem zugang')
-                sC = StorageController.instance()
-                sC._dirReaders = { parent: null, path: '/', entry: fs.root, reader: fs.root.createReader(), entries: {} }
-                StorageController._FS = fs
-                fsInitCB false
-            ,
-            (e) ->
-                console.log('kein filesystem zugang')
-                fsInitCB true
-            )
-        , (e) ->
-            console.log('Error', e); 
-            fsInitCB true
-        )
-    else
-      fsInitCB true
+    @_fileUtils = new Comm.FileUtils requestedBytes, 'image/webp', false, fsInitCB
 
   @tileKey: (xYZ) ->
     xYZ[2]+'/'+xYZ[0]+'/'+xYZ[1]
@@ -68,6 +37,9 @@ class window.Comm.StorageController
   
   @poiNoteAttachmentKey: (poiNote) ->
     'comm.poiNoteAttachment.'+poiNote.id
+  
+  @userPhotoKey: (user) ->
+    'comm.userPhoto.'+user.id
 
   @uploadQueueKey: (storePath) ->
     storePath[0]+'/'+storePath[1]
@@ -265,6 +237,19 @@ class window.Comm.StorageController
         users[user.id][attrKey] = xUser[attrKey]
     localStorage.setItem storeKey, JSON.stringify(users)
     user
+  
+  getPeers: () ->
+    storeKey = 'comm.users'
+    users = JSON.parse(localStorage.getItem(storeKey))
+    if users.peers?
+      peers = []
+      for peerId in Object.keys(users.peers)
+        peer = users[peerId]
+        peer.id = parseInt peerId
+        peer.peerPort = users.peers[peerId].peerPort
+        peers.push peer
+      return peers
+    null
 
   getChat: (peer = null) ->
     if peer?
@@ -456,19 +441,9 @@ class window.Comm.StorageController
     ['poiNotes', 'attachments', ''+poiNote.id]
 
   @isFileBased: () ->
-    StorageController._FS?
+    #StorageController._FS?
+    Comm.FileUtils._FS?
     #false
-
-  _removeDirectory: (dirName) ->
-    @_dirReaders.entry.getDirectory(dirName, {}, (dirEntry) ->
-            dirEntry.removeRecursively(() ->
-                console.log('removing directory '+dirName+' ...')
-              , (e) ->
-                console.log('error when removing directory '+dirName+': ', e)
-              )
-          , (e) ->
-              console.log('error when removing directory '+dirName+': ', e)
-          )
 
   getPoiForLocation: (locationId) ->
     storeKey = 'comm.locations'
@@ -502,217 +477,69 @@ class window.Comm.StorageController
           pois.push poi
     pois
 
-  clearCache: () ->
+  clearCache: (flags = {tiles: null, poiNotes: null, users: null}) ->
     #this.delete('tiles')
     if StorageController.isFileBased()
-      for dirName in VoyageX.MapControl.instance()._offlineZooms
-        this._removeDirectory dirName
-      this._removeDirectory 'poiNotes'
+      # for dirName in VoyageX.MapControl.instance()._offlineZooms
+      #   this._removeDirectory dirName
+      # this._removeDirectory 'poiNotes'
+      # this._removeDirectory 'users'
+      Comm.FileUtils.instance().clearCache(flags)
     for key, i in Object.keys(localStorage)
+      if (key.match(/\.poi\./)? || key.match(/\.locations$/)?) && (!(flags.poiNotes?&&flags.poiNotes))
+        continue
+      if key.match(/\.users$/)? && (!(flags.users?&&flags.users))
+        continue
       console.log('StorageController - clearCache: deleting \''+key+'\' ...')
       this.delete(key)
 
-  _saveTileFile: (xYZ, fileIdx, dirReader, data, deferredModeParams) ->
-    `;`
-
-  _saveFile: (xYZ, fileIdx, dirReader, data, deferredModeParams) ->
-    sC = StorageController.instance()
-    path = dirReader.path+'/'+xYZ[fileIdx]
-    dirReader.entry.getFile(xYZ[fileIdx], {}, (fileEntry) ->
-        #unless dirReader.entries[xYZ[fileIdx]]?
-        #  dirReader.entries[xYZ[fileIdx]] = { parent: dirReader, path: path, entry: fileEntry, reader: fileEntry.createReader(), entries: {} }
-        # TODO - what is this for? is this call necessary?
-        sC._storeTileAsFile xYZ, dirReader, null, deferredModeParams
-      , (e) ->
-        if (e.code == FileError.NOT_FOUND_ERR) 
-          dirReader.entry.getFile(xYZ[fileIdx], {create: true}, (fileEntry) ->
-                fileEntry.createWriter((fileWriter) ->
-                  fileWriter.onwriteend = (e) ->
-                      console.log('Write completed.')
-                      if deferredModeParams.fileStatusCB?
-                        deferredModeParams.fileStatusCB deferredModeParams, true
-                      deferredModeParams.deferred.resolve fileEntry.toURL(StorageController.instance()._tileImageContentType)
-                      storeKey = StorageController.tileKey(xYZ)
-                      delete sC._tileLoadQueue[storeKey]
-                      tileMeta = localStorage.getItem 'comm.tiles.tileMeta'
-                      if tileMeta == null
-                        sC._tileMeta = { tilesByteSize: 0, numTiles: 0 }
-                      else
-                        sC._tileMeta = JSON.parse(tileMeta)
-                      #sC._tileDB[storeKey] = data.properties.data
-                      sC._tileMeta.numTiles = sC._tileMeta.numTiles+1
-                      sC._tileMeta.tilesByteSize = sC._tileMeta.tilesByteSize+data.properties.data.size
-                      localStorage.setItem 'comm.tiles.tileMeta', JSON.stringify(sC._tileMeta)
-                      showCacheStats(sC._tileMeta.numTiles, sC._tileMeta.tilesByteSize)
-                  fileWriter.onerror = (e) ->
-                      console.log('Write failed: ' + e.toString())
-                      if deferredModeParams.fileStatusCB?
-                        deferredModeParams.fileStatusCB deferredModeParams, true
-                      #deferredModeParams.deferred.resolve deferredModeParams.tileUrl
-                      deferredModeParams.deferred.resolve VoyageX.MapControl.notInCacheImage(xYZ[0], xYZ[1], xYZ[2])
-                      delete sC._tileLoadQueue[StorageController.tileKey(xYZ)]
-                  console.log('saving file: '+path)
-                  fileWriter.write(new Blob([data.properties.data], {type: sC._tileImageContentType}))
-                  # text-files
-                  #fileWriter.write(data.properties.data)
-                , (e) ->
-                    console.log('_saveFile - '+e+' when trying to WRITE file '+path)
-                )
-            , (e) ->
-                console.log('_saveFile - '+e+' when trying to SAVE file '+path)
-            )
-        else
-          console.log('_saveFile - '+e+' when trying to STORE file '+path)
-          sC._storeTileAsFile xYZ, dirReader, null, deferredModeParams
-      )
-
-  # '/'+xYZ[2]+'/'+xYZ[0]+'/'+xYZ[1]
-  _getDirectory: (xYZ, nextDirIdx, dirReader, data, deferredModeParams, firstCall = true) ->
-    sC = StorageController.instance()
-    path = (if dirReader.parent == null then '' else dirReader.path)+'/'+xYZ[nextDirIdx]
-    dirReader.entry.getDirectory(xYZ[nextDirIdx], {}, (fileEntry) ->
-        #console.log('found directory: '+path)
-        unless dirReader.entries[xYZ[nextDirIdx]]?
-          dirReader.entries[xYZ[nextDirIdx]] = { parent: dirReader, path: path, entry: fileEntry, reader: fileEntry.createReader(), entries: {} }
-        sC._storeTileAsFile xYZ, dirReader.entries[xYZ[nextDirIdx]], data, deferredModeParams
-      , (e) ->
-        if (e.code == FileError.NOT_FOUND_ERR) 
-          console.log('creating tile-directory: '+path)
-          dirReader.entry.getDirectory(xYZ[nextDirIdx], {create: true, exclusive: true}, (fileEntry) ->
-              unless dirReader.entries[xYZ[nextDirIdx]]?
-                dirReader.entries[xYZ[nextDirIdx]] = { parent: dirReader, path: path, entry: fileEntry, reader: fileEntry.createReader(), entries: {} }
-              sC._storeTileAsFile xYZ, dirReader.entries[xYZ[nextDirIdx]], data, deferredModeParams
-            , (e) ->
-              if (e.code == FileError.NOT_FOUND_ERR) 
-                console.log('_getDirectory - No such file: '+path)
-              else
-                # it's likely that directory has been created meanwhile by other request
-                if firstCall
-                  #console.log('_getDirectory - '+e+' when trying to CREATE directory / trying one more READ: '+path)
-                  return sC._getDirectory xYZ, nextDirIdx, dirReader, data, deferredModeParams, false
-                else
-                  console.log('_getDirectory - '+e+' when trying to CREATE directory '+path)
-              sC._storeTileAsFile xYZ, dirReader, data, deferredModeParams, nextDirIdx
-            )
-        else
-          console.log('_getDirectory - '+e+' when trying to READ directory '+path)
-          sC._storeTileAsFile xYZ, dirReader, data, deferredModeParams, nextDirIdx
-      )
-
-  _storeTileAsFile: (xYZ, parentDirReader, data, deferredModeParams, failedIndex = -1) ->
-    if failedIndex != -1
-      console.log('error: failedIndex = '+failedIndex+' for '+xYZ)
-    else if parentDirReader == null
-      this._getDirectory xYZ, 2, @_dirReaders, data, deferredModeParams
-    else if parentDirReader.parent.parent == null
-      this._getDirectory xYZ, 0, parentDirReader, data, deferredModeParams
-    else if data != null
-      this._saveFile xYZ, 1, parentDirReader, data, deferredModeParams
-  
-  _getTileFile: (xYZ, prefetchMode, deferredModeParams, firstCall = true) ->
-    path = '/'+xYZ[2]+'/'+xYZ[0]+'/'+xYZ[1]
-    @_dirReaders.entry.getFile(path, {}, (fileEntry) ->
-        console.log('_getTileFile - found file: '+path)
-        if deferredModeParams.fileStatusCB?
-          deferredModeParams.fileStatusCB deferredModeParams, false
-        if @_storedFilesAreBase64
-          fileEntry.file (file) ->
-              #@_dirReaders.entries[xYZ[2]].entries[xYZ[0].reader
-              reader = new FileReader()
-              reader.onabort = (e) ->
-                  console.log('aborted '+path+": "+e)
-              reader.onerror = (e) ->
-                  console.log('failed '+path+": "+e)
-              reader.onload = (e) ->
-                  if this.result == ''
-                    console.log('bad read on '+path)
-                  deferredModeParams.deferred.resolve this.result
-          reader.readAsText(file)
-          #reader.readAsDataURL(file, StorageController.instance()._tileImageContentType)
-        else
-          deferredModeParams.deferred.resolve fileEntry.toURL(StorageController.instance()._tileImageContentType)
-        delete StorageController.instance()._tileLoadQueue[StorageController.tileKey(xYZ)]
-      , (e) ->
-        if (e.code == FileError.NOT_FOUND_ERR) 
-          if firstCall
-            # check one more time if other thread stored file
-            #console.log('_getTileFile - no such file / trying one more READ: '+path)
-            return StorageController.instance()._getTileFile xYZ, prefetchMode, deferredModeParams, false
-          else
-            console.log('_getTileFile - no such file: '+path)
-        else
-          console.log('error: '+e+' for '+path)
-        if prefetchMode == 0
-          # one mor check for asynchronous request - that's because of prefetch mit compete
-          loadQueueEntry = StorageController.instance()._tileLoadQueue[StorageController.tileKey(xYZ)]
-          unless loadQueueEntry? && (!loadQueueEntry.storeFile)
-            VoyageX.MapControl.tileUrl deferredModeParams.view, deferredModeParams
-            loadQueueEntry.deferred = true
-          else
-            console.log('TODO: _getTileFile - if this is logged then loadQueueEntry-check is necessary')
-        else
-          if prefetchMode == 1
-            VoyageX.MapControl.loadAndPrefetch xYZ, deferredModeParams.view.subdomain, deferredModeParams
-          else
-            MC.loadReadyImage deferredModeParams.tileUrl, xYZ, deferredModeParams
-      )
-
-  _checkedTileLoadQueue: (xYZ, promise, checkStoreFile, storeFile, callback) ->
-    storeKey = StorageController.tileKey(xYZ)
-    stored = @_tileLoadQueue[storeKey]
-    if stored?
-      if checkStoreFile && stored.storeFile
-        promise = callback(stored)
-        stored.storeFile = false
-      #console.log('_checkedTileLoadQueue - stored in queue: '+storeKey); 
-      return stored.promise
-    queueEntry = { promise: promise, deferred: false, storeFile: storeFile }
-    # @see storeTile
-    @_tileLoadQueue[storeKey] = queueEntry
-    callback(queueEntry)
-
   loadAndPrefetchTile: (prefetchParams) ->
-    sC = this
-    this._checkedTileLoadQueue prefetchParams.xYZ, prefetchParams.promise, true, true, (queueEntry) ->
-        console.log('StorageController - loadAndPrefetchTile: '+StorageController.tileKey(prefetchParams.xYZ))
-        sC._getTileFile prefetchParams.xYZ, 1, prefetchParams
-        #prefetchParams.promise = prefetchParams.deferred.promise()
-        #queueEntry.promise = prefetchParams.promise
+    # sC = this
+    # this._checkedTileLoadQueue prefetchParams.xYZ, prefetchParams.promise, true, true, (queueEntry) ->
+    #     console.log('StorageController - loadAndPrefetchTile: '+StorageController.tileKey(prefetchParams.xYZ))
+    #     sC._getTileFile prefetchParams.xYZ, 1, prefetchParams
+    #     #prefetchParams.promise = prefetchParams.deferred.promise()
+    #     #queueEntry.promise = prefetchParams.promise
+    Comm.FileUtils.instance().loadAndPrefetchTile prefetchParams
 
   prefetchTile: (prefetchParams) ->
-    sC = this
-    this._checkedTileLoadQueue prefetchParams.xYZ, prefetchParams.promise, true, false, (queueEntry) ->
-        console.log('StorageController - prefetchTile: '+StorageController.tileKey(prefetchParams.xYZ))
-        sC._getTileFile prefetchParams.xYZ, 2, prefetchParams
-        #prefetchParams.promise = prefetchParams.deferred.promise()
-        #queueEntry.promise = prefetchParams.promise
-        #queueEntry.storeFile = false
+    # sC = this
+    # this._checkedTileLoadQueue prefetchParams.xYZ, prefetchParams.promise, true, false, (queueEntry) ->
+    #     console.log('StorageController - prefetchTile: '+StorageController.tileKey(prefetchParams.xYZ))
+    #     sC._getTileFile prefetchParams.xYZ, 2, prefetchParams
+    #     #prefetchParams.promise = prefetchParams.deferred.promise()
+    #     #queueEntry.promise = prefetchParams.promise
+    #     #queueEntry.storeFile = false
+    Comm.FileUtils.instance().prefetchTile prefetchParams
   
   resolveOnlineNotInOfflineZooms: (tileUrl, deferredModeParams) ->
-    #deferredModeParams.tileUrl = readyImage
-    deferredModeParams.deferred.resolve tileUrl
-    view = deferredModeParams.view
-    if view?
-      delete this._tileLoadQueue[StorageController.tileKey([view.tile.column, view.tile.row, view.zoom])]
-  
+    # #deferredModeParams.tileUrl = readyImage
+    # deferredModeParams.deferred.resolve tileUrl
+    # view = deferredModeParams.view
+    # if view?
+    #   delete this._tileLoadQueue[StorageController.tileKey([view.tile.column, view.tile.row, view.zoom])]
+    Comm.FileUtils.instance().resolveOnlineNotInOfflineZooms tileUrl, deferredModeParams
+
   resolveOfflineNotInCache: (readyImage, deferredModeParams) ->
-    deferredModeParams.tileUrl = readyImage
-    deferredModeParams.deferred.resolve readyImage
-    view = deferredModeParams.view
-    if view?
-      delete this._tileLoadQueue[StorageController.tileKey([view.tile.column, view.tile.row, view.zoom])]
+    # deferredModeParams.tileUrl = readyImage
+    # deferredModeParams.deferred.resolve readyImage
+    # view = deferredModeParams.view
+    # if view?
+    #   delete this._tileLoadQueue[StorageController.tileKey([view.tile.column, view.tile.row, view.zoom])]
+    Comm.FileUtils.instance().resolveOfflineNotInCache readyImage, deferredModeParams
 
   storeTile: (xYZ, data, promise = null, deferredModeParams = null) ->
-    if promise != null
-      # @see getTile
-      unless @_tileLoadQueue[StorageController.tileKey(xYZ)]?
-        @_tileLoadQueue[StorageController.tileKey(xYZ)] = { promise: promise, deferred: false, storeFile: true }
-      else
-        console.log('storeTile - promise for '+StorageController.tileKey(xYZ)+' already stored in queue ...')
-      return promise
+    # if promise != null
+    #   # @see getTile
+    #   unless @_tileLoadQueue[StorageController.tileKey(xYZ)]?
+    #     @_tileLoadQueue[StorageController.tileKey(xYZ)] = { promise: promise, deferred: false, storeFile: true }
+    #   else
+    #     console.log('storeTile - promise for '+StorageController.tileKey(xYZ)+' already stored in queue ...')
+    #   return promise
 
     if StorageController.isFileBased()
-      this._storeTileAsFile xYZ, null, data, deferredModeParams
+      #this._storeTileAsFile xYZ, null, data, deferredModeParams
+      Comm.FileUtils.instance().storeTile xYZ, data, promise, deferredModeParams
     else
       tileMeta = localStorage.getItem 'comm.tiles.tileMeta'
       if tileMeta == null
@@ -728,7 +555,7 @@ class window.Comm.StorageController
 #        yEntry[xYZ[1]] = data
 #        tileStoreZ[xYZ[0]] = [yEntry]
 #        localStorage.setItem 'comm.tiles.'+xYZ[2], JSON.stringify(listEntries)
-        delete @_tileLoadQueue[StorageController.tileKey(xYZ)]
+#TODO:refactored when started FileUtils        delete @_tileLoadQueue[StorageController.tileKey(xYZ)]
         localStorage.setItem storeKey, data.properties.data
         @_tileDB[storeKey] = data.properties.data
         @_tileMeta.numTiles = @_tileMeta.numTiles+1
@@ -738,20 +565,21 @@ class window.Comm.StorageController
   
   getTile: (xYZ, deferredModeParams = null) ->
     if StorageController.isFileBased()
-      sC = this
-      #if deferredModeParams.promise == null
-      #  deferredModeParams.promise = deferredModeParams.deferred.promise()
-      this._checkedTileLoadQueue xYZ, deferredModeParams.promise, false, true, (queueEntry) ->
-          console.log('StorageController - getTile: '+StorageController.tileKey(xYZ))
-          sC._getTileFile xYZ, 0, deferredModeParams
-          #queueEntry.promise = deferredModeParams.promise
-      deferredModeParams.promise
+      # sC = this
+      # #if deferredModeParams.promise == null
+      # #  deferredModeParams.promise = deferredModeParams.deferred.promise()
+      # this._checkedTileLoadQueue xYZ, deferredModeParams.promise, false, true, (queueEntry) ->
+      #     console.log('StorageController - getTile: '+StorageController.tileKey(xYZ))
+      #     sC._getTileFile xYZ, 0, deferredModeParams
+      #     #queueEntry.promise = deferredModeParams.promise
+      # deferredModeParams.promise
+      Comm.FileUtils.instance().getTile xYZ, deferredModeParams
     else
       storeKey = StorageController.tileKey(xYZ)
-      stored = @_tileLoadQueue[storeKey]
-      if stored?
-        #console.log('getTile - stored in queue: '+storeKey); 
-        return stored.promise
+#TODO:refactored when started FileUtils              stored = @_tileLoadQueue[storeKey]
+#TODO:refactored when started FileUtils              if stored?
+#TODO:refactored when started FileUtils                #console.log('getTile - stored in queue: '+storeKey); 
+#TODO:refactored when started FileUtils                return stored.promise
       stored = @_tileDB['comm.tiles.'+storeKey]
       unless stored?
 #        stored = @_tileLoadQueue[storeKey]
@@ -768,7 +596,8 @@ class window.Comm.StorageController
 
   storePoiNoteAttachment: (poiNote, data, deferredModeParams = null) ->
     if StorageController.isFileBased()
-      this._storePoiNoteAttachmentAsFile poiNote, null, data, deferredModeParams
+      #this._storePoiNoteAttachmentAsFile poiNote, null, data, deferredModeParams
+      Comm.FileUtils.instance()._storeAsFile ['poiNotes', 'attachments', poiNote.id], null, data, deferredModeParams
     else
       attachmentMeta = localStorage.getItem 'comm.poiNotes.attachmentMeta'
       if attachmentMeta == null
@@ -785,133 +614,43 @@ class window.Comm.StorageController
 
       localStorage.setItem 'comm.poiNotes.attachmentMeta', JSON.stringify(@_attachmentMeta)
 
-  _savePoiNoteAttachmentFile: (poiNote, dirReader, data, deferredModeParams) ->
-    sC = StorageController.instance()
-    fileName = poiNote.id
-    path = dirReader.path+'/'+fileName
-    dirReader.entry.getFile(fileName, {}, (fileEntry) ->
-        #unless dirReader.entries[fileName]?
-        #  dirReader.entries[fileName] = { parent: dirReader, path: path, entry: fileEntry, reader: fileEntry.createReader(), entries: {} }
-        # TODO - what is this for? is this call necessary?
-        sC._storePoiNoteAttachmentAsFile poiNote, dirReader, null, deferredModeParams
-      , (e) ->
-        if (e.code == FileError.NOT_FOUND_ERR) 
-          dirReader.entry.getFile(fileName, {create: true}, (fileEntry) ->
-                fileEntry.createWriter((fileWriter) ->
-                  fileWriter.onwriteend = (e) ->
-                      console.log('Write completed.')
-                      deferredModeParams.deferred.resolve fileEntry.toURL(poiNote.attachment.content_type)
-                      attachmentMeta = localStorage.getItem 'comm.poiNotes.attachmentMeta'
-                      if attachmentMeta == null
-                        sC._attachmentMeta = { bytes: 0, count: 0 }
-                      else
-                        sC._attachmentMeta = JSON.parse(attachmentMeta)
-                      #sC._tileDB[storeKey] = data.properties.data
-                      sC._attachmentMeta.count = sC._attachmentMeta.count+1
-                      sC._attachmentMeta.bytes = sC._attachmentMeta.bytes+data.size
-                      localStorage.setItem 'comm.poiNotes.attachmentMeta', JSON.stringify(sC._attachmentMeta)
-                      #showCacheStats(sC._tileMeta.numTiles, sC._tileMeta.tilesByteSize)
-                  fileWriter.onerror = (e) ->
-                      console.log('Write failed: ' + e.toString())
-                      #deferredModeParams.deferred.resolve deferredModeParams.tileUrl
-                      deferredModeParams.deferred.resolve Storage.Model.notInCacheImage(poiNote)
-                  console.log('saving file: '+path)
-                  fileWriter.write(new Blob([data], {type: poiNote.attachment.content_type}))
-                  # text-files
-                  #fileWriter.write(data.properties.data)
-                , (e) ->
-                    console.log('_savePoiNoteAttachmentFile - '+e+' when trying to WRITE file '+path)
-                )
-            , (e) ->
-                console.log('_savePoiNoteAttachmentFile - '+e+' when trying to SAVE file '+path)
-            )
-        else
-          console.log('_savePoiNoteAttachmentFile - '+e+' when trying to STORE file '+path)
-          sC._storePoiNoteAttachmentAsFile poiNote, dirReader, null, deferredModeParams
-      )
+  storeUserPhoto: (user, data, deferredModeParams = null) ->
+    if StorageController.isFileBased()
+      Comm.FileUtils.instance()._storeAsFile ['users', 'photos', user.id], null, data, deferredModeParams
+    else
+      fotoMeta = localStorage.getItem 'comm.users.fotoMeta'
+      if fotoMeta == null
+        @_fotoMeta = { bytes: 0, count: 0 }
+      else
+        @_fotoMeta = JSON.parse(fotoMeta)
 
-  # '/poiNotes/attachments/'+poiNote.id
-  # path ... ['poiNotes', 'attachments']
-  _getPoiNoteDirectory: (nextDirIdx, dirReader, poiNote, data, deferredModeParams, firstCall = true) ->
-    sC = StorageController.instance()
-    path = StorageController.poiNoteAttachmentPath poiNote
-    curPathDir = path[nextDirIdx]
-    path = (if dirReader.parent == null then '' else dirReader.path)+'/'+curPathDir
-    dirReader.entry.getDirectory(curPathDir, {}, (fileEntry) ->
-        #console.log('_getPoiNoteDirectory - found directory: '+path)
-        unless dirReader.entries[curPathDir]?
-          dirReader.entries[curPathDir] = { parent: dirReader, path: path, entry: fileEntry, reader: fileEntry.createReader(), entries: {} }
-        sC._storePoiNoteAttachmentAsFile poiNote, dirReader.entries[curPathDir], data, deferredModeParams
-      , (e) ->
-        if (e.code == FileError.NOT_FOUND_ERR) 
-          console.log('creating poi-note-directory: '+path)
-          dirReader.entry.getDirectory(curPathDir, {create: true, exclusive: true}, (fileEntry) ->
-              unless dirReader.entries[curPathDir]?
-                dirReader.entries[curPathDir] = { parent: dirReader, path: path, entry: fileEntry, reader: fileEntry.createReader(), entries: {} }
-              sC._storePoiNoteAttachmentAsFile poiNote, dirReader.entries[curPathDir], data, deferredModeParams
-            , (e) ->
-              if (e.code == FileError.NOT_FOUND_ERR) 
-                console.log('_getPoiNoteDirectory - No such file: '+path)
-              else
-                # it's likely that directory has been created meanwhile by other request
-                if firstCall
-                  #console.log('_getPoiNoteDirectory - '+e+' when trying to CREATE directory / trying one more READ: '+path)
-                  return sC._getPoiNoteDirectory nextDirIdx, dirReader, poiNote, data, deferredModeParams, false
-                else
-                  console.log('_getPoiNoteDirectory - '+e+' when trying to CREATE directory '+path)
-              sC._storePoiNoteAttachmentAsFile poiNote, dirReader, data, deferredModeParams, nextDirIdx
-            )
-        else
-          console.log('_getPoiNoteDirectory - '+e+' when trying to READ directory '+path)
-          sC._storePoiNoteAttachmentAsFile poiNote, dirReader, data, deferredModeParams, nextDirIdx
-      )
+      storeKey = StorageController.poiNoteAttachmentKey poiNote
+      stored = localStorage.getItem storeKey
+      if stored == null
+        localStorage.setItem storeKey, data
+        @_fotoMeta.count = @_fotoMeta.count+1
+        @_fotoMeta.bytes = @_fotoMeta.bytes+data.length
 
-  _storePoiNoteAttachmentAsFile: (poiNote, parentDirReader, data, deferredModeParams, failedIndex = -1) ->
-    if failedIndex != -1
-      console.log('error: failedIndex = '+failedIndex+' for '+poiNote)
-    else if parentDirReader == null
-      this._getPoiNoteDirectory 0, @_dirReaders, poiNote, data, deferredModeParams
-    else if parentDirReader.parent.parent == null
-      this._getPoiNoteDirectory 1, parentDirReader, poiNote, data, deferredModeParams
-    else if data != null
-      this._savePoiNoteAttachmentFile poiNote, parentDirReader, data, deferredModeParams
-  
-  _getPoiNoteAttachmentFile: (poiNote, deferredModeParams) ->
-    path = '/poiNotes/attachments/'+poiNote.id
-    @_dirReaders.entry.getFile(path, {}, (fileEntry) ->
-        console.log('_getPoiNoteAttachmentFile - found file: '+path)
-        # if binary:
-        #deferredModeParams.deferred.resolve fileEntry.toURL(poiNote.attachment.content_type), fileEntry.file
-        fileEntry.file (file) ->
-            deferredModeParams.deferred.resolve fileEntry.toURL(poiNote.attachment.content_type), new Blob([file], { type: poiNote.attachment.content_type })
-#        # if text (base64):
-#        fileEntry.file (file) ->
-#            #@_dirReaders.entries.poiNotes.entries.attachments.reader
-#            reader = new FileReader()
-#            reader.onabort = (e) ->
-#                console.log('aborted '+path+": "+e)
-#            reader.onerror = (e) ->
-#                console.log('failed '+path+": "+e)
-#            reader.onload = (e) ->
-#                if this.result == ''
-#                  console.log('bad read on '+path)
-#                deferredModeParams.deferred.resolve this.result, file
-#            reader.readAsText(file)
-      , (e) ->
-        if (e.code == FileError.NOT_FOUND_ERR) 
-          console.log('_getPoiNoteAttachmentFile - no such file: '+path)
-        else
-          console.log('_getPoiNoteAttachmentFile - error: '+e+' for '+path)
-        deferredModeParams.attachmentUrl poiNote, deferredModeParams
-      )
+      localStorage.setItem 'comm.users.fotoMeta', JSON.stringify(@_fotoMeta)
 
   getPoiNoteAttachment: (poiNote, deferredModeParams = null) ->
     storeKey = StorageController.poiNoteAttachmentKey poiNote
     if StorageController.isFileBased()
-      #if deferredModeParams.promise == null
-      #  deferredModeParams.promise = deferredModeParams.deferred.promise()
       console.log('getPoiNoteAttachment - '+storeKey)
-      this._getPoiNoteAttachmentFile poiNote, deferredModeParams
+      Comm.FileUtils.instance().getPoiNoteAttachmentFile poiNote, deferredModeParams
+      deferredModeParams.promise
+    else
+      stored = localStorage.getItem storeKey
+      if stored?
+        stored
+      else
+        null
+
+  getUserPhoto: (user, deferredModeParams = null) ->
+    storeKey = StorageController.userPhotoKey user
+    if StorageController.isFileBased()
+      console.log('getUserPhoto - '+storeKey)
+      Comm.FileUtils.instance().getUserPhotoFile user, deferredModeParams
       deferredModeParams.promise
     else
       stored = localStorage.getItem storeKey
@@ -939,33 +678,11 @@ class window.Comm.StorageController
     uploadQKey = 'comm.uploadQ.poiNotes'
     localStorage.getItem(uploadQKey)?
 
-  @queueUpload: (poi, poiNote, callback, attachmentData) ->
-    APP.storage().queueUpload poi, poiNote, callback, attachmentData
+  @storeUpload: (poi, poiNote, callback, attachmentData, deferredModeParams = null) ->
+    APP.storage().storeUpload poi, poiNote, callback, attachmentData, deferredModeParams
 
-  queueUpload: (poi, poiNote, callback, attachmentData) ->
-    uploadQKey = 'comm.uploadQ.poiNotes'
-    this.addToList uploadQKey, 'push', { id: poiNote.id, poiId: poi.id, fileName: @_uploadQ.fileName() }
-    #this.addQEntry poi, poiNote
-
-    @_uploadQ.storeUpload(poi, poiNote, callback, attachmentData)
-
-#  addQEntry: (poi, poiNote) ->
-#    uploadQKey = 'comm.uploadQ.poiNotes'
-#    #this.addToList uploadQKey, 'push', { id: poiNote.id, poiId: poi.id, fileName: @_uploadQ.fileName() }
-#    qNoteEntry = { id: poiNote.id, filename: @_uploadQ.fileName() }
-#    stored = localStorage.getItem(uploadQKey)
-#    qEntries = JSON.parse(stored)
-#    qEntry = qEntries[poi.locationId]
-#    if qEntry?
-#      if qEntry[poi.id]
-#        qEntry[poi.id] << qNoteEntry
-#      else
-#        qEntry[poi.id] = [qNoteEntry]
-#    else
-#      qEntries[poi.locationId] = {}
-#      qEntries[poi.locationId][poi.id] = [qNoteEntry]
-#    localStorage.setItem(uploadQKey, JSON.stringify(qEntries))
-#    qEntries
+  storeUpload: (poi, poiNote, callback, attachmentData, deferredModeParams = null) ->
+    @_uploadQ.queueUpload poi, poiNote, callback, attachmentData, deferredModeParams
 
   # called with params only for instant upload when app is online
   uploadQueue: (qPoi = null, qNewNote = null) ->
@@ -991,9 +708,12 @@ class window.Comm.StorageController
               break
         location = StorageController.instance().getLocation poi.locationId
 
-        deferredModeParams = { deferred: $.Deferred(),\
-                               promise: null }
-        deferredModeParams.promise = deferredModeParams.deferred.promise()
+        # deferredModeParams = { deferred: $.Deferred(),\
+        #                        promise: null }
+        # deferredModeParams.promise = deferredModeParams.deferred.promise()
+        deferred = $.Deferred()
+        deferredModeParams = { deferred: deferred,\
+                               promise: deferred.promise() }
         ((location, poi, poiNote, fileName, perPoiList) ->
              deferredModeParams.promise.then (url = null, file = null) ->
                  perPoiList.numLeft = perPoiList.numLeft - 1
@@ -1014,7 +734,8 @@ class window.Comm.StorageController
                      batchUpload perPoiList[entryKey]#, cb
         )(location, poi, poiNote, qEntry.fileName, perPoiList) 
         if poiNote.attachment? && (!poiNote.attachment.content_type.match(/^embed:/)?)
-          this._getPoiNoteAttachmentFile poiNote, deferredModeParams
+          #this._getPoiNoteAttachmentFile poiNote, deferredModeParams
+          Comm.FileUtils.instance().getPoiNoteAttachmentFile poiNote, deferredModeParams
         else
           deferredModeParams.deferred.resolve()
     true
@@ -1160,8 +881,8 @@ class Comm.UploadQ
     @_fileName = null
     @_embed = null
 
-  fileName: () ->
-    @_fileName
+#  fileName: () ->
+#    @_fileName
 
   setFile: (file) ->
     @_file = file
@@ -1173,7 +894,7 @@ class Comm.UploadQ
 
   # here the storing of the uploads will be completed.
   # after everything is stored: callback will be called
-  storeUpload: (poi, poiNote, callback, attachmentData) ->
+  queueUpload: (poi, poiNote, callback, attachmentData, deferredModeParams = null) ->
     @_poi = poi
     @_poiNote = poiNote
     #@_callback = callback
@@ -1190,15 +911,24 @@ class Comm.UploadQ
     else
       this.setFile null
 
+    uploadQKey = 'comm.uploadQ.poiNotes'
+    qEntry = Comm.StorageController.instance().addToList uploadQKey, 'push', { id: poiNote.id, poiId: poi.id, fileName: @_fileName }
+    #this.addQEntry poi, poiNote
+
     unless Comm.StorageController.isFileBased()
       # FIXME - not implemented
       Comm.StorageController.instance().storePoiNoteAttachment @_poiNote, base64ImgDataUrl, deferredModeParams
       cacheStats()
     else
       if @_file?
-        deferredModeParams = { deferred: $.Deferred(),\
-                               promise: null }
-        deferredModeParams.promise = deferredModeParams.deferred.promise()
+        deferred = $.Deferred()
+        deferredModeParams = { fileUrl: Storage.Model.attachmentUrl,\
+                               fileMeta: poiNote.attachment,\
+                               fileOwner: poiNote,\
+                               deferred: deferred,\
+                               promise: deferred.promise() }
+        # deferredModeParams.deferred = $.Deferred()
+        # deferredModeParams.promise = deferredModeParams.deferred.promise()
         deferredModeParams.promise.then (url) ->
             console.log 'UploadQ - storeUpload: attachmentUrl-promise resolved to: '+url
             poi = UploadQ.instance()._poi
@@ -1261,8 +991,8 @@ class Comm.UploadQ
             qN = poi.notes[curNewPoiNoteIdx]
             if qN.attachment? && (!qN.attachment.content_type.match(/^embed:/))
               ((poiNote, cbPoiNote) ->
-                APP.storage()._dirReaders.entries.poiNotes.entries.attachments.entry.getFile poiNote.id, {}, (fileEntry) ->
-                    fileEntry.moveTo APP.storage()._dirReaders.entries.poiNotes.entries.attachments.entry, cbPoiNote.id
+                APP.storage()._fileUtils._dirReaders.entries.poiNotes.entries.attachments.entry.getFile poiNote.id, {}, (fileEntry) ->
+                    fileEntry.moveTo APP.storage()._fileUtils._dirReaders.entries.poiNotes.entries.attachments.entry, cbPoiNote.id
                     # next can only be done after file is moved
                     # the new note is passed on to display - use local file-system-url to work offline later
                     cbPoiNote.attachment.url = poiNote.attachment.url
@@ -1294,6 +1024,24 @@ class Comm.UploadQ
           cbPoi.notes.splice i, 0, poi.notes[i]
 
         APP._syncPoiCB cbPoi, cbNewPoiNotes
+
+#  addQEntry: (poi, poiNote) ->
+#    uploadQKey = 'comm.uploadQ.poiNotes'
+#    #this.addToList uploadQKey, 'push', { id: poiNote.id, poiId: poi.id, fileName: @_fileName }
+#    qNoteEntry = { id: poiNote.id, filename: @_fileName }
+#    stored = localStorage.getItem(uploadQKey)
+#    qEntries = JSON.parse(stored)
+#    qEntry = qEntries[poi.locationId]
+#    if qEntry?
+#      if qEntry[poi.id]
+#        qEntry[poi.id] << qNoteEntry
+#      else
+#        qEntry[poi.id] = [qNoteEntry]
+#    else
+#      qEntries[poi.locationId] = {}
+#      qEntries[poi.locationId][poi.id] = [qNoteEntry]
+#    localStorage.setItem(uploadQKey, JSON.stringify(qEntries))
+#    qEntries
 
   @_removeFromQueue: (qPoiId, qEntries = null) ->
     uploadQKey = 'comm.uploadQ.poiNotes'

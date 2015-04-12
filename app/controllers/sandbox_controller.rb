@@ -26,7 +26,7 @@ class SandboxController < ApplicationController
     end
     @initial_subscribe = true
     tmp_user.update_attribute(:foto, UserHelper::fetch_random_avatar(request)) unless tmp_user.foto.exists?
-    if tmp_user.last_sign_in_ip.present?
+    if signed_in? # registered_user?
       unless tmp_user.snapshot.cur_commit.present?
         vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, tmp_user, false#user.is_admin?
         cur_commit = Commit.where(hash_id: vm.cur_commit).first

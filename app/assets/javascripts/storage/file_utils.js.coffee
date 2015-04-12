@@ -1,8 +1,15 @@
 class window.Comm.FileUtils
-  
+ 
+  @_SINGLETON = null
   @_FS = null
 
-  constructor: (requestedBytes, storedFilesAreBase64, fsInitCB) ->
+  #constructor: (requestedBytes, tileDB, tileImageContentType, storedFilesAreBase64, fsInitCB) ->
+  constructor: (requestedBytes, tileImageContentType, storedFilesAreBase64, fsInitCB) ->
+    FileUtils._SINGLETON = this
+    #@_tileDB = tileDB
+    @_tileLoadQueue = {}
+    @_tileImageContentType = tileImageContentType
+    @_storedFilesAreBase64 = storedFilesAreBase64
     @_grantedBytes = 0
     @_dirReaders = {}
     try
@@ -25,8 +32,7 @@ class window.Comm.FileUtils
           # @deprecated
           window.webkitRequestFileSystem(webkitStorageInfo.PERSISTENT, grantedBytes, (fs) ->
                 console.log('filesystem zugang')
-                sC = FileUtils.instance()
-                sC._dirReaders = { parent: null, path: '/', entry: fs.root, reader: fs.root.createReader(), entries: {} }
+                FileUtils.instance()._dirReaders = { parent: null, path: '/', entry: fs.root, reader: fs.root.createReader(), entries: {} }
                 FileUtils._FS = fs
                 fsInitCB false
             ,
@@ -41,9 +47,28 @@ class window.Comm.FileUtils
     else
       fsInitCB true
 
-  # directory path for storing with file-api
-  @poiNoteAttachmentPath: (poiNote) ->
-    ['poiNotes', 'attachments', ''+poiNote.id]
+  clearCache: (flags = {tiles: null, poiNotes: null, users: null}) ->
+    if flags.tiles? && flags.tiles
+      for dirName in VoyageX.MapControl.instance()._offlineZooms
+        this._removeDirectory dirName
+    if flags.poiNotes? && flags.poiNotes
+      this._removeDirectory 'poiNotes'
+    if flags.users? && flags.users
+      this._removeDirectory 'users'
+  
+  resolveOnlineNotInOfflineZooms: (tileUrl, deferredModeParams) ->
+    #deferredModeParams.tileUrl = readyImage
+    deferredModeParams.deferred.resolve tileUrl
+    view = deferredModeParams.view
+    if view?
+      delete this._tileLoadQueue[Comm.StorageController.tileKey([view.tile.column, view.tile.row, view.zoom])]
+  
+  resolveOfflineNotInCache: (readyImage, deferredModeParams) ->
+    deferredModeParams.tileUrl = readyImage
+    deferredModeParams.deferred.resolve readyImage
+    view = deferredModeParams.view
+    if view?
+      delete this._tileLoadQueue[Comm.StorageController.tileKey([view.tile.column, view.tile.row, view.zoom])]
 
   _removeDirectory: (dirName) ->
     @_dirReaders.entry.getDirectory(dirName, {}, (dirEntry) ->
@@ -56,14 +81,14 @@ class window.Comm.FileUtils
               console.log('error when removing directory '+dirName+': ', e)
           )
 
-  _saveFile: (xYZ, fileIdx, dirReader, data, deferredModeParams) ->
-    sC = FileUtils.instance()
+  _saveTileFile: (xYZ, fileIdx, dirReader, data, deferredModeParams) ->
+    fU = FileUtils.instance()
     path = dirReader.path+'/'+xYZ[fileIdx]
     dirReader.entry.getFile(xYZ[fileIdx], {}, (fileEntry) ->
         #unless dirReader.entries[xYZ[fileIdx]]?
         #  dirReader.entries[xYZ[fileIdx]] = { parent: dirReader, path: path, entry: fileEntry, reader: fileEntry.createReader(), entries: {} }
         # TODO - what is this for? is this call necessary?
-        sC._storeTileAsFile xYZ, dirReader, null, deferredModeParams
+        fU._storeTileAsFile xYZ, dirReader, null, deferredModeParams
       , (e) ->
         if (e.code == FileError.NOT_FOUND_ERR) 
           dirReader.entry.getFile(xYZ[fileIdx], {create: true}, (fileEntry) ->
@@ -72,14 +97,15 @@ class window.Comm.FileUtils
                       console.log('Write completed.')
                       if deferredModeParams.fileStatusCB?
                         deferredModeParams.fileStatusCB deferredModeParams, true
-                      deferredModeParams.deferred.resolve fileEntry.toURL(FileUtils.instance()._tileImageContentType)
-                      storeKey = FileUtils.tileKey(xYZ)
-                      delete sC._tileLoadQueue[storeKey]
+                      deferredModeParams.deferred.resolve fileEntry.toURL(fU._tileImageContentType)
+                      storeKey = Comm.StorageController.tileKey(xYZ)
+                      delete fU._tileLoadQueue[storeKey]
+                      sC = APP.storage()
                       tileMeta = localStorage.getItem 'comm.tiles.tileMeta'
                       if tileMeta == null
                         sC._tileMeta = { tilesByteSize: 0, numTiles: 0 }
                       else
-                        sC._tileMeta = eval("(" + tileMeta + ")")
+                        sC._tileMeta = JSON.parse(tileMeta)
                       #sC._tileDB[storeKey] = data.properties.data
                       sC._tileMeta.numTiles = sC._tileMeta.numTiles+1
                       sC._tileMeta.tilesByteSize = sC._tileMeta.tilesByteSize+data.properties.data.size
@@ -91,64 +117,74 @@ class window.Comm.FileUtils
                         deferredModeParams.fileStatusCB deferredModeParams, true
                       #deferredModeParams.deferred.resolve deferredModeParams.tileUrl
                       deferredModeParams.deferred.resolve VoyageX.MapControl.notInCacheImage(xYZ[0], xYZ[1], xYZ[2])
-                      delete sC._tileLoadQueue[FileUtils.tileKey(xYZ)]
+                      delete fU._tileLoadQueue[Comm.StorageController.tileKey(xYZ)]
                   console.log('saving file: '+path)
-                  fileWriter.write(new Blob([data.properties.data], {type: sC._tileImageContentType}))
+                  fileWriter.write(new Blob([data.properties.data], {type: fU._tileImageContentType}))
                   # text-files
                   #fileWriter.write(data.properties.data)
                 , (e) ->
-                    console.log('_saveFile - '+e+' when trying to WRITE file '+path)
+                    console.log('_saveTileFile - '+e+' when trying to WRITE file '+path)
                 )
             , (e) ->
-                console.log('_saveFile - '+e+' when trying to SAVE file '+path)
+                console.log('_saveTileFile - '+e+' when trying to SAVE file '+path)
             )
         else
-          console.log('_saveFile - '+e+' when trying to STORE file '+path)
-          sC._storeTileAsFile xYZ, dirReader, null, deferredModeParams
+          console.log('_saveTileFile - '+e+' when trying to STORE file '+path)
+          fU._storeTileAsFile xYZ, dirReader, null, deferredModeParams
       )
 
   # '/'+xYZ[2]+'/'+xYZ[0]+'/'+xYZ[1]
-  _getDirectory: (xYZ, nextDirIdx, dirReader, data, deferredModeParams, firstCall = true) ->
-    sC = FileUtils.instance()
+  _getTileDirectory: (xYZ, nextDirIdx, dirReader, data, deferredModeParams, firstCall = true) ->
+    fU = FileUtils.instance()
     path = (if dirReader.parent == null then '' else dirReader.path)+'/'+xYZ[nextDirIdx]
     dirReader.entry.getDirectory(xYZ[nextDirIdx], {}, (fileEntry) ->
         #console.log('found directory: '+path)
         unless dirReader.entries[xYZ[nextDirIdx]]?
           dirReader.entries[xYZ[nextDirIdx]] = { parent: dirReader, path: path, entry: fileEntry, reader: fileEntry.createReader(), entries: {} }
-        sC._storeTileAsFile xYZ, dirReader.entries[xYZ[nextDirIdx]], data, deferredModeParams
+        fU._storeTileAsFile xYZ, dirReader.entries[xYZ[nextDirIdx]], data, deferredModeParams
       , (e) ->
         if (e.code == FileError.NOT_FOUND_ERR) 
           console.log('creating tile-directory: '+path)
           dirReader.entry.getDirectory(xYZ[nextDirIdx], {create: true, exclusive: true}, (fileEntry) ->
               unless dirReader.entries[xYZ[nextDirIdx]]?
                 dirReader.entries[xYZ[nextDirIdx]] = { parent: dirReader, path: path, entry: fileEntry, reader: fileEntry.createReader(), entries: {} }
-              sC._storeTileAsFile xYZ, dirReader.entries[xYZ[nextDirIdx]], data, deferredModeParams
+              fU._storeTileAsFile xYZ, dirReader.entries[xYZ[nextDirIdx]], data, deferredModeParams
             , (e) ->
               if (e.code == FileError.NOT_FOUND_ERR) 
-                console.log('_getDirectory - No such file: '+path)
+                console.log('_getTileDirectory - No such file: '+path)
               else
                 # it's likely that directory has been created meanwhile by other request
                 if firstCall
-                  #console.log('_getDirectory - '+e+' when trying to CREATE directory / trying one more READ: '+path)
-                  return sC._getDirectory xYZ, nextDirIdx, dirReader, data, deferredModeParams, false
+                  #console.log('_getTileDirectory - '+e+' when trying to CREATE directory / trying one more READ: '+path)
+                  return fU._getTileDirectory xYZ, nextDirIdx, dirReader, data, deferredModeParams, false
                 else
-                  console.log('_getDirectory - '+e+' when trying to CREATE directory '+path)
-              sC._storeTileAsFile xYZ, dirReader, data, deferredModeParams, nextDirIdx
+                  console.log('_getTileDirectory - '+e+' when trying to CREATE directory '+path)
+              fU._storeTileAsFile xYZ, dirReader, data, deferredModeParams, nextDirIdx
             )
         else
-          console.log('_getDirectory - '+e+' when trying to READ directory '+path)
-          sC._storeTileAsFile xYZ, dirReader, data, deferredModeParams, nextDirIdx
+          console.log('_getTileDirectory - '+e+' when trying to READ directory '+path)
+          fU._storeTileAsFile xYZ, dirReader, data, deferredModeParams, nextDirIdx
       )
 
   _storeTileAsFile: (xYZ, parentDirReader, data, deferredModeParams, failedIndex = -1) ->
     if failedIndex != -1
       console.log('error: failedIndex = '+failedIndex+' for '+xYZ)
     else if parentDirReader == null
-      this._getDirectory xYZ, 2, @_dirReaders, data, deferredModeParams
+      this._getTileDirectory xYZ, 2, @_dirReaders, data, deferredModeParams
     else if parentDirReader.parent.parent == null
-      this._getDirectory xYZ, 0, parentDirReader, data, deferredModeParams
+      this._getTileDirectory xYZ, 0, parentDirReader, data, deferredModeParams
     else if data != null
-      this._saveFile xYZ, 1, parentDirReader, data, deferredModeParams
+      this._saveTileFile xYZ, 1, parentDirReader, data, deferredModeParams
+
+  storeTile: (xYZ, data, promise = null, deferredModeParams = null) ->
+    if promise != null
+      # @see getTile
+      unless @_tileLoadQueue[Comm.StorageController.tileKey(xYZ)]?
+        @_tileLoadQueue[Comm.StorageController.tileKey(xYZ)] = { promise: promise, deferred: false, storeFile: true }
+      else
+        console.log('storeTile - promise for '+Comm.StorageController.tileKey(xYZ)+' already stored in queue ...')
+      return promise
+    this._storeTileAsFile xYZ, null, data, deferredModeParams
   
   _getTileFile: (xYZ, prefetchMode, deferredModeParams, firstCall = true) ->
     path = '/'+xYZ[2]+'/'+xYZ[0]+'/'+xYZ[1]
@@ -169,10 +205,10 @@ class window.Comm.FileUtils
                     console.log('bad read on '+path)
                   deferredModeParams.deferred.resolve this.result
           reader.readAsText(file)
-          #reader.readAsDataURL(file, FileUtils.instance()._tileImageContentType)
+          #reader.readAsDataURL(file, APP.storage()._tileImageContentType)
         else
           deferredModeParams.deferred.resolve fileEntry.toURL(FileUtils.instance()._tileImageContentType)
-        delete FileUtils.instance()._tileLoadQueue[FileUtils.tileKey(xYZ)]
+        delete FileUtils.instance()._tileLoadQueue[Comm.StorageController.tileKey(xYZ)]
       , (e) ->
         if (e.code == FileError.NOT_FOUND_ERR) 
           if firstCall
@@ -185,7 +221,7 @@ class window.Comm.FileUtils
           console.log('error: '+e+' for '+path)
         if prefetchMode == 0
           # one mor check for asynchronous request - that's because of prefetch mit compete
-          loadQueueEntry = FileUtils.instance()._tileLoadQueue[FileUtils.tileKey(xYZ)]
+          loadQueueEntry = FileUtils.instance()._tileLoadQueue[Comm.StorageController.tileKey(xYZ)]
           unless loadQueueEntry? && (!loadQueueEntry.storeFile)
             VoyageX.MapControl.tileUrl deferredModeParams.view, deferredModeParams
             loadQueueEntry.deferred = true
@@ -198,125 +234,204 @@ class window.Comm.FileUtils
             MC.loadReadyImage deferredModeParams.tileUrl, xYZ, deferredModeParams
       )
 
-  _savePoiNoteAttachmentFile: (poiNote, dirReader, data, deferredModeParams) ->
-    sC = FileUtils.instance()
-    fileName = poiNote.id
-    path = dirReader.path+'/'+fileName
-    dirReader.entry.getFile(fileName, {}, (fileEntry) ->
-        #unless dirReader.entries[fileName]?
-        #  dirReader.entries[fileName] = { parent: dirReader, path: path, entry: fileEntry, reader: fileEntry.createReader(), entries: {} }
-        # TODO - what is this for? is this call necessary?
-        sC._storePoiNoteAttachmentAsFile poiNote, dirReader, null, deferredModeParams
+  _checkedTileLoadQueue: (xYZ, promise, checkStoreFile, storeFile, callback) ->
+    storeKey = Comm.StorageController.tileKey(xYZ)
+    stored = @_tileLoadQueue[storeKey]
+    if stored?
+      if checkStoreFile && stored.storeFile
+        promise = callback(stored)
+        stored.storeFile = false
+      #console.log('_checkedTileLoadQueue - stored in queue: '+storeKey); 
+      return stored.promise
+    queueEntry = { promise: promise, deferred: false, storeFile: storeFile }
+    # @see storeTile
+    @_tileLoadQueue[storeKey] = queueEntry
+    callback(queueEntry)
+
+  loadAndPrefetchTile: (prefetchParams) ->
+    sC = this
+    this._checkedTileLoadQueue prefetchParams.xYZ, prefetchParams.promise, true, true, (queueEntry) ->
+        console.log('StorageController - loadAndPrefetchTile: '+Comm.StorageController.tileKey(prefetchParams.xYZ))
+        sC._getTileFile prefetchParams.xYZ, 1, prefetchParams
+        #prefetchParams.promise = prefetchParams.deferred.promise()
+        #queueEntry.promise = prefetchParams.promise
+
+  prefetchTile: (prefetchParams) ->
+    sC = this
+    this._checkedTileLoadQueue prefetchParams.xYZ, prefetchParams.promise, true, false, (queueEntry) ->
+        console.log('StorageController - prefetchTile: '+Comm.StorageController.tileKey(prefetchParams.xYZ))
+        sC._getTileFile prefetchParams.xYZ, 2, prefetchParams
+        #prefetchParams.promise = prefetchParams.deferred.promise()
+        #queueEntry.promise = prefetchParams.promise
+        #queueEntry.storeFile = false
+  
+  getTile: (xYZ, deferredModeParams = null) ->
+    sC = this
+    #if deferredModeParams.promise == null
+    #  deferredModeParams.promise = deferredModeParams.deferred.promise()
+    this._checkedTileLoadQueue xYZ, deferredModeParams.promise, false, true, (queueEntry) ->
+        console.log('StorageController - getTile: '+Comm.StorageController.tileKey(xYZ))
+        sC._getTileFile xYZ, 0, deferredModeParams
+        #queueEntry.promise = deferredModeParams.promise
+    deferredModeParams.promise
+
+# ======================================================================
+# poiNotes, userFotos
+# ======================================================================
+
+  _writeFile: (fileName, dirReader, data, deferredModeParams) ->
+    dirReader.entry.getFile(fileName, {create: true}, (fileEntry) ->
+          fileEntry.createWriter((fileWriter) ->
+            fileWriter.onwriteend = (e) ->
+                console.log('Write completed.')
+                deferredModeParams.deferred.resolve fileEntry.toURL(deferredModeParams.fileMeta.content_type)
+                
+
+# TODO
+                # attachmentMeta = localStorage.getItem 'comm.poiNotes.attachmentMeta'
+                # if attachmentMeta == null
+                #   sC._attachmentMeta = { bytes: 0, count: 0 }
+                # else
+                #   sC._attachmentMeta = eval("(" + attachmentMeta + ")")
+                # #sC._tileDB[storeKey] = data.properties.data
+                # sC._attachmentMeta.count = sC._attachmentMeta.count+1
+                # sC._attachmentMeta.bytes = sC._attachmentMeta.bytes+data.size
+                # localStorage.setItem 'comm.poiNotes.attachmentMeta', JSON.stringify(sC._attachmentMeta)
+                # #showCacheStats(sC._tileMeta.numTiles, sC._tileMeta.tilesByteSize)
+
+
+
+            fileWriter.onerror = (e) ->
+                console.log('Write failed: ' + e.toString())
+                #deferredModeParams.deferred.resolve deferredModeParams.tileUrl
+                deferredModeParams.deferred.resolve Storage.Model.notInCacheImage(deferredModeParams.fileMeta)
+            console.log('saving file: '+dirReader.path+'/'+fileName)
+            fileWriter.write(new Blob([data], {type: deferredModeParams.fileMeta.content_type}))
+            # text-files
+            #fileWriter.write(data.properties.data)
+          , (e) ->
+              console.log('_saveFile - '+e+' when trying to WRITE file '+dirReader.path+'/'+fileName)
+          )
       , (e) ->
-        if (e.code == FileError.NOT_FOUND_ERR) 
-          dirReader.entry.getFile(fileName, {create: true}, (fileEntry) ->
-                fileEntry.createWriter((fileWriter) ->
-                  fileWriter.onwriteend = (e) ->
-                      console.log('Write completed.')
-                      deferredModeParams.deferred.resolve fileEntry.toURL(poiNote.attachment.content_type)
-                      attachmentMeta = localStorage.getItem 'comm.poiNotes.attachmentMeta'
-                      if attachmentMeta == null
-                        sC._attachmentMeta = { bytes: 0, count: 0 }
-                      else
-                        sC._attachmentMeta = eval("(" + attachmentMeta + ")")
-                      #sC._tileDB[storeKey] = data.properties.data
-                      sC._attachmentMeta.count = sC._attachmentMeta.count+1
-                      sC._attachmentMeta.bytes = sC._attachmentMeta.bytes+data.size
-                      localStorage.setItem 'comm.poiNotes.attachmentMeta', JSON.stringify(sC._attachmentMeta)
-                      #showCacheStats(sC._tileMeta.numTiles, sC._tileMeta.tilesByteSize)
-                  fileWriter.onerror = (e) ->
-                      console.log('Write failed: ' + e.toString())
-                      #deferredModeParams.deferred.resolve deferredModeParams.tileUrl
-                      deferredModeParams.deferred.resolve Storage.Model.notInCacheImage(poiNote)
-                  console.log('saving file: '+path)
-                  fileWriter.write(new Blob([data], {type: poiNote.attachment.content_type}))
-                  # text-files
-                  #fileWriter.write(data.properties.data)
-                , (e) ->
-                    console.log('_savePoiNoteAttachmentFile - '+e+' when trying to WRITE file '+path)
-                )
-            , (e) ->
-                console.log('_savePoiNoteAttachmentFile - '+e+' when trying to SAVE file '+path)
-            )
-        else
-          console.log('_savePoiNoteAttachmentFile - '+e+' when trying to STORE file '+path)
-          sC._storePoiNoteAttachmentAsFile poiNote, dirReader, null, deferredModeParams
+          console.log('_saveFile - '+e+' when trying to SAVE file '+dirReader.path+'/'+fileName)
       )
 
-  # '/poiNotes/attachments/'+poiNote.id
-  # path ... ['poiNotes', 'attachments']
-  _getPoiNoteDirectory: (nextDirIdx, dirReader, poiNote, data, deferredModeParams, firstCall = true) ->
-    sC = FileUtils.instance()
-    path = FileUtils.poiNoteAttachmentPath poiNote
-    curPathDir = path[nextDirIdx]
-    path = (if dirReader.parent == null then '' else dirReader.path)+'/'+curPathDir
+  _saveFile: (path, dirReader, data, deferredModeParams) ->
+    fU = FileUtils.instance()
+    pathString = dirReader.path+'/'+path[path.length-1]
+    dirReader.entry.getFile(path[path.length-1], {}, (fileEntry) ->
+        if deferredModeParams.update
+          fU._writeFile path[path.length-1], dirReader, data, deferredModeParams
+      , (e) ->
+        if (e.code == FileError.NOT_FOUND_ERR)
+          fU._writeFile path[path.length-1], dirReader, data, deferredModeParams
+        else
+          console.log('_saveFile - '+e+' when trying to STORE file '+pathString)
+          fU._storeAsFile path, dirReader, null, deferredModeParams
+      )
+
+  # path ... ['topDir','f1Dir',...,'file']
+  _getDirectory: (path, curPathIndex, dirReader, data, deferredModeParams, firstCall = true) ->
+    fU = FileUtils.instance()
+    curPathDir = path[curPathIndex]
+    pathString = (if dirReader.parent == null then '' else dirReader.path)+'/'+curPathDir
     dirReader.entry.getDirectory(curPathDir, {}, (fileEntry) ->
-        #console.log('_getPoiNoteDirectory - found directory: '+path)
+        #console.log('_getDirectory - found directory: '+pathString)
         unless dirReader.entries[curPathDir]?
-          dirReader.entries[curPathDir] = { parent: dirReader, path: path, entry: fileEntry, reader: fileEntry.createReader(), entries: {} }
-        sC._storePoiNoteAttachmentAsFile poiNote, dirReader.entries[curPathDir], data, deferredModeParams
+          # file could exist after restarting app or other thread created id just before this thread getting here
+          dirReader.entries[curPathDir] = { parent: dirReader, path: pathString, entry: fileEntry, reader: fileEntry.createReader(), entries: {} }
+        fU._storeAsFile path, dirReader.entries[curPathDir], data, deferredModeParams, (curPathIndex+1)
       , (e) ->
         if (e.code == FileError.NOT_FOUND_ERR) 
-          console.log('creating poi-note-directory: '+path)
+          console.log('creating directory: '+pathString)
           dirReader.entry.getDirectory(curPathDir, {create: true, exclusive: true}, (fileEntry) ->
               unless dirReader.entries[curPathDir]?
-                dirReader.entries[curPathDir] = { parent: dirReader, path: path, entry: fileEntry, reader: fileEntry.createReader(), entries: {} }
-              sC._storePoiNoteAttachmentAsFile poiNote, dirReader.entries[curPathDir], data, deferredModeParams
+                # file could exist after restarting app or other thread created id just before this thread getting here
+                dirReader.entries[curPathDir] = { parent: dirReader, path: pathString, entry: fileEntry, reader: fileEntry.createReader(), entries: {} }
+              fU._storeAsFile path, dirReader.entries[curPathDir], data, deferredModeParams, (curPathIndex+1)
             , (e) ->
               if (e.code == FileError.NOT_FOUND_ERR) 
-                console.log('_getPoiNoteDirectory - No such file: '+path)
+                console.log('_getDirectory - No such file: '+pathString)
               else
                 # it's likely that directory has been created meanwhile by other request
                 if firstCall
-                  #console.log('_getPoiNoteDirectory - '+e+' when trying to CREATE directory / trying one more READ: '+path)
-                  return sC._getPoiNoteDirectory nextDirIdx, dirReader, poiNote, data, deferredModeParams, false
+                  #console.log('_getDirectory - '+e+' when trying to CREATE directory / trying one more READ: '+pathString)
+                  return fU._getDirectory path, curPathIndex, dirReader, data, deferredModeParams, false
                 else
-                  console.log('_getPoiNoteDirectory - '+e+' when trying to CREATE directory '+path)
-              sC._storePoiNoteAttachmentAsFile poiNote, dirReader, data, deferredModeParams, nextDirIdx
+                  console.log('_getDirectory - '+e+' when trying to CREATE directory '+pathString)
+              fU._storeAsFile path, dirReader, data, deferredModeParams, -1, curPathIndex
             )
         else
-          console.log('_getPoiNoteDirectory - '+e+' when trying to READ directory '+path)
-          sC._storePoiNoteAttachmentAsFile poiNote, dirReader, data, deferredModeParams, nextDirIdx
+          console.log('_getDirectory - '+e+' when trying to READ directory '+pathString)
+          fU._storeAsFile path, dirReader, data, deferredModeParams, -1, curPathIndex
       )
 
-  _storePoiNoteAttachmentAsFile: (poiNote, parentDirReader, data, deferredModeParams, failedIndex = -1) ->
-    if failedIndex != -1
-      console.log('error: failedIndex = '+failedIndex+' for '+poiNote)
+  _storeAsFile: (path, parentDirReader, data, deferredModeParams, nextPathIndex = 0, failedPathIndex = -1) ->
+    if failedPathIndex != -1
+      console.log('error: failedPathIndex = '+failedPathIndex+' for '+deferredModeParams)
     else if parentDirReader == null
-      this._getPoiNoteDirectory 0, @_dirReaders, poiNote, data, deferredModeParams
-    else if parentDirReader.parent.parent == null
-      this._getPoiNoteDirectory 1, parentDirReader, poiNote, data, deferredModeParams
-    else if data != null
-      this._savePoiNoteAttachmentFile poiNote, parentDirReader, data, deferredModeParams
-  
-  _getPoiNoteAttachmentFile: (poiNote, deferredModeParams) ->
-    path = '/poiNotes/attachments/'+poiNote.id
+      this._getDirectory path, nextPathIndex, @_dirReaders, data, deferredModeParams
+    else if nextPathIndex < (path.length-1)
+      this._getDirectory path, nextPathIndex, parentDirReader, data, deferredModeParams
+    else# if data != null
+      this._saveFile path, parentDirReader, data, deferredModeParams
+
+  _getFile: (path, fileMeta, fileOwner, deferredModeParams) ->
     @_dirReaders.entry.getFile(path, {}, (fileEntry) ->
-        console.log('_getPoiNoteAttachmentFile - found file: '+path)
-        # if binary:
-        #deferredModeParams.deferred.resolve fileEntry.toURL(poiNote.attachment.content_type), fileEntry.file
-        fileEntry.file (file) ->
-            deferredModeParams.deferred.resolve fileEntry.toURL(poiNote.attachment.content_type), new Blob([file], { type: poiNote.attachment.content_type })
-#        # if text (base64):
-#        fileEntry.file (file) ->
-#            #@_dirReaders.entries.poiNotes.entries.attachments.reader
-#            reader = new FileReader()
-#            reader.onabort = (e) ->
-#                console.log('aborted '+path+": "+e)
-#            reader.onerror = (e) ->
-#                console.log('failed '+path+": "+e)
-#            reader.onload = (e) ->
-#                if this.result == ''
-#                  console.log('bad read on '+path)
-#                deferredModeParams.deferred.resolve this.result, file
-#            reader.readAsText(file)
+        console.log('_getFile - found file: '+path)
+#         # if binary:
+#         #deferredModeParams.deferred.resolve fileEntry.toURL(fileMeta.content_type), fileEntry.file
+#         fileEntry.file (file) ->
+#             deferredModeParams.deferred.resolve fileEntry.toURL(fileMeta.content_type), new Blob([file], { type: fileMeta.content_type })
+# #        # if text (base64):
+# #        fileEntry.file (file) ->
+# #            #@_dirReaders.entries.poiNotes.entries.attachments.reader
+# #            reader = new FileReader()
+# #            reader.onabort = (e) ->
+# #                console.log('aborted '+path+": "+e)
+# #            reader.onerror = (e) ->
+# #                console.log('failed '+path+": "+e)
+# #            reader.onload = (e) ->
+# #                if this.result == ''
+# #                  console.log('bad read on '+path)
+# #                deferredModeParams.deferred.resolve this.result, file
+# #            reader.readAsText(file)
+        if @_storedFilesAreBase64
+          fileEntry.file (file) ->
+              #@_dirReaders.entries[xYZ[2]].entries[xYZ[0].reader
+              reader = new FileReader()
+              reader.onabort = (e) ->
+                  console.log('aborted '+path+": "+e)
+              reader.onerror = (e) ->
+                  console.log('failed '+path+": "+e)
+              reader.onload = (e) ->
+                  if this.result == ''
+                    console.log('bad read on '+path)
+                  deferredModeParams.deferred.resolve this.result
+          reader.readAsText(file)
+          #reader.readAsDataURL(file, APP.storage()._tileImageContentType)
+        else
+          # TODO - parametrize for return val - blob or url
+          # tiles - url only  deferredModeParams.deferred.resolve fileEntry.toURL(fileMeta.content_type)
+          # all uploads need blob - not url
+          #deferredModeParams.deferred.resolve fileEntry.toURL(fileMeta.content_type), fileEntry.file
+          fileEntry.file (file) ->
+              deferredModeParams.deferred.resolve fileEntry.toURL(fileMeta.content_type), new Blob([file], { type: fileMeta.content_type })
       , (e) ->
         if (e.code == FileError.NOT_FOUND_ERR) 
-          console.log('_getPoiNoteAttachmentFile - no such file: '+path)
+          console.log('_getFile - no such file: '+path)
         else
-          console.log('_getPoiNoteAttachmentFile - error: '+e+' for '+path)
-        deferredModeParams.attachmentUrl poiNote, deferredModeParams
+          console.log('_getFile - error: '+e+' for '+path)
+        deferredModeParams.fileUrl fileOwner, deferredModeParams
       )
+  
+  getPoiNoteAttachmentFile: (poiNote, deferredModeParams) ->
+    path = '/poiNotes/attachments/'+poiNote.id
+    this._getFile path, poiNote.attachment, poiNote, deferredModeParams
+  
+  getUserPhotoFile: (user, deferredModeParams) ->
+    path = '/users/photos/'+user.id
+    this._getFile path, user.foto, user, deferredModeParams
 
   @instance: () ->
     @_SINGLETON
