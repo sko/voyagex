@@ -295,9 +295,9 @@ class window.VoyageX.View
   scrollToLastChatMessage: (lastSender, isP2P = false) ->
     if isP2P
       scrollPane = $('#peer_popup_'+lastSender.id+' > .p2p_chat_container > .p2p_chat_view').first()
-      msgDiv = $("div[class*='p2p_chat_msg']:not([class*=toggle])").last()
+      msgDiv = $("div[class~=p2p_chat_msg]:not([class~='{toggle}'])").last()
     else
-      msgDiv = $("div[class*='chat_message']:not([class*=toggle])").last()
+      msgDiv = $("div[class~=chat_message]:not([class~='{toggle}'])").last()
     msgDivOff = msgDiv.offset()
     if msgDivOff?
       unless scrollPane?

@@ -686,6 +686,7 @@ class window.Comm.StorageController
 
   # called with params only for instant upload when app is online
   uploadQueue: (qPoi = null, qNewNote = null) ->
+    console.log 'Storage - uploadQueue: ...'
     uploadQKey = 'comm.uploadQ.poiNotes'
     stored = localStorage.getItem(uploadQKey)
     qEntries = JSON.parse(stored)

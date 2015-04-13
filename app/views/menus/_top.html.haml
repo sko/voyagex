@@ -73,7 +73,7 @@
             %span#cache_stats{style: 'margin-left: 10px;'}
         #tile_provider{style: 'float: left; font-size: 11px; padding: 5px 0px 0px 15px; color: #ffffff;'}
           %div
-            = link_to 'tile-provider', '#', onclick: "javascript:APP.setProvider(window.prompt('Choose ProviderName from http://leaflet-extras.github.io/leaflet-providers/preview/', 'OpenStreetMap.DE'))", class: 'menu_link'
+            = link_to 'tile-provider', '#', onclick: "javascript:APP.setProvider(window.prompt('Choose ProviderName from http://leaflet-extras.github.io/leaflet-providers/preview/', 'Esri.WorldImagery'))", class: 'menu_link'
         #network_state_view{style: 'float:right; color: white; margin-top: -10px; padding: 0px;'}
           %div{style: 'height: 15px; font-size: 9px;'}
             = radio_button_tag 'network_state', 'online', true, onclick: 'toggleNetworkState(this)'

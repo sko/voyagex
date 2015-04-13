@@ -19,15 +19,6 @@ class window.VoyageX.Backend
     @_state = { online: !forceOffline, pingActive: false, pingCount: 0, pingKey: -1, forceOffline: forceOffline }
     #setTimeout "VoyageX.Backend.instance().pingBackend()", 3000
     #Backend.instance().pingBackend()
-    
-    #window.addEventListener "offline", (e) ->
-    #    alert("offline")
-    #  , false
-    #window.addEventListener "online", (e) ->
-    #    alert("online")
-    #  , false
-    #window.applicationCache.addEventListener "error", (e) ->
-    #    alert("Error fetching manifest: a good chance we are offline")
 
   _checkPingResponse: (pingKey) ->
     if Backend.instance()._state.pingKey != pingKey
@@ -36,7 +27,7 @@ class window.VoyageX.Backend
       setTimeout "VoyageX.Backend.instance().pingBackend()", Backend._PING_INTERVAL_MILLIS
 
   # backend needs it's own ping because app can be online when backend is down.
-  pingBackend: () ->
+  pingBackend: (successCB = null) ->
     @_state.pingActive ||= true
     pingKey = Math.round(Math.random() * 100000)
     $.ajax
@@ -48,6 +39,8 @@ class window.VoyageX.Backend
         Backend.instance()._state.online = true
         unless APP._online
           APP.setOnline()
+        if successCB?
+          successCB()
         Backend.instance()._state.pingActive &&= (!APP._comm.isOnline())
         if Backend.instance()._state.pingActive
           setTimeout "VoyageX.Backend.instance().pingBackend()", Backend._PING_INTERVAL_MILLIS

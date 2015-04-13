@@ -30,6 +30,16 @@ class window.VoyageX.Main
     #@_initPoisOnMap = []
     Main._STORAGE_MODEL = new Storage.Model()
     Main._UPLOAD_HELPER = new VoyageX.UploadHelper()
+    window.addEventListener "offline", (e) ->
+        console.log 'Main: went offline ...'
+        APP.setOffline()
+      , false
+    window.addEventListener "online", (e) ->
+        console.log 'Main: went online ...'
+        APP.setOnline()
+      , false
+    #window.applicationCache.addEventListener "error", (e) ->
+    #    alert("Error fetching manifest: a good chance we are offline")
     # at first the map need's to be initialized ...
     $(document).ready () ->
         APP._init view, mapOptions, offlineZooms, window.VoyageX.TILE_HANDLER
@@ -71,19 +81,20 @@ class window.VoyageX.Main
         #Storage.Model.instance().loadPeers (peer) ->
         #  marker = Main.markerManager().add poi.location, Main._markerEventsCB, false
         if APP.signedIn()
-          #APP.storage().saveUser { id: currentUser.id, username: currentUser.username }, { foto: currentUser.foto }
-          userPhotoUrl = Storage.Model._viewUserFoto currentUser
-          if (typeof userPhotoUrl == 'string') 
-            currentUser.foto.url = userPhotoUrl
-            APP.storage().saveUser { id: currentUser.id, username: currentUser.username }, { foto: currentUser.foto }
-            $('.whoami-img').attr('src', userPhotoUrl)
-          else if (typeof userPhotoUrl.then == 'function')
-            # Assume we are dealing with a promise.
-            userPhotoUrl.then (url) ->
-                currentUser.foto.url = userPhotoUrl
-                # overwrite url
-                APP.storage().saveUser { id: currentUser.id, username: currentUser.username }, { foto: currentUser.foto }
-                $('.whoami-img').attr('src', url)
+          # #APP.storage().saveUser { id: currentUser.id, username: currentUser.username }, { foto: currentUser.foto }
+          # userPhotoUrl = Storage.Model._viewUserFoto currentUser
+          # if (typeof userPhotoUrl == 'string') 
+          #   currentUser.foto.url = userPhotoUrl
+          #   APP.storage().saveUser { id: currentUser.id, username: currentUser.username }, { foto: currentUser.foto }
+          #   $('.whoami-img').attr('src', userPhotoUrl)
+          # else if (typeof userPhotoUrl.then == 'function')
+          #   # Assume we are dealing with a promise.
+          #   userPhotoUrl.then (url) ->
+          #       currentUser.foto.url = userPhotoUrl
+          #       # overwrite url
+          #       APP.storage().saveUser { id: currentUser.id, username: currentUser.username }, { foto: currentUser.foto }
+          #       $('.whoami-img').attr('src', url)
+          APP.refreshUserPhoto currentUser
         APP.initPeers()
         if navigator.geolocation 
           navigator.geolocation.getCurrentPosition(APP._initPositionCB, (error) ->
@@ -156,7 +167,7 @@ class window.VoyageX.Main
         #    pan: false,
         #    animate: false
         #  })
-      @_online && this.isBackendOnline()
+      @_online# && this.isBackendOnline()
     else
       if @_navigatorOnline
         @_navigatorOnline = false
@@ -164,18 +175,21 @@ class window.VoyageX.Main
       false
 
   setOnline: () ->
-    if this.isBackendOnline()
-      @_online = true
-      Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
-      for n in [Main._MAP_CONTROL._minZoom..Main._MAP_CONTROL._maxZoom]
-        Main._MAP_CONTROL._zooms.push n
-      APP.storage().uploadQueue()
-      unless $('#network_state_online').prop('checked')
-        $('#network_state_online').prop('checked', true)
+    #if this.isBackendOnline()
+    @_online = true
+    setTimeout "VoyageX.Main._BACKEND.pingBackend(APP.storage().uploadQueue)", VoyageX.Backend._PING_CHECK_DELAY_MILLIS
+    Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
+    for n in [Main._MAP_CONTROL._minZoom..Main._MAP_CONTROL._maxZoom]
+      Main._MAP_CONTROL._zooms.push n
+    #APP.storage().uploadQueue()
+    unless $('#network_state_online').prop('checked')
+      $('#network_state_online').prop('checked', true)
 
   setOffline: () ->
     if @_online
       @_online = false
+      Main._BACKEND._state.online &&= false
+      Main._BACKEND._state.pingActive &&= false
       Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
       for n in Main._MAP_CONTROL._offlineZooms
         Main._MAP_CONTROL._zooms.push n
@@ -274,7 +288,7 @@ class window.VoyageX.Main
         $('.whoami-img').attr('src', VoyageX.IMAGES_SWIPER_LOADING_PATH)
       # Assume we are dealing with a promise.
       userPhotoUrl.then (url) ->
-          user.foto.url = userPhotoUrl
+          user.foto.url = url
           # overwrite url
           if saveCB?
             saveCB user, flags
