@@ -20,6 +20,15 @@ class window.VoyageX.Backend
     #setTimeout "VoyageX.Backend.instance().pingBackend()", 3000
     #Backend.instance().pingBackend()
 
+  commConnStateCB: (online) ->
+    if online
+      VoyageX.Backend.instance()._state.pingActive &&= false
+      unless APP._online
+        APP.setOnline()
+    else
+      unless VoyageX.Backend.instance()._state.pingActive
+        VoyageX.Backend.instance().pingBackend() # disable in development mode when binding pry
+
   _checkPingResponse: (pingKey) ->
     if Backend.instance()._state.pingKey != pingKey
       #console.log 'Backend - _checkPingResponse: pingKey = '+pingKey
@@ -48,7 +57,7 @@ class window.VoyageX.Backend
         Backend.instance()._state.online = false
         if APP._online
           APP.setOffline()
-        Backend.instance()._state.pingActive &&= (!APP._comm.isOnline())
+        #Backend.instance()._state.pingActive &&= (!APP._comm.isOnline())
         if Backend.instance()._state.pingActive
           setTimeout 'VoyageX.Backend.instance()._checkPingResponse('+pingKey+')', Backend._PING_CHECK_DELAY_MILLIS
 

@@ -3,6 +3,13 @@ class window.VoyageX.NavBar
     window.clientState.setView(window.clientState.getView(clickSrc))
     return false
 
+  @showActiveState: (activeSelector = null) ->
+    if APP.isOnline()
+      color = '1f9600'
+    else
+      color = 'd91b00'
+    $('#network_state_view').css('background-color', '#'+color)
+
   @showView: (view) ->
     if !$('#menu_'+view.key).hasClass('active')
       $('#menu_'+view.key).addClass('active')

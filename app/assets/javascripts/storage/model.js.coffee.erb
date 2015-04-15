@@ -560,29 +560,33 @@ class window.Storage.Model
         console.log 'using cached userPoto: '+storeKey
         stored
 
+  # 
   @userPhotoUrl: (user, deferredModeParams = null) ->
     if APP.isOnline()
-      if Comm.StorageController.isFileBased()
-        unless deferredModeParams?
-          deferred = $.Deferred()
-          deferredModeParams = { fileUrl: Model.userPhotoUrl,\
-                                 fileMeta: user.foto,\
-                                 fileOwner: user,\
-                                 save: true,\
-                                 update: true,\
-                                 deferred: deferred,\
-                                 promise: deferred.promise() }
-        APP.model()._loadReadyUserPhoto user, deferredModeParams
-        deferredModeParams.promise
-      else
-        readyImage = APP.storage().getUserPhoto user, deferredModeParams
-        unless readyImage?
-          readyImage = APP.model()._loadReadyUserPhoto user, deferredModeParams
+      Model.storedUserPhoto user, deferredModeParams
     else
       readyImage = APP.model()._notInCacheImage $('#user_foto_canvas')[0], user.foto
       if deferredModeParams != null
         APP.storage().resolveOfflineNotInCache readyImage, deferredModeParams
       readyImage
+
+  @storedUserPhoto: (user, deferredModeParams = null) ->
+    if Comm.StorageController.isFileBased()
+      unless deferredModeParams?
+        deferred = $.Deferred()
+        deferredModeParams = { fileUrl: Model.userPhotoUrl,\
+                               fileMeta: user.foto,\
+                               fileOwner: user,\
+                               save: true,\
+                               update: true,\
+                               deferred: deferred,\
+                               promise: deferred.promise() }
+      APP.model()._loadReadyUserPhoto user, deferredModeParams
+      deferredModeParams.promise
+    else
+      readyImage = APP.storage().getUserPhoto user, deferredModeParams
+      unless readyImage?
+        readyImage = APP.model()._loadReadyUserPhoto user, deferredModeParams
 
   cacheAttachment: (poiNote, deferredModeParams = null) ->
     if Comm.StorageController.isFileBased()

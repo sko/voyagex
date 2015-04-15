@@ -1,5 +1,5 @@
 v_x_css = ['application', 'sandbox']
-v_x_js = ['preload', 'application', 'sandbox']
+v_x_js = ['preload', 'application', 'comm/application', 'sandbox']
 
 # /assets/application-c7d2632f04e910c0f7317cf6900cd9ab.css
 # /assets/sandbox-ab7490470c448acc3a930ad5f8a6e76c.css
@@ -12,7 +12,8 @@ cache_entry_file = 'app/views/sandbox/cache_entries.txt'
 `rm #{cache_entry_file}`
 
 find_media_cmd = "grep -oR \"[^ '\\\"]\\\\+\\\\.\\\\(png\\\\|gif\\\\|jpe\\\\?g\\\\|mp3\\\\|mpeg\\\\)\" app/ | sed \"s/^.\\\\+://\" | sed \"s/^\\\/.\\\\+//\" | grep \"[a-zA-Z0-9]\" | sort"
-find_asset_cmd = "find public/assets -regextype posix-extended -regex \"^.+\/{{name}}-[^-]+\.{{suffix}}\""
+#find_asset_cmd = "find public/assets -regextype posix-extended -regex \"^.+\/{{name}}-[^-]+\.{{suffix}}\""
+find_asset_cmd = "find public/assets -regextype posix-extended -regex \"^public\/assets\/{{name}}-[^-]+\.{{suffix}}\""
 uniq_css_paths = []
 uniq_js_paths = []
 uniq_media_paths = []
@@ -25,14 +26,15 @@ v_x_css.each_with_index do |name, idx|
   asset = `#{find_asset_cmd.sub(/\{\{name\}\}/, name).sub(/\{\{suffix\}\}/, suffix)}`
   #puts "asset = #{asset}"
   if asset != ''
-    #uniq_path = asset.gsub(/^(.+\/.+?)-[^\/-]+$/, '\\1').split.first.strip
-    uniq_path = asset.gsub(/^(.+\/.+?)-[^\/-]+$/, '\\1').strip
+    uniq_path = asset.gsub(/^(.+\/.+?)-[^\/-]+$/, '\\1').split.first.strip
+    #uniq_path = asset.gsub(/^(.+\/.+?)-[^\/-]+$/, '\\1').strip
     next if uniq_css_paths.include? uniq_path
+    #puts "asset = #{asset}"
     #puts "uniq_path = #{uniq_path}"
     uniq_css_paths << uniq_path
     #puts "#{asset.gsub(/^public/, '').split.first.strip}"
-    #{}`echo "#{asset.gsub(/^public/, '').split.first.strip}" >> #{cache_entry_file}`
-    `echo "#{asset.gsub(/^public/, '').strip}" >> #{cache_entry_file}`
+    `echo "#{asset.gsub(/^public/, '').split.first.strip}" >> #{cache_entry_file}`
+    #`echo "#{asset.gsub(/^public/, '').strip}" >> #{cache_entry_file}`
   end
 end
 v_x_js.each_with_index do |name, idx|
@@ -40,14 +42,15 @@ v_x_js.each_with_index do |name, idx|
   asset = `#{find_asset_cmd.sub(/\{\{name\}\}/, name).sub(/\{\{suffix\}\}/, suffix)}`
   #puts "asset = #{asset}"
   if asset != ''
-    #uniq_path = asset.gsub(/^(.+\/.+?)-[^\/-]+$/, '\\1').split.first.strip
-    uniq_path = asset.gsub(/^(.+\/.+?)-[^\/-]+$/, '\\1').strip
+    uniq_path = asset.gsub(/^(.+\/.+?)-[^\/-]+$/, '\\1').split.first.strip
+    #uniq_path = asset.gsub(/^(.+\/.+?)-[^\/-]+$/, '\\1').strip
     next if uniq_js_paths.include? uniq_path
+    #puts "asset = #{asset}"
     #puts "uniq_path = #{uniq_path}"
     uniq_js_paths << uniq_path
     #puts "#{asset.gsub(/^public/, '').split.first.strip}"
-    #{}`echo "#{asset.gsub(/^public/, '').split.first.strip}" >> #{cache_entry_file}`
-    `echo "#{asset.gsub(/^public/, '').strip}" >> #{cache_entry_file}`
+    `echo "#{asset.gsub(/^public/, '').split.first.strip}" >> #{cache_entry_file}`
+    #`echo "#{asset.gsub(/^public/, '').strip}" >> #{cache_entry_file}`
   end
 end
 `#{find_media_cmd}`.split.each_with_index do |entry, idx|
@@ -55,14 +58,14 @@ end
   suffix = entry.sub(/^.+\.([a-zA-Z]+)$/, '\\1')
   asset = `#{find_asset_cmd.sub(/\{\{name\}\}/, name).sub(/\{\{suffix\}\}/, suffix)}`
   if asset != ''
-    #uniq_path = asset.gsub(/^(.+\/.+?)-[^\/-]+$/, '\\1').split.first.strip
-    uniq_path = asset.gsub(/^(.+\/.+?)-[^\/-]+$/, '\\1').strip
+    uniq_path = asset.gsub(/^(.+\/.+?)-[^\/-]+$/, '\\1').split.first.strip
+    #uniq_path = asset.gsub(/^(.+\/.+?)-[^\/-]+$/, '\\1').strip
     next if uniq_media_paths.include? uniq_path
     #puts "uniq_path = #{uniq_path}"
     uniq_media_paths << uniq_path
     #puts "#{asset.sub(/^public/, '').split.first.strip}"
-    #{}`echo "#{asset.sub(/^public/, '').split.first.strip}" >> #{cache_entry_file}`
-    `echo "#{asset.sub(/^public/, '').strip}" >> #{cache_entry_file}`
+    `echo "#{asset.sub(/^public/, '').split.first.strip}" >> #{cache_entry_file}`
+    #`echo "#{asset.sub(/^public/, '').strip}" >> #{cache_entry_file}`
   end
 end
 # find 3rd-party assets

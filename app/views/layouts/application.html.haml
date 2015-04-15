@@ -4,7 +4,8 @@
 /[if IE 8] <html class="no-js lt-ie9">
 /  manifest="/manifest"
 / [if gt IE 8]><!
-- manifestDecl = Rails.env.to_sym == :production ? {manifest: "/manifest"} : {}
+-# manifestDecl = [:production,:development].include?(Rails.env.to_sym) ? {manifest: "/manifest"} : {}
+- manifestDecl = [:production].include?(Rails.env.to_sym) ? {manifest: "/manifest"} : {}
 %html{manifestDecl}
   / <![endif]
   %head

@@ -10,7 +10,19 @@ class window.VoyageX.NavBar
             })
     return false
 
+  @showActiveState: (activeSelector = null) ->
+    if APP.isOnline()
+      colors = {active: '1f9600', inactive: '2c6b00'}
+    else
+      colors = {active: 'd91b00', inactive: '980a00'}
+   #$('#menu_top button').not(':focus').css('background-color', '#'+colors.inactive)
+    $('#menu_top button').css('background-color', '#'+colors.inactive)
+    unless activeSelector?
+      activeSelector = $('#menu_top button:focus')
+    activeSelector.css('background-color', '#'+colors.active)
+
   @showView: (view) ->
+    NavBar.showActiveState()
     $('#content_'+view.key).css('display', 'block')
     if view.key == 'home'
       switch view.uploadType

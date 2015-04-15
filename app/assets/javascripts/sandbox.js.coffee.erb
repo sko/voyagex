@@ -46,8 +46,6 @@ class window.VoyageX.Sandbox
   toggleNetworkState: (selected) ->
     if selected.id == 'network_state_online'
       APP.setOnline()
-      Comm.StorageController.instance()._tileLoadQueue = {}
-      APP.map()._resetView APP.map().getCenter(), APP.map().getZoom(), true
     else
       APP.setOffline()
 

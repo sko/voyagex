@@ -1,8 +1,8 @@
 - if is_mobile
-  #content_home{role: 'main'}
+  #content_home{role: 'main', style: 'display: none;'}
     = render partial: '/sandbox/home.mobile'
 - else
-  #content_home
+  #content_home{style: 'display: none;'}
     = render partial: '/users/settings'
     = render partial: '/shared/uploads', locals: {resource: Upload.new, resource_name: :upload}
   
@@ -16,12 +16,13 @@
   $("head").append("<style type='text/css'>.chat_view {width:100%;height:"+chatViewHeight+"px !important;}</style>");
   $("head").append("<style type='text/css'>.chat_input, .chat_input_text {width:100%;height:"+chatInputHeight+"px !important;}</style>");
 
-#content_chat
+#content_chat{style: 'display: none;'}
   .chat_view
   .chat_input
     = form_tag '#', method: :post, remote: true
     = text_area_tag :message, '', class: :chat_input
 
+-#{style: 'display: none;'}
 #content_map
   %canvas{id: 'tile_canvas', style: 'display: none; width: 256px; height: 256px;'}
   %canvas{id: 'attachment_canvas', style: 'display: none;'}

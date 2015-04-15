@@ -32,6 +32,8 @@ class window.VoyageX.Main
     Main._UPLOAD_HELPER = new VoyageX.UploadHelper()
     window.addEventListener "offline", (e) ->
         console.log 'Main: went offline ...'
+        VoyageX.Main._BACKEND._state.pingActive &&= false
+        VoyageX.Main._BACKEND._state.online &&= false
         APP.setOffline()
       , false
     window.addEventListener "online", (e) ->
@@ -70,9 +72,10 @@ class window.VoyageX.Main
                                    ['/uploads', APP._uploadsCB, VoyageX.CHANNEL_ENC_KEY],
                                    ['/radar', view._radarCB, VoyageX.CHANNEL_ENC_KEY]],
                                    VoyageX.SYS_CHANNEL_ENC_KEY,
-                                   APP._systemCB)
+                                   APP._systemCB,
+                                   Main._BACKEND.commConnStateCB)
         unless forceOffline
-          VoyageX.Backend.instance().pingBackend()
+          VoyageX.Main._BACKEND.pingBackend()
         # Map initialisation (LeafletJS)
         Main._MAP_CONTROL = new VoyageX.MapControl mapOptions, offlineZooms, tileHandler
         Main._MARKER_MANAGER = new VoyageX.MarkerManager APP.map()
@@ -109,10 +112,9 @@ class window.VoyageX.Main
 #       #  )
         #APP._initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
         if isMobile()
-          if window.isMobile()
-            fullscreenDialog = VoyageX.TemplateHelper._updateIds 'tmpl_fullscreen_dialog'
-            $('#system_dialog_panel').html(fullscreenDialog)
-            $('#open_system_dialog_btn').click()
+          fullscreenDialog = VoyageX.TemplateHelper._updateIds 'tmpl_fullscreen_dialog'
+          $('#system_dialog_panel').html(fullscreenDialog)
+          $('#open_system_dialog_btn').click()
           APP.map().invalidateSize({
               reset: true,
               pan: false,
@@ -128,6 +130,10 @@ class window.VoyageX.Main
 #          $( "#panel_control" ).on( "dragcreate", (event, ui) ->
 #                  console.log('dragging ...')
 #            )
+          #window.clientState = new VoyageX.ClientState('map', 'camera', VoyageX.NavBar.showView, VoyageX.NavBar.hideView)
+          VoyageX.NavBar.showActiveState($('#menu_top button.activate_map'))
+        else
+          VoyageX.NavBar.showActiveState()
         $('#zoom_level').html('<span style="color:white;">zoom: '+APP.map().getZoom()+'</span>')
         # next statement removes value from inputs!!
         #$("#network_state").buttonset()
@@ -154,7 +160,7 @@ class window.VoyageX.Main
     Main._BACKEND.register userId
 
   isBackendOnline: () ->
-    navigator.onLine && VoyageX.Backend.instance().isOnline()
+    navigator.onLine && VoyageX.Main._BACKEND.isOnline()
 
   isOnline: () ->
     if navigator.onLine
@@ -175,15 +181,21 @@ class window.VoyageX.Main
       false
 
   setOnline: () ->
+    #Comm.StorageController.instance()._tileLoadQueue = {}
+    #this.map()._resetView this.map().getCenter(), this.map().getZoom(), true
     #if this.isBackendOnline()
     @_online = true
-    setTimeout "VoyageX.Main._BACKEND.pingBackend(APP.storage().uploadQueue)", VoyageX.Backend._PING_CHECK_DELAY_MILLIS
     Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
     for n in [Main._MAP_CONTROL._minZoom..Main._MAP_CONTROL._maxZoom]
       Main._MAP_CONTROL._zooms.push n
     #APP.storage().uploadQueue()
     unless $('#network_state_online').prop('checked')
       $('#network_state_online').prop('checked', true)
+    #this.map()._resetView this.map().getCenter(), this.map().getZoom(), true
+    setTimeout "APP.refreshMap()", 1500
+    unless VoyageX.Main._BACKEND._state.pingActive
+      setTimeout "VoyageX.Main._BACKEND.pingBackend()", VoyageX.Backend._PING_CHECK_DELAY_MILLIS
+    VoyageX.NavBar.showActiveState()
 
   setOffline: () ->
     if @_online
@@ -195,6 +207,7 @@ class window.VoyageX.Main
         Main._MAP_CONTROL._zooms.push n
       unless $('#network_state_offline').prop('checked')
         $('#network_state_offline').prop('checked', true)
+      VoyageX.NavBar.showActiveState()
 
   setFullScreen: () ->
     window.currentUser.id
@@ -216,6 +229,10 @@ class window.VoyageX.Main
   clearCache: () ->
     Comm.StorageController.instance().clearCache()
     cacheStats()
+
+  refreshMap: () ->
+    #Comm.StorageController.instance()._tileLoadQueue = {}
+    APP.map()._resetView APP.map().getCenter(), APP.map().getZoom(), true
 
   resetConnection: (commSettingId) ->
     peerChannelEncKey = $('#i_follow_'+commSettingId).attr('data-channelEncKey')
@@ -272,7 +289,7 @@ class window.VoyageX.Main
   refreshUserPhoto: (user, flags = null, saveCB = null) ->
     unless flags?
       flags = { foto: user.foto }
-    userPhotoUrl = Storage.Model.userPhotoUrl user
+    userPhotoUrl = Storage.Model.storedUserPhoto user
     if (typeof userPhotoUrl == 'string') 
       user.foto.url = userPhotoUrl
       if saveCB?

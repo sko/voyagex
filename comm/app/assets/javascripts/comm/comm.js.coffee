@@ -26,7 +26,7 @@ class window.Comm.Comm
 # 2) send everything to rails-app and let her handle  publishing
 #    @see fax-rails if railx can reduce listeners - even if possible - it's more complex
 # 3) everything over faye
-  constructor: (userId, channelCallBacksList, sysChannelEncKey, systemCallBack) ->
+  constructor: (userId, channelCallBacksList, sysChannelEncKey, systemCallBack, connStateCallBack) ->
     Comm._SINGLETON = this
     @_online = false
     @_user_id = userId
@@ -37,11 +37,10 @@ class window.Comm.Comm
     client.addExtension({ incoming: Comm._incoming, outgoing: Comm._outgoing })
     client.on 'transport:down', () ->
         window.Comm.Comm.instance()._online = false
-        # also check VoyageX.Backend - isOnline
-        unless VoyageX.Backend.instance()._pingState.active
-          window.VoyageX.Backend.instance().pingBackend() # disable in development mode when binding pry
+        connStateCallBack false
     client.on 'transport:up', () ->
         window.Comm.Comm.instance()._online = true
+        connStateCallBack true
     
     # map callbacks to channels
     Comm.channelCallBacksJSON = new Object()
@@ -53,15 +52,6 @@ class window.Comm.Comm
       APP.register(@_user_id)
     else
       Comm.initSystemContext sysChannelEncKey
-    
-    #window.addEventListener "offline", (e) ->
-    #    alert("offline")
-    #  , false
-    #window.addEventListener "online", (e) ->
-    #    alert("online")
-    #  , false
-    #window.applicationCache.addEventListener "error", (e) ->
-    #    alert("Error fetching manifest: a good chance we are offline")
   
   isOnline: () ->
     client._state == client.CONNECTED
