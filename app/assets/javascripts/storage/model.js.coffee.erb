@@ -93,7 +93,7 @@ class window.Storage.Model
           #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
     else
       if (Modernizr.localstorage)
-        pois = APP.storage().pois(searchBounds(lat, lng, VoyageX.SEARCH_RADIUS_METERS))
+        pois = APP.storage().poisWithinSearchBounds(searchBounds(lat, lng, VoyageX.SEARCH_RADIUS_METERS))
         for poi, i in pois
           Model._syncPois poi, callback, i
 

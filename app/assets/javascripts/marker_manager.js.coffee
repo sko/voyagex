@@ -23,12 +23,14 @@ class window.VoyageX.MarkerManager
       movedLatLng = @_map.unproject L.point(posPoint.x+3, posPoint.y+3)
       samePosMarker.target().setLatLng movedLatLng
 
-  add: (location, callBack, flags = {isUserMarker: false, peer: null}, meta = false) ->
+  add: (location, callBack, flags = {isUserMarker: false, peer: null, beam: null}, meta = false) ->
     markerOps = { draggable: flags.isUserMarker,\
                   riseOnHover: true }
     unless flags.isUserMarker
       if flags.peer?
         markerOps.icon = new L.Icon.Default({iconUrl: VoyageX.IMAGES_MARKER_PEER_PATH})
+      else if flags.beam?
+        markerOps.icon = new L.Icon.Default({iconUrl: VoyageX.IMAGES_MARKER_BEAM_PATH})
       else
         markerOps.icon = new L.Icon.Default({iconUrl: VoyageX.IMAGES_MARKER_POI_PATH})
         this._checkVisible location
@@ -148,6 +150,12 @@ class window.VoyageX.MarkerManager
     for m in @_markers
       if m.target().getLatLng().lat == lat && m.target().getLatLng().lng == lng
         return m
+    null
+
+  forPositionPreview: () ->
+    for m in @_markers
+      if m._flags.beam?
+        return MarkerManager.metaJSON m, {}
     null
 
   nearByPoint: (x, y, minNumPixels) ->

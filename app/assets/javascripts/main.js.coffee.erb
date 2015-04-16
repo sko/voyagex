@@ -15,6 +15,7 @@ class window.VoyageX.Main
   constructor: (view, mapOptions, offlineZooms, online) ->
     Main._SINGLETON = this
     window.APP = this
+    @_debug = true # false
     @_version = new VoyageX.Version [0, 1]
     @_initState = 0
     window.forceOffline = false
@@ -495,7 +496,7 @@ class window.VoyageX.Main
     @_selectedPosition.address = address
 #    if address != null
 #      $('#cur_loc_addr').html(address)
-    if true # debugRealePos
+    if @_debug # debugRealePos
       #this._setRealPosition {coords: {longitude: lat, latitude: lng}}, true
       APP._realPosition.lat = trimPosVal(lat)
       APP._realPosition.lng = trimPosVal(lng)
@@ -667,11 +668,23 @@ class window.VoyageX.Main
   preloadTiles: () ->
     dist = L.latLng(APP._movePredictionLastLatLng.lat, APP._movePredictionLastLatLng.lng).distanceTo L.latLng(APP._realPosition.lat, APP._realPosition.lng)
     if dist >= 100
+      predictDistMeters = 1000
+      distFactor = predictDistMeters / dist
+
       headingLat = APP._realPosition.lat - APP._movePredictionLastLatLng.lat
       headingLng = APP._realPosition.lng - APP._movePredictionLastLatLng.lng
-      #predictedLatLng = L.latLng(APP._movePredictionLastLatLng.lat + 2*headingLat, APP._movePredictionLastLatLng.lng + 2*headingLng)
-      predictedLatLng = L.latLng(APP._realPosition.lat + 10*headingLat, APP._realPosition.lng + 10*headingLng)
-      line = L.polyline([L.latLng(APP._movePredictionLastLatLng.lat, APP._movePredictionLastLatLng.lng), predictedLatLng], {color: 'green'}).addTo(APP.map())
+
+      predictedLatLng = L.latLng(APP._realPosition.lat + distFactor*headingLat, APP._realPosition.lng + distFactor*headingLng)
+      lineDone = L.polyline([L.latLng(APP._movePredictionLastLatLng.lat, APP._movePredictionLastLatLng.lng), L.latLng(APP._realPosition.lat, APP._realPosition.lng)], {color: 'green'}).addTo(APP.map())
+      linePred = L.polyline([L.latLng(APP._realPosition.lat, APP._realPosition.lng), predictedLatLng], {color: 'red'}).addTo(APP.map())
+      m1 = APP.getUserMarker()
+      marker = APP.markers().forPositionPreview()
+      if marker?
+        marker.m.setLocation predictedLatLng
+        m2 = marker.target()
+      else
+        m2 = APP.markers().add predictedLatLng, null, {isUserMarker: false, beam: true}
+      Main._MAP_CONTROL.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, 16)
       APP._movePredictionLastLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
 
   _systemCB: (message) ->
@@ -786,30 +799,48 @@ class window.VoyageX.Main
     # @see _initPositionCB
     # BUT! notes have not been loaded maybe
     #sBs = Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, this.map())
-    pois = APP.storage().getPois (poi) ->
-        sBs = window.searchBounds APP._selectedPosition.lat, APP._selectedPosition.lng, VoyageX.SEARCH_RADIUS_METERS
-        if poi.lat >= sBs.lat_south && poi.lat <= sBs.lat_north &&
-           poi.lng >= sBs.lng_west && poi.lng <= sBs.lng_east
-#          unless poi.notes && poi.notes.length >= 1
-          # dummy-poiNote for swiper - replaced when attachments are loaded
-          unless poi.notes? && poi.notes.length >= 1
-            poi.notes = [{id: -1, attachment: {url: VoyageX.IMAGES_SWIPER_LOADING_PATH, content_type: 'image/png', width: 200, height: 100}}]
-          Storage.Model.instance().loadPoiNotes poi.id, null, (poiClone) ->
-              swiperDummy = $('#poi_swiper_'+poi.id+' [data-poiNoteId=-1]')
-              if swiperDummy.length >= 1
-                # if there is a template ist must be swiper's loading-dummy
-                swiperDummy.remove()
-                for note in poiClone.notes
-                  swiperSlideHtml = VoyageX.TemplateHelper.swiperSlideHtml poi, note
-                  $('#poi_swiper_'+poi.id+' .swiper-wrapper').append(swiperSlideHtml)
-                  mySwiper = window['myPoiSwiper'+poi.id]
-                  mySwiper.reInit()
-              else
-                # template didn't insert swiperDummy yet, so we can use the real data
-                poi.notes = poiClone.notes
-          return true
-        else
-          return false
+#     pois = APP.storage().getPois (poi) ->
+#         sBs = window.searchBounds APP._selectedPosition.lat, APP._selectedPosition.lng, VoyageX.SEARCH_RADIUS_METERS
+#         if poi.lat >= sBs.lat_south && poi.lat <= sBs.lat_north &&
+#            poi.lng >= sBs.lng_west && poi.lng <= sBs.lng_east
+# #          unless poi.notes && poi.notes.length >= 1
+#           # dummy-poiNote for swiper - replaced when attachments are loaded
+#           unless poi.notes? && poi.notes.length >= 1
+#             poi.notes = [{id: -1, attachment: {url: VoyageX.IMAGES_SWIPER_LOADING_PATH, content_type: 'image/png', width: 200, height: 100}}]
+#           Storage.Model.instance().loadPoiNotes poi.id, null, (poiClone) ->
+#               swiperDummy = $('#poi_swiper_'+poi.id+' [data-poiNoteId=-1]')
+#               if swiperDummy.length >= 1
+#                 # if there is a template ist must be swiper's loading-dummy
+#                 swiperDummy.remove()
+#                 for note in poiClone.notes
+#                   swiperSlideHtml = VoyageX.TemplateHelper.swiperSlideHtml poi, note
+#                   $('#poi_swiper_'+poi.id+' .swiper-wrapper').append(swiperSlideHtml)
+#                   mySwiper = window['myPoiSwiper'+poi.id]
+#                   mySwiper.reInit()
+#               else
+#                 # template didn't insert swiperDummy yet, so we can use the real data
+#                 poi.notes = poiClone.notes
+#           return true
+#         else
+#           return false
+    sBs = window.searchBounds APP._selectedPosition.lat, APP._selectedPosition.lng, VoyageX.SEARCH_RADIUS_METERS
+    pois = APP.storage().poisWithinSearchBounds sBs, (poi) ->
+        # dummy-poiNote for swiper - replaced when attachments are loaded
+        unless poi.notes? && poi.notes.length >= 1
+          poi.notes = [{id: -1, attachment: {url: VoyageX.IMAGES_SWIPER_LOADING_PATH, content_type: 'image/png', width: 200, height: 100}}]
+        Storage.Model.instance().loadPoiNotes poi.id, null, (poiClone) ->
+            swiperDummy = $('#poi_swiper_'+poi.id+' [data-poiNoteId=-1]')
+            if swiperDummy.length >= 1
+              # if there is a template ist must be swiper's loading-dummy
+              swiperDummy.remove()
+              for note in poiClone.notes
+                swiperSlideHtml = VoyageX.TemplateHelper.swiperSlideHtml poi, note
+                $('#poi_swiper_'+poi.id+' .swiper-wrapper').append(swiperSlideHtml)
+                mySwiper = window['myPoiSwiper'+poi.id]
+                mySwiper.reInit()
+            else
+              # template didn't insert swiperDummy yet, so we can use the real data
+              poi.notes = poiClone.notes
     this.view().previewPois pois
 #      when 'location_bookmarks'
 #        APP.model().photoNav @_selectedPosition.lat, @_selectedPosition.lng, (pois) ->

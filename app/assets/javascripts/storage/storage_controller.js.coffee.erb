@@ -163,31 +163,72 @@ class window.Comm.StorageController
       bookmarks
     else
       []
-  
-  pois: (searchBounds, callback = null) ->
+
+  getPoiForLocation: (locationId) ->
     storeKey = 'comm.locations'
-    locations = JSON.parse(localStorage.getItem(storeKey))
-    #locations = this.get 'comm.locations'
-    if locations.pois?
-      pois = []
-      for locationId in Object.keys(locations.pois)
-        location = locations[locationId]
-        if withinSearchBounds(location.lat, location.lng, searchBounds)
-          poiKey = StorageController.poiKey {id: locations.pois[locationId].id}
-          if callback?
-            if callback(locations, locations[locationId], locations.pois[locationId].id)
-              pois = []
-              break
-          else
-            #poi = StorageController.instance().get poiKey
-            poi = JSON.parse(localStorage.getItem(poiKey))
-            poi.lat = location.lat
-            poi.lng = location.lng
-            poi.address = location.address
-            pois.push poi
-      pois
+    locations = JSON.parse localStorage.getItem(storeKey)
+    if locations? && locations.pois?
+      poi = locations.pois[locationId]
+#      if poi?
+#        poiKey = StorageController.poiKey {id: poi.id}
+#        #JSON.parse(localStorage.getItem(poiKey))
+#        this.get poiKey
     else
-      []
+      null
+
+  getPoi: (poiId) ->
+    poiKey = StorageController.poiKey {id: poiId}
+    JSON.parse(localStorage.getItem(poiKey))
+
+  # callback 
+  getPois: (callback = null) ->
+    locations = this.get 'comm.locations'
+    pois = []
+    for key, i in Object.keys(localStorage)
+      #console.log(key)
+      #document.writeln i+'. key = '+key+'<br>'
+      if key.match(/^comm\.poi\./)?
+        poi = this.get key
+        location = locations[poi.locationId]
+        poi.lat = location.lat
+        poi.lng = location.lng
+        poi.address = location.address
+        if callback == null or callback(poi)
+          pois.push poi
+    pois
+  
+ #pois: (searchBounds, callback = null) ->
+  poisWithinSearchBounds: (searchBounds, callback = null) ->
+    this.getPois (poi) ->
+      if withinSearchBounds(poi.lat, poi.lng, searchBounds)
+        if callback?
+          callback poi
+        true
+      else
+        false
+    # storeKey = 'comm.locations'
+    # locations = JSON.parse(localStorage.getItem(storeKey))
+    # #locations = this.get 'comm.locations'
+    # if locations.pois?
+    #   pois = []
+    #   for locationId in Object.keys(locations.pois)
+    #     location = locations[locationId]
+    #     if withinSearchBounds(location.lat, location.lng, searchBounds)
+    #       poiKey = StorageController.poiKey {id: locations.pois[locationId].id}
+    #       if callback?
+    #         if callback(locations, locations[locationId], locations.pois[locationId].id)
+    #           pois = []
+    #           break
+    #       else
+    #         #poi = StorageController.instance().get poiKey
+    #         poi = JSON.parse(localStorage.getItem(poiKey))
+    #         poi.lat = location.lat
+    #         poi.lng = location.lng
+    #         poi.address = location.address
+    #         pois.push poi
+    #   pois
+    # else
+    #   []
 
   saveNote: (type, id, text) ->
     if type == 'peer'
@@ -445,39 +486,7 @@ class window.Comm.StorageController
     Comm.FileUtils._FS?
     #false
 
-  getPoiForLocation: (locationId) ->
-    storeKey = 'comm.locations'
-    locations = JSON.parse localStorage.getItem(storeKey)
-    if locations? && locations.pois?
-      poi = locations.pois[locationId]
-#      if poi?
-#        poiKey = StorageController.poiKey {id: poi.id}
-#        #JSON.parse(localStorage.getItem(poiKey))
-#        this.get poiKey
-    else
-      null
-
-  getPoi: (poiId) ->
-    poiKey = StorageController.poiKey {id: poiId}
-    JSON.parse(localStorage.getItem(poiKey))
-
-  getPois: (callback = null) ->
-    locations = this.get 'comm.locations'
-    pois = []
-    for key, i in Object.keys(localStorage)
-      #console.log(key)
-      #document.writeln i+'. key = '+key+'<br>'
-      if key.match(/^comm\.poi\./)?
-        poi = this.get key
-        location = locations[poi.locationId]
-        poi.lat = location.lat
-        poi.lng = location.lng
-        poi.address = location.address
-        if callback == null or callback(poi)
-          pois.push poi
-    pois
-
-  clearCache: (flags = {tiles: null, poiNotes: null, users: null}) ->
+  clearCache: (flags = {tiles: true, poiNotes: null, users: null}) ->
     #this.delete('tiles')
     if StorageController.isFileBased()
       # for dirName in VoyageX.MapControl.instance()._offlineZooms
