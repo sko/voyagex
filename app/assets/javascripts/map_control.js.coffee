@@ -106,7 +106,123 @@ class window.VoyageX.MapControl
 
   curTileWidthToMeters: () ->
     this.tileWidthToMeters(@_map.getZoom())
+
+  tileForPosition: (lat, lng, zoom) ->
+    curLatlng = L.latLng(lat, lng)
+    curTileZ = @_map.getZoom()
+    p = @_map.project(curLatlng)
+    curLatX = p.x
+    curLatY = p.y
+    curTileX = parseInt curLatX/256
+    curTileY = parseInt curLatY/256
+    unless zoom == curTileZ
+      if zoom > curTileZ
+        for z in [curTileZ..(zoom-1)]
+          curLatX = curLatX * 2
+          curLatY = curLatY * 2
+          curTileX = curTileX * 2
+          curTileY = curTileY * 2
+      else
+        for z in [zoom..(curTileZ-1)]
+          curLatX = curLatX / 2
+          curLatY = curLatY / 2
+          curTileX = Math.round((curTileX-0.1)/2)
+          curTileY = Math.round((curTileY-0.1)/2)
+    {x: curTileX, y: curTileY, latX: curLatX, latY: curLatY}
   
+  # m1 = APP.markers().forPoi(36).target()
+  # m2 = APP.markers().forPoi(37).target()
+  # VoyageX.Main._MAP_CONTROL.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, 13)
+  tilesPathBetweenPositions: (pos1, pos2, zoom) ->
+    tilePos1 = this.tileForPosition pos1.lat, pos1.lng, zoom
+    tilePos2 = this.tileForPosition pos2.lat, pos2.lng, zoom
+    distLng = L.latLng(pos1.lat, pos1.lng).distanceTo L.latLng(pos1.lat, pos2.lng)
+    distLat = L.latLng(pos1.lat, pos2.lng).distanceTo L.latLng(pos2.lat, pos2.lng)
+    relDist = distLat / distLng
+    tileWidth = this.tileWidthToMeters zoom
+    cursorX = 0
+    cursorY = 0
+    cursorLatLng = null
+    tiles = []
+    if pos2.lat > pos1.lat
+    else
+      # vom dest punkt immer links und rechts
+      if pos2.lng > pos1.lng
+        dist1TileEndX = (tilePos1.x+1)*256 - tilePos1.latX
+        cursorX = (tilePos1.x+1)*256
+        #dist1TileEndY = (tilePos1.y+1)*256 - tilePos1.latY
+        moveTileEndLng = @_map.unproject L.point((tilePos1.x+1)*256, tilePos1.latY)
+        line = L.polyline([L.latLng(pos1.lat, pos1.lng), L.latLng(pos1.lat, moveTileEndLng.lng)], {color: 'blue'}).addTo(APP.map())
+        distRelLat = relDist * dist1TileEndX
+        cursorY = tilePos1.latY + distRelLat
+        moveRelLat = @_map.unproject L.point((tilePos1.x+1)*256, tilePos1.latY+distRelLat)
+        cursorLatLng = L.latLng(moveRelLat.lat, moveTileEndLng.lng)
+        
+        #
+        # add curTile: tilePos1.x / tilePos1.y
+        #
+        tiles.push {x: tilePos1.x, y: tilePos1.y}
+        leftTileX = parseInt (cursorX-1)/256
+        rightTileX = parseInt (cursorX+1)/256
+        tileY = parseInt (cursorY)/256
+        if this._tileIndex(tiles, leftTileX, tileY) == -1
+          tiles.push {x: leftTileX, y: tileY}
+        if this._tileIndex(tiles, rightTileX, tileY) == -1
+          tiles.push {x: rightTileX, y: tileY}
+
+        line = L.polyline([L.latLng(moveTileEndLng.lat, moveTileEndLng.lng), cursorLatLng], {color: 'blue'}).addTo(APP.map())
+        distLng -= tileWidth
+        while distLng > 0
+          dist1TileEndX = 256
+          cursorX += dist1TileEndX
+          #dist1TileEndY = (tilePos1.y+1)*256 - tilePos1.latY
+          moveTileEndLng = @_map.unproject L.point(cursorX, cursorY)
+          line = L.polyline([cursorLatLng, L.latLng(cursorLatLng.lat, moveTileEndLng.lng)], {color: 'blue'}).addTo(APP.map())
+          distRelLat = relDist * dist1TileEndX
+          cursorY += distRelLat
+          moveRelLat = @_map.unproject L.point(cursorX, cursorY)
+          cursorLatLng = L.latLng(moveRelLat.lat, moveTileEndLng.lng)
+          
+          #
+          # add left and right tile: tileForPosition: (lat, lng, zoom), tileForPosition: (lat, lng, zoom)
+          #
+          leftTileX = parseInt (cursorX-1)/256
+          rightTileX = parseInt (cursorX+1)/256
+          tileY = parseInt (cursorY)/256
+          if this._tileIndex(tiles, leftTileX, tileY) == -1
+            tiles.push {x: leftTileX, y: tileY}
+          if this._tileIndex(tiles, rightTileX, tileY) == -1
+            tiles.push {x: rightTileX, y: tileY}
+
+          line = L.polyline([L.latLng(moveTileEndLng.lat, moveTileEndLng.lng), cursorLatLng], {color: 'blue'}).addTo(APP.map())
+          distLng -= tileWidth
+          #break
+        dist1TileEndX = tilePos2.latX - cursorX
+        cursorX = tilePos2.latX
+        moveLng = @_map.unproject L.point(cursorX, cursorY)
+        line = L.polyline([cursorLatLng, L.latLng(cursorLatLng.lat, moveLng.lng)], {color: 'blue'}).addTo(APP.map())
+        distRelLat = relDist * dist1TileEndX
+        cursorY += distRelLat
+        moveRelLat = @_map.unproject L.point(cursorX, cursorY)
+        cursorLatLng = L.latLng(moveRelLat.lat, pos2.lng)
+        
+        #
+        # add curTile: tilePos2.x / tilePos2.y
+        #
+        if this._tileIndex(tiles, tilePos2.x, tilePos2.y) == -1
+          tiles.push {x: tilePos2.x, y: tilePos2.y}
+        
+        line = L.polyline([L.latLng(moveLng.lat, moveLng.lng), cursorLatLng], {color: 'blue'}).addTo(APP.map())
+    #tilePos1LeftTopLatLng = @_map.unproject L.point(tilePos1.x*256, tilePos1.y*256)
+    #line = L.polyline([L.latLng(APP._movePredictionLastLatLng.lat, APP._movePredictionLastLatLng.lng), predictedLatLng], {color: 'blue'}).addTo(APP.map())
+    console.log 'tilesPathBetweenPositions - ........................................'
+
+  _tileIndex: (tiles, x, y) ->
+    for t, idx in tiles
+      if t.x == x && t.y == y
+        return idx
+    -1
+
   showTileInfo: (set = true) ->
     if set
       @_showTileInfo = !@_showTileInfo

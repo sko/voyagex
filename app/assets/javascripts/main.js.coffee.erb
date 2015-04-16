@@ -26,6 +26,8 @@ class window.VoyageX.Main
     @_realPositionWatch = null
     @_moveSensorDistMeters = 25
     @_selectedPosition = {lat: -1.0, lng: -1.0, address: null}
+    @_movePredictionDistMeters = 100
+    @_movePredictionLastLatLng = null
     @_curPOI = null
     #@_initPoisOnMap = []
     Main._STORAGE_MODEL = new Storage.Model()
@@ -492,7 +494,15 @@ class window.VoyageX.Main
     @_selectedPosition.lng = lng
     @_selectedPosition.address = address
 #    if address != null
-#      $('#cur_loc_addr').html(address) 
+#      $('#cur_loc_addr').html(address)
+    if true # debugRealePos
+      #this._setRealPosition {coords: {longitude: lat, latitude: lng}}, true
+      APP._realPosition.lat = trimPosVal(lat)
+      APP._realPosition.lng = trimPosVal(lng)
+      if APP._movePredictionLastLatLng == null
+        APP._movePredictionLastLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
+      else
+        APP.preloadTiles()
     if showSearchRadius
       Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, APP.map())
 
@@ -552,6 +562,10 @@ class window.VoyageX.Main
   getRealPosition: () ->
      { lat: APP._realPosition.lat, lng: APP._realPosition.lng }
 
+  # console-debug
+  # pos = APP.map().getCenter()
+  # APP._setRealPosition({coords: {latitude: pos.lat, longitude: pos.lng+0.001}})
+  # pos = L.latLng(APP._realPosition.lat, APP._realPosition.lng)
   _setRealPosition: (position) ->
     sBs = window.searchBounds APP._realPosition.lat, APP._realPosition.lng, APP._moveSensorDistMeters
     unless window.withinSearchBounds position.coords.latitude, position.coords.longitude, sBs
@@ -569,8 +583,12 @@ class window.VoyageX.Main
           VoyageX.Main.mapControl().drawPath currentUser, path, true
           # don't set location unless user explicitely want's to by activating path (else might disturb work)
           APP.getUserMarker(true).m.setLocation {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
+      if APP._movePredictionLastLatLng == null
+        APP._movePredictionLastLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
+      else
+        APP.preloadTiles()
     APP.watchRealPosition()
-  
+
   stopRealPositionWatch: () ->
     if navigator.geolocation && APP._realPositionWatch?
       navigator.geolocation.clearWatch APP._realPositionWatch
@@ -645,6 +663,16 @@ class window.VoyageX.Main
             console.log 'ERROR: unknown error - disable location-query ...'
             APP._comm.send('/system', {type: 'error', userId: APP.userId(), userName: APP.userName(), userFoto: currentUser.foto, msg: $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': [poll] - unknown error - disable location-query ...'})
     , { enableHighAccuracy: true, maximumAge: VoyageX.Backend._POS_QUERY_INTERVAL_MILLIS, timeout: VoyageX.Backend._POS_QUERY_TIMEOUT_MILLIS })
+
+  preloadTiles: () ->
+    dist = L.latLng(APP._movePredictionLastLatLng.lat, APP._movePredictionLastLatLng.lng).distanceTo L.latLng(APP._realPosition.lat, APP._realPosition.lng)
+    if dist >= 100
+      headingLat = APP._realPosition.lat - APP._movePredictionLastLatLng.lat
+      headingLng = APP._realPosition.lng - APP._movePredictionLastLatLng.lng
+      #predictedLatLng = L.latLng(APP._movePredictionLastLatLng.lat + 2*headingLat, APP._movePredictionLastLatLng.lng + 2*headingLng)
+      predictedLatLng = L.latLng(APP._realPosition.lat + 10*headingLat, APP._realPosition.lng + 10*headingLng)
+      line = L.polyline([L.latLng(APP._movePredictionLastLatLng.lat, APP._movePredictionLastLatLng.lng), predictedLatLng], {color: 'green'}).addTo(APP.map())
+      APP._movePredictionLastLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
 
   _systemCB: (message) ->
     console.log 'got a system - message: ' + message.type
