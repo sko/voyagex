@@ -22,11 +22,11 @@ $('#people_of_interest').html(peopleOfInterest)
 ##window.myPoiSwiper<%= poi.id -%>.swipeNext()
 #<% end %>
 <% if is_mobile %>
-$('#open_photo_nav_btn').click()
+$('#open_context_nav_btn').click()
 <% else %>
-$('#photo_nav_panel').dialog('open')
-if ! $('#photo_nav_panel').parent().hasClass('seethrough_panel')
-  $('#photo_nav_panel').parent().addClass('seethrough_panel')
+$('#context_nav_panel').dialog('open')
+if ! $('#context_nav_panel').parent().hasClass('seethrough_panel')
+  $('#context_nav_panel').parent().addClass('seethrough_panel')
 <% end %>
 # select initial tab
 $('#pois_preview_btn').click()

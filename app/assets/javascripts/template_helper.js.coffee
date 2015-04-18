@@ -448,7 +448,7 @@ class window.VoyageX.TemplateHelper
   @_mediaFileTag: (upload, meta) ->
     maxWidth = 100.0
     unless upload?
-      return '<img src="'+VoyageX.IMAGES_NOISE_PATH+'" style="max-width:'+maxWidth+'px;max-height:'+maxWidth+'px;">'
+      return '<img src="'+VoyageX.IMAGES_NOISE_PATH+'" style="max-width:'+maxWidth+'px !important;">'
     scale = -1.0
     height = -1
     switch upload.content_type.match(/^[^:\/]+/)[0]

@@ -62,11 +62,11 @@ class MainController < ApplicationController
 #   "metro_code"=>0}>
   end
 
-#  def photo_nav
+#  def context_nav
 #    nearby_m = (tmp_user.search_radius_meters||20000)
 #    location = Location.new latitude: params[:lat], longitude: params[:lng]
 ## GOOD but now from template ...  load_location_data location, nearby_m
-#    render "main/photo_nav", layout: false, formats: [:js]
+#    render "main/context_nav", layout: false, formats: [:js]
 #  end
 
   # chrome://appcache-internals/

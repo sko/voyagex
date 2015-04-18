@@ -39,7 +39,7 @@ VoyageX::Application.routes.draw do
   put '/uploads/:id', to: 'uploads#update', as: :poi_note
 
   get '/manifest', to: 'main#manifest', as: :manifest
-#  get '/photo_nav/:lat/:lng', to: 'main#photo_nav', as: :photo_nav, :constraints => { :lat => /([0-9]+\.[0-9]+|:[a-z]+)/,
+#  get '/context_nav/:lat/:lng', to: 'main#context_nav', as: :context_nav, :constraints => { :lat => /([0-9]+\.[0-9]+|:[a-z]+)/,
 #                                                                                         :lng => /([0-9]+\.[0-9]+|:[a-z]+)/ }
   match '/change_username', to: 'users#change_details', as: :change_username, via: [:get, :post]
   match '/set_user_detail/:detail', to: 'users#change_details', as: :set_user_detail, via: [:get, :post]

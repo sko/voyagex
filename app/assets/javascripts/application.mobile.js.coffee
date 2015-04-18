@@ -43,15 +43,15 @@ class window.VoyageX.NavBar
       VoyageX.NavBar._checkDims.n = 1
       setTimeout('checkDims()', 500)
     else
-      #if $('#photo_nav_panel').hasClass('ui-panel-open')
+      #if $('#context_nav_panel').hasClass('ui-panel-open')
       console.log 'orientationchange: to '+event.orientation+'; window-width = '+$(window).width()+', stored-width = '+NavBar._orientationDims[event.orientation][0]
       #console.log 'body-width = '+$('body').width()+'; body-height = '+$('body').height()
-      $('#photo_nav_panel').css('width', NavBar._orientationDims[event.orientation][0]+'px')
-      $('#photo_nav_panel').css('height', (NavBar._orientationDims[event.orientation][1]-$('#photo_nav_panel').offset().top)+'px')
+      $('#context_nav_panel').css('width', NavBar._orientationDims[event.orientation][0]+'px')
+      $('#context_nav_panel').css('height', (NavBar._orientationDims[event.orientation][1]-$('#context_nav_panel').offset().top)+'px')
       panelCtrlTopOff = $(window).height()- 41
       $('#panel_control_style').remove()
       $("head").append("<style id='panel_control_style' type='text/css'>#panel_control {position: fixed; top: "+panelCtrlTopOff+"px; height: 20px; z-index: 1000 !important;}</style>")
-      $('#photo_nav_open_icon').css('top', panelCtrlTopOff+'px')
+      $('#context_nav_open_icon').css('top', panelCtrlTopOff+'px')
       $('#map_style').remove()
       mapWidth = NavBar._orientationDims[event.orientation][0]
       mapHeight = (NavBar._orientationDims[event.orientation][1]-$('#map').offset().top)
@@ -114,7 +114,7 @@ window.toggleFullScreen = (activate) ->
     VoyageX.NavBar._checkDims.n = 1
     setTimeout('checkDims()', 500)
 
-$("#photo_nav_tabs").tabs()
+$("#context_nav_tabs").tabs()
 
 window.checkDims = () ->
   console.log 'checkDims: state.w = '+VoyageX.NavBar._checkDims.w+', w.width = '+$(window).width()+', state.h = '+VoyageX.NavBar._checkDims.h+', w.height = '+$(window).height()

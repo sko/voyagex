@@ -424,17 +424,17 @@ class window.VoyageX.Main
     if location.lat? || !fetch
       APP._initPositionCB { coords: { latitude: location.lat, longitude: location.lng } }, location.address, true
       if isMobile()
-        $("#photo_nav_panel").panel("close")
+        $("#context_nav_panel").panel("close")
       else
-        photoNavPanel.dialog("close")
+        contextNavPanel.dialog("close")
 #      # other 2 tabs will not change content - they are loaded from tsart on
-#      selectedTab = $('#photo_nav_panel ul[role=tablist] [class~=ui-tabs-active]').attr('aria-controls')
+#      selectedTab = $('#context_nav_panel ul[role=tablist] [class~=ui-tabs-active]').attr('aria-controls')
 #      if selectedTab != 'pois_preview'
 #        #$('#pois_preview_btn').click()
-#        APP.photoNav()
+#        APP.contextNav()
 #        $('#'+selectedTab+'_btn').click()
 #      else
-#        APP.photoNav()
+#        APP.contextNav()
       if location.poiId
         APP.showPOI location.poiId, -1
       else
@@ -466,9 +466,9 @@ class window.VoyageX.Main
         VoyageX.TemplateHelper.openPOINotePopup poi
         APP.view().scrollToPoiNote poiNoteId
     if isMobile()
-      $("#photo_nav_panel").panel("close")
+      $("#context_nav_panel").panel("close")
     else
-      photoNavPanel.dialog("close")
+      contextNavPanel.dialog("close")
 
   getSelectedPositionLatLng: () ->
     return [@_selectedPosition.lat, @_selectedPosition.lng]
@@ -822,8 +822,8 @@ class window.VoyageX.Main
     #VoyageX.NavBar.menuNavClick('map')
 
   # TODO: provide callback
-  photoNav: () ->
-#    selectedTab = $('#photo_nav_panel ul[role=tablist] [class~=ui-tabs-active]').attr('aria-controls')
+  contextNav: () ->
+#    selectedTab = $('#context_nav_panel ul[role=tablist] [class~=ui-tabs-active]').attr('aria-controls')
 #    switch selectedTab
 #      when 'pois_preview'
     # pois have already been loaded - when map got initialized - and are updated with the syncer
@@ -874,13 +874,13 @@ class window.VoyageX.Main
               poi.notes = poiClone.notes
     this.view().previewPois pois
 #      when 'location_bookmarks'
-#        APP.model().photoNav @_selectedPosition.lat, @_selectedPosition.lng, (pois) ->
-#            console.log('TODO: APP.photonav for location_bookmarks ...')
+#        APP.model().contextNav @_selectedPosition.lat, @_selectedPosition.lng, (pois) ->
+#            console.log('TODO: APP.contextNav for location_bookmarks ...')
 #      when 'people_of_interest'
-#        APP.model().photoNav @_selectedPosition.lat, @_selectedPosition.lng, (pois) -> 
-#            console.log('TODO: APP.photonav for people_of_interest ...')
+#        APP.model().contextNav @_selectedPosition.lat, @_selectedPosition.lng, (pois) -> 
+#            console.log('TODO: APP.contextNav for people_of_interest ...')
 #      else
-#        alert('unknown photoNav-tab '+selectedTab)
+#        alert('unknown contextNav-tab '+selectedTab)
 
   swiperPhotoClicked: (swiper) ->
     #$('#current_address').html($(swiper.clickedSlide).attr('data-address'))

@@ -1,5 +1,5 @@
-v_x_css = ['application', 'sandbox']
-v_x_js = ['preload', 'application', 'comm/application', 'sandbox']
+v_x_css = ['application', 'main']
+v_x_js = ['preload', 'application', 'comm/application']
 
 # /assets/application-c7d2632f04e910c0f7317cf6900cd9ab.css
 # /assets/sandbox-ab7490470c448acc3a930ad5f8a6e76c.css
@@ -8,7 +8,7 @@ v_x_js = ['preload', 'application', 'comm/application', 'sandbox']
 # /assets/application-4619e9ba5cb3b353952e1ae17ecaace3.js
 # /assets/sandbox-88e4d654dd281276e02f40f3db6c7609.js
 
-cache_entry_file = 'app/views/sandbox/cache_entries.txt'
+cache_entry_file = 'app/views/main/cache_entries.txt'
 `rm #{cache_entry_file}`
 
 find_media_cmd = "grep -oR \"[^ '\\\"]\\\\+\\\\.\\\\(png\\\\|gif\\\\|jpe\\\\?g\\\\|mp3\\\\|mpeg\\\\)\" app/ | sed \"s/^.\\\\+://\" | sed \"s/^\\\/.\\\\+//\" | grep \"[a-zA-Z0-9]\" | sort"

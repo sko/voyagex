@@ -57,11 +57,11 @@
       $("head").append("<style type='text/css'>.leaflet-bottom {width:"+($(window).width()-35)+"px !important;}</style>");
       $("head").append("<style type='text/css'>#cur_loc_addr {position: fixed; top: "+41+"px; height: 20px; z-index: 1000 !important;}</style>");
       var panelCtrlTopOff = $(window).height() - 41;
-      $("head").append("<style type='text/css'>#panel_control, #photo_nav_open_icon {position: fixed; top: "+panelCtrlTopOff+"px; width: 32px; height: 43px; z-index: 1000 !important;}</style>");
-      $("head").append("<style type='text/css'>#photo_nav_panel {width:"+($(window).width()-0)+"px;}</style>");
+      $("head").append("<style type='text/css'>#panel_control, #context_nav_open_icon {position: fixed; top: "+panelCtrlTopOff+"px; width: 32px; height: 43px; z-index: 1000 !important;}</style>");
+      $("head").append("<style type='text/css'>#context_nav_panel {width:"+($(window).width()-0)+"px;}</style>");
       $("head").append("<style type='text/css'>#user_foto_media_input_current {width:"+Math.round($(window).width()*0.3)+"px;}</style>");
     -# templates
-    = render partial: '/main/photo_nav_panel.mobile'
+    = render partial: '/main/context_nav_panel.mobile'
     = render partial: '/main/media_input_panel'
     -#= render partial: '/uploads/uploads.mobile'
     = render partial: '/shared/uploads.mobile'#, locals: {resource: Upload.new, resource_name: :upload}
@@ -73,13 +73,13 @@
       = yield
     #cur_loc_addr
       &nbsp;
-    -#= link_to image_tag('arrow-up-right_off.png', id: 'photo_nav_open_icon', style: 'z-index: 1001 !important'), '#', onclick: 'javascript:APP.photoNav()'
+    -#= link_to image_tag('arrow-up-right_off.png', id: 'context_nav_open_icon', style: 'z-index: 1001 !important'), '#', onclick: 'javascript:APP.contextNav()'
     -#= link_to '', '#', id: 'fullscreen', onclick: "$('body')[0].webkitRequestFullscreen()"
     #panel_control
       -#{data: {role: 'footer', position: 'fixed'}}
       %span{style: 'text-align: left; z-index: 11 !important;'}
-        = link_to image_tag('arrow-up-right_off.png', id: 'photo_nav_open_icon', style: 'width: 32px; height: 43px;', class: 'photo_nav_open_icon'), '#', onclick: 'javascript:APP.photoNav()'
-        = link_to '', '#photo_nav_panel', id: 'open_photo_nav_btn', style: 'display: none;'
+        = link_to image_tag('arrow-up-right_off.png', id: 'context_nav_open_icon', style: 'width: 32px; height: 43px;', class: 'context_nav_open_icon'), '#', onclick: 'javascript:APP.contextNav()'
+        = link_to '', '#context_nav_panel', id: 'open_context_nav_btn', style: 'display: none;'
         = link_to '', '#upload_data_panel', id: 'open_upload_data_btn', style: 'display: none;'
         = link_to '', '#attachment_view_panel', id: 'open_attachment_view_btn', style: 'display: none;'
         = link_to '', '#system_dialog_panel', id: 'open_system_dialog_btn', style: 'display: none;'

@@ -4,8 +4,8 @@
 /[if IE 8] <html class="no-js lt-ie9">
 /  manifest="/manifest"
 / [if gt IE 8]><!
-- manifestDecl = [:production,:development].include?(Rails.env.to_sym) ? {manifest: "/manifest"} : {}
--# manifestDecl = [:production].include?(Rails.env.to_sym) ? {manifest: "/manifest"} : {}
+-# manifestDecl = [:production,:development].include?(Rails.env.to_sym) ? {manifest: "/manifest"} : {}
+- manifestDecl = [:production].include?(Rails.env.to_sym) ? {manifest: "/manifest"} : {}
 %html{manifestDecl}
   / <![endif]
   %head
@@ -47,8 +47,8 @@
       &nbsp;
     #panel_control
       %span{style: 'text-align: left; z-index: 11 !important;'}
-      = link_to image_tag('arrow-up-right_off.png', id: 'photo_nav_open_icon', style: 'width: 32px; height: 43px;', class: 'photo_nav_open_icon'), '#', onclick: 'javascript:APP.photoNav()'
-    = render partial: '/main/photo_nav_panel'
+      = link_to image_tag('arrow-up-right_off.png', id: 'context_nav_open_icon', style: 'width: 32px; height: 43px;', class: 'context_nav_open_icon'), '#', onclick: 'javascript:APP.contextNav()'
+    = render partial: '/main/context_nav_panel'
     = javascript_include_tag "application"
     -#= javascript_include_tag params[:controller]
     

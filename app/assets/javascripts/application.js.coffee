@@ -73,7 +73,7 @@ window.signInDialog = $("#sign_in_modal").dialog({
 #      modal: true
 #    })
 #$("head").append("<style type='text/css'>#sign_in_modal {width:"+Math.abs($(window).width() * 0.3)+"px;}</style>");
-window.photoNavPanel = $("#photo_nav_panel").dialog({
+window.contextNavPanel = $("#context_nav_panel").dialog({
       autoOpen: false,
       height: Math.abs($(window).height() * 0.8),
       width: Math.abs($(window).width() * 0.5),
@@ -83,7 +83,7 @@ window.photoNavPanel = $("#photo_nav_panel").dialog({
       hide: { effect: "fade", duration: 500 },
       modal: true
     })
-#$("head").append("<style type='text/css'>#photo_nav_panel {positon: fixed; top:"+($(window).height()-Math.abs($(window).height() * 0.8))+"px;}</style>");
+#$("head").append("<style type='text/css'>#context_nav_panel {positon: fixed; top:"+($(window).height()-Math.abs($(window).height() * 0.8))+"px;}</style>");
 window.uploadDataDialog = $("#upload_data_conrols").dialog({
       autoOpen: false,
       height: Math.abs($(window).height() * 0.8),
@@ -99,4 +99,4 @@ window.attachmentViewPanel = $("#attachment_view_panel").dialog({
       modal: true
     })
 
-$("#photo_nav_panel").tabs()
+$("#context_nav_panel").tabs()

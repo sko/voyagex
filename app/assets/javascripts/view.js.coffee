@@ -204,7 +204,7 @@ class window.VoyageX.View
     else
       iconSuffix = '_off'
 
-    target = $('.photo_nav_open_icon')
+    target = $('.context_nav_open_icon')
     if stop
       @_alertOn = false
       clearTimeout @_blinkArrowTO
@@ -247,11 +247,11 @@ class window.VoyageX.View
         onSlideClick: APP.swiperPhotoClicked
       })
     if window.isMobile()
-      $('#open_photo_nav_btn').click()
+      $('#open_context_nav_btn').click()
     else
-      $('#photo_nav_panel').dialog('open')
-      if ! $('#photo_nav_panel').parent().hasClass('seethrough_panel')
-        $('#photo_nav_panel').parent().addClass('seethrough_panel')
+      $('#context_nav_panel').dialog('open')
+      if ! $('#context_nav_panel').parent().hasClass('seethrough_panel')
+        $('#context_nav_panel').parent().addClass('seethrough_panel')
     # select initial tab
     $('#pois_preview_btn').click()
 
@@ -345,7 +345,7 @@ class window.VoyageX.View
       scrollPane.scrollTop(poiNoteOff.top)
 
   @updatePoiNotes: (poi, newNotes) ->
-    console.log 'updatePoiNotes: TODO - rewrite ids, locationadress in popup and photonav/swiper...'
+    console.log 'updatePoiNotes: TODO - rewrite ids, locationadress in popup and contextnav/swiper...'
 
   @addPoiNotes: (poi, newNotes) ->
     #if poi.notes[0].attachment.content_type.match(/^[^\/]+/)[0] == 'image'
