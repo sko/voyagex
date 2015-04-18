@@ -71,6 +71,11 @@
           %br
           %div
             %span#cache_stats{style: 'margin-left: 10px;'}
+        #cache_debug{style: 'float: left; font-size: 11px; padding: 0px 0px 0px 10px; color: #ffffff;'}
+          %div
+            = link_to 'toggle-dbg-pred', '#', onclick: "javascript:APP.togglePredictionPathDebug();", class: 'menu_link', id: 'dbg_pred_ctrl'
+          %div
+            = link_to 'hide-pred-paths', '#', onclick: "javascript:APP.clearPredictionPaths();", class: 'menu_link'
         #tile_provider{style: 'float: left; font-size: 11px; padding: 5px 0px 0px 15px; color: #ffffff;'}
           %div
             = link_to 'tile-provider', '#', onclick: "javascript:APP.setProvider(window.prompt('Choose ProviderName from http://leaflet-extras.github.io/leaflet-providers/preview/', 'Esri.WorldImagery'))", class: 'menu_link'

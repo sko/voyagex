@@ -24,7 +24,7 @@ class window.VoyageX.MarkerManager
       samePosMarker.target().setLatLng movedLatLng
 
   add: (location, callBack, flags = {isUserMarker: false, peer: null, beam: null}, meta = false) ->
-    markerOps = { draggable: flags.isUserMarker,\
+    markerOps = { draggable: flags.isUserMarker||flags.beam?,\
                   riseOnHover: true }
     unless flags.isUserMarker
       if flags.peer?
@@ -43,6 +43,8 @@ class window.VoyageX.MarkerManager
         marker.on 'dblclick', callBack
         marker.on 'dragend', callBack
         marker.on 'mouseover', callBack
+      else if flags.beam?
+        marker.on 'dragend', callBack
     marker.addTo(@_map)
     if marker._zIndex > @_maxZIndex
       @_maxZIndex = marker._zIndex+1

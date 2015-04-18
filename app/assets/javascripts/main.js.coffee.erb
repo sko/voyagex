@@ -15,7 +15,7 @@ class window.VoyageX.Main
   constructor: (view, mapOptions, offlineZooms, online) ->
     Main._SINGLETON = this
     window.APP = this
-    @_debug = true # false
+    @_debug = false
     @_version = new VoyageX.Version [0, 1]
     @_initState = 0
     window.forceOffline = false
@@ -267,21 +267,6 @@ class window.VoyageX.Main
       peer.lastLocationId = lastLocation.id
       APP.refreshUserPhoto peer, {peerPort: peerPort, foto: peer.foto}, (user, flags) ->
           APP.storage().saveUser user, flags
-      # userPhotoUrl = Storage.Model._viewUserFoto peer
-      # if (typeof userPhotoUrl == 'string') 
-      #   peer.foto.url = userPhotoUrl
-      #   APP.storage().saveUser peer, {peerPort: peerPort, foto: peer.foto}
-      #   $('img[name=peer_photo_'+p.id+']').attr 'src', userPhotoUrl
-      # else if (typeof userPhotoUrl.then == 'function')
-      #   ((p, pp) -> 
-      #     # Assume we are dealing with a promise.
-      #     userPhotoUrl.then (url) ->
-      #         p.foto.url = url
-      #         # overwrite url
-      #         APP.storage().saveUser p, {peerPort: pp, foto: p.foto}
-      #         $('img[name=peer_photo_'+p.id+']').attr 'src', url
-      #   )(peer, peerPort)
-      # ---------------------
       if callback?
         callback peer
       #marker = Main.markerManager().add lastLocation, Main._markerEventsCB, {isUserMarker: false, peer: peer}
@@ -675,17 +660,47 @@ class window.VoyageX.Main
       headingLng = APP._realPosition.lng - APP._movePredictionLastLatLng.lng
 
       predictedLatLng = L.latLng(APP._realPosition.lat + distFactor*headingLat, APP._realPosition.lng + distFactor*headingLng)
-      lineDone = L.polyline([L.latLng(APP._movePredictionLastLatLng.lat, APP._movePredictionLastLatLng.lng), L.latLng(APP._realPosition.lat, APP._realPosition.lng)], {color: 'green'}).addTo(APP.map())
-      linePred = L.polyline([L.latLng(APP._realPosition.lat, APP._realPosition.lng), predictedLatLng], {color: 'red'}).addTo(APP.map())
+      
+      if @_debug
+        unless VoyageX.DEBUG_PREDICTION_PATHS?
+          window.VoyageX.DEBUG_PREDICTION_PATHS = []
+        VoyageX.DEBUG_PREDICTION_PATHS.push {done: L.polyline([L.latLng(APP._movePredictionLastLatLng.lat, APP._movePredictionLastLatLng.lng), L.latLng(APP._realPosition.lat, APP._realPosition.lng)], {color: 'green'}).addTo(APP.map()),\
+                                             pred: L.polyline([L.latLng(APP._realPosition.lat, APP._realPosition.lng), predictedLatLng], {color: 'yellow'}).addTo(APP.map())}
       m1 = APP.getUserMarker()
       marker = APP.markers().forPositionPreview()
       if marker?
         marker.m.setLocation predictedLatLng
         m2 = marker.target()
       else
-        m2 = APP.markers().add predictedLatLng, null, {isUserMarker: false, beam: true}
+        m2 = APP.markers().add predictedLatLng, (event) ->
+            switch event.type
+              when 'click'
+                `;`
+              else
+                # drag
+                m1 = APP.getUserMarker()
+                m2 = event.target
+                VoyageX.DEBUG_PREDICTION_PATHS.push {done: null,\
+                                                     pred: L.polyline([m1._latlng, m2._latlng], {color: 'yellow'}).addTo(APP.map())}
+                Main._MAP_CONTROL.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, 16)
+          , {isUserMarker: false, beam: true}
       Main._MAP_CONTROL.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, 16)
       APP._movePredictionLastLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
+
+  togglePredictionPathDebug: () ->
+    if @_debug
+      @_debug = false
+      $('#dbg_pred_ctrl').attr('class', $('#dbg_pred_ctrl').attr('class').replace(/\s?menu_ctrl_on/, ''))
+    else
+      @_debug = true
+      $('#dbg_pred_ctrl').attr('class', $('#dbg_pred_ctrl').attr('class')+' menu_ctrl_on')
+
+  clearPredictionPaths: () ->
+    if VoyageX.DEBUG_PREDICTION_PATHS?
+      for entry in VoyageX.DEBUG_PREDICTION_PATHS
+        if entry.done?
+          this.map().removeLayer entry.done
+        this.map().removeLayer entry.pred
 
   _systemCB: (message) ->
     console.log 'got a system - message: ' + message.type

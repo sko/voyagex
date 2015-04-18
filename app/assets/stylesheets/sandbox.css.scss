@@ -10,6 +10,10 @@ a.menu_link:hover  {
   color: #ffffff;
   text-decoration: none;
 }
+a.menu_link.menu_ctrl_on {
+  color: #ff0000;
+  text-decoration: none;
+}
 
 #content {
   width: 100%;
