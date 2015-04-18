@@ -11,7 +11,7 @@
  *= require jquery-ui
  *= require leaflet
  *= require swiper
- *X=X require sandbox
+ *X=X require main
  *= require_self
  */
 
@@ -22,7 +22,7 @@
 @import "jquery-ui";
 @import "leaflet";
 @import "swiper";
-@import "sandbox";
+@import "main";
 */
 .edit_detail {
   color: black !important;

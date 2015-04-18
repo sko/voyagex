@@ -77,29 +77,9 @@ class window.VoyageX.MapControl
         animate: false
       })
 
-  # google z/x/y
-  # x ... parseInt(map.project(map.getCenter()).x/256)
-  #
-  # c = map.project(map.getCenter())
-  # map.unproject(L.point(c.x+256, c.y), 15) == map.unproject(L.point(c.x*2+512, c.y*2), 16)
-  #
-  # for all zoomLevels z this is the same point
-  # map.unproject(L.point(c.x*Math.pow(2, z-map.getZoom()), c.y*Math.pow(2, z-map.getZoom())), z-1)
-  #
-  # TODO: 
-  #    @_map.containerPointToLatLng(L.point(0,0)).distanceTo(@_map.containerPointToLatLng(L.point(0,256)))
   tileLengthToMeters: (zoomLevel) ->
     # in 0 zoomLevel there is 1 single tile and the L.latLng(0,0) is in the center 
     tileWidth = @_map.project(L.latLng(0,0), 0).x * 2
-#    # calculate lng-diff in current-zoom-level
-#    relOrds = @_map.latLngToContainerPoint(L.latLng(0,0))
-#    lngDiffPerTile = map.containerPointToLatLng(L.point(relOrds.x+tileWidth,relOrds.y)).lng
-
-#    p1 = L.point(c.x*Math.pow(2, z-map.getZoom()), c.y*Math.pow(2, z-map.getZoom()))
-#    p2 = L.point(c.x*Math.pow(2, z-map.getZoom())+tileWidth, c.y*Math.pow(2, z-map.getZoom()))
-#    widthInMeters = map.unproject(p1).distanceTo(map.unproject(p2))
-
-#    #lngDiffPerTile = map.containerPointToLatLng(L.point(relOrds.x+tileWidth/(map.getZoom()+1),relOrds.y)).lng
     curWidthInMeters = @_map.containerPointToLatLng(L.point(0,0)).distanceTo(@_map.containerPointToLatLng(L.point(tileWidth, 0)))
     scaleFactor = @_map.getZoom() - zoomLevel
     curWidthInMeters * Math.pow(2, scaleFactor)
@@ -110,324 +90,12 @@ class window.VoyageX.MapControl
   tileForPosition: (lat, lng, zoom) ->
     curLatlng = L.latLng(lat, lng)
     curTileZ = @_map.getZoom()
-    #p = @_map.project(curLatlng)
     p = @_map.project(curLatlng, zoom)
     curLatX = p.x
     curLatY = p.y
     curTileX = parseInt curLatX/256
     curTileY = parseInt curLatY/256
-    # unless zoom == curTileZ
-    #   if zoom > curTileZ
-    #     for z in [curTileZ..(zoom-1)]
-    #       curLatX = curLatX * 2
-    #       curLatY = curLatY * 2
-    #       curTileX = curTileX * 2
-    #       curTileY = curTileY * 2
-    #   else
-    #     for z in [zoom..(curTileZ-1)]
-    #       curLatX = curLatX / 2
-    #       curLatY = curLatY / 2
-    #       curTileX = Math.round((curTileX-0.1)/2)
-    #       curTileY = Math.round((curTileY-0.1)/2)
     {x: curTileX, y: curTileY, latX: curLatX, latY: curLatY}
-
-  _checkForVerticalSkippedTiles: (tiles, tileXorYFixed, tileXorY) ->
-    curTileXorY = tileXorY
-    gapDiff = curTileXorY - tiles[tiles.length-1].y
-    gapSize = Math.abs gapDiff
-    if gapSize >= 2
-      directionFactor = if gapDiff!=gapSize then 1 else -1
-      for i in [0..(gapSize-2)]
-        curTileXorY += (1*directionFactor)
-        if this._tileIndex(tiles, tileXorYFixed, curTileXorY) == -1
-          #if directionFactor == -1
-          tiles.splice tiles.length-i, 0, {x: tileXorYFixed, y: curTileXorY}
-          #else
-          #  tiles.push {x: tileXorYFixed, y: curTileXorY}
-
-  #_stepThroughTiles: (tiles, distLngX, cursorX, cursorY, cursorLatLng, zoom) ->
-  _stepThroughTiles: (tiles, relDist, directionFactorX, directionFactorY, state, zoom) ->
-    #distLngMeters -= tileSideMeters
-    #distToTileEndX = 256
-    #while distLngMeters > 0
-    #  distLngMeters -= tileSideMeters
-    distToTileEndX = 256
-    state.dLngX -= distToTileEndX
-    while state.dLngX > 0
-      state.dLngX -= distToTileEndX
-
-      state.cX += (distToTileEndX*directionFactorX)
-      #dist1TileEndY = (tilePos1.y+1)*256 - tilePos1.latY
-      moveTileEndLng = @_map.unproject L.point(state.cX, state.cY), zoom
-      window.tilesPathLines.push L.polyline([state.cLatLng, L.latLng(state.cLatLng.lat, moveTileEndLng.lng)], {color: 'blue'}).addTo(APP.map())
-      distRelLat = relDist * distToTileEndX
-      state.cY += (distRelLat*directionFactorY)
-      moveRelLat = @_map.unproject L.point(state.cX, state.cY), zoom
-      state.cLatLng = L.latLng(moveRelLat.lat, moveTileEndLng.lng)
-      
-      #
-      # add left and right tile: tileForPosition: (lat, lng, zoom), tileForPosition: (lat, lng, zoom)
-      #
-      leftTileX = parseInt (state.cX-1)/256
-      rightTileX = parseInt (state.cX+1)/256
-      tileY = parseInt (state.cY)/256
-      this._checkForVerticalSkippedTiles tiles, (if directionFactorX==1 then leftTileX else rightTileX), tileY
-      if directionFactorX == 1
-        this._addPredictionPathTile tiles, leftTileX, tileY
-        this._addPredictionPathTile tiles, rightTileX, tileY
-      else
-        this._addPredictionPathTile tiles, rightTileX, tileY
-        this._addPredictionPathTile tiles, leftTileX, tileY
-      
-      window.tilesPathLines.push L.polyline([L.latLng(moveTileEndLng.lat, moveTileEndLng.lng), state.cLatLng], {color: 'blue'}).addTo(APP.map())
-      this.showSelTileInfo tiles, zoom
-    
-    state
-  
-  _addPredictionPathTile: (tiles, x, y) ->
-    if this._tileIndex(tiles, x, y) == -1
-      tiles.push {x: x, y: y}
-
-  _setupFirstTile: (tiles, tilePos1, pos1, directionFactorX, directionFactorY, relDist, state, zoom) ->
-    # step to tile end
-    distToTileEndX = Math.abs(state.cX - tilePos1.latX)
-    state.dLngX -= distToTileEndX
-
-    moveTileEndLng = @_map.unproject L.point(state.cX, state.cY), zoom
-    window.tilesPathLines.push L.polyline([L.latLng(pos1.lat, pos1.lng), L.latLng(pos1.lat, moveTileEndLng.lng)], {color: 'blue'}).addTo(APP.map())
-    
-    # step down
-    distRelLat = relDist * distToTileEndX
-    state.cY += (distRelLat*directionFactorY)
-    moveRelLat = @_map.unproject L.point(state.cX, state.cY), zoom
-    # cursor after move right and down
-    state.cLatLng = L.latLng(moveRelLat.lat, moveTileEndLng.lng)
-    
-    leftTileX = parseInt (state.cX-1)/256
-    rightTileX = parseInt (state.cX+1)/256
-    tileY = parseInt (state.cY)/256
-    this._checkForVerticalSkippedTiles tiles, (if directionFactorX==1 then leftTileX else rightTileX), tileY
-    if directionFactorX == 1
-      this._addPredictionPathTile tiles, leftTileX, tileY
-      this._addPredictionPathTile tiles, rightTileX, tileY
-    else
-      this._addPredictionPathTile tiles, rightTileX, tileY
-      this._addPredictionPathTile tiles, leftTileX, tileY
-
-    window.tilesPathLines.push L.polyline([L.latLng(moveTileEndLng.lat, moveTileEndLng.lng), state.cLatLng], {color: 'blue'}).addTo(APP.map())
-    this.showSelTileInfo tiles, zoom
-
-    state
-  
-  _setupLastTile: (tiles, tilePos2, pos2, directionFactorX, directionFactorY, relDist, state, zoom) ->
-    # last tile with tilePos2
-    distToPos2X = tilePos2.latX - state.cX
-    state.cX = tilePos2.latX
-    moveLng = @_map.unproject L.point(state.cX, state.cY), zoom
-    
-    window.tilesPathLines.push L.polyline([state.cLatLng, L.latLng(state.cLatLng.lat, moveLng.lng)], {color: 'blue'}).addTo(APP.map())
-    
-    distRelLat = relDist * distToPos2X
-    state.cY += (distRelLat*directionFactorY)
-    moveRelLat = @_map.unproject L.point(state.cX, state.cY), zoom
-    state.cLatLng = L.latLng(moveRelLat.lat, pos2.lng)
-
-    if tiles.length >= 2
-      this._checkForVerticalSkippedTiles tiles, tilePos2.x, tilePos2.y
-    #
-    # add curTile: tilePos2.x / tilePos2.y
-    #
-    if this._tileIndex(tiles, tilePos2.x, tilePos2.y) == -1
-      tiles.push {x: tilePos2.x, y: tilePos2.y}
-    
-    window.tilesPathLines.push L.polyline([L.latLng(moveLng.lat, moveLng.lng), state.cLatLng], {color: 'blue'}).addTo(APP.map())
-    this.showSelTileInfo tiles, zoom
-
-    state
-
-  _verticalOnly: (tiles, pos1, tilePos1, pos2, tilePos2) ->
-    this._checkForVerticalSkippedTiles tiles, tilePos1.x, tilePos2.y
-    if this._tileIndex(tiles, tilePos2.x, tilePos2.y) == -1
-      tiles.push {x: tilePos2.x, y: tilePos2.y}
-    window.tilesPathLines.push L.polyline([L.latLng(pos1.lat, pos1.lng), L.latLng(pos2.lat, pos1.lng)], {color: 'blue'}).addTo(APP.map())
-    window.tilesPathLines.push L.polyline([L.latLng(pos2.lat, pos1.lng), L.latLng(pos2.lat, pos2.lng)], {color: 'blue'}).addTo(APP.map())
-
-  # m1 = APP.markers().forPoi(36).target()
-  # m2 = APP.markers().forPoi(37).target()
-  # VoyageX.Main._MAP_CONTROL.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, 13)
-  tilesPathBetweenPositions: (pos1, pos2, zoom) ->
-    tilePos1 = this.tileForPosition pos1.lat, pos1.lng, zoom
-    tilePos2 = this.tileForPosition pos2.lat, pos2.lng, zoom
-    distLngMeters = L.latLng(pos1.lat, pos1.lng).distanceTo L.latLng(pos1.lat, pos2.lng)
-    distLatMeters = L.latLng(pos1.lat, pos2.lng).distanceTo L.latLng(pos2.lat, pos2.lng)
-    relDist = distLatMeters / distLngMeters
-    distLngX = Math.abs(tilePos2.latX - tilePos1.latX)
-    tileSideMeters = this.tileLengthToMeters zoom
-    cursorX = 0
-    cursorY = 0
-    cursorLatLng = null
-    tiles = []
-    tiles.push {x: tilePos1.x, y: tilePos1.y}
-    if window.tilesPathLines?
-      for line in window.tilesPathLines
-        @_map.removeLayer line
-    window.tilesPathLines = []
-    
-    cursorY = tilePos1.latY # y of pos1
-    if pos2.lat > pos1.lat
-      if pos2.lng > pos1.lng
-        cursorX = (tilePos1.x+1)*256 # end-x of tile right direction
-        if cursorX > tilePos2.latX
-          this._verticalOnly tiles, pos1, tilePos1, pos2, tilePos2
-          directionFactorX = 0
-        else
-          directionFactorX = 1
-          directionFactorY = -1
-          directionFactorYLast = -1
-      else
-        cursorX = tilePos1.x*256 # end-x of tile left direction
-        if cursorX < tilePos2.latX
-          this._verticalOnly tiles, pos1, tilePos1, pos2, tilePos2
-          directionFactorX = 0
-        else
-          directionFactorX = -1
-          directionFactorY = -1
-          directionFactorYLast = 1
-    else
-      if pos2.lng > pos1.lng
-        cursorX = (tilePos1.x+1)*256 # end-x of tile right direction
-        if cursorX > tilePos2.latX
-          this._verticalOnly tiles, pos1, tilePos1, pos2, tilePos2
-          directionFactorX = 0
-        else
-          directionFactorX = 1
-          directionFactorY = 1
-          directionFactorYLast = 1
-      else
-        cursorX = tilePos1.x*256 # end-x of tile left direction
-        if cursorX < tilePos2.latX
-          this._verticalOnly tiles, pos1, tilePos1, pos2, tilePos2
-          directionFactorX = 0
-        else
-          directionFactorX = -1
-          directionFactorY = 1
-          directionFactorYLast = -1
-    
-    unless directionFactorX == 0
-      state = this._setupFirstTile tiles, tilePos1, pos1, directionFactorX, directionFactorY, relDist, {dLngX: distLngX, cX: cursorX, cY: cursorY, cLatLng: cursorLatLng}, zoom
-      distLngX = state.dLngX
-      cursorX = state.cX
-      cursorY = state.cY
-      cursorLatLng = state.cLatLng
-      
-      state = this._stepThroughTiles tiles, relDist, directionFactorX, directionFactorY, {dLngX: distLngX, cX: cursorX, cY: cursorY, cLatLng: cursorLatLng}, zoom
-      cursorX = state.cX
-      cursorY = state.cY
-      cursorLatLng = state.cLatLng
-      
-      state = this._setupLastTile tiles, tilePos2, pos2, directionFactorX, directionFactorYLast, relDist, {cX: cursorX, cY: cursorY, cLatLng: cursorLatLng}, zoom
-
-    # if pos2.lat > pos1.lat
-    #   if pos2.lng > pos1.lng
-    #     cursorX = (tilePos1.x+1)*256 # end-x of tile right direction
-    #     cursorY = tilePos1.latY      # y of pos1
-    #     if cursorX > tilePos2.latX
-    #       this._checkForVerticalSkippedTiles tiles, tilePos1.x, tilePos2.y
-    #       if this._tileIndex(tiles, tilePos2.x, tilePos2.y) == -1
-    #         tiles.push {x: tilePos2.x, y: tilePos2.y}
-    #       window.tilesPathLines.push L.polyline([L.latLng(pos1.lat, pos1.lng), L.latLng(pos2.lat, pos1.lng)], {color: 'blue'}).addTo(APP.map())
-    #       window.tilesPathLines.push L.polyline([L.latLng(pos2.lat, pos1.lng), L.latLng(pos2.lat, pos2.lng)], {color: 'blue'}).addTo(APP.map())
-    #     else
-    #       state = this._setupFirstTile tiles, tilePos1, pos1, 1, -1, relDist, {dLngX: distLngX, cX: cursorX, cY: cursorY, cLatLng: cursorLatLng}, zoom
-    #       distLngX = state.dLngX
-    #       cursorX = state.cX
-    #       cursorY = state.cY
-    #       cursorLatLng = state.cLatLng
-          
-    #       state = this._stepThroughTiles tiles, relDist, 1, -1, {dLngX: distLngX, cX: cursorX, cY: cursorY, cLatLng: cursorLatLng}, zoom
-    #       cursorX = state.cX
-    #       cursorY = state.cY
-    #       cursorLatLng = state.cLatLng
-          
-    #       state = this._setupLastTile tiles, tilePos2, pos2, 1, -1, relDist, {cX: cursorX, cY: cursorY, cLatLng: cursorLatLng}, zoom
-    #   else
-    #     cursorX = tilePos1.x*256 # end-x of tile left direction
-    #     cursorY = tilePos1.latY  # y of pos1
-    #     if cursorX < tilePos2.latX
-    #       this._checkForVerticalSkippedTiles tiles, tilePos1.x, tilePos2.y
-    #       if this._tileIndex(tiles, tilePos2.x, tilePos2.y) == -1
-    #         tiles.push {x: tilePos2.x, y: tilePos2.y}
-    #       window.tilesPathLines.push L.polyline([L.latLng(pos1.lat, pos1.lng), L.latLng(pos2.lat, pos1.lng)], {color: 'blue'}).addTo(APP.map())
-    #       window.tilesPathLines.push L.polyline([L.latLng(pos2.lat, pos1.lng), L.latLng(pos2.lat, pos2.lng)], {color: 'blue'}).addTo(APP.map())
-    #     else
-    #       state = this._setupFirstTile tiles, tilePos1, pos1, -1, -1, relDist, {dLngX: distLngX, cX: cursorX, cY: cursorY, cLatLng: cursorLatLng}, zoom
-    #       distLngX = state.dLngX
-    #       cursorX = state.cX
-    #       cursorY = state.cY
-    #       cursorLatLng = state.cLatLng
-          
-    #       state = this._stepThroughTiles tiles, relDist, -1, -1, {dLngX: distLngX, cX: cursorX, cY: cursorY, cLatLng: cursorLatLng}, zoom
-    #       cursorX = state.cX
-    #       cursorY = state.cY
-    #       cursorLatLng = state.cLatLng
-          
-    #       state = this._setupLastTile tiles, tilePos2, pos2, -1, 1, relDist, {cX: cursorX, cY: cursorY, cLatLng: cursorLatLng}, zoom
-    # else
-    #   # vom dest punkt immer links und rechts
-    #   if pos2.lng > pos1.lng
-    #     cursorX = (tilePos1.x+1)*256 # end-x of tile
-    #     cursorY = tilePos1.latY      # y of pos1
-    #     if cursorX > tilePos2.latX
-    #       this._checkForVerticalSkippedTiles tiles, tilePos1.x, tilePos2.y
-    #       if this._tileIndex(tiles, tilePos2.x, tilePos2.y) == -1
-    #         tiles.push {x: tilePos2.x, y: tilePos2.y}
-    #       window.tilesPathLines.push L.polyline([L.latLng(pos1.lat, pos1.lng), L.latLng(pos2.lat, pos1.lng)], {color: 'blue'}).addTo(APP.map())
-    #       window.tilesPathLines.push L.polyline([L.latLng(pos2.lat, pos1.lng), L.latLng(pos2.lat, pos2.lng)], {color: 'blue'}).addTo(APP.map())
-    #     else
-    #       state = this._setupFirstTile tiles, tilePos1, pos1, 1, 1, relDist, {dLngX: distLngX, cX: cursorX, cY: cursorY, cLatLng: cursorLatLng}, zoom
-    #       distLngX = state.dLngX
-    #       cursorX = state.cX
-    #       cursorY = state.cY
-    #       cursorLatLng = state.cLatLng
-          
-    #       state = this._stepThroughTiles tiles, relDist, 1, 1, {dLngX: distLngX, cX: cursorX, cY: cursorY, cLatLng: cursorLatLng}, zoom
-    #       cursorX = state.cX
-    #       cursorY = state.cY
-    #       cursorLatLng = state.cLatLng
-
-    #       state = this._setupLastTile tiles, tilePos2, pos2, 1, 1, relDist, {cX: cursorX, cY: cursorY, cLatLng: cursorLatLng}, zoom
-    #   else
-    #     cursorX = tilePos1.x*256 # end-x of tile left direction
-    #     cursorY = tilePos1.latY  # y of pos1
-    #     if cursorX < tilePos2.latX
-    #       this._checkForVerticalSkippedTiles tiles, tilePos1.x, tilePos2.y
-    #       if this._tileIndex(tiles, tilePos2.x, tilePos2.y) == -1
-    #         tiles.push {x: tilePos2.x, y: tilePos2.y}
-    #       window.tilesPathLines.push L.polyline([L.latLng(pos1.lat, pos1.lng), L.latLng(pos2.lat, pos1.lng)], {color: 'blue'}).addTo(APP.map())
-    #       window.tilesPathLines.push L.polyline([L.latLng(pos2.lat, pos1.lng), L.latLng(pos2.lat, pos2.lng)], {color: 'blue'}).addTo(APP.map())
-    #     else
-    #       state = this._setupFirstTile tiles, tilePos1, pos1, -1, 1, relDist, {dLngX: distLngX, cX: cursorX, cY: cursorY, cLatLng: cursorLatLng}, zoom
-    #       distLngX = state.dLngX
-    #       cursorX = state.cX
-    #       cursorY = state.cY
-    #       cursorLatLng = state.cLatLng
-          
-    #       state = this._stepThroughTiles tiles, relDist, -1, 1, {dLngX: distLngX, cX: cursorX, cY: cursorY, cLatLng: cursorLatLng}, zoom
-    #       cursorX = state.cX
-    #       cursorY = state.cY
-    #       cursorLatLng = state.cLatLng
-          
-    #       state = this._setupLastTile tiles, tilePos2, pos2, -1, -1, relDist, {cX: cursorX, cY: cursorY, cLatLng: cursorLatLng}, zoom
-
-    this.showSelTileInfo tiles, zoom
-    console.log 'tilesPathBetweenPositions - ........................................'
-
-  _tileIndex: (tiles, x, y) ->
-    maxIdx = tiles.length-1
-    for i in [0..maxIdx]
-      if tiles[maxIdx-i].x == x && tiles[maxIdx-i].y == y
-        return maxIdx-i
-    -1
 
   _eachTile: (callback, clearOnly) ->
     tiles = $('#map > .leaflet-map-pane > .leaflet-tile-pane .leaflet-tile-container:parent > .leaflet-tile')
@@ -446,9 +114,14 @@ class window.VoyageX.MapControl
           yOff = parseInt(style.match(/translate\(.+?,(.+?)px/)[1].trim())+1
         callback xOff, yOff, tile, style
 
-  _drawTileInfo: (x, y, z, style, tileSelector) ->
+  _drawTileInfo: (x, y, z, style, tileSelector, withBackground = false) ->
     key = z+' / '+x+' / '+y
-    tileSelector.after('<div data-role="tileInfo" style="position: absolute; '+style+' z-index: 9999; opacity: 0.8; text-align: center; vertical-align: middle; border: 1px solid red; color: red; font-weight: bold;">'+key+'</div>')
+    if withBackground
+      style += ' background-color: green;'
+      color = 'blue'
+    else
+      color = 'red'
+    tileSelector.after('<div data-role="tileInfo" style="position: absolute; '+style+' z-index: 9999; opacity: 0.5; text-align: center; vertical-align: middle; border: 1px solid '+color+'; color: '+color+'; font-weight: bold;">'+key+'</div>')
 
   showSelTileInfo: (tiles, zoom) ->
     tileInfos = []
@@ -466,39 +139,17 @@ class window.VoyageX.MapControl
     remove = ts.first().parent().children('div[data-role=tileInfo]')
     remove.remove()
     for tI in tileInfos
-      VoyageX.Main._MAP_CONTROL._drawTileInfo tI.x, tI.y, tI.z, tI.s, tI.tS
+      VoyageX.Main._MAP_CONTROL._drawTileInfo tI.x, tI.y, tI.z, tI.s, tI.tS, true
 
   showTileInfo: (set = true) ->
     if set
       @_showTileInfo = !@_showTileInfo
-
     this._eachTile (xOff, yOff, tile, style) ->
         latLngOff = APP.map().unproject L.point((APP.map().getPixelOrigin().x+xOff), (APP.map().getPixelOrigin().y+yOff))
         x = parseInt(APP.map().project(latLngOff).x/256)
         y = parseInt(APP.map().project(latLngOff).y/256)
         VoyageX.Main._MAP_CONTROL._drawTileInfo x, y, APP.map().getZoom(), style, $(tile)
       , (!@_showTileInfo)
-    # tiles = $('#map > .leaflet-map-pane > .leaflet-tile-pane .leaflet-tile-container:parent > .leaflet-tile')
-    # remove = tiles.first().parent().children('div[data-role=tileInfo]')
-    # remove.remove()
-    # if @_showTileInfo
-    #   #this.drawTiles tiles
-    #   for tile, idx in tiles
-    #     style = $(tile).attr('style')
-    #     #key = $(tile).attr('src').match(/[0-9]+\/[0-9]+\/[0-9]+$/)
-    #     xMatch = style.match(/left:(.+?)px/)
-    #     if xMatch?
-    #       xOff = parseInt(xMatch[1].trim())+1
-    #       yOff = parseInt(style.match(/top:(.+?)px/)[1].trim())+1
-    #     else
-    #       xOff = parseInt(style.match(/translate\((.+?)px/)[1].trim())+1
-    #       yOff = parseInt(style.match(/translate\(.+?,(.+?)px/)[1].trim())+1
-    #     latLngOff = @_map.unproject L.point((@_map.getPixelOrigin().x+xOff), (@_map.getPixelOrigin().y+yOff))
-    #     x = parseInt(@_map.project(latLngOff).x/256)
-    #     y = parseInt(@_map.project(latLngOff).y/256)
-    #     this._drawTileInfo x, y, @_map.getZoom(), style, $(tile)
-    #     # key = @_map.getZoom()+' / '+x+' / '+y
-    #     # $(tile).after('<div data-role="tileInfo" style="position: absolute; '+style+' z-index: 9999; opacity: 0.8; text-align: center; vertical-align: middle; border: 1px solid red; color: red; font-weight: bold;">'+key+'</div>')
 
   drawPath: (user, path, append = false) ->
     pathKey = APP.storage().pathKey path

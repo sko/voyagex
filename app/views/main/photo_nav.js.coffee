@@ -1,6 +1,6 @@
-# GOOD but now from template ... poisPreview = "<%= j render(partial: 'sandbox/pois_preview') -%>"
-locationBookmarks = "<%= j render(partial: 'sandbox/location_bookmarks') -%>"
-peopleOfInterest = "<%= j render(partial: 'sandbox/people_of_interest') -%>"
+# GOOD but now from template ... poisPreview = "<%= j render(partial: 'main/pois_preview') -%>"
+locationBookmarks = "<%= j render(partial: 'main/location_bookmarks') -%>"
+peopleOfInterest = "<%= j render(partial: 'main/people_of_interest') -%>"
 # GOOD but now from template ... $('#pois_preview').html(poisPreview)
 $('#location_bookmarks').html(locationBookmarks)
 $('#people_of_interest').html(peopleOfInterest)

@@ -7,6 +7,7 @@ class window.VoyageX.Main
   @_STORAGE_CONTROLLER = null
   @_MAP_CONTROL = null
   @_MARKER_MANAGER = null
+  @_PATH_PREDICTION = null
   @_CHAT_CONTROL = null
   @_COMM_CHANNELS = ['system', 'talk', 'map_events', 'uploads', 'radar']
   @_STORAGE_MODEL = null
@@ -82,6 +83,7 @@ class window.VoyageX.Main
         # Map initialisation (LeafletJS)
         Main._MAP_CONTROL = new VoyageX.MapControl mapOptions, offlineZooms, tileHandler
         Main._MARKER_MANAGER = new VoyageX.MarkerManager APP.map()
+        Main._PATH_PREDICTION = new VoyageX.PathPrediction Main._MAP_CONTROL
         Main._CHAT_CONTROL = new VoyageX.ChatControl()
         # handled in _peers.html.haml
         #Storage.Model.instance().loadPeers (peer) ->
@@ -682,9 +684,9 @@ class window.VoyageX.Main
                 m2 = event.target
                 VoyageX.DEBUG_PREDICTION_PATHS.push {done: null,\
                                                      pred: L.polyline([m1._latlng, m2._latlng], {color: 'yellow'}).addTo(APP.map())}
-                Main._MAP_CONTROL.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, 16)
+                Main._PATH_PREDICTION.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, 16)
           , {isUserMarker: false, beam: true}
-      Main._MAP_CONTROL.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, 16)
+      Main._PATH_PREDICTION.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, 16)
       APP._movePredictionLastLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
 
   togglePredictionPathDebug: () ->
@@ -695,9 +697,9 @@ class window.VoyageX.Main
       @_debug = true
       $('#dbg_pred_ctrl').attr('class', $('#dbg_pred_ctrl').attr('class')+' menu_ctrl_on')
 
-  clearPredictionPaths: () ->
+  clearPredictionPaths: (lastOneToo = false) ->
     if VoyageX.DEBUG_PREDICTION_PATHS?
-      for entry in VoyageX.DEBUG_PREDICTION_PATHS
+      for entry, i in VoyageX.DEBUG_PREDICTION_PATHS
         if entry.done?
           this.map().removeLayer entry.done
         this.map().removeLayer entry.pred

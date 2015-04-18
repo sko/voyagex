@@ -1,4 +1,4 @@
-class SandboxController < ApplicationController
+class MainController < ApplicationController
   include ::AuthUtils
   include ::GeoUtils
 
@@ -45,7 +45,7 @@ class SandboxController < ApplicationController
     end
     #@uploads = Upload.all.order('location_id, id desc')
     # https://github.com/alexreisner/geocoder#request-geocoding-by-ip-address
-#[1] pry(#<SandboxController>)> request.location
+#[1] pry(#<MainController>)> request.location
 #=> #<Geocoder::Result::Freegeoip:0xf7a3c08
 # @cache_hit=false,
 # @data=
@@ -66,12 +66,12 @@ class SandboxController < ApplicationController
 #    nearby_m = (tmp_user.search_radius_meters||20000)
 #    location = Location.new latitude: params[:lat], longitude: params[:lng]
 ## GOOD but now from template ...  load_location_data location, nearby_m
-#    render "sandbox/photo_nav", layout: false, formats: [:js]
+#    render "main/photo_nav", layout: false, formats: [:js]
 #  end
 
   # chrome://appcache-internals/
   def manifest
-    #mf = Rails.root.join('app', 'views', 'sandbox', 'voyagex.mf')
+    #mf = Rails.root.join('app', 'views', 'main', 'voyagex.mf')
     #render file: mf, formats: ['mf'], content_type: 'text/cache-manifest'
     render 'voyagex.mf', layout: false, content_type: 'text/cache-manifest'
   end

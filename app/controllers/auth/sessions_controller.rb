@@ -7,7 +7,7 @@ module Auth
         render "devise/sessions/new", layout: false, formats: [:js], locals: { resource: User.new, resource_name: :user }
       else
         #flash[:exec] = 'show_login_dialog'
-        #render "sandbox/index"
+        #render "main/index"
         if devise_mapping.confirmable? && tmp_user.confirmation_token.present?
           redirect_to root_path(exec: 'show_login_dialog_confirm_email', email: tmp_user.email)
         else

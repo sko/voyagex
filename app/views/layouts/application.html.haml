@@ -48,7 +48,7 @@
     #panel_control
       %span{style: 'text-align: left; z-index: 11 !important;'}
       = link_to image_tag('arrow-up-right_off.png', id: 'photo_nav_open_icon', style: 'width: 32px; height: 43px;', class: 'photo_nav_open_icon'), '#', onclick: 'javascript:APP.photoNav()'
-    = render partial: '/sandbox/photo_nav_panel'
+    = render partial: '/main/photo_nav_panel'
     = javascript_include_tag "application"
     = javascript_include_tag params[:controller]
     

@@ -61,8 +61,8 @@
       $("head").append("<style type='text/css'>#photo_nav_panel {width:"+($(window).width()-0)+"px;}</style>");
       $("head").append("<style type='text/css'>#user_foto_media_input_current {width:"+Math.round($(window).width()*0.3)+"px;}</style>");
     -# templates
-    = render partial: '/sandbox/photo_nav_panel.mobile'
-    = render partial: '/sandbox/media_input_panel'
+    = render partial: '/main/photo_nav_panel.mobile'
+    = render partial: '/main/media_input_panel'
     -#= render partial: '/uploads/uploads.mobile'
     = render partial: '/shared/uploads.mobile'#, locals: {resource: Upload.new, resource_name: :upload}
     = render partial: '/shared/system_dialog'
@@ -90,7 +90,7 @@
         %span.ui-icon.ui-icon-circle-close{onclick: '$("#attachment_view_panel").panel("close");'}
     #system_dialog_panel{data: {role: 'panel', animate: 'true', display: 'overlay'}}
     = javascript_include_tag 'application.mobile'
-    = javascript_include_tag "#{params[:controller]}"
+    -#= javascript_include_tag "#{params[:controller]}"
     = javascript_include_tag 'extensions.mobile'
     
     - if params[:exec].present? && params[:exec].match(/^show_login_dialog/).present?

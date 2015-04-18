@@ -21,9 +21,11 @@
 //= require template_helper
 //= require map_control
 //= require marker_manager
+//= require path_prediction
 //= require chat_control
 //= require media_manager
 //= require client_state
 //= require upload_helper
 //= require main
 //= require view
+//= require sandbox

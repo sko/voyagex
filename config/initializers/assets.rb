@@ -5,29 +5,25 @@ Rails.application.config.assets.version = '1.0'
 
 # Precompile additional assets.
 # application.js, application.css, and all non-JS/CSS in app/assets folder are already added.
-# Rails.application.config.assets.precompile += %w( search.js )
-#Rails.application.config.assets.precompile = ['*.js', '*.css']
-#Rails.application.config.assets.precompile = ['*.js', 'application.css', 'application.mobile.css', 'sandbox.css', 'sandbox.mobile.css']
-#Rails.application.config.assets.precompile = ['*.js', '_variables.scss', '*.css']
-if true
-Rails.application.config.assets.precompile = [
-'*.png',
-'*.gif',
-'*.jpg',
-'*.mp3',
-'*.js',
-'application.css',
-'application.mobile.css',
-'sandbox.css',
-'sandbox.mobile.css',
-'./comm/application.css',
-'swiper.css',
-'jquery*.css',
-'leaflet*.css',
-'_bootstrap-compass.css',
-'_bootstrap-mincer.css',
-'_bootstrap-sprockets.css',
-'./bootstrap/_variables.css',
-'_bootstrap.css',
-'./bootstrap/*.css']
-end
+Rails.application.config.assets.precompile =
+  [
+    '*.png',
+    '*.gif',
+    '*.jpg',
+    '*.mp3',
+    '*.js',
+    'application.css',
+    'application.mobile.css',
+    'main.css',
+    'main.mobile.css',
+    './comm/application.css',
+    'swiper.css',
+    'jquery*.css',
+    'leaflet*.css',
+    '_bootstrap-compass.css',
+    '_bootstrap-mincer.css',
+    '_bootstrap-sprockets.css',
+    './bootstrap/_variables.css',
+    '_bootstrap.css',
+    './bootstrap/*.css'
+  ]

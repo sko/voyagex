@@ -12,7 +12,7 @@
  *= require jquery.mobile
  *= require leaflet
  *= require swiper
- *X=X require sandbox.mobile
+ *X=X require main.mobile
  *= require_self
  */
 /*
@@ -20,7 +20,7 @@
 @import "jquery.mobile";
 @import "leaflet";
 @import "swiper";
-@import "sandbox.mobile";
+@import "main.mobile";
 */
 .edit_detail {
   color: black !important;

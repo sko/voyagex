@@ -1,4 +1,4 @@
-module SandboxHelper
+module MainHelper
   include ::ApplicationHelper
   include ::GeoUtils
   
