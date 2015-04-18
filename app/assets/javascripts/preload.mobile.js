@@ -22,6 +22,7 @@
 //= require map_control
 //= require marker_manager
 //= require path_prediction
+//= require cache_strategy
 //= require chat_control
 //= require media_manager
 //= require client_state

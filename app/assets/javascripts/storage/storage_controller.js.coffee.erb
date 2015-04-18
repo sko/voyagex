@@ -503,49 +503,17 @@ class window.Comm.StorageController
       this.delete(key)
 
   loadAndPrefetchTile: (prefetchParams) ->
-    # sC = this
-    # this._checkedTileLoadQueue prefetchParams.xYZ, prefetchParams.promise, true, true, (queueEntry) ->
-    #     console.log('StorageController - loadAndPrefetchTile: '+StorageController.tileKey(prefetchParams.xYZ))
-    #     sC._getTileFile prefetchParams.xYZ, 1, prefetchParams
-    #     #prefetchParams.promise = prefetchParams.deferred.promise()
-    #     #queueEntry.promise = prefetchParams.promise
     Comm.FileUtils.instance().loadAndPrefetchTile prefetchParams
 
   prefetchTile: (prefetchParams) ->
-    # sC = this
-    # this._checkedTileLoadQueue prefetchParams.xYZ, prefetchParams.promise, true, false, (queueEntry) ->
-    #     console.log('StorageController - prefetchTile: '+StorageController.tileKey(prefetchParams.xYZ))
-    #     sC._getTileFile prefetchParams.xYZ, 2, prefetchParams
-    #     #prefetchParams.promise = prefetchParams.deferred.promise()
-    #     #queueEntry.promise = prefetchParams.promise
-    #     #queueEntry.storeFile = false
     Comm.FileUtils.instance().prefetchTile prefetchParams
   
-  resolveOnlineNotInOfflineZooms: (tileUrl, deferredModeParams) ->
-    # #deferredModeParams.tileUrl = readyImage
-    # deferredModeParams.deferred.resolve tileUrl
-    # view = deferredModeParams.view
-    # if view?
-    #   delete this._tileLoadQueue[StorageController.tileKey([view.tile.column, view.tile.row, view.zoom])]
-    Comm.FileUtils.instance().resolveOnlineNotInOfflineZooms tileUrl, deferredModeParams
-
-  resolveOfflineNotInCache: (readyImage, deferredModeParams) ->
-    # deferredModeParams.tileUrl = readyImage
-    # deferredModeParams.deferred.resolve readyImage
-    # view = deferredModeParams.view
-    # if view?
-    #   delete this._tileLoadQueue[StorageController.tileKey([view.tile.column, view.tile.row, view.zoom])]
-    Comm.FileUtils.instance().resolveOfflineNotInCache readyImage, deferredModeParams
+  resolvedCB: (deferredModeParams) ->
+    view = deferredModeParams.view
+    if view?
+      Comm.FileUtils.instance().resolvedCB StorageController.tileKey([view.tile.column, view.tile.row, view.zoom])
 
   storeTile: (xYZ, data, promise = null, deferredModeParams = null) ->
-    # if promise != null
-    #   # @see getTile
-    #   unless @_tileLoadQueue[StorageController.tileKey(xYZ)]?
-    #     @_tileLoadQueue[StorageController.tileKey(xYZ)] = { promise: promise, deferred: false, storeFile: true }
-    #   else
-    #     console.log('storeTile - promise for '+StorageController.tileKey(xYZ)+' already stored in queue ...')
-    #   return promise
-
     if StorageController.isFileBased()
       #this._storeTileAsFile xYZ, null, data, deferredModeParams
       Comm.FileUtils.instance().storeTile xYZ, data, promise, deferredModeParams
@@ -574,14 +542,6 @@ class window.Comm.StorageController
   
   getTile: (xYZ, deferredModeParams = null) ->
     if StorageController.isFileBased()
-      # sC = this
-      # #if deferredModeParams.promise == null
-      # #  deferredModeParams.promise = deferredModeParams.deferred.promise()
-      # this._checkedTileLoadQueue xYZ, deferredModeParams.promise, false, true, (queueEntry) ->
-      #     console.log('StorageController - getTile: '+StorageController.tileKey(xYZ))
-      #     sC._getTileFile xYZ, 0, deferredModeParams
-      #     #queueEntry.promise = deferredModeParams.promise
-      # deferredModeParams.promise
       Comm.FileUtils.instance().getTile xYZ, deferredModeParams
     else
       storeKey = StorageController.tileKey(xYZ)

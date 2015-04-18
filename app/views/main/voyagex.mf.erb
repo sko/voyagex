@@ -1,7 +1,7 @@
 CACHE MANIFEST
 
 #CACHE:
-<%= render file: '/main/cache_entries.txt' -%>
+<%= render file: "/main/cache_entries#{Rails.env.to_sym == :development ? '_development' : ''}.txt" -%>
 #/csrf
 
 NETWORK:

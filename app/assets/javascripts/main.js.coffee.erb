@@ -80,8 +80,9 @@ class window.VoyageX.Main
                                    Main._BACKEND.commConnStateCB)
         unless forceOffline
           VoyageX.Main._BACKEND.pingBackend()
+        cacheStrategy = new VoyageX.CacheStrategy true
         # Map initialisation (LeafletJS)
-        Main._MAP_CONTROL = new VoyageX.MapControl mapOptions, offlineZooms, tileHandler
+        Main._MAP_CONTROL = new VoyageX.MapControl mapOptions, offlineZooms, cacheStrategy, tileHandler
         Main._MARKER_MANAGER = new VoyageX.MarkerManager APP.map()
         Main._PATH_PREDICTION = new VoyageX.PathPrediction Main._MAP_CONTROL
         Main._CHAT_CONTROL = new VoyageX.ChatControl()
@@ -490,7 +491,7 @@ class window.VoyageX.Main
       if APP._movePredictionLastLatLng == null
         APP._movePredictionLastLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
       else
-        APP.preloadTiles()
+        APP.cacheTiles()
     if showSearchRadius
       Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, APP.map())
 
@@ -574,7 +575,7 @@ class window.VoyageX.Main
       if APP._movePredictionLastLatLng == null
         APP._movePredictionLastLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
       else
-        APP.preloadTiles()
+        APP.cacheTiles()
     APP.watchRealPosition()
 
   stopRealPositionWatch: () ->
@@ -652,7 +653,8 @@ class window.VoyageX.Main
             APP._comm.send('/system', {type: 'error', userId: APP.userId(), userName: APP.userName(), userFoto: currentUser.foto, msg: $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': [poll] - unknown error - disable location-query ...'})
     , { enableHighAccuracy: true, maximumAge: VoyageX.Backend._POS_QUERY_INTERVAL_MILLIS, timeout: VoyageX.Backend._POS_QUERY_TIMEOUT_MILLIS })
 
-  preloadTiles: () ->
+  # 
+  cacheTiles: () ->
     dist = L.latLng(APP._movePredictionLastLatLng.lat, APP._movePredictionLastLatLng.lng).distanceTo L.latLng(APP._realPosition.lat, APP._realPosition.lng)
     if dist >= 100
       predictDistMeters = 1000
@@ -661,32 +663,44 @@ class window.VoyageX.Main
       headingLat = APP._realPosition.lat - APP._movePredictionLastLatLng.lat
       headingLng = APP._realPosition.lng - APP._movePredictionLastLatLng.lng
 
-      predictedLatLng = L.latLng(APP._realPosition.lat + distFactor*headingLat, APP._realPosition.lng + distFactor*headingLng)
+      curLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
+      #predictedLatLng = L.latLng(APP._realPosition.lat + distFactor*headingLat, APP._realPosition.lng + distFactor*headingLng)
+      predictedLatLng = {lat: APP._realPosition.lat + distFactor*headingLat, lng: APP._realPosition.lng + distFactor*headingLng}
       
       if @_debug
         unless VoyageX.DEBUG_PREDICTION_PATHS?
           window.VoyageX.DEBUG_PREDICTION_PATHS = []
         VoyageX.DEBUG_PREDICTION_PATHS.push {done: L.polyline([L.latLng(APP._movePredictionLastLatLng.lat, APP._movePredictionLastLatLng.lng), L.latLng(APP._realPosition.lat, APP._realPosition.lng)], {color: 'green'}).addTo(APP.map()),\
                                              pred: L.polyline([L.latLng(APP._realPosition.lat, APP._realPosition.lng), predictedLatLng], {color: 'yellow'}).addTo(APP.map())}
-      m1 = APP.getUserMarker()
-      marker = APP.markers().forPositionPreview()
-      if marker?
-        marker.m.setLocation predictedLatLng
-        m2 = marker.target()
-      else
-        m2 = APP.markers().add predictedLatLng, (event) ->
-            switch event.type
-              when 'click'
-                `;`
-              else
-                # drag
-                m1 = APP.getUserMarker()
-                m2 = event.target
-                VoyageX.DEBUG_PREDICTION_PATHS.push {done: null,\
-                                                     pred: L.polyline([m1._latlng, m2._latlng], {color: 'yellow'}).addTo(APP.map())}
-                Main._PATH_PREDICTION.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, 16)
-          , {isUserMarker: false, beam: true}
-      Main._PATH_PREDICTION.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, 16)
+        m1 = APP.getUserMarker()
+        curLatLng = {lat: m1._latlng.lat, lng: m1._latlng.lng}
+        marker = APP.markers().forPositionPreview()
+        if marker?
+          marker.m.setLocation L.latLng(predictedLatLng.lat, predictedLatLng.lng)
+          m2 = marker.target()
+        else
+          m2 = APP.markers().add L.latLng(predictedLatLng.lat, predictedLatLng.lng), (event) ->
+              switch event.type
+                when 'click'
+                  `;`
+                else
+                  # drag
+                  m1 = APP.getUserMarker()
+                  m2 = event.target
+                  VoyageX.DEBUG_PREDICTION_PATHS.push {done: null,\
+                                                       pred: L.polyline([m1._latlng, m2._latlng], {color: 'yellow'}).addTo(APP.map())}
+                  Main._PATH_PREDICTION.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, 16)
+            , {isUserMarker: false, beam: true}
+      
+      #Main._PATH_PREDICTION.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, 16)
+      tiles = Main._PATH_PREDICTION.tilesPathBetweenPositions({lat:curLatLng.lat,lng:curLatLng.lng},{lat:predictedLatLng.lat,lng:predictedLatLng.lng}, 16)
+      for tile in tiles
+        view = {zoom: APP.map().getZoom(),\
+                tile: {row: tile.y, column: tile.x},\
+                subdomain: MC._mapOptions['subdomains'][0]}
+        cachedTileUrl = VoyageX.MapControl.drawTile view, {default: true}
+        #deferredModeParams = MapControl.deferredModeParams view, {default: true}
+        #VoyageX.MapControl.loadTileFromUrl view, deferredModeParams
       APP._movePredictionLastLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
 
   togglePredictionPathDebug: () ->

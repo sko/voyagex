@@ -7,6 +7,7 @@ class window.Comm.FileUtils
   constructor: (requestedBytes, tileImageContentType, storedFilesAreBase64, fsInitCB) ->
     FileUtils._SINGLETON = this
     #@_tileDB = tileDB
+    fU = this
     @_tileLoadQueue = {}
     @_tileImageContentType = tileImageContentType
     @_storedFilesAreBase64 = storedFilesAreBase64
@@ -56,19 +57,8 @@ class window.Comm.FileUtils
     if flags.users? && flags.users
       this._removeDirectory 'users'
   
-  resolveOnlineNotInOfflineZooms: (tileUrl, deferredModeParams) ->
-    #deferredModeParams.tileUrl = readyImage
-    deferredModeParams.deferred.resolve tileUrl
-    view = deferredModeParams.view
-    if view?
-      delete this._tileLoadQueue[Comm.StorageController.tileKey([view.tile.column, view.tile.row, view.zoom])]
-  
-  resolveOfflineNotInCache: (readyImage, deferredModeParams) ->
-    deferredModeParams.tileUrl = readyImage
-    deferredModeParams.deferred.resolve readyImage
-    view = deferredModeParams.view
-    if view?
-      delete this._tileLoadQueue[Comm.StorageController.tileKey([view.tile.column, view.tile.row, view.zoom])]
+  resolvedCB: (tileKey) ->
+    delete this._tileLoadQueue[tileKey]
 
   _removeDirectory: (dirName) ->
     @_dirReaders.entry.getDirectory(dirName, {}, (dirEntry) ->
@@ -87,10 +77,15 @@ class window.Comm.FileUtils
     dirReader.entry.getFile(xYZ[fileIdx], {}, (fileEntry) ->
         #unless dirReader.entries[xYZ[fileIdx]]?
         #  dirReader.entries[xYZ[fileIdx]] = { parent: dirReader, path: path, entry: fileEntry, reader: fileEntry.createReader(), entries: {} }
+        #
+        # file already exists - would be overwritten (@see _saveFile)
+        #
         # TODO - what is this for? is this call necessary?
-        fU._storeTileAsFile xYZ, dirReader, null, deferredModeParams
+        #fU._storeTileAsFile xYZ, dirReader, null, deferredModeParams
+        `;`
       , (e) ->
         if (e.code == FileError.NOT_FOUND_ERR) 
+          # new fU._writeFile fileName, dirReader, data, deferredModeParams
           dirReader.entry.getFile(xYZ[fileIdx], {create: true}, (fileEntry) ->
                 fileEntry.createWriter((fileWriter) ->
                   fileWriter.onwriteend = (e) ->
@@ -186,7 +181,7 @@ class window.Comm.FileUtils
       return promise
     this._storeTileAsFile xYZ, null, data, deferredModeParams
   
-  _getTileFile: (xYZ, prefetchMode, deferredModeParams, firstCall = true) ->
+  _getTileFile: (xYZ, noFileCB, deferredModeParams, firstCall = true) ->
     path = '/'+xYZ[2]+'/'+xYZ[0]+'/'+xYZ[1]
     @_dirReaders.entry.getFile(path, {}, (fileEntry) ->
         console.log('_getTileFile - found file: '+path)
@@ -214,34 +209,24 @@ class window.Comm.FileUtils
           if firstCall
             # check one more time if other thread stored file
             #console.log('_getTileFile - no such file / trying one more READ: '+path)
-            return FileUtils.instance()._getTileFile xYZ, prefetchMode, deferredModeParams, false
+            return FileUtils.instance()._getTileFile xYZ, noFileCB, deferredModeParams, false
           else
             console.log('_getTileFile - no such file: '+path)
         else
           console.log('error: '+e+' for '+path)
-        if prefetchMode == 0
-          # one mor check for asynchronous request - that's because of prefetch mit compete
-          loadQueueEntry = FileUtils.instance()._tileLoadQueue[Comm.StorageController.tileKey(xYZ)]
-          unless loadQueueEntry? && (!loadQueueEntry.storeFile)
-            VoyageX.MapControl.tileUrl deferredModeParams.view, deferredModeParams
-            loadQueueEntry.deferred = true
-          else
-            console.log('TODO: _getTileFile - if this is logged then loadQueueEntry-check is necessary')
-        else
-          if prefetchMode == 1
-            VoyageX.MapControl.loadAndPrefetch xYZ, deferredModeParams.view.subdomain, deferredModeParams
-          else
-            MC.loadReadyImage deferredModeParams.tileUrl, xYZ, deferredModeParams
+        
+        noFileCB e
       )
 
-  _checkedTileLoadQueue: (xYZ, promise, checkStoreFile, storeFile, callback) ->
+  # multithreaded access 
+  _callOncePerTile: (xYZ, promise, checkStoreFile, storeFile, callback) ->
     storeKey = Comm.StorageController.tileKey(xYZ)
     stored = @_tileLoadQueue[storeKey]
     if stored?
       if checkStoreFile && stored.storeFile
         promise = callback(stored)
         stored.storeFile = false
-      #console.log('_checkedTileLoadQueue - stored in queue: '+storeKey); 
+      #console.log('_callOncePerTile - stored in queue: '+storeKey); 
       return stored.promise
     queueEntry = { promise: promise, deferred: false, storeFile: storeFile }
     # @see storeTile
@@ -250,29 +235,38 @@ class window.Comm.FileUtils
 
   loadAndPrefetchTile: (prefetchParams) ->
     sC = this
-    this._checkedTileLoadQueue prefetchParams.xYZ, prefetchParams.promise, true, true, (queueEntry) ->
-        console.log('StorageController - loadAndPrefetchTile: '+Comm.StorageController.tileKey(prefetchParams.xYZ))
-        sC._getTileFile prefetchParams.xYZ, 1, prefetchParams
+    this._callOncePerTile prefetchParams.xYZ, prefetchParams.promise, true, true, (queueEntry) ->
+        console.log('FileUtils - loadAndPrefetchTile: '+Comm.StorageController.tileKey(prefetchParams.xYZ))
+        noFileCB = (error) ->
+            VoyageX.MapControl.loadAndPrefetch prefetchParams.xYZ, prefetchParams.view.subdomain, prefetchParams
+        sC._getTileFile prefetchParams.xYZ, noFileCB, prefetchParams
         #prefetchParams.promise = prefetchParams.deferred.promise()
         #queueEntry.promise = prefetchParams.promise
 
   prefetchTile: (prefetchParams) ->
     sC = this
-    this._checkedTileLoadQueue prefetchParams.xYZ, prefetchParams.promise, true, false, (queueEntry) ->
-        console.log('StorageController - prefetchTile: '+Comm.StorageController.tileKey(prefetchParams.xYZ))
-        sC._getTileFile prefetchParams.xYZ, 2, prefetchParams
+    this._callOncePerTile prefetchParams.xYZ, prefetchParams.promise, true, false, (queueEntry) ->
+        console.log('FileUtils - prefetchTile: '+Comm.StorageController.tileKey(prefetchParams.xYZ))
+        noFileCB = (error) ->
+            MC.loadReadyImage prefetchParams.tileUrl, prefetchParams.xYZ, prefetchParams
+        sC._getTileFile prefetchParams.xYZ, noFileCB, prefetchParams
         #prefetchParams.promise = prefetchParams.deferred.promise()
         #queueEntry.promise = prefetchParams.promise
         #queueEntry.storeFile = false
   
-  getTile: (xYZ, deferredModeParams = null) ->
+  getTile: (xYZ, deferredModeParams) ->
     sC = this
-    #if deferredModeParams.promise == null
-    #  deferredModeParams.promise = deferredModeParams.deferred.promise()
-    this._checkedTileLoadQueue xYZ, deferredModeParams.promise, false, true, (queueEntry) ->
-        console.log('StorageController - getTile: '+Comm.StorageController.tileKey(xYZ))
-        sC._getTileFile xYZ, 0, deferredModeParams
-        #queueEntry.promise = deferredModeParams.promise
+    this._callOncePerTile xYZ, deferredModeParams.promise, false, true, (queueEntry) ->
+        console.log('FileUtils - getTile: '+Comm.StorageController.tileKey(xYZ))
+        noFileCB = (error) ->
+            # one mor check for asynchronous request - that's because of prefetch mit compete
+            loadQueueEntry = FileUtils.instance()._tileLoadQueue[Comm.StorageController.tileKey(xYZ)]
+            unless loadQueueEntry? && (!loadQueueEntry.storeFile)
+              deferredModeParams.loadTileFromUrlCB deferredModeParams.view, deferredModeParams
+              loadQueueEntry.deferred = true
+            else
+              console.log('TODO: _getTileFile - if this is logged then loadQueueEntry-check is necessary')
+        sC._getTileFile xYZ, noFileCB, deferredModeParams
     deferredModeParams.promise
 
 # ======================================================================
