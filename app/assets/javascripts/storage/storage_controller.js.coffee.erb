@@ -518,6 +518,16 @@ class window.Comm.StorageController
       #this._storeTileAsFile xYZ, null, data, deferredModeParams
       Comm.FileUtils.instance().storeTile xYZ, data, promise, deferredModeParams
     else
+      unless data?
+        storeKey = StorageController.tileKey xYZ
+        unless @_tileDB[storeKey]?
+          @_tileDB[storeKey] = promise
+          stored = localStorage.getItem storeKey
+          if stored == null
+            promise.then (url) ->
+                StorageController._SINGLETON.storeImage xYZ, url, deferredModeParams
+        return false
+
       tileMeta = localStorage.getItem 'comm.tiles.tileMeta'
       if tileMeta == null
         @_tileMeta = { tilesByteSize: 0, numTiles: 0 }
@@ -527,6 +537,7 @@ class window.Comm.StorageController
       storeKey = 'comm.tiles.'+data.properties.id
       stored = localStorage.getItem storeKey
       if stored == null
+        console.log 'caching tile: '+storeKey
 #        tileStoreZ = {}
 #        yEntry = {}
 #        yEntry[xYZ[1]] = data
@@ -593,7 +604,7 @@ class window.Comm.StorageController
       else
         @_fotoMeta = JSON.parse(fotoMeta)
 
-      storeKey = StorageController.poiNoteAttachmentKey poiNote
+      storeKey = StorageController.userPhotoKey user
       stored = localStorage.getItem storeKey
       if stored == null
         localStorage.setItem storeKey, data
@@ -640,7 +651,6 @@ class window.Comm.StorageController
             coordinates: [-1.0, -1.0] # TODO
           }
       }
-    console.log 'caching tile: '+storeKey
     this.storeTile xYZ, geoJSON, null, deferredModeParams
 
   hasQueue: () ->

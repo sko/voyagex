@@ -34,6 +34,7 @@ class window.VoyageX.Main
     #@_initPoisOnMap = []
     Main._STORAGE_MODEL = new Storage.Model()
     Main._UPLOAD_HELPER = new VoyageX.UploadHelper()
+    @_cacheStrategy = null
     window.addEventListener "offline", (e) ->
         console.log 'Main: went offline ...'
         VoyageX.Main._BACKEND._state.pingActive &&= false
@@ -69,7 +70,6 @@ class window.VoyageX.Main
           )
       when 2
         # Communication initialisation (Faye-Client)
-        
         APP._comm = new Comm.Comm(APP.userId(),
                                   [['/talk', APP._talkCB, VoyageX.CHANNEL_ENC_KEY],
                                    ['/map_events', view._mapEventsCB, VoyageX.CHANNEL_ENC_KEY],
@@ -79,10 +79,34 @@ class window.VoyageX.Main
                                    APP._systemCB,
                                    Main._BACKEND.commConnStateCB)
         unless forceOffline
-          VoyageX.Main._BACKEND.pingBackend()
-        cacheStrategy = new VoyageX.CacheStrategy true
+          Main._BACKEND.pingBackend()
+        APP._cacheStrategy = new VoyageX.CacheStrategy true
         # Map initialisation (LeafletJS)
-        Main._MAP_CONTROL = new VoyageX.MapControl mapOptions, offlineZooms, cacheStrategy, tileHandler
+        mapReadyCB = () ->
+            #APP._cacheStrategy._pathPrediction = true
+            #Main._MARKER_MANAGER = new VoyageX.MarkerManager APP.map()
+            if false && APP.isOnline()
+              if Comm.StorageController.isFileBased()
+                x = parseInt(MC._map.project(MC._map.getCenter()).x/256)
+                y = parseInt(MC._map.project(MC._map.getCenter()).y/256)
+                view = {zoom: MC._map.getZoom(), tile: {column: x, row: y}, subdomain: MC._mapOptions.subdomains[0]}
+                deferredModeParams = VoyageX.MapControl.deferredModeParams view, {default: true}
+                ((dMPs, origCB) ->
+                    dMPs.fileStatusCB = (deferredModeParams, created) ->
+                      console.log 'breakpoint to check deferredModeParams'
+                      origCB deferredModeParams, created
+                )(deferredModeParams, deferredModeParams.fileStatusCB)
+                MC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS, deferredModeParams
+                # TODO - replace tile-images-src with cache-url
+                # solution #1
+                # $('#map > .leaflet-map-pane > .leaflet-tile-pane .leaflet-tile-container:parent > .leaflet-tile').not('[src]').each () ->
+                #     left = parseInt $(this).attr('style').match(/left:\s*(-?[0-9]+)/)[1]
+                #     top = parseInt $(this).attr('style').match(/top:\s*(-?[0-9]+)/)[1]
+                #     x = (MC._map.getPixelOrigin().x + left) / 256
+                #     y = (MC._map.getPixelOrigin().y + top) / 256
+                #     srcUrl = 'filesystem:http://ctrl.privatedns.org:3005/persistent/'+MC._map.getZoom()+'/'+x+'/'+y+''
+                #     $(this).attr('src', srcUrl)
+        Main._MAP_CONTROL = new VoyageX.MapControl mapOptions, offlineZooms, APP._cacheStrategy, mapReadyCB, tileHandler
         Main._MARKER_MANAGER = new VoyageX.MarkerManager APP.map()
         Main._PATH_PREDICTION = new VoyageX.PathPrediction Main._MAP_CONTROL
         Main._CHAT_CONTROL = new VoyageX.ChatControl()
@@ -121,11 +145,12 @@ class window.VoyageX.Main
           fullscreenDialog = VoyageX.TemplateHelper._updateIds 'tmpl_fullscreen_dialog'
           $('#system_dialog_panel').html(fullscreenDialog)
           $('#open_system_dialog_btn').click()
-          APP.map().invalidateSize({
-              reset: true,
-              pan: false,
-              animate: false
-            })
+          Main._MAP_CONTROL.reload()
+          # APP.map().invalidateSize({
+          #     reset: true,
+          #     pan: false,
+          #     animate: false
+          #   })
           $('#panel_control').draggable({
 #              start: (event, ui) ->
 #                  console.log('dragging ...')
@@ -208,9 +233,10 @@ class window.VoyageX.Main
       @_online = false
       Main._BACKEND._state.online &&= false
       Main._BACKEND._state.pingActive &&= false
-      Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
-      for n in Main._MAP_CONTROL._offlineZooms
-        Main._MAP_CONTROL._zooms.push n
+      #Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
+      MC._zooms.splice(0, MC._zooms.length)
+      for n in MC._offlineZooms
+        MC._zooms.push n
       unless $('#network_state_offline').prop('checked')
         $('#network_state_offline').prop('checked', true)
       VoyageX.NavBar.showActiveState()
@@ -690,6 +716,7 @@ class window.VoyageX.Main
                   VoyageX.DEBUG_PREDICTION_PATHS.push {done: null,\
                                                        pred: L.polyline([m1._latlng, m2._latlng], {color: 'yellow'}).addTo(APP.map())}
                   Main._PATH_PREDICTION.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, 16)
+                  #TODO: enable cachetiles with drag and droop - reset _movePredictionLastLatLng and then APP.cacheTiles()
             , {isUserMarker: false, beam: true}
       
       #Main._PATH_PREDICTION.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, 16)
@@ -699,7 +726,7 @@ class window.VoyageX.Main
                 tile: {row: tile.y, column: tile.x},\
                 subdomain: MC._mapOptions['subdomains'][0]}
         cachedTileUrl = VoyageX.MapControl.drawTile view, {default: true}
-        #deferredModeParams = MapControl.deferredModeParams view, {default: true}
+        #deferredModeParams = VoyageX.MapControl.deferredModeParams view, {default: true}
         #VoyageX.MapControl.loadTileFromUrl view, deferredModeParams
       APP._movePredictionLastLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
 
@@ -1050,7 +1077,9 @@ class window.VoyageX.Main
     Main._COMM_CHANNELS.slice(0)
 
   storage: () ->
-    Main._STORAGE_CONTROLLER
+    #Main._STORAGE_CONTROLLER
+    # firefox complains Main._STORAGE_CONTROLLER == null
+    Comm.StorageController.instance()
 
   @mapControl: () ->
     Main._MAP_CONTROL

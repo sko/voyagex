@@ -89,7 +89,7 @@
 /assets/leaflet-providers.js?body=1
 /assets/canvas-toBlob.js?body=1
 /assets/buffer-loader.js?body=1
-/assets/preload/util.js?body=1
+/assets/preload.js?body=1
 /assets/version.js?body=1
 /assets/backend.js?body=1
 /assets/storage/file_utils.js?body=1

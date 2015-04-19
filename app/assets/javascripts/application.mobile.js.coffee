@@ -3,11 +3,13 @@ class window.VoyageX.NavBar
   @_checkDims = {o: null, w: -1, h: -1}
   @menuNavClick: (clickSrc) ->
     window.clientState.setView(window.clientState.getView(clickSrc))
-    APP.map().invalidateSize({
-              reset: true,
-              pan: false,
-              animate: false
-            })
+    if MC?
+      MC.reload()
+    # APP.map().invalidateSize({
+    #           reset: true,
+    #           pan: false,
+    #           animate: false
+    #         })
     return false
 
   @showActiveState: (activeSelector = null) ->
@@ -56,11 +58,13 @@ class window.VoyageX.NavBar
       mapWidth = NavBar._orientationDims[event.orientation][0]
       mapHeight = (NavBar._orientationDims[event.orientation][1]-$('#map').offset().top)
       $("head").append("<style id='map_style' type='text/css'>#map {width:"+mapWidth+"px;height:"+mapHeight+"px;}</style>");
-      APP.map().invalidateSize({
-          reset: true,
-          pan: false,
-          animate: false
-        })
+      if MC?
+        MC.reload()
+      # APP.map().invalidateSize({
+      #     reset: true,
+      #     pan: false,
+      #     animate: false
+      #   })
 
 window.clientState = new VoyageX.ClientState('map', 'camera', VoyageX.NavBar.showView, VoyageX.NavBar.hideView)
 

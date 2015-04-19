@@ -18,7 +18,7 @@
     = stylesheet_link_tag "application.mobile", media: "all"
     = stylesheet_link_tag "#{params[:controller]}.mobile", media: "all"
     = csrf_meta_tags
-    = javascript_include_tag "modernizr"
+    -#= javascript_include_tag "modernizr"
     = javascript_include_tag "preload.mobile"
     - if Rails.env == 'development'
       -# easier to debug ;)
@@ -91,7 +91,7 @@
     #system_dialog_panel{data: {role: 'panel', animate: 'true', display: 'overlay'}}
     = javascript_include_tag 'application.mobile'
     -#= javascript_include_tag "#{params[:controller]}"
-    = javascript_include_tag 'extensions.mobile'
+    -#= javascript_include_tag 'extensions.mobile'
     
     - if params[:exec].present? && params[:exec].match(/^show_login_dialog/).present?
       - email_arg = params[:exec].match(/^show_login_dialog_confirm_email/).present? ? "'#{tmp_user.unconfirmed_email}'" : 'null'

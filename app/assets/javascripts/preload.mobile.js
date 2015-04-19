@@ -30,3 +30,4 @@
 //= require main
 //= require view
 //= require sandbox
+//= require extensions.mobile

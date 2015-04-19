@@ -237,12 +237,13 @@ Devise.setup do |config|
   # Add a new OmniAuth provider. Check the wiki for more information on setting
   # up on your models and hooks.
   # config.omniauth :github, 'APP_ID', 'APP_SECRET', scope: 'user,public_repo'
-  fb_conf_key = [:development].include?(Rails.env.to_sym) ? "facebook_#{Rails.env}".to_sym : :facebook
+  #fb_conf_key = [:development].include?(Rails.env.to_sym) ? "facebook_#{Rails.env}".to_sym : :facebook
+  fb_conf_key = :facebook
   config.omniauth :facebook, SOCIAL_NETS_CONFIG[fb_conf_key][:key], SOCIAL_NETS_CONFIG[fb_conf_key][:secret]
   config.omniauth :facebook_mobile, SOCIAL_NETS_CONFIG[fb_conf_key][:key], SOCIAL_NETS_CONFIG[fb_conf_key][:secret],
       :name => 'facebook_mobile',
       :client_options => {
-        :authorize_url => "https://m.facebook.com/dialog/oauth"
+        :authorize_url => "https://m.facebook.com/v2.3/dialog/oauth"
       }
   # ==> Warden configuration
   # If you want to use other strategies, that are not supported by Devise, or

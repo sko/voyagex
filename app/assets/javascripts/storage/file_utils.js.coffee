@@ -175,6 +175,7 @@ class window.Comm.FileUtils
     if promise != null
       # @see getTile
       unless @_tileLoadQueue[Comm.StorageController.tileKey(xYZ)]?
+        console.log 'caching tile: '+storeKey
         @_tileLoadQueue[Comm.StorageController.tileKey(xYZ)] = { promise: promise, deferred: false, storeFile: true }
       else
         console.log('storeTile - promise for '+Comm.StorageController.tileKey(xYZ)+' already stored in queue ...')

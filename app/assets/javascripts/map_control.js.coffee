@@ -7,7 +7,7 @@ class window.VoyageX.MapControl
   @_SINGLETON = null
 
   # zooms msut be sorted from lowest (f.ex. 1) to highest (f.ex. 16)
-  constructor: (mapOptions, offlineZooms, cacheStrategy, tileHandler = null) ->
+  constructor: (mapOptions, offlineZooms, cacheStrategy, mapReadyCB, tileHandler = null) ->
     unless tileHandler?
       tileHandler = new L.TileLayer.Functional(VoyageX.MapControl.drawTile, {
           subdomains: mapOptions.subdomains
@@ -33,6 +33,7 @@ class window.VoyageX.MapControl
     @_map = new L.Map('map', mapOptions)
     @_map.whenReady () ->
         console.log '### map-event: ready ...'
+        mapReadyCB()
         #MapControl.instance().showTileInfo false
         #for poi in APP._initPoisOnMap
         #  marker = Main.markerManager().add poi.location, VoyageX.Main._markerEventsCB, false
@@ -97,8 +98,25 @@ class window.VoyageX.MapControl
     curTileX = parseInt curLatX/256
     curTileY = parseInt curLatY/256
     {x: curTileX, y: curTileY, latX: curLatX, latY: curLatY}
+  
+  # needed to replace image-src with custom value
+  tileImageForPosition: (lat, lng, zoom) ->
+    tileData = this.tileForPosition(lat, lng, zoom)
+    offLeft = parseInt(APP.map().getPixelOrigin().x/256)*256 - APP.map().getPixelOrigin().x
+    offTop = parseInt(APP.map().getPixelOrigin().y/256)*256 - APP.map().getPixelOrigin().y
+    numTilesLeft = parseInt((tileData.latX - offLeft - APP.map().getPixelOrigin().x)/256)
+    numTilesDown = parseInt((tileData.latY - offTop - APP.map().getPixelOrigin().y)/256)
+    left = numTilesLeft*256 + offLeft
+    top = numTilesDown*256 + offTop
+    $("#map > .leaflet-map-pane > .leaflet-tile-pane .leaflet-tile-container:parent > img.leaflet-tile[style*='left: "+left+"'][style*='top: "+top+"']")
 
   # iterate over view-elements / divs of all tiles loaded by leaflet
+  # first leaflet-tile in view is:
+  # $("#map .leaflet-tile-pane img.leaflet-tile[style*='top: -'][style*='left: -']")
+  # APP.map().getPixelOrigin()
+  # first tile: parseInt(APP.map().getPixelOrigin().x/256)
+  # => left: parseInt(APP.map().getPixelOrigin().x/256)*256-APP.map().getPixelOrigin().x
+  # => top: parseInt(APP.map().getPixelOrigin().y/256)*256-APP.map().getPixelOrigin().y
   _eachTile: (callback, clearOnly) ->
     tiles = $('#map > .leaflet-map-pane > .leaflet-tile-pane .leaflet-tile-container:parent > .leaflet-tile')
     remove = tiles.first().parent().children('div[data-role=tileInfo]')
@@ -106,16 +124,21 @@ class window.VoyageX.MapControl
     unless clearOnly
       for tile, idx in tiles
         style = $(tile).attr('style')
-        #key = $(tile).attr('src').match(/[0-9]+\/[0-9]+\/[0-9]+$/)
+        # chrome@desktop
+        # height: 256px; width: 256px; left: 257px; top: -320px;
+        # chrome@android
+        # height: 256px; width: 256px; transform: translate3d(-367px, -147px, 0px);
+        # firefox
+        # height: 256px; width: 256px; transform: translate(310px, -91px);
         xMatch = style.match(/left:(.+?)px/)
         if xMatch?
           # chrome
           xOff = parseInt(xMatch[1].trim())+1
           yOff = parseInt(style.match(/top:(.+?)px/)[1].trim())+1
         else
-          # chrome
-          xOff = parseInt(style.match(/translate\((.+?)px/)[1].trim())+1
-          yOff = parseInt(style.match(/translate\(.+?,(.+?)px/)[1].trim())+1
+          # firefox
+          xOff = parseInt(style.match(/translate.?.?\((.+?)px/)[1].trim())+1
+          yOff = parseInt(style.match(/translate.?.?\(.+?,(.+?)px/)[1].trim())+1
         callback xOff, yOff, tile, style
 
   _drawTileInfo: (x, y, z, style, tileSelector, withBackground = false) ->
@@ -323,7 +346,8 @@ class window.VoyageX.MapControl
     # 4 small tiles become one bigger tile
     this._prefetchLowerZoomLevels xYZ, viewSubdomain, deferredModeParams
 
-  _prefetchTile: (view, xYZ, deferredModeParams = null) ->
+  _prefetchTile: (view, xYZ, deferredModeParams = null, load = true) ->
+    # condition only required if Comm.StorageController.isFileBased()
     unless @_tileLoadQueue[xYZ[0]+'_'+xYZ[1]]
       storeKey = Comm.StorageController.tileKey([xYZ[0], xYZ[1], xYZ[2]])
       if Comm.StorageController.isFileBased()
@@ -336,7 +360,7 @@ class window.VoyageX.MapControl
                            deferred: $.Deferred(),\
                            promise: null }
         prefetchParams.promise = prefetchParams.deferred.promise()
-        if addToX == 0 and addToY == 0
+        if load
           Comm.StorageController.instance().loadAndPrefetchTile prefetchParams
         else
           Comm.StorageController.instance().prefetchTile prefetchParams
@@ -357,10 +381,10 @@ class window.VoyageX.MapControl
       radiusMeters -= curTileWidthMeters
     for addToX in [-numTilesLeft..numTilesLeft]
       for addToY in [-numTilesLeft..numTilesLeft]
-        this._prefetchTile view, curXYZ, deferredModeParams
-        # curXYZ = [xYZ[0]+addToX,
-        #           xYZ[1]+addToY,
-        #           xYZ[2]]
+        curXYZ = [xYZ[0]+addToX,
+                  xYZ[1]+addToY,
+                  xYZ[2]]
+        this._prefetchTile view, curXYZ, deferredModeParams, (addToX == 0 && addToY == 0)
         # # condition only required if Comm.StorageController.isFileBased()
         # unless @_tileLoadQueue[curXYZ[0]+'_'+curXYZ[1]]
         #   storeKey = Comm.StorageController.tileKey([curXYZ[0], curXYZ[1], curXYZ[2]])

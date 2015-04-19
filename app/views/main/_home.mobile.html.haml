@@ -13,7 +13,7 @@
   %div{style: 'float :left; padding: 13px 0px 13px 0px;'}
     %span#whoami_img_container
       %span#whoami_img_edit{style: "display: #{user_signed_in? ? 'inline' : 'none'};"}
-        = link_to image_tag(tmp_user().foto.url, class: 'whoami-img'), '#edit_whoami_img', onclick: 'javascript:toogleUserFotoUpload()'
+        = link_to image_tag(tmp_user().foto.url, class: 'whoami-img', style: 'max-width: 100px !important; max-height: 100px !important;'), '#edit_whoami_img', onclick: 'javascript:toogleUserFotoUpload()'
       %span#whoami_img_nedit{style: "display: #{user_signed_in? ? 'none' : 'inline'};"}
         = image_tag tmp_user().foto.url, class: 'whoami-img'
     #user_foto_input_container{style: 'display:none;'}
@@ -36,7 +36,7 @@
       %br
       .reg-link
         = link_to t('auth.sign_up'), '#sign_up_modal', popup_params
-      - if Rails.env.to_sym == :development
+      - if Rails.env.to_sym == :development || true
         %br
         .omniauth-links
           .button.facebook_login

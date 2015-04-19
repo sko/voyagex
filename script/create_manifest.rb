@@ -1,14 +1,15 @@
-v_x_css = ['application', 'main']
-v_x_js = ['preload', 'application', 'comm/application']
+# TODO: mobile and not mobile
 
-# /assets/application-c7d2632f04e910c0f7317cf6900cd9ab.css
-# /assets/sandbox-ab7490470c448acc3a930ad5f8a6e76c.css
-# /assets/preload-0f0eadbff248f3af34f3724c7bb2508f.js
-# /assets/comm/application-ba9d765f084d296d89f375a71592327a.js
-# /assets/application-4619e9ba5cb3b353952e1ae17ecaace3.js
-# /assets/sandbox-88e4d654dd281276e02f40f3db6c7609.js
+if ARGV.length >= 1 && ARGV.include?('-m')
+  v_x_css = ['application.mobile', 'main.mobile']
+  v_x_js = ['preload.mobile', 'application.mobile', 'comm/application']
+  cache_entry_file = 'app/views/main/cache_entries.mobile.txt'
+else
+  v_x_css = ['application', 'main']
+  v_x_js = ['preload', 'application', 'comm/application']
+  cache_entry_file = 'app/views/main/cache_entries.txt'
+end
 
-cache_entry_file = 'app/views/main/cache_entries.txt'
 `rm #{cache_entry_file}`
 
 find_media_cmd = "grep -oR \"[^ '\\\"]\\\\+\\\\.\\\\(png\\\\|gif\\\\|jpe\\\\?g\\\\|mp3\\\\|mpeg\\\\)\" app/ | sed \"s/^.\\\\+://\" | sed \"s/^\\\/.\\\\+//\" | grep \"[a-zA-Z0-9]\" | sort"

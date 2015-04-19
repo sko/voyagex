@@ -1,7 +1,7 @@
 %div
   %span#whoami_img_container
     %span#whoami_img_edit{style: "display: #{user_signed_in? ? 'inline' : 'none'};"}
-      = link_to image_tag(tmp_user().foto.url, class: 'whoami-img'), '#', onclick: 'javascript:VoyageX.Sandbox.instance().toogleUserFotoUpload()'
+      = link_to image_tag(tmp_user().foto.url, class: 'whoami-img', style: 'max-width: 100px !important; max-height: 100px !important;'), '#', onclick: 'javascript:VoyageX.Sandbox.instance().toogleUserFotoUpload()'
     %span#whoami_img_nedit{style: "display: #{user_signed_in? ? 'none' : 'inline'};"}
       = image_tag tmp_user().foto.url, class: 'whoami-img'
   #user_foto_input_container{style: 'display:none;'}

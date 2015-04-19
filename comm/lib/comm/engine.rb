@@ -1,5 +1,6 @@
 Faye::WebSocket.load_adapter('thin')
 
+# console: Comm::Engine.app
 module Comm
   class Engine < ::Rails::Engine
  #class Engine < ::Faye::RackAdapter

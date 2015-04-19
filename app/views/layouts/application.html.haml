@@ -14,7 +14,7 @@
     = stylesheet_link_tag "application", media: "all"
     = stylesheet_link_tag params[:controller], media: "all"
     = csrf_meta_tags
-    = javascript_include_tag "modernizr"
+    -#= javascript_include_tag "modernizr"
     = javascript_include_tag "preload"
     - if Rails.env == 'development'
       -# easier to debug ;)
