@@ -119,7 +119,9 @@ class window.VoyageX.View
   #     # async backend response
   #     if upload.action? && upload.action == 'poi_sync'
   #       # assume that sync already performed with backend-response - here we hava after-commit-faye-callback
-  #       currentUser.curCommitHash = upload.commit_hash
+  #       curU = APP.user()
+  #       curU.curCommitHash = upload.commit_hash
+  #       APP.storage().saveCurrentUser curU
   #       #qPoiId = if upload.poi.local_time_secs? then -upload.poi.local_time_secs else upload.poi.id
   #       storedPoi = APP.storage().getPoi upload.poi.id
   #       callback = ((oldNotes) ->
@@ -314,7 +316,7 @@ class window.VoyageX.View
     messageText = message.text.replace(/\n/g, '<br/>')
     if peerChatMeta?
       if mine
-        msgHtml = VoyageX.TemplateHelper.p2PChatMsgHtml currentUser, messageText
+        msgHtml = VoyageX.TemplateHelper.p2PChatMsgHtml APP.user(), messageText
         peerChatMeta.chatContainer.find('.p2p_chat_view').first().append '<div class="chat_message_sep"></div>'+msgHtml
         #<div class="chat_message chat_message_'+meOrOther+' triangle-border '+leftOrRight+'">'+messageText+'</div>'
         msgInput = peerChatMeta.msgInput
@@ -323,7 +325,7 @@ class window.VoyageX.View
       APP.view().scrollToLastChatMessage peerChatMeta.peer, true
     else
       #$('.chat_view').append '<div class="chat_message_sep"></div><div class="chat_message chat_message_'+meOrOther+' triangle-border '+leftOrRight+'">'+messageText+'</div>'
-      user = if mine then currentUser else (if peerChatMeta? then peerChatMeta.peer else message.peer)
+      user = if mine then APP.user() else (if peerChatMeta? then peerChatMeta.peer else message.peer)
       msgHtml = VoyageX.TemplateHelper.bcChatMsgHtml user, messageText, meOrOther
       $('.chat_view').append '<div class="chat_message_sep"></div>'+msgHtml
       msgInput = $('#message')

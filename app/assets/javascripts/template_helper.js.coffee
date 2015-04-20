@@ -36,10 +36,10 @@ class window.VoyageX.TemplateHelper
   @poiNotePopupEntryHtml: (poiNote, poiNoteTmpl, i, meta) ->
     if poiNote.user?
       username = poiNote.user.username
-      isCurrentUserNote = poiNote.user.id==currentUser.id
+      isCurrentUserNote = poiNote.user.id==APP.user().id
     else
       username = Comm.StorageController.instance().getUser(poiNote.userId).username
-      isCurrentUserNote = poiNote.userId==currentUser.id
+      isCurrentUserNote = poiNote.userId==APP.user().id
     toggle = if isCurrentUserNote then 'left' else 'right'
     poiNoteTmpl.
     replace(/\{poi_note_id\}/g, poiNote.id).
@@ -126,9 +126,9 @@ class window.VoyageX.TemplateHelper
 
   @openMarkerControlsPopup: () ->
     marker = VoyageX.Main.markerManager().get()
-    #curPath = APP.storage().getPath currentUser
+    #curPath = APP.storage().getPath APP.user()
     popupHtml = TemplateHelper._updateIds('tmpl_marker_controls').
-    replace(/\{user_id\}/g, currentUser.id)#.
+    replace(/\{user_id\}/g, APP.user().id)#.
     #replace(/\{path_key\}/g, if curPath? then "'"+curPath[0].timestamp+"'" else 'null')
     popup = marker.getPopup()
     isNewPopup = !popup?
@@ -143,7 +143,7 @@ class window.VoyageX.TemplateHelper
       TemplateHelper._addPopupTitle poiNoteContainer, marker, {address: currentAddress}#Comm.StorageController.instance().getLocation(poi.locationId)
     else
       $('#current_address').html(currentAddress)
-    #APP.view().setTraceCtrlIcon currentUser, marker, if curPath? then 'start' else 'stop'
+    #APP.view().setTraceCtrlIcon APP.user(), marker, if curPath? then 'start' else 'stop'
 
   @noteHtml: (typeId, text) ->
     TemplateHelper._updateIds('tmpl_note_editor').
@@ -181,7 +181,7 @@ class window.VoyageX.TemplateHelper
     unless messageHtml?
       #messageHtml = $('#tmpl_p2p_chat_msg').html()
       messageHtml = TemplateHelper._updateAttributes('tmpl_p2p_chat_msg', ['src'])
-    toggle = if from.id==currentUser.id then 'left' else 'right'
+    toggle = if from.id==APP.user().id then 'left' else 'right'
     messageHtml.
     replace(/\{toggle\}/, toggle).
     replace(/\stmpl-toggle=['"]?[^'" >]+/g, '').
@@ -240,7 +240,7 @@ class window.VoyageX.TemplateHelper
     unless messageHtml?
       #messageHtml = $('#tmpl_bc_chat_msg').html()
       messageHtml = TemplateHelper._updateAttributes('tmpl_bc_chat_msg', ['src'])
-    toggle = if from.id==currentUser.id then 'left' else 'right'
+    toggle = if from.id==APP.user().id then 'left' else 'right'
     messageHtml.
     replace(/\{meOrOther\}/, meOrOther).
     replace(/\{toggle\}/, toggle).
@@ -308,7 +308,7 @@ class window.VoyageX.TemplateHelper
 
     TemplateHelper._updateIds('tmpl_radar_editor').
     replace(/\{search_radius_meters\}/, VoyageX.SEARCH_RADIUS_METERS).
-    replace(/\{user_id\}/g, currentUser.id).
+    replace(/\{user_id\}/g, APP.user().id).
     replace(/\{path_key\}/g, pathKey)
 
   @openRadarEditor: () ->
@@ -322,7 +322,7 @@ class window.VoyageX.TemplateHelper
 #    if popupHtml.indexOf('note_editor') != -1
 #      #popupHtml = popupHtml.replace(/<div[^>]+class="note_editor"(.|\n)+(<div[^>]+id="marker_controls")/, '$1')
 #      popupHtml = popupHtml.replace(/<div[^>]+class="note_editor"(.|\n)+/, '$1')
-    curPath = APP.storage().getPath(currentUser)
+    curPath = APP.storage().getPath(APP.user())
     editorHtml = TemplateHelper.radarSettingsHtml curPath
     if popupHtml.indexOf('radar_editor') == -1
       popup.setContent popupHtml + editorHtml
@@ -343,7 +343,7 @@ class window.VoyageX.TemplateHelper
             $('#search_radius_meters').html VoyageX.SEARCH_RADIUS_METERS
     })
     APP.view().setRealPositionWatchedIcon if APP.isRealPositionWatched() then 'on' else 'off'
-    APP.view().setTraceCtrlIcon currentUser, marker, if curPath? then 'start' else 'stop'
+    APP.view().setTraceCtrlIcon APP.user(), marker, if curPath? then 'start' else 'stop'
 
   @tracePathEditorHtml: (user, pathKey = null) ->
     tracePathsHtml = ''

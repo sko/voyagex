@@ -22,17 +22,23 @@ foto_width = geometry.present? ? geometry.width.to_i : -1
 foto_height = geometry.present? ? geometry.height.to_i : -1
 %>
 window.VoyageX.SEARCH_RADIUS_METERS = <%= current_user.search_radius_meters||1000 %>
-window.currentUser = { id: <%= current_user.id -%>,\
-                       username: '<%= current_user.username -%>',\
-                       foto: {url: '<%= current_user.foto.url -%>', width: <%= foto_width -%>, height: <%= foto_height -%>},\
-                       homebaseLocationId: <%= current_user.home_base.present? ? current_user.home_base.id : -1 -%>,\
-                       lastLocation: {lat: <%= lat -%>, lng: <%= lng -%>},\
-                       curCommitHash: '<%= current_user.snapshot.cur_commit.hash_id -%>' }
+newU = { id: <%= current_user.id -%>,\
+         username: '<%= current_user.username -%>',\
+         foto: {url: '<%= current_user.foto.url -%>', width: <%= foto_width -%>, height: <%= foto_height -%>},\
+         homebaseLocationId: <%= current_user.home_base.present? ? current_user.home_base.id : -1 -%>,\
+         lastLocation: {lat: <%= lat -%>, lng: <%= lng -%>},\
+         curCommitHash: '<%= current_user.snapshot.cur_commit.hash_id -%>' }
+# real peerPort is set further down in resetSystemContext
+# user needs peerPort to stay signed in (@see APP.signedIn())
+newU.peerPort = { channel_enc_key: null,\
+                  sys_channel_enc_key: 'resetting' }
+APP.storage().saveCurrentUser newU
+APP.refreshUserPhoto newU
 $('.whoami').each () ->
   $(this).html("<%= escape_javascript(link_to t('auth.whoami', username: current_user.username), change_username_path, class: 'navbar-inverse navbar-brand', data: { remote: 'true', format: :js }) -%>")
 $('#whoami_edit').show()
 $('#whoami_nedit').hide()
-$('.whoami-img').attr('src', window.currentUser.foto.url)
+$('.whoami-img').attr('src', APP.user().foto.url)
 $('#whoami_img_edit').show()
 $('#whoami_img_nedit').hide()
 $('#comm_peer_data').html("<%= j render(partial: 'shared/peers', locals: {user: current_user}) -%>")

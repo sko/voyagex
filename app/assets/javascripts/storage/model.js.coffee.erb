@@ -1,5 +1,10 @@
 <% environment.context_class.instance_eval { include Rails.application.routes.url_helpers } %>
 
+if window.Storage?
+  window.Storage.Model = {}
+else
+  window.Storage = { Model: {} }
+
 class window.Storage.Model
  
   @_SINGLETON = null
@@ -139,7 +144,7 @@ class window.Storage.Model
           qPoi.lat = location.lat
           qPoi.lng = location.lng
           qPoi.address = location.address
-          qNewPoiNote.user = currentUser
+          qNewPoiNote.user = APP.user()
           doneCB qPoi, qNewPoiNote
           if APP.isOnline()
             APP.storage().uploadQueue qPoi, qNewPoiNote
@@ -295,12 +300,12 @@ class window.Storage.Model
       location = APP.storage().saveLocation location, { poi: { 'id': id } }
       poi = { id: id,\
               locationId: id,\
-              userId: currentUser.id,\
+              userId: APP.user().id,\
               notes: [] }
       APP.storage().storePoi poi, false
     
     poiNote = { id: id,\
-                userId: currentUser.id,\
+                userId: APP.user().id,\
                 text: $("#upload_comment").val() }
 
     { poi: poi, poiNote: poiNote }
@@ -320,7 +325,7 @@ class window.Storage.Model
         APP.storage().storeUpload storeData.poi, storeData.poiNote, afterSaveCB, {}
       when 'camera'
         $('#media_input_display')[0].toBlob((blob) ->
-            APP.storage().storeUpload storeData.poi, storeData.poiNote, afterSaveCB, { blob: blob, fileName: 'foto_'+currentUser.id+'.'+Math.abs(id) }
+            APP.storage().storeUpload storeData.poi, storeData.poiNote, afterSaveCB, { blob: blob, fileName: 'foto_'+APP.user().id+'.'+Math.abs(id) }
           )
       when 'file' 
         inputFile = $('#fileupload')[0].files[0]

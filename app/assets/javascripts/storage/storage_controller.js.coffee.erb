@@ -1,5 +1,10 @@
 //= require storage/file_utils
 
+if window.Comm?
+  window.Comm.StorageController = {}
+else
+  window.Comm = { StorageController: {} }
+
 # window.open("data:text/json," + JSON.stringify(APP.storage().getUser(264)), "_v_x_json")
 class window.Comm.StorageController
 
@@ -236,6 +241,15 @@ class window.Comm.StorageController
     else
       this.bookmark id, text
       #bookmarks (locations, locationBookmark) ->
+  
+  getCurrentUser: () ->
+    storeKey = 'comm.currentUser'
+    JSON.parse(localStorage.getItem(storeKey))
+ 
+  saveCurrentUser: (currentUser) ->
+    storeKey = 'comm.currentUser'
+    localStorage.setItem storeKey, JSON.stringify(currentUser)
+    currentUser
   
   getUser: (userId) ->
     storeKey = 'comm.users'

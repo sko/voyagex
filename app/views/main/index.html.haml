@@ -57,15 +57,15 @@
     %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
       = link_to image_tag('set-home.png', style: 'height: 23px;', title: t('admin.add_homebase'), alt: t('admin.add_homebase')), '#', onclick: "javascript:APP.setHomeBase()"
     %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
-      = link_to image_tag('home.png', style: 'height: 23px;', title: t('admin.show_homebase'), alt: t('admin.show_homebase')), '#', onclick: "javascript:APP.loadLocation({id: currentUser.homebaseLocationId})"
+      = link_to image_tag('home.png', style: 'height: 23px;', title: t('admin.show_homebase'), alt: t('admin.show_homebase')), '#', onclick: "javascript:APP.loadLocation({id: APP.user().homebaseLocationId})"
     %div{style: 'float: left; margin: 0px 5px 0px 5px; padding: 0px;'}
       = link_to image_tag('radar.png', style: 'height: 23px;', title: 'radar-settings', alt: 'radar-settings'), '#', onclick: "javascript:APP.radarSettings()"
     -# trace moved to radareditor
       %div{style: 'float: left; margin: 0px 5px 0px 5px; padding: 0px;'}
         %span{id: 'trace-ctrl-start-{user_id}'}
-          = link_to image_tag('start_trace.png', style: 'height: 23px;', title: 'start-trace-me', alt: 'start-trace-me'), '#', onclick: "javascript:APP.toggleTrace(currentUser, {path_key})"
+          = link_to image_tag('start_trace.png', style: 'height: 23px;', title: 'start-trace-me', alt: 'start-trace-me'), '#', onclick: "javascript:APP.toggleTrace(APP.user(), {path_key})"
         %span{id: 'trace-ctrl-stop-{user_id}', style: 'display: none;'}
-          = link_to image_tag('stop_trace.png', style: 'height: 23px;', title: 'stop-trace-me', alt: 'stop-trace-me'), '#', onclick: "javascript:APP.toggleTrace(currentUser, {path_key})"
+          = link_to image_tag('stop_trace.png', style: 'height: 23px;', title: 'stop-trace-me', alt: 'stop-trace-me'), '#', onclick: "javascript:APP.toggleTrace(APP.user(), {path_key})"
     -#
       %div{style: 'margin: 0px 0px 0px 5px; padding: 0px;'}
         = link_to image_tag('arrow-up-right_off.png', style: 'height: 23px;', title: 'navigator', alt: 'navigator', class: 'context_nav_open_icon'), '#', onclick: "javascript:APP.contextNav()"
@@ -108,9 +108,9 @@
       %span{style: 'float: left;'}>
         #{t('admin.watch_position')}:&nbsp;
       %span{id: 'trace-ctrl-start-{user_id}'}
-        = link_to image_tag('start_trace.png', style: 'height: 23px;', title: 'start-trace-me', alt: 'start-trace-me'), '#', onclick: "javascript:APP.toggleTrace(currentUser, {path_key})"
+        = link_to image_tag('start_trace.png', style: 'height: 23px;', title: 'start-trace-me', alt: 'start-trace-me'), '#', onclick: "javascript:APP.toggleTrace(APP.user(), {path_key})"
       %span{id: 'trace-ctrl-stop-{user_id}', style: 'display: none;'}
-        = link_to image_tag('stop_trace.png', style: 'height: 23px;', title: 'stop-trace-me', alt: 'stop-trace-me'), '#', onclick: "javascript:APP.toggleTrace(currentUser, {path_key})"
+        = link_to image_tag('stop_trace.png', style: 'height: 23px;', title: 'stop-trace-me', alt: 'stop-trace-me'), '#', onclick: "javascript:APP.toggleTrace(APP.user(), {path_key})"
 
 #tmpl_trace-path_editor{style: 'display: none;'}
   .trace-path_editor

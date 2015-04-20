@@ -1,3 +1,8 @@
+if window.Comm?
+  window.Comm.FileUtils = {}
+else
+  window.Comm = { FileUtils: {} }
+
 class window.Comm.FileUtils
  
   @_SINGLETON = null

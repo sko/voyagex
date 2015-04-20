@@ -3,7 +3,8 @@
 = javascript_tag do
   -#window.scrollTo(0,1);
   window.DEBUG = false;
-  window.Comm = { StorageController: {} };
+  window.Comm = { StorageController: {}, FileUtils: {} };
+  window.Storage = { Model: {} };
   window.VoyageX = { NavBar: {}, StorageStrategy: {}, MapControl: {}, MarkerManager: {}, MediaManager: {}, View: {}, Version: {}, UploadHelper: {}, Sandbox: {} };
   window.VoyageX['PEER_CHANNEL_PREFIX'] = '#{PEER_CHANNEL_PREFIX}';
   window.VoyageX.TILE_URL_TEMPLATE = '#{Leaflet.tile_layer}';
@@ -21,6 +22,7 @@
   window.VoyageX.IMAGES_CTXNAVALERT_OFF_PATH = '#{image_path('arrow-up-right_off.png')}';
   window.VoyageX.SOUNDS_ALERT_PATH = '#{asset_path('Treat.mp3')}';
   window.VoyageX.SOUNDS_MSG_IN_PATH = '#{asset_path('3rd_man_gugu.mp3')}'; // Drop.mp3
+  -#window.addPeerToInitArgs({id: 73, username: 't.schuemmer', lastLocation: {id: 442, lat: 51.3767, lng: 7.4938, address: 'Hagen, Universitätsstraße, 1'}, foto: {url: '/uploads/fotos/user_73/original/foto_73.cgi?1427355735', width: 96, height: 96}, peerPort: {id: 4, channel_enc_key: 'j4q0lrnbo'}});
   - geometry = Paperclip::Geometry.from_file(tmp_user.foto) if user_signed_in? && tmp_user.foto.present?
   - foto_width = geometry.present? ? geometry.width.to_i : -1
   - foto_height = geometry.present? ? geometry.height.to_i : -1

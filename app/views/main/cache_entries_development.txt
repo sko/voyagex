@@ -1,4 +1,4 @@
-# js, css
+# css, js
 /assets/jquery-ui/theme.css?body=1
 /assets/jquery-ui/core.css?body=1
 /assets/jquery-ui/accordion.css?body=1
@@ -24,7 +24,6 @@
 /assets/swiper.css?body=1
 /assets/application.css?body=1
 /assets/main.css?body=1
-/assets/modernizr.js?body=1
 /assets/jquery.js?body=1
 /assets/modernizr.js?body=1
 /assets/debug.js?body=1
@@ -89,7 +88,7 @@
 /assets/leaflet-providers.js?body=1
 /assets/canvas-toBlob.js?body=1
 /assets/buffer-loader.js?body=1
-/assets/preload.js?body=1
+/assets/preload/util.js?body=1
 /assets/version.js?body=1
 /assets/backend.js?body=1
 /assets/storage/file_utils.js?body=1
@@ -97,7 +96,6 @@
 /assets/storage/model.js?body=1
 /assets/template_helper.js?body=1
 /assets/map_control.js?body=1
-/assets/marker_manager.js?body=1
 /assets/marker_manager.js?body=1
 /assets/path_prediction.js?body=1
 /assets/cache_strategy.js?body=1
@@ -107,9 +105,12 @@
 /assets/upload_helper.js?body=1
 /assets/main.js?body=1
 /assets/view.js?body=1
+/assets/sandbox.js?body=1
+/assets/preload.js?body=1
 /comm/faye-browser.js
 /assets/comm/comm.js?body=1
-# images
+/assets/application.js?body=1
+# media
 /assets/add-bookmark.png
 /assets/add-comment.png
 /assets/add-marker.png
@@ -129,9 +130,11 @@
 /assets/loading_200x100.png
 /assets/locate_off.png
 /assets/locate_on.png
+/assets/marker-icon-beam.png
 /assets/marker-icon-red.png
 /assets/marker-icon-yellow.png
-/assets/marker-icon-beam.png
+/assets/marker-icon.png
+/assets/marker-icon-2x.png
 /assets/marker-shadow.png
 /assets/no-preview.png
 /assets/noise.gif
@@ -143,6 +146,7 @@
 /assets/swipe.jpg
 /assets/switch-camera.png
 /assets/video-file.png
+# 3rd-party assets
 /assets/jquery-ui/ui-bg_flat_0_aaaaaa_40x100.png
 /assets/jquery-ui/ui-bg_flat_75_ffffff_40x100.png
 /assets/jquery-ui/ui-bg_glass_55_fbf9ee_1x400.png

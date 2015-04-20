@@ -135,7 +135,7 @@ jQuery ->
   $(document).on 'click', '#media_input_upload_btn', (event) ->
     APP.transfer().upload { saveData: (saveDataCB) ->
         $('#media_input_display')[0].toBlob((blob) ->
-            saveDataCB { blob: blob, fileName: 'foto_'+currentUser.id }
+            saveDataCB { blob: blob, fileName: 'foto_'+APP.user().id }
           )
       , done: (poi, newNote) ->
           $('#media_input_current').attr('src', '')
@@ -170,8 +170,10 @@ jQuery ->
         $('#'+curPrefix.current+'media_input_capture').attr('src', '')
         $('#'+curPrefix.current+'media_input_current').attr('src', '')
         #$('.whoami-img').attr('src', user.foto.url)
-        currentUser.foto.url = user.foto.url
-        APP.refreshUserPhoto currentUser
+        curU = APP.user()
+        curU.foto.url = user.foto.url
+        #APP.storage().saveCurrentUser curU
+        APP.refreshUserPhoto curU
         toogleUserFotoUpload()
 
   if $.mobile

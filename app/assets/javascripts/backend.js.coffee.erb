@@ -85,6 +85,10 @@ class window.VoyageX.Backend
       url: '<%= comm_register_path %>'
       data: data
     .done (msg) ->
+        curU = APP.user()
+        curU.peerPort = { channel_enc_key: msg.channel_enc_key,\
+                          sys_channel_enc_key: msg.sys_channel_enc_key }
+        APP.storage().saveCurrentUser curU
         Comm.Comm.initSystemContext msg.sys_channel_enc_key
     .fail (jqXHR, textStatus) ->
         alert('TODO: handle registration failure...')

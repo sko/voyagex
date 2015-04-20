@@ -83,6 +83,9 @@ class window.VoyageX.Main
         APP._cacheStrategy = new VoyageX.CacheStrategy true
         # Map initialisation (LeafletJS)
         mapReadyCB = () ->
+            #
+            # maybe store current-environment-tiles even with _pathPrediction
+            #
             #APP._cacheStrategy._pathPrediction = true
             #Main._MARKER_MANAGER = new VoyageX.MarkerManager APP.map()
             if false && APP.isOnline()
@@ -113,26 +116,24 @@ class window.VoyageX.Main
         # handled in _peers.html.haml
         #Storage.Model.instance().loadPeers (peer) ->
         #  marker = Main.markerManager().add poi.location, Main._markerEventsCB, false
-        if APP.signedIn()
-          # #APP.storage().saveUser { id: currentUser.id, username: currentUser.username }, { foto: currentUser.foto }
-          # userPhotoUrl = Storage.Model._viewUserFoto currentUser
-          # if (typeof userPhotoUrl == 'string') 
-          #   currentUser.foto.url = userPhotoUrl
-          #   APP.storage().saveUser { id: currentUser.id, username: currentUser.username }, { foto: currentUser.foto }
-          #   $('.whoami-img').attr('src', userPhotoUrl)
-          # else if (typeof userPhotoUrl.then == 'function')
-          #   # Assume we are dealing with a promise.
-          #   userPhotoUrl.then (url) ->
-          #       currentUser.foto.url = userPhotoUrl
-          #       # overwrite url
-          #       APP.storage().saveUser { id: currentUser.id, username: currentUser.username }, { foto: currentUser.foto }
-          #       $('.whoami-img').attr('src', url)
+        #if APP.signedIn()
+        if VoyageX.CHANNEL_ENC_KEY?
+          currentUser.peerPort = { channel_enc_key: VoyageX.CHANNEL_ENC_KEY,\
+                                   sys_channel_enc_key: VoyageX.SYS_CHANNEL_ENC_KEY }
+          APP.storage().saveCurrentUser currentUser
           APP.refreshUserPhoto currentUser
+        else
+          unless APP.storage().getCurrentUser()?
+            # don't overwrite existing user - this might be offline-reload and user might have
+            # signed in during last session. that would leave keys null in source code
+            APP.storage().saveCurrentUser currentUser
+        delete window.currentUser
         APP.initPeers()
         if navigator.geolocation 
           navigator.geolocation.getCurrentPosition(APP._initPositionCB, (error) ->
               #alert('geolocation timed out - manual selection required.\nsetting default location...')
-              APP._initPositionCB { coords: { latitude: window.currentUser.lastLocation.lat, longitude: window.currentUser.lastLocation.lng } }
+              curU = APP.user()
+              APP._initPositionCB { coords: { latitude: curU.lastLocation.lat, longitude: curU.lastLocation.lng } }
           , { enableHighAccuracy: true, timeout : 5000 })
 #       #APP.map().on('locationfound', (e) ->
 #       #    alert('found location...')
@@ -178,14 +179,19 @@ class window.VoyageX.Main
         $('#clear_cache').click () ->
           APP.clearCache()
 
+  user: () ->
+    APP.storage().getCurrentUser()||window.currentUser
+
   userId: () ->
-    window.currentUser.id
+    APP.user().id
 
   userName: () ->
-    window.currentUser.username
+    APP.user().username
 
   signedIn: () ->
-    window.VoyageX.CHANNEL_ENC_KEY?
+    #window.VoyageX.CHANNEL_ENC_KEY?
+    curU = APP.user()
+    curU? && curU.peerPort? && curU.peerPort.sys_channel_enc_key?
 
   register: (userId) ->
     Main._BACKEND.register userId
@@ -307,6 +313,7 @@ class window.VoyageX.Main
     unless flags?
       flags = { foto: user.foto }
     userPhotoUrl = Storage.Model.storedUserPhoto user
+    console.log '!!! TODO: curUser is double now'
     if (typeof userPhotoUrl == 'string') 
       user.foto.url = userPhotoUrl
       if saveCB?
@@ -369,7 +376,7 @@ class window.VoyageX.Main
       APP.storage().stopTracePath user, path
       APP.view().setTraceCtrlIcon user, marker, 'stop'
     else
-      if user.id == currentUser.id 
+      if user.id == APP.user().id 
         position = {lat: APP._selectedPosition.lat, lng: APP._selectedPosition.lng}
       else
         position = {lat: marker.m.location().lat, lng: marker.m.location().lng}
@@ -391,10 +398,10 @@ class window.VoyageX.Main
                                 lng: posLatLng[1]})#,\
                                 #bookmarkLocation: bookmarkLocation,\
                                 #setHomeBase: setHomeBase})
-    path = APP.storage().getPath currentUser
+    path = APP.storage().getPath APP.user()
     if path?
-      path = APP.storage().addToPath currentUser, @_selectedPosition, path
-      VoyageX.Main.mapControl().drawPath currentUser, path, true
+      path = APP.storage().addToPath APP.user(), @_selectedPosition, path
+      VoyageX.Main.mapControl().drawPath APP.user(), path, true
     $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').click()
 
   initBCChatMessages: () ->
@@ -407,7 +414,7 @@ class window.VoyageX.Main
         userId = parseInt Object.keys(conference[entryKey])[0]
         user = APP.storage().getUser userId
         message = {peer: user, text: conference[entryKey][userId]}
-        VoyageX.View.addChatMessage message, user.id == currentUser.id
+        VoyageX.View.addChatMessage message, user.id == APP.user().id
     entries
 
   initP2PChatMessages: (peer, messages) ->
@@ -419,7 +426,7 @@ class window.VoyageX.Main
     messages
 
   bcChatMessage: (messageText) ->
-    APP.storage().addChatMessage messageText, currentUser
+    APP.storage().addChatMessage messageText, APP.user()
     @_comm.send('/talk', {type: 'message',\
                           userId: APP.userId(),\
                           text: messageText})
@@ -433,7 +440,9 @@ class window.VoyageX.Main
   setHomeBase: () ->
     #this.publishPosition false, null, true
     Storage.Model.instance().setHomeBase @_selectedPosition.lat, @_selectedPosition.lng, (user) ->
-        window.currentUser.homebaseLocationId = user.home_base.id
+        curU = APP.user()
+        curU.homebaseLocationId = user.home_base.id
+        APP.storage().saveCurrentUser curU
 
   setSearchRadius: (value) ->
     unless $('#search_radius_display_show').prop('checked')
@@ -567,7 +576,7 @@ class window.VoyageX.Main
             unless shortDist >= (thirdLastDist+fourthLastDist)/2*inaccuracyFactor1
               path = APP.storage().deleteFromPath user, APP.storage().pathKey(path), maxIdx-1
               APP.view().hideTracePath APP.storage().pathKey(path)
-              VoyageX.Main.mapControl().drawPath currentUser, path
+              VoyageX.Main.mapControl().drawPath APP.user(), path
               return true
     false
 
@@ -590,12 +599,12 @@ class window.VoyageX.Main
                                 userId: APP.userId(),\
                                 lat: APP._realPosition.lat,\
                                 lng: APP._realPosition.lng})
-      path = APP.storage().getPath currentUser
+      path = APP.storage().getPath APP.user()
       if path?
-        path = APP.storage().addToPath currentUser, APP._realPosition, path
-        unless APP.smoothenPath currentUser, path
+        path = APP.storage().addToPath APP.user(), APP._realPosition, path
+        unless APP.smoothenPath APP.user(), path
           # don't draw gps-location-error
-          VoyageX.Main.mapControl().drawPath currentUser, path, true
+          VoyageX.Main.mapControl().drawPath APP.user(), path, true
           # don't set location unless user explicitely want's to by activating path (else might disturb work)
           APP.getUserMarker(true).m.setLocation {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
       if APP._movePredictionLastLatLng == null
@@ -617,24 +626,24 @@ class window.VoyageX.Main
             switch error.code
               when error.PERMISSION_DENIED
                 console.log 'ERROR: user did not share geolocation data - disable location-query ...'
-                APP._comm.send('/system', {type: 'error', userId: APP.userId(), userName: APP.userName(), userFoto: currentUser.foto, msg: $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': [watch] - user did not share geolocation data - disable location-query ...'})
+                APP._comm.send('/system', {type: 'error', userId: APP.userId(), userName: APP.userName(), userFoto: APP.user().foto, msg: $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': [watch] - user did not share geolocation data - disable location-query ...'})
                 navigator.geolocation.clearWatch APP._realPositionWatch
                 APP._realPositionWatch = null
               when error.POSITION_UNAVAILABLE
                 console.log 'WARN: could not detect current position - retry ...'
-                APP._comm.send('/system', {type: 'error', userId: APP.userId(), userName: APP.userName(), userFoto: currentUser.foto, msg: $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': [watch] - could not detect current position ...'})
+                APP._comm.send('/system', {type: 'error', userId: APP.userId(), userName: APP.userName(), userFoto: APP.user().foto, msg: $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': [watch] - could not detect current position ...'})
                 navigator.geolocation.clearWatch APP._realPositionWatch
                 APP._realPositionWatch = null
                 setTimeout 'APP._debugWatchRealPosition({coords: {latitude: APP._realPosition.lat, longitude: APP._realPosition.lng}})', VoyageX.Backend._POS_QUERY_INTERVAL_MILLIS
               when error.TIMEOUT
                 console.log 'WARN: query position timeout - retry ...'
-                APP._comm.send('/system', {type: 'error', userId: APP.userId(), userName: APP.userName(), userFoto: currentUser.foto, msg: $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': [watch] - query position timeout ...'})
+                APP._comm.send('/system', {type: 'error', userId: APP.userId(), userName: APP.userName(), userFoto: APP.user().foto, msg: $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': [watch] - query position timeout ...'})
                 navigator.geolocation.clearWatch APP._realPositionWatch
                 APP._realPositionWatch = null
                 setTimeout 'APP._debugWatchRealPosition({coords: {latitude: APP._realPosition.lat, longitude: APP._realPosition.lng}})', VoyageX.Backend._POS_QUERY_INTERVAL_MILLIS
               else
                 console.log 'ERROR: unknown error - disable location-query ...'
-                APP._comm.send('/system', {type: 'error', userId: APP.userId(), userName: APP.userName(), userFoto: currentUser.foto, msg: $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': [watch] - unknown error - disable location-query ...'})
+                APP._comm.send('/system', {type: 'error', userId: APP.userId(), userName: APP.userName(), userFoto: APP.user().foto, msg: $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': [watch] - unknown error - disable location-query ...'})
                 navigator.geolocation.clearWatch APP._realPositionWatch
                 APP._realPositionWatch = null
           , { enableHighAccuracy: true, maximumAge: VoyageX.Backend._POS_QUERY_INTERVAL_MILLIS, timeout: VoyageX.Backend._POS_QUERY_TIMEOUT_MILLIS }
@@ -648,7 +657,7 @@ class window.VoyageX.Main
     debugMsg = $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': ['+mode+'] - move='+move+' - '+trimPosVal(position.coords.latitude)+'/'+trimPosVal(position.coords.longitude)
     #debugMsg += '\napp[lat|lng] = '+APP._realPosition.lat+' | '+APP._realPosition.lng
     #debugMsg += '\npos[lat|lng] = '+position.coords.latitude+' | '+position.coords.longitude
-    APP._comm.send('/system', {type: 'debug', userId: APP.userId(), userName: APP.userName(), userFoto: currentUser.foto, msg: debugMsg})
+    APP._comm.send('/system', {type: 'debug', userId: APP.userId(), userName: APP.userName(), userFoto: APP.user().foto, msg: debugMsg})
     APP._setRealPosition position
 
   _debugWatchRealPosition: (position) ->
@@ -665,18 +674,18 @@ class window.VoyageX.Main
         switch error.code
           when error.PERMISSION_DENIED
             console.log 'ERROR: user did not share geolocation data - disable location-query ...'
-            APP._comm.send('/system', {type: 'error', userId: APP.userId(), userName: APP.userName(), userFoto: currentUser.foto, msg: $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': [poll] - user did not share geolocation data - disable location-query ...'})
+            APP._comm.send('/system', {type: 'error', userId: APP.userId(), userName: APP.userName(), userFoto: APP.user().foto, msg: $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': [poll] - user did not share geolocation data - disable location-query ...'})
           when error.POSITION_UNAVAILABLE
             console.log 'WARN: could not detect current position - retry ...'
-            APP._comm.send('/system', {type: 'error', userId: APP.userId(), userName: APP.userName(), userFoto: currentUser.foto, msg: $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': [poll] - could not detect current position ...'})
+            APP._comm.send('/system', {type: 'error', userId: APP.userId(), userName: APP.userName(), userFoto: APP.user().foto, msg: $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': [poll] - could not detect current position ...'})
             setTimeout 'APP._debugPollRealPosition({coords: {latitude: APP._realPosition.lat, longitude: APP._realPosition.lng}})', VoyageX.Backend._POS_QUERY_INTERVAL_MILLIS
           when error.TIMEOUT
             console.log 'WARN: query position timeout - retry ...'
-            APP._comm.send('/system', {type: 'error', userId: APP.userId(), userName: APP.userName(), userFoto: currentUser.foto, msg: $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': [poll] - query position timeout'})
+            APP._comm.send('/system', {type: 'error', userId: APP.userId(), userName: APP.userName(), userFoto: APP.user().foto, msg: $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': [poll] - query position timeout'})
             setTimeout 'APP._debugPollRealPosition({coords: {latitude: APP._realPosition.lat, longitude: APP._realPosition.lng}})', VoyageX.Backend._POS_QUERY_INTERVAL_MILLIS
           else
             console.log 'ERROR: unknown error - disable location-query ...'
-            APP._comm.send('/system', {type: 'error', userId: APP.userId(), userName: APP.userName(), userFoto: currentUser.foto, msg: $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': [poll] - unknown error - disable location-query ...'})
+            APP._comm.send('/system', {type: 'error', userId: APP.userId(), userName: APP.userName(), userFoto: APP.user().foto, msg: $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': [poll] - unknown error - disable location-query ...'})
     , { enableHighAccuracy: true, maximumAge: VoyageX.Backend._POS_QUERY_INTERVAL_MILLIS, timeout: VoyageX.Backend._POS_QUERY_TIMEOUT_MILLIS })
 
   # 
@@ -795,7 +804,9 @@ class window.VoyageX.Main
       # async backend response
       if upload.action? && upload.action == 'poi_sync'
         # assume that sync already performed with backend-response - here we hava after-commit-faye-callback
-        currentUser.curCommitHash = upload.commit_hash
+        curU = APP.user()
+        curU.curCommitHash = upload.commit_hash
+        APP.storage().saveCurrentUser curU
         #qPoiId = if upload.poi.local_time_secs? then -upload.poi.local_time_secs else upload.poi.id
         storedPoi = APP.storage().getPoi upload.poi.id
         callback = ((oldNotes) ->
