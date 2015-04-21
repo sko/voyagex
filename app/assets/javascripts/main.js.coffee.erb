@@ -143,8 +143,9 @@ class window.VoyageX.Main
 #       #  )
         #APP._initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
         if isMobile()
-          fullscreenDialog = VoyageX.TemplateHelper._updateIds 'tmpl_fullscreen_dialog'
-          $('#system_dialog_panel').html(fullscreenDialog)
+          # if not set then jquery-mobil will add origin header to request -  causing No 'Access-Control-Allow-Origin' 
+          #$.mobile.ajaxEnabled = false
+          $('#system_dialog_panel').html VoyageX.TemplateHelper._updateIds('tmpl_fullscreen_dialog')
           $('#open_system_dialog_btn').click()
           Main._MAP_CONTROL.reload()
           # APP.map().invalidateSize({
@@ -246,9 +247,6 @@ class window.VoyageX.Main
       unless $('#network_state_offline').prop('checked')
         $('#network_state_offline').prop('checked', true)
       VoyageX.NavBar.showActiveState()
-
-  setFullScreen: () ->
-    window.currentUser.id
 
   setProvider: (providerParts) ->
     if providerParts? && (providerParts!='')
@@ -508,6 +506,15 @@ class window.VoyageX.Main
   getSelectedPositionLatLng: () ->
     return [@_selectedPosition.lat, @_selectedPosition.lng]
 
+  _pathPredictionOnPosSelect: (lat, lng) ->
+    #this._setRealPosition {coords: {longitude: lat, latitude: lng}}, true
+    APP._realPosition.lat = trimPosVal(lat)
+    APP._realPosition.lng = trimPosVal(lng)
+    if APP._movePredictionLastLatLng == null
+      APP._movePredictionLastLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
+    else
+      APP.cacheTiles()
+
   _setSelectedPositionLatLng: (marker, lat, lng, address) ->
     poi = {lat: lat, lng: lng}
     if marker == null
@@ -520,13 +527,7 @@ class window.VoyageX.Main
 #    if address != null
 #      $('#cur_loc_addr').html(address)
     if @_debug # debugRealePos
-      #this._setRealPosition {coords: {longitude: lat, latitude: lng}}, true
-      APP._realPosition.lat = trimPosVal(lat)
-      APP._realPosition.lng = trimPosVal(lng)
-      if APP._movePredictionLastLatLng == null
-        APP._movePredictionLastLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
-      else
-        APP.cacheTiles()
+      this._pathPredictionOnPosSelect lat, lng
     if showSearchRadius
       Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, APP.map())
 
@@ -745,6 +746,7 @@ class window.VoyageX.Main
       $('#dbg_pred_ctrl').attr('class', $('#dbg_pred_ctrl').attr('class').replace(/\s?menu_ctrl_on/, ''))
     else
       @_debug = true
+      this._pathPredictionOnPosSelect @_selectedPosition.lat, @_selectedPosition.lng
       $('#dbg_pred_ctrl').attr('class', $('#dbg_pred_ctrl').attr('class')+' menu_ctrl_on')
 
   clearPredictionPaths: (lastOneToo = false) ->

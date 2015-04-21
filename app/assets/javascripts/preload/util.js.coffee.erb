@@ -2,6 +2,12 @@
 
 window.isMobile = () ->
   navigator.userAgent.match(/Mobile|webOS/) != null
+
+if isMobile()
+  # if not set then jquery-mobil will add origin header to request -  causing No 'Access-Control-Allow-Origin' 
+  # $(document).on "mobileinit",  () ->
+  #     $.mobile.ajaxEnabled = false;
+  $.mobile.ajaxEnabled = false;
   
 window.showLoginDialog = (confirmEmailAddress) ->
   if confirmEmailAddress != null

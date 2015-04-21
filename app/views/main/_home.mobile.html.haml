@@ -40,7 +40,8 @@
         %br
         .omniauth-links
           .button.facebook_login
-            = link_to user_omniauth_authorize_path(:facebook, origin: "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}") do
+            -# , origin: "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}"
+            = link_to user_omniauth_authorize_path(:facebook) do
               = image_tag 'facebook-icon.png', style: 'width: 25px; height: 25px;'
   #lang_select{style: 'float: right;'}
     - lcls = lang_change_links request, ['c']

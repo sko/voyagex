@@ -12,6 +12,7 @@ end
 
 `rm #{cache_entry_file}`
 
+# this is all media referenced in app-files
 find_media_cmd = "grep -oR \"[^ '\\\"]\\\\+\\\\.\\\\(png\\\\|gif\\\\|jpe\\\\?g\\\\|mp3\\\\|mpeg\\\\)\" app/ | sed \"s/^.\\\\+://\" | sed \"s/^\\\/.\\\\+//\" | grep \"[a-zA-Z0-9]\" | sort"
 #find_asset_cmd = "find public/assets -regextype posix-extended -regex \"^.+\/{{name}}-[^-]+\.{{suffix}}\""
 find_asset_cmd = "find public/assets -regextype posix-extended -regex \"^public\/assets\/{{name}}-[^-]+\.{{suffix}}\""
@@ -54,6 +55,8 @@ v_x_js.each_with_index do |name, idx|
     #`echo "#{asset.gsub(/^public/, '').strip}" >> #{cache_entry_file}`
   end
 end
+if false
+# this is all media referenced in app-files
 `#{find_media_cmd}`.split.each_with_index do |entry, idx|
   name = entry.sub(/\.[a-zA-Z]+$/, '') 
   suffix = entry.sub(/^.+\.([a-zA-Z]+)$/, '\\1')
@@ -68,6 +71,7 @@ end
     `echo "#{asset.sub(/^public/, '').split.first.strip}" >> #{cache_entry_file}`
     #`echo "#{asset.sub(/^public/, '').strip}" >> #{cache_entry_file}`
   end
+end
 end
 # find 3rd-party assets
 puts "# 3rd-party assets"
@@ -91,7 +95,8 @@ puts "# 3rd-party assets"
 #   `echo "#{asset.sub(/^public/, '').split.first.strip}" >> #{cache_entry_file}`
 # end
 # only media from subdirectories - @see regexp
-find_asset_cmd = "find public/assets -regextype posix-extended -regex \"^public/assets/.+/.+\\.(png|gif|jpe?g|mp3|mpeg)\" | sort"
+#find_asset_cmd = "find public/assets -regextype posix-extended -regex \"^public/assets/.+/.+\\.(png|gif|jpe?g|mp3|mpeg)\" | sort"
+find_asset_cmd = "find public/assets -regextype posix-extended -regex \"^public/assets/.+\\.(png|gif|jpe?g|mp3|mpeg)\" | sort"
 `#{find_asset_cmd}`.split.each_with_index do |asset, idx|
   #puts "#{asset.sub(/^public/, '').strip}"
   `echo "#{asset.sub(/^public/, '').strip}" >> #{cache_entry_file}`
