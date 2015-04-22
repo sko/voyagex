@@ -27,6 +27,7 @@
 //= require media_manager
 //= require client_state
 //= require upload_helper
+//= require user_manager
 //= require main
 //= require view
 //= require sandbox

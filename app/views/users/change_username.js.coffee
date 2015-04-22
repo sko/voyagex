@@ -6,7 +6,7 @@
 <% else
   whoami = "<span class=\"whoami\">#{t('auth.whoami', username: tmp_user().username)}</span>".html_safe
   %>
-  curU = <%= window_prefix -%>APP.user()
+  curU = APP.user()
   curU.username = '<%= tmp_user().username -%>'
   APP.storage().saveCurrentUser curU
   APP.storage().saveUser { id: curU.id, username: curU.username }

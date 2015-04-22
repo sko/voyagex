@@ -33,16 +33,15 @@ newU = { id: <%= current_user.id -%>,\
 newU.peerPort = { channel_enc_key: null,\
                   sys_channel_enc_key: 'resetting' }
 APP.storage().saveCurrentUser newU
-APP.refreshUserPhoto newU
+USERS.refreshUserPhoto newU
 $('.whoami').each () ->
-  $(this).html("<%= escape_javascript(link_to t('auth.whoami', username: current_user.username), change_username_path, class: 'navbar-inverse navbar-brand', data: { remote: 'true', format: :js }) -%>")
+    $(this).html("<%= t('auth.whoami', username: current_user.username) -%>")
 $('#whoami_edit').show()
 $('#whoami_nedit').hide()
-$('.whoami-img').attr('src', APP.user().foto.url)
 $('#whoami_img_edit').show()
 $('#whoami_img_nedit').hide()
 $('#comm_peer_data').html("<%= j render(partial: 'shared/peers', locals: {user: current_user}) -%>")
-# temporary for photonav - will be changed to template like pois_preview
+# temporary for context-nav - will be changed to template like pois_preview
 $('#location_bookmarks').html("<%= j render(partial: 'main/location_bookmarks', locals: {user: current_user}) -%>")
 $('#people_of_interest').html("<%= j render(partial: 'main/people_of_interest', locals: {user: current_user}) -%>")
 # first unsubscripe old channels before subscribing new - TODO: check if faye handles thso orderly
@@ -52,4 +51,3 @@ for channel in VoyageX.Main.commChannels()
     channelPath += VoyageX.PEER_CHANNEL_PREFIX+Comm.Comm.channelCallBacksJSON[channel].channel_enc_key
   Comm.Comm.unsubscribeFrom channelPath, true
 Comm.Comm.resetSystemContext <%= current_user.id %>
-APP.initPeers()

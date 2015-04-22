@@ -28,6 +28,9 @@ class window.Comm.Comm
 # 3) everything over faye
   constructor: (userId, channelCallBacksList, sysChannelEncKey, systemCallBack, connStateCallBack) ->
     Comm._SINGLETON = this
+    # @see devise/sessions/success.js.coffee
+    if sysChannelEncKey == 'resetting'
+      sysChannelEncKey = null
     @_online = false
     @_user_id = userId
     @_storageController = window.Comm.StorageController.instance()
@@ -49,13 +52,17 @@ class window.Comm.Comm
       Comm.channelCallBacksJSON[pair[0].substr(1)] = { callback: pair[1], channel_enc_key: pair[2] }
 
     if (sysChannelEncKey == null)
-      APP.register(@_user_id)
+      #APP.register @_user_id
+      APP.register()
     else
       Comm.initSystemContext sysChannelEncKey
   
   isOnline: () ->
     client._state == client.CONNECTED
     #@_online
+  
+  isReady: () ->
+    this.isOnline() && systemReady
 
   send: (channel, message, peer = null) ->
     # 1) client wants to publish before register-ajax-response set the enc_key
@@ -96,20 +103,26 @@ class window.Comm.Comm
     Comm.channelCallBacksJSON.system.channel_enc_key = null 
     for channel in Object.keys(Comm.channelCallBacksJSON)
       Comm.channelCallBacksJSON[channel].channel_enc_key = null
-    APP.register userId
+    #APP.register userId
+    APP.register()
+
+  @setChannelContext: (channel, enc_key) ->
+    unless channel == 'system'
+      Comm.channelCallBacksJSON[channel].channel_enc_key = enc_key
+      channelPath = '/'+channel
+      unless window.VoyageX.USE_GLOBAL_SUBSCRIBE 
+        channelPath += VoyageX.PEER_CHANNEL_PREFIX+enc_key
+      # subscribe to my own events - fails because of race-conditions
+      #Comm.unsubscribeFrom channelPath
+      Comm.subscribeTo channelPath, Comm.channelCallBacksJSON[channel].callback
 
   @initChannelContexts: (initParams, channelCallBacks) ->
     Comm.subscribeTo '/ping', Comm._systemSubscriptionListener
     for channel in Object.keys(channelCallBacks)
-      if channel == 'system'
+      unless initParams.channel_enc_key?
+        # only signed-in users have channel_enc_keys
         continue
-      channelCallBacks[channel].channel_enc_key = initParams.channel_enc_key
-      channelPath = '/'+channel
-      unless window.VoyageX.USE_GLOBAL_SUBSCRIBE 
-        channelPath += VoyageX.PEER_CHANNEL_PREFIX+initParams.channel_enc_key
-      # subscribe to my own events - fails because of race-conditions
-      #Comm.unsubscribeFrom channelPath
-      Comm.subscribeTo channelPath, channelCallBacks[channel].callback
+      Comm.setChannelContext channel, initParams.channel_enc_key
 
   @subscribeTo: (channel, callBack, defaultCBMapping = true) ->
     unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
@@ -125,8 +138,8 @@ class window.Comm.Comm
     else
       console.log('client already subscribed to channel '+channel)
 
-  @unsubscribeFrom: (channelPath, signOut = false) ->
-    if channelPath.match(/^\/?system/) and not signOut
+  @unsubscribeFrom: (channelPath, isReset = false) ->
+    if channelPath.match(/^\/?system/) and not isReset
       return
     unless window.VoyageX.USE_GLOBAL_SUBSCRIBE 
       r = new RegExp('^\/?talk'+VoyageX.PEER_CHANNEL_PREFIX+'(.*)')

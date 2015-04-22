@@ -4,7 +4,7 @@
       %td{width: 5}
         &nbsp;
       %td
-        %img{tmpl: {src: '{foto_url}'}, style: 'max-width: 35px !important;'}
+        %img{tmpl: {src: '{foto_url}'}, name: "peer_photo_{id}", style: 'max-width: 35px !important;'}
       %td{width: 15}
         &nbsp;
       %td
@@ -18,6 +18,22 @@
         = hidden_field_tag "follow[comm_peer_ports][{id}]", false, id: "i_follow_{id}.h"
         = check_box_tag "follow[comm_peer_ports][{id}]", true, :checked, id: "i_follow_{id}"
         %label{'for' => "i_follow_{id}"}
+  %tbody#i_want_to_follow_template
+    %tr{id: "i_want_to_follow_{id}"}
+      %td{width: 5}
+        &nbsp;
+      %td
+        %img{tmpl: {src: '{foto_url}'}, name: "peer_photo_{id}", style: 'max-width: 35px !important;'}
+      %td{width: 15}
+        &nbsp;
+      %td
+        {username}
+      %td{width: 15}
+        &nbsp;
+      %td
+        = hidden_field_tag "follow[comm_peer_ports][{id}]", false, id: "i_want_to_follow_{id}.h"
+        = check_box_tag "follow[comm_peer_ports][{id}]", true, :checked, id: "i_want_to_follow_{id}"
+        = label_tag "i_want_to_follow_{id}", ''
   %tbody#i_dont_follow_template
     %tr{id: "i_dont_follow_{id}"}
       %td{width: 5}
@@ -31,11 +47,27 @@
       %td{width: 15}
         &nbsp;
       %td
-        = hidden_field_tag "follow[comm_peer_ports][{id}].h", false, id: "i_dont_follow_{id}.h"
+        = hidden_field_tag "follow[comm_peer_ports][{id}]", false, id: "i_dont_follow_{id}.h"
         = check_box_tag "follow[comm_peer_ports][{id}]", true, false, id: "i_dont_follow_{id}", style: 'float: left;'
-        %label{'for' => "i_dont_follow_{id}"} #{t('admin.check_to_follow')}
-  %tbody#want_to_follow_me_template
-    %tr{id: "want_to_follow_me_{id}"}
+        = label_tag "i_dont_follow_{id}", t('admin.check_to_follow')
+  %tbody#follows_me_template
+    %tr{id: "follows_me_{id}"}
+      %td{width: 5}
+        &nbsp;
+      %td
+        %img{tmpl: {src: '{foto_url}'}, name: "peer_photo_{id}", style: 'max-width: 35px !important;'}
+      %td{width: 15}
+        &nbsp;
+      %td
+        {username}
+      %td{width: 15}
+        &nbsp;
+      %td
+        = hidden_field_tag "grant[comm_peers][{id}]", false, id: "follow_me_{id}.h"
+        = check_box_tag "grant[comm_peers][{id}]", true, :checked, id: "follow_me_{id}"
+        = label_tag "follow_me_{id}", ''
+  %tbody#wants_to_follow_me_template
+    %tr{id: "wants_to_follow_me_{id}"}
       %td{width: 5}
         &nbsp;
       %td

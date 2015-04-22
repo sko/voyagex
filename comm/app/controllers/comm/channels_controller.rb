@@ -33,7 +33,8 @@ module Comm
             end
             # now that current_faye_client_id is set, the client can start to communicate
             # first it should register to it's own bidirectional channels
-            msg = { type: :ready_notification, channel_enc_key: comm_port.channel_enc_key }
+            #msg = { type: :ready_notification, channel_enc_key: comm_port.channel_enc_key }
+            msg = { type: :ready_notification }
            #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{subscription_enc_key[1]}", msg)
             Comm::ChannelsController.publish(channel, msg)
           rescue => e

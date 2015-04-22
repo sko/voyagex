@@ -41,6 +41,20 @@
     max_zoom: 30 }
     new VoyageX.Main(view, mapOptions, offlineZooms, true) 
 
+#tmpl_auth_whoami{style: 'display: none;'}
+  = t('auth.whoami', username: ':username').html_safe
+#tmpl_whoami_edit{style: 'display: none;'}
+  = link_to change_username_path, data: { remote: "true", format: :js }, class: 'menu_link' do
+    %span.whoami>
+      {auth_whoami}
+#tmpl_auth_whoami_img{style: 'display: none;'}
+  %img{tmpl: {src: '{foto_url}'}, class: 'whoami-img', style: 'max-width: 100px !important; max-height: 100px !important;'}
+#tmpl_whoami_img_edit{style: 'display: none;'}
+  %a{href: '#edit_whoami_img', onclick: 'javascript:toogleUserFotoUpload()'}
+    {auth_whoami_img}
+#tmpl_myfoto{style: 'display: none;'}
+  %img{tmpl: {src: '{foto_url}'}, class: 'whoami-img', style: 'margin: 3px 0px -10px 0px; max-height: 45px;'}
+
 #tmpl_bc_chat_msg{style: 'display: none;'}
   %div{class: 'chat_message chat_message_{meOrOther} triangle-border {toggle}'}
     %img{tmpl: {src: '{foto_url}'}, style: 'float: left; max-width: 35px !important;'}

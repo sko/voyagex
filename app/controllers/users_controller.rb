@@ -2,46 +2,56 @@ class UsersController < ApplicationController
   include GeoUtils
   include ApplicationHelper
   include PoiHelper
+  include UserHelper
 
   protect_from_forgery :except => :change_details 
 
   def update
     @user = User.find(params[:id])
     # FIXME @user = current_user
-   # there's no subscribe here because @user would need grant first. he could try anyway - TODO?
-    @un_subscribe = []
+
+    @subscription_grant_requests = []
+    @quit_subscriptions = []
+    @cancel_subscription_requests = []
+    @subscription_granted = []
+    @subscription_grant_revoked = []
+    @subscription_denied = []
+
     if params[:follow].present?
-      peer_port_ids = params[:follow][:comm_peer_ports].inject([[],[]]){|res,kv|kv[1]=='true'?res[0]<<kv[0]:res[1]<<kv[0];res}
-      peer_port_ids[0].each do |peer_port_id|
-        peer_port = CommPort.find peer_port_id
+      peer_ids = params[:follow][:comm_peer_ports].inject([[],[]]){|res,kv|kv[1]=='true'?res[0]<<kv[0]:res[1]<<kv[0];res}
+      peer_ids[0].each do |peer_id|
+        peer_port = CommPort.where(user_id: peer_id).first
         unless peer_port.comm_peers.find{|c_p|c_p.peer_id==@user.id}
+          @subscription_grant_requests << peer_port.user
           peer_port.comm_peers.create(peer_id: @user.id)
           # notify peer that @user requests subscription-grant
           peer_sys_channel_enc_key = peer_port.sys_channel_enc_key
           msg = { type: :subscription_grant_request, peer: { id: @user.id, username: @user.username, channel_enc_key: @user.comm_port.channel_enc_key } }
           add_foto_to_msg @user, msg
           #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
-          COMM_ADAPTER.send :system, peer_sys_channel_enc_key, msg
+          comm_adapter.publish :system, peer_sys_channel_enc_key, msg
         end
       end
-      peer_port_ids[1].each do |peer_port_id|
-        peer_port = CommPort.find peer_port_id
+      peer_ids[1].each do |peer_id|
+        peer_port = CommPort.where(user_id: peer_id).first
         comm_peer = peer_port.comm_peers.find{|c_p|c_p.peer_id==@user.id}
         if comm_peer.present?
           comm_peer.destroy
           if comm_peer.granted_by_peer
-            @un_subscribe << peer_port.channel_enc_key 
+            @quit_subscriptions << peer_port
+            #@un_subscribe << peer_port.channel_enc_key 
             # notify peer that @user does not follow anymore
             peer_sys_channel_enc_key = peer_port.sys_channel_enc_key
             msg = { type: :quit_subscription, peer: { id: @user.id, username: @user.username, channel_enc_key: @user.comm_port.channel_enc_key } }
             #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
-            COMM_ADAPTER.send :system, peer_sys_channel_enc_key, msg
-          #else
-          #  # notify peer that @user does not request grant anymore
-          #  peer_sys_channel_enc_key = peer_port.sys_channel_enc_key
-          #  msg = { type: :cancel_subscription_grant_request, peer: { id: @user.id, username: @user.username, channel_enc_key: @user.comm_port.channel_enc_key } }
-          ##  Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
-          #  COMM_ADAPTER.send :system, peer_sys_channel_enc_key, msg
+            comm_adapter.publish :system, peer_sys_channel_enc_key, msg
+          else
+            @cancel_subscription_requests << peer_port.user
+            # notify peer that @user does not request grant anymore
+            peer_sys_channel_enc_key = peer_port.sys_channel_enc_key
+            msg = { type: :cancel_subscription_grant_request, peer: { id: @user.id, username: @user.username, channel_enc_key: @user.comm_port.channel_enc_key } }
+            #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
+            comm_adapter.publish :system, peer_sys_channel_enc_key, msg
           end
         end
       end
@@ -53,6 +63,7 @@ class UsersController < ApplicationController
       peer_ids[0].each do |peer_id|
         peer = User.find peer_id
         if @user.grant_to_follow(peer)
+          @subscription_granted << peer
         # comm_peer = @user.comm_port.comm_peers.find{|c_p|c_p.peer_id==peer_id.to_i}
         # unless comm_peer.present? && comm_peer.granted_by_peer
         #   if comm_peer.present?
@@ -63,24 +74,25 @@ class UsersController < ApplicationController
         #  peer_sys_channel_enc_key = comm_peer.peer.comm_port.sys_channel_enc_key
           peer_sys_channel_enc_key = peer.comm_port.sys_channel_enc_key
           # notify peer that his subscription-request is granted from @user
-          msg = { type: :subscription_granted, peer: { comm_port_id: @user.comm_port.id, username: @user.username, channel_enc_key:  @user.comm_port.channel_enc_key } }
+          msg = { type: :subscription_granted, peer: { id: @user.id, username: @user.username, channel_enc_key:  @user.comm_port.channel_enc_key } }
           add_foto_to_msg @user, msg
           #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
-          COMM_ADAPTER.send :system, peer_sys_channel_enc_key, msg
+          comm_adapter.publish :system, peer_sys_channel_enc_key, msg
         end
       end
       peer_ids[1].each do |peer_id|
         comm_peer = @user.comm_port.comm_peers.find{|c_p|c_p.peer_id==peer_id.to_i}
         if comm_peer.present?
           if comm_peer.granted_by_peer
+            @subscription_grant_revoked << comm_peer.peer
             # collect message-data before destroy
             peer_sys_channel_enc_key = comm_peer.peer.comm_port.sys_channel_enc_key
-            msg = { type: :subscription_grant_revoked, peer: { comm_port_id: @user.comm_port.id, username: @user.username, channel_enc_key: @user.comm_port.channel_enc_key } }
+            msg = { type: :subscription_grant_revoked, peer: { id: @user.id, username: @user.username, channel_enc_key: @user.comm_port.channel_enc_key } }
             add_foto_to_msg @user, msg
             comm_peer.destroy 
             # notify peer that his subscription-grant is revoked by @user
             #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
-            COMM_ADAPTER.send :system, peer_sys_channel_enc_key, msg
+            comm_adapter.publish :system, peer_sys_channel_enc_key, msg
           end
         end
       end
@@ -92,13 +104,14 @@ class UsersController < ApplicationController
         # comm_peer expected
         comm_peer = @user.comm_port.comm_peers.find{|c_p|c_p.peer_id==peer_id.to_i}
         if comm_peer.present?
+          @subscription_denied << comm_peer.peer
           comm_peer.destroy
           # notify peer that his subscription-request is denied
           peer_sys_channel_enc_key = comm_peer.peer.comm_port.sys_channel_enc_key
-          msg = { type: :subscription_denied, peer: { comm_port_id: @user.comm_port.id, username: @user.username, channel_enc_key: @user.comm_port.channel_enc_key } }
+          msg = { type: :subscription_denied, peer: { id: @user.id, username: @user.username, channel_enc_key: @user.comm_port.channel_enc_key } }
           add_foto_to_msg @user, msg
           #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
-          COMM_ADAPTER.send :system, peer_sys_channel_enc_key, msg
+          comm_adapter.publish :system, peer_sys_channel_enc_key, msg
         end
       end
     end
@@ -107,17 +120,9 @@ class UsersController < ApplicationController
   end
 
   def peers
-    peers_json = []
-    if current_user.present?
-      if params[:location_id].present?
-        # TODO
-      else
-        current_user.follows.each do |u|
-          peers_json << {peer_id: u.id, port: {id: u.comm_port.id, channel_enc_key: u.comm_port.channel_enc_key}}
-        end
-      end
-    end
-    render json: {peers: peers_json}.to_json
+    peers_json = peers_json params[:location_id].to_i
+
+    render json: peers_json.to_json
   end
 
   def change_details

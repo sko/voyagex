@@ -65,6 +65,12 @@ class window.VoyageX.MapControl
       address = null
       APP._setSelectedPositionLatLng VoyageX.Main.markerManager().get()||VoyageX.Main.markerManager().add({lat: event.latlng.lat, lng: event.latlng.lng}, VoyageX.Main._markerEventsCB, true), event.latlng.lat, event.latlng.lng, address
       APP.publishPosition()
+    # @_map.on('locationfound', (e) ->
+    #     alert('found location...')
+    #   )
+    # @_map.on('locationerror', (e) ->
+    #     alert('geolocation timed out - manual selection required.\nsetting default location...')
+    #   )
 
   map: () ->
     @_map

@@ -1,5 +1,7 @@
 module Auth
   class SessionsController < Devise::SessionsController  
+    include UserHelper
+
     before_filter :ensure_params_exist, only: [:create]
 
     def new

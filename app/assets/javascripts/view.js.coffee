@@ -22,54 +22,17 @@ class window.VoyageX.View
     #console.log 'got a system - message: ' + message.type
     if message.type == 'ready_notification'
     else if message.type == 'subscription_grant_request'
-      tr_template = $('#want_to_follow_me_template').html().
-                    replace(/\{id\}/g, message.peer.id).
-                    replace(/\{username\}/g, message.peer.username).
-                    replace(/tmpl-src/, 'src').
-                    replace(/\{foto_url\}/, message.peer.foto.url)
-      $('#want_to_follow_me').append(tr_template)
-      if window.isMobile()
-        $('#comm_peer_data').trigger("create")
+      View._SINGLETON.updateWantsToFollowMe message.peer
     else if message.type == 'subscription_granted'
-      $('#i_want_to_follow_'+message.peer.comm_port_id).remove()
-      tr_template = $('#i_follow_template').html().
-                    replace(/\{id\}/g, message.peer.comm_port_id).
-                    replace(/\{channel_enc_key\}/, message.peer.channel_enc_key).
-                    replace(/\{username\}/g, message.peer.username).
-                    replace(/tmpl-src/, 'src').
-                    replace(/\{foto_url\}/, message.peer.foto.url)
-      $('#i_follow').append(tr_template)
-      if window.isMobile()
-        $('#comm_peer_data').trigger("create")
+      View._SINGLETON.updateIWantToFollow message.peer
     else if message.type == 'subscription_denied'
-      $('#i_want_to_follow_'+message.peer.comm_port_id).remove()
-      tr_template = $('#i_dont_follow_template').html().
-                    replace(/\{id\}/g, message.peer.comm_port_id).
-                    replace(/\{username\}/g, message.peer.username).
-                    replace(/tmpl-src/, 'src').
-                    replace(/\{foto_url\}/, message.peer.foto.url)
-      $('#i_dont_follow').append(tr_template)
-      if window.isMobile()
-        $('#comm_peer_data').trigger("create")
+      View._SINGLETON.updateIWantToFollow message.peer, {denied: true}
     else if message.type == 'subscription_grant_revoked'
-      $('#i_follow_'+message.peer.comm_port_id).remove()
-      if $('#i_dont_follow > #i_dont_follow_'+message.peer.id).length == 0
-        tr_template = $('#i_dont_follow_template').html().
-                      replace(/\{id\}/g, message.peer.comm_port_id).
-                      replace(/\{username\}/g, message.peer.username).
-                      replace(/tmpl-src/, 'src').
-                      replace(/\{foto_url\}/, message.peer.foto.url)
-        $('#i_dont_follow').append(tr_template)
-        if window.isMobile()
-          $('#comm_peer_data').trigger("create")
+      View._SINGLETON.updateIFollow message.peer
     else if message.type == 'quit_subscription'
-      $('#follow_me_'+message.peer.id).remove()
-    # else if message.type == 'callback'
-    #   if message.channel == 'uploads'
-    #     delete message.channel
-    #     #message.type = message.action
-    #     #delete message.action
-    #     this._uploadsCB message
+      View._SINGLETON.removeFollowsMe message.peer
+    else if message.type == 'cancel_subscription_grant_request'
+      APP.view().updateFollowsMe message.peer, {denied: true}
 
   _talkCB: (message) ->
     console.log 'got a talk - message: ' + message.type
@@ -163,6 +126,125 @@ class window.VoyageX.View
   #       for note in poi.notes
   #         Storage.Model.instance().syncWithStorage msg, View.addPoiNotes, note, loadStats
   #       APP.view().alert()
+
+  # clearFollows: () ->
+  #   $('#i_follow').html('')
+  #   $('#i_want_to_follow').html('')
+  #   $('#i_dont_follow').html('')
+  #   $('#follow_me').html('')
+  #   $('#want_to_follow_me').html('')
+
+  setupForCurrentUser: () ->
+    curU = APP.user()
+    auth_whoami_html = $('#tmpl_auth_whoami').html().
+                       replace(/:username/, curU.username)
+    $('#whoami_img_nedit').html(auth_whoami_html)
+    whoami_edit_html = $('#tmpl_whoami_edit').html().
+                       replace(/\{auth_whoami\}/, auth_whoami_html)
+    $('#whoami_edit').html(whoami_edit_html)
+    
+    auth_whoami_img_html = VoyageX.TemplateHelper._updateAttributes('tmpl_auth_whoami_img', ['src']).
+                           replace(/\{foto_url\}/, curU.foto.url)
+    $('#whoami_img_edit').html(auth_whoami_img_html)
+    whoami_img_edit_html = $('#tmpl_whoami_img_edit').html().
+                           replace(/\{auth_whoami_img\}/, auth_whoami_img_html)
+    $('#whoami_img_nedit').html(whoami_img_edit_html)
+
+    myfoto_html = VoyageX.TemplateHelper._updateAttributes('tmpl_myfoto', ['src']).
+                  replace(/\{foto_url\}/, curU.foto.url)
+    $('.myfoto').html(myfoto_html)
+
+  addIFollow: (peer) ->
+    tr_template = $('#i_follow_template').html().
+                  replace(/\{id\}/g, peer.id).
+                  replace(/\{channel_enc_key\}/, peer.peerPort.channel_enc_key).
+                  replace(/\{username\}/g, peer.username).
+                  replace(/tmpl-src/, 'src').
+                  replace(/\{foto_url\}/, peer.foto.url)
+    $('#i_follow').append(tr_template)
+    # if window.isMobile()
+    #   $('#comm_peer_data').trigger("create")
+
+  addIWantToFollow: (peer) ->
+    tr_template = $('#i_want_to_follow_template').html().
+                  replace(/\{id\}/g, peer.id).
+                  replace(/\{username\}/g, peer.username).
+                  replace(/tmpl-src/, 'src').
+                  replace(/\{foto_url\}/, peer.foto.url)
+    $('#i_want_to_follow').append(tr_template)
+    # if window.isMobile()
+    #   $('#comm_peer_data').trigger("create")
+
+  addIDontFollow: (peer) ->
+    tr_template = $('#i_dont_follow_template').html().
+                  #replace(/\{id\}/g, peer.comm_port_id).
+                  replace(/\{id\}/g, peer.id).
+                  replace(/\{username\}/g, peer.username).
+                  replace(/tmpl-src/, 'src').
+                  replace(/\{foto_url\}/, peer.foto.url)
+    $('#i_dont_follow').append(tr_template)
+    # if window.isMobile()
+    #   $('#comm_peer_data').trigger("create")
+
+  addFollowsMe: (peer) ->
+    tr_template = $('#follows_me_template').html().
+                  replace(/\{id\}/g, peer.id).
+                  replace(/\{username\}/g, peer.username).
+                  replace(/tmpl-src/, 'src').
+                  replace(/\{foto_url\}/, peer.foto.url)
+    $('#follow_me').append(tr_template)
+    # if window.isMobile()
+    #   $('#comm_peer_data').trigger("create")
+
+  addWantsToFollowMe: (peer) ->
+    tr_template = $('#wants_to_follow_me_template').html().
+                  replace(/\{id\}/g, peer.id).
+                  replace(/\{username\}/g, peer.username).
+                  replace(/tmpl-src/, 'src').
+                  replace(/\{foto_url\}/, peer.foto.url)
+    $('#want_to_follow_me').append(tr_template)
+    # if window.isMobile()
+    #   $('#comm_peer_data').trigger("create")
+
+  updateIFollow: (peer) ->
+    $('#i_follow_'+peer.id).remove()
+    if $('#i_dont_follow > #i_dont_follow_'+peer.id).length == 0
+      View._SINGLETON.addIDontFollow peer
+      if window.isMobile()
+        $('#comm_peer_data').trigger("create")
+  
+  updateFollowsMe: (peer, flags = {granted: true}) ->
+    $('#wants_to_follow_me_'+peer.id).remove()
+    if flags.granted?
+      View._SINGLETON.addFollowsMe peer
+    if window.isMobile()
+      $('#comm_peer_data').trigger("create")
+
+  updateIDontFollow: (peer) ->
+    View._SINGLETON.addIWantToFollow peer
+    if window.isMobile()
+      $('#comm_peer_data').trigger("create")
+
+  updateIWantToFollow: (peer, flags = {granted: true}) ->
+    $('#i_want_to_follow_'+peer.id).remove()
+    if flags.granted?
+      $('#i_dont_follow_'+peer.id).remove()
+      View._SINGLETON.addIFollow peer
+    else
+      if $('#i_dont_follow > #i_dont_follow_'+peer.id).length == 0
+        View._SINGLETON.addIDontFollow peer
+    if window.isMobile()
+      $('#comm_peer_data').trigger("create")
+
+  updateWantsToFollowMe: (peer) ->
+    View._SINGLETON.addWantsToFollowMe peer
+    if window.isMobile()
+      $('#comm_peer_data').trigger("create")
+  
+  removeFollowsMe: (peer) ->
+    $('#follows_me_'+peer.id).remove()
+    if window.isMobile()
+      $('#comm_peer_data').trigger("create")
 
   setPeerPosition: (userId, lat, lng) ->
     #TODO ... $('#people_of_interest')

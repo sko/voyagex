@@ -1,6 +1,7 @@
 module Comm
   class CommController < ::ActionController::Base  
     include ::AuthUtils
+    include ::UserHelper
 
     def ping
       msg = { ping_key: params[:key] }
@@ -11,7 +12,8 @@ module Comm
     # to subscribe on their own.
     # this way they also can have a dialog whether they are interested at all
     def register
-      @user = User.find(params[:user_id])
+      #@user = User.find(params[:user_id])
+      @user = tmp_user
       unless @user.comm_port.present?
         comm_port = CommPort.create(user: @user, channel_enc_key: enc_key, sys_channel_enc_key: enc_key)
         @user.comm_port = comm_port
@@ -20,9 +22,12 @@ module Comm
       if params[:subscribe_to_peers] == 'true'
         subscribe_user_to_peers @user
       end
-      res = { user_id: @user.id,
-              sys_channel_enc_key: @user.comm_port.sys_channel_enc_key,
-              channel_enc_key: @user.comm_port.channel_enc_key }
+      res = user_json @user
+      res[:peerPort] = { sys_channel_enc_key: @user.comm_port.sys_channel_enc_key,
+                         channel_enc_key: (user_signed_in? ? @user.comm_port.channel_enc_key : nil) }
+      res.merge!({ homebaseLocationId: (@user.home_base.present? ? @user.home_base.id : -1),
+                   curCommitHash: @user.snapshot.cur_commit.hash_id })
+
       render json: res
     end
 

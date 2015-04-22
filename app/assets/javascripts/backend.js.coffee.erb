@@ -76,20 +76,20 @@ class window.VoyageX.Backend
           this.pingBackend()
     online
 
-  register: (userId) ->
-    data = { _method: 'put',\
-             user_id: userId }
+  register: (callback) ->
+    data = { _method: 'put' }
     $.ajax
       type: 'POST'
       dataType: 'json'
       url: '<%= comm_register_path %>'
       data: data
     .done (msg) ->
-        curU = APP.user()
-        curU.peerPort = { channel_enc_key: msg.channel_enc_key,\
-                          sys_channel_enc_key: msg.sys_channel_enc_key }
-        APP.storage().saveCurrentUser curU
-        Comm.Comm.initSystemContext msg.sys_channel_enc_key
+        callback msg
+        # curU = APP.user()
+        # curU.peerPort = { channel_enc_key: msg.channel_enc_key,\
+        #                   sys_channel_enc_key: msg.sys_channel_enc_key }
+        # APP.storage().saveCurrentUser curU
+        # Comm.Comm.initSystemContext msg.sys_channel_enc_key
     .fail (jqXHR, textStatus) ->
         alert('TODO: handle registration failure...')
 

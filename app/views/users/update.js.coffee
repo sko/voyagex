@@ -1,18 +1,19 @@
-#$('#user_search_radius_meters').val('')
-VoyageX.SEARCH_RADIUS_METERS = <%= @user.search_radius_meters||100 %>
-# TODO handle errors
-$('#comm_peer_data').html("<%= j render(partial: '/shared/peers', locals: { user: @user }) -%>")
-<% if is_mobile %>
-$('#comm_peer_data').trigger("create")
+<% @subscription_grant_requests.each do |peer| %>
+APP.view().updateIDontFollow {id:<%=peer.id%>,username:'<%=peer.username%>',foto:{url:'<%=peer.foto.url%>'}}
 <% end %>
-<% @un_subscribe.each do |channel_enc_key| %>
-for channel in VoyageX.Main.commChannels()
-  if channel == 'system'
-    continue
-  channelPath = '/'+channel
-  unless window.VoyageX.USE_GLOBAL_SUBSCRIBE 
-    channelPath += VoyageX.PEER_CHANNEL_PREFIX+'<%=channel_enc_key%>'
-  #window.unsubscribeFrom.push channelPath
-  #window.Comm.StorageController.instance().addToList 'unsubscribe', 'push', channelPath
-  Comm.Comm.unsubscribeFrom channelPath
+<% @quit_subscriptions.each do |peer_port| %>
+APP.view().updateIFollow {id:<%=peer_port.user.id%>,username:'<%=peer_port.user.username%>',foto:{url:'<%=peer_port.user.foto.url%>'}}
+USERS.unsubscribeFromPeerChannels {peerPort: {channel_enc_key: '<%=peer_port.channel_enc_key%>'}}
+<% end %>
+<% @cancel_subscription_requests.each do |peer| %>
+APP.view().updateIWantToFollow {id:<%=peer.id%>,username:'<%=peer.username%>',foto:{url:'<%=peer.foto.url%>'}}, , {cancelled: true}
+<% end %>
+<% @subscription_granted.each do |peer| %>
+APP.view().updateFollowsMe {id:<%=peer.id%>,username:'<%=peer.username%>',foto:{url:'<%=peer.foto.url%>'}}
+<% end %>
+<% @subscription_grant_revoked.each do |peer| %>
+APP.view().removeFollowsMe {id:<%=peer.id%>,username:'<%=peer.username%>',foto:{url:'<%=peer.foto.url%>'}}
+<% end %>
+<% @subscription_denied.each do |peer| %>
+APP.view().updateFollowsMe {id:<%=peer.id%>,username:'<%=peer.username%>',foto:{url:'<%=peer.foto.url%>'}}, {denied: true}
 <% end %>

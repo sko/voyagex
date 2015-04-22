@@ -1,3 +1,5 @@
+# show channel_enc_key for users
+# User.joins(:comm_port).pluck(:username,:channel_enc_key,:sys_channel_enc_key)
 class User < ActiveRecord::Base
   
   LETTERS = ('A'..'Z').to_a.freeze
@@ -74,7 +76,7 @@ class User < ActiveRecord::Base
 
   def requested_grant_to_follow
     t = CommPeer.arel_table
-    CommPort.joins(:comm_peers).where(t[:peer_id].eq(id).and(t[:granted_by_peer].eq(nil).or(t[:granted_by_peer].eq(false))))
+    CommPort.joins(:comm_peers, :user).where(t[:peer_id].eq(id).and(t[:granted_by_peer].eq(nil).or(t[:granted_by_peer].eq(false))))
   end
 
   def set_base64_file file_json, content_type, file_name

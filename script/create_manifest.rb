@@ -21,7 +21,7 @@ uniq_js_paths = []
 uniq_media_paths = []
 #puts "find_media_cmd = #{find_media_cmd}"
 # find voyagex assets
-puts "# voyagex assets"
+puts "# voyagex css and js assets"
 `echo "# voyagex assets" >> #{cache_entry_file}`
 v_x_css.each_with_index do |name, idx|
   suffix = 'css'
@@ -56,6 +56,7 @@ v_x_js.each_with_index do |name, idx|
   end
 end
 if false
+puts "# voyagex media assets"
 # this is all media referenced in app-files
 `#{find_media_cmd}`.split.each_with_index do |entry, idx|
   name = entry.sub(/\.[a-zA-Z]+$/, '') 
@@ -74,8 +75,10 @@ if false
 end
 end
 # find 3rd-party assets
-puts "# 3rd-party assets"
-`echo "# 3rd-party assets" >> #{cache_entry_file}`
+#puts "# 3rd-party media assets"
+#{}`echo "# 3rd-party assets" >> #{cache_entry_file}`
+puts "# all media assets"
+`echo "# all media assets" >> #{cache_entry_file}`
 # find_asset_cmd = "find public/assets -regextype posix-extended -regex \"^public/assets/.+/.+\\.css\" | sort"
 # `#{find_asset_cmd}`.split.each_with_index do |asset, idx|
 #   uniq_path = asset.gsub(/^(.+\/.+?)-[^\/-]+$/, '\\1').split.first.strip

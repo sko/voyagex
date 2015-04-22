@@ -6,7 +6,7 @@ if (typeof userPhotoUrl == 'string')
   <%= window_prefix -%>APP.storage().saveUser { id: curU.id, username: curU.username }, { foto: curU.foto }
   <%= window_prefix -%>APP.storage().saveCurrentUser curU
   <%= window_prefix -%>$('.whoami-img').attr('src', userPhotoUrl)
-  <%= window_prefix -%>APP.refreshUserPhoto curU
+  <%= window_prefix -%>USERS.refreshUserPhoto curU
 else if (typeof userPhotoUrl.then == 'function')
   # Assume we are dealing with a promise.
   userPhotoUrl.then (url) ->
@@ -15,5 +15,5 @@ else if (typeof userPhotoUrl.then == 'function')
       <%= window_prefix -%>APP.storage().saveUser { id: curU.id, username: curU.username }, { foto: curU.foto }
       <%= window_prefix -%>APP.storage().saveCurrentUser curU
       <%= window_prefix -%>$('.whoami-img').attr('src', url)
-      <%= window_prefix -%>APP.refreshUserPhoto curU
+      <%= window_prefix -%>USERS.refreshUserPhoto curU
 <%= window_prefix -%>VoyageX.Sandbox.instance().toogleUserFotoUpload()

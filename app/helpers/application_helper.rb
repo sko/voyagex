@@ -1,5 +1,9 @@
 module ApplicationHelper
 
+  def comm_adapter
+    @comm_adapter ||= Object.const_get(COMM_ADAPTER_CLASS).new
+  end
+
   #
   #
   #

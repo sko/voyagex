@@ -13,6 +13,10 @@ foto_width = geometry.present? ? geometry.width.to_i : -1
 foto_height = geometry.present? ? geometry.height.to_i : -1
 %>
 window.VoyageX.SEARCH_RADIUS_METERS = <%= tmp_user.search_radius_meters||1000 %>
+peers = APP.storage().getPeers()
+for peer in peers
+  USERS.unsubscribeFromPeerChannels peer
+APP.storage().clearCache({tiles: false, poiNotes: false, users: true})
 newU = { id: <%= tmp_user.id -%>,\
          username: '<%= tmp_user.username -%>',\
          foto: {url: '<%= tmp_user.foto.url -%>', width: <%= foto_width -%>, height: <%= foto_height -%>},\
@@ -21,18 +25,19 @@ newU = { id: <%= tmp_user.id -%>,\
          curCommitHash: null }
 # peerPort is set further down in resetSystemContext
 APP.storage().saveCurrentUser newU
-APP.refreshUserPhoto newU
+APP.view().setupForCurrentUser()
+USERS.refreshUserPhoto newU
 $('.whoami').each () ->
-  $(this).html("<%= escape_javascript(link_to t('auth.whoami', username: tmp_user.username), change_username_path, class: 'navbar-inverse navbar-brand', data: { remote: 'true', format: :js }) -%>")
-$('#whoami_edit').show()
-$('#whoami_nedit').hide()
-$('.whoami-img').attr('src', APP.user().foto.url)
-$('#whoami_img_edit').hide()
-$('#whoami_img_nedit').show()
+    $(this).html("<%= t('auth.whoami', username: tmp_user.username) -%>")
+$('#whoami_edit').hide()
+$('#whoami_nedit').show()
+$('#whoami_img_edit').show()
+$('#whoami_img_nedit').hide()
 $('#comm_peer_data').html("<%= j render(partial: 'shared/peers', locals: {user: tmp_user}) -%>")
-# temporary for photonav - will be changed to template like pois_preview
+# temporary for context-nav - will be changed to template like pois_preview
 $('#location_bookmarks').html("<%= j render(partial: 'main/location_bookmarks', locals: {user: tmp_user}) -%>")
 $('#people_of_interest').html("<%= j render(partial: 'main/people_of_interest', locals: {user: tmp_user}) -%>")
+# unsubscribe from all own channels ...
 for channel in VoyageX.Main.commChannels()
   channelPath = '/'+channel
   unless window.VoyageX.USE_GLOBAL_SUBSCRIBE

@@ -173,7 +173,7 @@ jQuery ->
         curU = APP.user()
         curU.foto.url = user.foto.url
         #APP.storage().saveCurrentUser curU
-        APP.refreshUserPhoto curU
+        USERS.refreshUserPhoto curU
         toogleUserFotoUpload()
 
   if $.mobile

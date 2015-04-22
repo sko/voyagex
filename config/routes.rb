@@ -18,6 +18,8 @@ VoyageX::Application.routes.draw do
   resources :users, only: [:update] do
   end
   get '/peers/:location_id', to: 'users#peers', as: :peers
+ #get '/peers/:lat/:lng', to: 'users#peers', as: :peers, :constraints => { :lat => /([0-9]+\.[0-9]+|:[a-z]+)/,
+ #                                                                         :lng => /([0-9]+\.[0-9]+|:[a-z]+)/ }
 
   get '/location_bookmarks', to: 'main#index'
 #  get '/location/:location_id', to: 'main#location', as: :location
@@ -51,8 +53,8 @@ VoyageX::Application.routes.draw do
   #put '/upload_file64', to: 'uploads#create_from_base64', as: :json_uploads
   get '/ping/:key', to: 'comm/comm#ping', as: :comm_ping
   put '/register', to: 'comm/comm#register', as: :comm_register
-  post '/subscribe/:channel', to: 'comm/comm#subscribe', as: :comm_subscribe
-  post '/publish/:channel', to: 'comm/comm#publish', as: :comm_publish
+  #post '/subscribe/:channel', to: 'comm/comm#subscribe', as: :comm_subscribe
+  #post '/publish/:channel', to: 'comm/comm#publish', as: :comm_publish
 
   get '/test/javascript', to: 'test#javascript', as: :test_javascript
 

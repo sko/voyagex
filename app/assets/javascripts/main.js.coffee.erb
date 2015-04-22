@@ -12,6 +12,7 @@ class window.VoyageX.Main
   @_COMM_CHANNELS = ['system', 'talk', 'map_events', 'uploads', 'radar']
   @_STORAGE_MODEL = null
   @_UPLOAD_HELPER = null
+  @_USER_MANAGER = null
 
   constructor: (view, mapOptions, offlineZooms, online) ->
     Main._SINGLETON = this
@@ -34,6 +35,7 @@ class window.VoyageX.Main
     #@_initPoisOnMap = []
     Main._STORAGE_MODEL = new Storage.Model()
     Main._UPLOAD_HELPER = new VoyageX.UploadHelper()
+    Main._USER_MANAGER = new VoyageX.UserManager()
     @_cacheStrategy = null
     window.addEventListener "offline", (e) ->
         console.log 'Main: went offline ...'
@@ -69,13 +71,20 @@ class window.VoyageX.Main
             APP._init view, mapOptions, offlineZooms, tileHandler
           )
       when 2
+        curU = APP.user()
+        if APP.signedIn curU
+          channelEncKey = curU.peerPort.channel_enc_key
+          sysChannelEncKey = curU.peerPort.sys_channel_enc_key
+        else
+          channelEncKey = null
+          sysChannelEncKey = null
         # Communication initialisation (Faye-Client)
         APP._comm = new Comm.Comm(APP.userId(),
-                                  [['/talk', APP._talkCB, VoyageX.CHANNEL_ENC_KEY],
-                                   ['/map_events', view._mapEventsCB, VoyageX.CHANNEL_ENC_KEY],
-                                   ['/uploads', APP._uploadsCB, VoyageX.CHANNEL_ENC_KEY],
-                                   ['/radar', view._radarCB, VoyageX.CHANNEL_ENC_KEY]],
-                                   VoyageX.SYS_CHANNEL_ENC_KEY,
+                                  [['/talk', APP._talkCB, channelEncKey],
+                                   ['/map_events', view._mapEventsCB, channelEncKey],
+                                   ['/uploads', APP._uploadsCB, channelEncKey],
+                                   ['/radar', view._radarCB, channelEncKey]],
+                                   sysChannelEncKey,
                                    APP._systemCB,
                                    Main._BACKEND.commConnStateCB)
         unless forceOffline
@@ -113,34 +122,12 @@ class window.VoyageX.Main
         Main._MARKER_MANAGER = new VoyageX.MarkerManager APP.map()
         Main._PATH_PREDICTION = new VoyageX.PathPrediction Main._MAP_CONTROL
         Main._CHAT_CONTROL = new VoyageX.ChatControl()
-        # handled in _peers.html.haml
-        #Storage.Model.instance().loadPeers (peer) ->
-        #  marker = Main.markerManager().add poi.location, Main._markerEventsCB, false
-        #if APP.signedIn()
-        if VoyageX.CHANNEL_ENC_KEY?
-          currentUser.peerPort = { channel_enc_key: VoyageX.CHANNEL_ENC_KEY,\
-                                   sys_channel_enc_key: VoyageX.SYS_CHANNEL_ENC_KEY }
-          APP.storage().saveCurrentUser currentUser
-          APP.refreshUserPhoto currentUser
-        else
-          unless APP.storage().getCurrentUser()?
-            # don't overwrite existing user - this might be offline-reload and user might have
-            # signed in during last session. that would leave keys null in source code
-            APP.storage().saveCurrentUser currentUser
-        delete window.currentUser
-        APP.initPeers()
         if navigator.geolocation 
           navigator.geolocation.getCurrentPosition(APP._initPositionCB, (error) ->
               #alert('geolocation timed out - manual selection required.\nsetting default location...')
               curU = APP.user()
               APP._initPositionCB { coords: { latitude: curU.lastLocation.lat, longitude: curU.lastLocation.lng } }
           , { enableHighAccuracy: true, timeout : 5000 })
-#       #APP.map().on('locationfound', (e) ->
-#       #    alert('found location...')
-#       #  )
-#       #APP.map().on('locationerror', (e) ->
-#       #    alert('geolocation timed out - manual selection required.\nsetting default location...')
-#       #  )
         #APP._initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
         if isMobile()
           # if not set then jquery-mobil will add origin header to request -  causing No 'Access-Control-Allow-Origin' 
@@ -181,21 +168,33 @@ class window.VoyageX.Main
           APP.clearCache()
 
   user: () ->
-    APP.storage().getCurrentUser()||window.currentUser
+    APP.storage().getCurrentUser()
 
   userId: () ->
-    APP.user().id
+    curU = APP.user()
+    if curU? then curU.id else -1
 
   userName: () ->
-    APP.user().username
-
-  signedIn: () ->
-    #window.VoyageX.CHANNEL_ENC_KEY?
     curU = APP.user()
-    curU? && curU.peerPort? && curU.peerPort.sys_channel_enc_key?
+    if curU? then curU.username else null
 
-  register: (userId) ->
-    Main._BACKEND.register userId
+  signedIn: (curU = APP.user()) ->
+    curU? && curU.peerPort? && curU.peerPort.channel_enc_key?
+
+  register: () ->
+    Main._BACKEND.register (curU) ->
+        isSignedIn = APP.storage().getCurrentUser()? && APP.signedIn(curU)
+        lastLocation = curU.lastLocation
+        delete curU.lastLocation
+        APP.storage().saveCurrentUser curU
+        
+        # APP.refreshUserPhoto curU, null, (user, flags) ->
+        #     APP.view().setupForCurrentUser()
+        # # only if signedIn?
+        # Storage.Model.instance().loadUsers -1, (peer) ->
+        #     APP.initUser peer
+        
+        Comm.Comm.initSystemContext curU.peerPort.sys_channel_enc_key
 
   isBackendOnline: () ->
     navigator.onLine && VoyageX.Main._BACKEND.isOnline()
@@ -269,74 +268,6 @@ class window.VoyageX.Main
   refreshMap: () ->
     #Comm.StorageController.instance()._tileLoadQueue = {}
     APP.map()._resetView APP.map().getCenter(), APP.map().getZoom(), true
-
-  resetConnection: (commSettingId) ->
-    peerChannelEncKey = $('#i_follow_'+commSettingId).attr('data-channelEncKey')
-    for channel in Main.commChannels()
-      if channel == 'system'
-        continue
-      channelPath = '/'+channel
-      unless window.VoyageX.USE_GLOBAL_SUBSCRIBE 
-        channelPath += VoyageX.PEER_CHANNEL_PREFIX+peerChannelEncKey
-      Comm.Comm.unsubscribeFrom channelPath, false
-      Comm.Comm.subscribeTo channelPath, Comm.Comm.channelCallBacksJSON[channel].callback
-
-  initPeers: (callback = null) ->
-    for peer in initArgs.peers
-#window.initArgs.peers.push({id: #{cs.user.id}, username: '#{cs.user.username}', peerPort: {id: #{cs.id}, channel_enc_key: '#{cs.channel_enc_key}'}});
-      peerPort = peer.peerPort
-      delete peer.peerPort
-      lastLocation = peer.lastLocation
-      delete peer.lastLocation
-      # ---------------------
-      poiId = lastLocation.poiId
-      if poiId?
-        delete lastLocation.poiId
-        APP.storage().saveLocation lastLocation, {poi: {id: lastLocation.poiId}}
-      else
-        if lastLocation.id?
-          APP.storage().saveLocation lastLocation
-      # ---------------------
-      peer.lastLocationId = lastLocation.id
-      APP.refreshUserPhoto peer, {peerPort: peerPort, foto: peer.foto}, (user, flags) ->
-          APP.storage().saveUser user, flags
-      if callback?
-        callback peer
-      #marker = Main.markerManager().add lastLocation, Main._markerEventsCB, {isUserMarker: false, peer: peer}
-      marker = APP.getPeerMarker peer, lastLocation
-    window.initArgs.peers.splice(0, window.initArgs.peers.length)
-    #delete window.initArgs.peers
-
-  refreshUserPhoto: (user, flags = null, saveCB = null) ->
-    unless flags?
-      flags = { foto: user.foto }
-    userPhotoUrl = Storage.Model.storedUserPhoto user
-    console.log '!!! TODO: curUser is double now'
-    if (typeof userPhotoUrl == 'string') 
-      user.foto.url = userPhotoUrl
-      if saveCB?
-        saveCB user, flags
-      else
-        APP.storage().saveUser { id: user.id, username: user.username }, flags
-      if flags.peerPort?
-        $('img[name=peer_photo_'+user.id+']').attr 'src', userPhotoUrl
-      else
-        $('.whoami-img').attr('src', userPhotoUrl)
-    else if (typeof userPhotoUrl.then == 'function')
-      unless flags.peerPort?
-        $('.whoami-img').attr('src', VoyageX.IMAGES_SWIPER_LOADING_PATH)
-      # Assume we are dealing with a promise.
-      userPhotoUrl.then (url) ->
-          user.foto.url = url
-          # overwrite url
-          if saveCB?
-            saveCB user, flags
-          else
-            APP.storage().saveUser { id: user.id, username: user.username }, flags
-          if flags.peerPort?
-            $('img[name=peer_photo_'+user.id+']').attr 'src', url
-          else
-            $('.whoami-img').attr('src', url)
 
   # user-marker-tools
   bookmarkLocation: (poiId = -1) ->
@@ -759,30 +690,28 @@ class window.VoyageX.Main
   _systemCB: (message) ->
     console.log 'got a system - message: ' + message.type
     if message.type == 'ready_notification'
-      systemInitCB()
-      # subscribe to all channels stored in subscribeTo-buffer
-      while (channelPath = subscribeTo.pop())
-        i = channelPath.indexOf(VoyageX.PEER_CHANNEL_PREFIX)
-        channel = (if i == -1 then channelPath else channelPath.substr(0, i)).substr(1)
-        Comm.Comm.subscribeTo channelPath, Comm.Comm.channelCallBacksJSON[channel].callback # eval(channel+'CB')
+      curU = APP.user()
+      if APP.signedIn(curU)
+        systemInitCB() # admin-stuff. @see _init_js.html.haml
+        for channel in VoyageX.Main.commChannels()
+          Comm.Comm.setChannelContext channel, curU.peerPort.channel_enc_key
+        USERS.subscribeToAllPeerChannels()
+        #APP.refreshUserPhoto curU, null, (u, flags) ->
+        #    APP.storage().saveUser u, {foto: u.foto}
+        APP.view().setupForCurrentUser()
+      else
+        APP.view().setupForCurrentUser()
+      # only if signedIn?
+      Storage.Model.instance().loadUsers -1, (peer) ->
+          USERS.initUser peer
     else if message.type == 'subscription_grant_request'
     else if message.type == 'subscription_granted'
-      for channel in Main.commChannels()
-        if channel == 'system'
-          continue
-        channelPath = '/'+channel
-        unless VoyageX.USE_GLOBAL_SUBSCRIBE
-          channelPath += VoyageX.PEER_CHANNEL_PREFIX+message.peer.channel_enc_key
-        Comm.Comm.subscribeTo channelPath, Comm.Comm.channelCallBacksJSON[channel].callback # eval(channel+'CB')
+      message.peer.peerPort = {channel_enc_key: message.peer.channel_enc_key}
+      USERS.subscribeToPeerChannels message.peer
     else if message.type == 'subscription_denied'
     else if message.type == 'subscription_grant_revoked'
-      for channel in Main.commChannels()
-        if channel == 'system'
-          continue
-        channelPath = '/'+channel
-        unless VoyageX.USE_GLOBAL_SUBSCRIBE
-          channelPath += VoyageX.PEER_CHANNEL_PREFIX+message.peer.channel_enc_key
-        Comm.Comm.unsubscribeFrom channelPath
+      message.peer.peerPort = {channel_enc_key: message.peer.channel_enc_key}
+      USERS.unsubscribeFromPeerChannels message.peer
     else if message.type == 'quit_subscription'
       true # do nothing
     else if message.type == 'callback'
@@ -1117,6 +1046,9 @@ class window.VoyageX.Main
 
   transfer: () ->
     Main._UPLOAD_HELPER
+
+  users: () ->
+    USERS
 
   @instance: () ->
     Main._SINGLETON

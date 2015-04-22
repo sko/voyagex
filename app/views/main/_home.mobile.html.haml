@@ -12,10 +12,12 @@
 #administration
   %div{style: 'float :left; padding: 13px 0px 13px 0px;'}
     %span#whoami_img_container
-      %span#whoami_img_edit{style: "display: #{user_signed_in? ? 'inline' : 'none'};"}
-        = link_to image_tag(tmp_user().foto.url, class: 'whoami-img', style: 'max-width: 100px !important; max-height: 100px !important;'), '#edit_whoami_img', onclick: 'javascript:toogleUserFotoUpload()'
-      %span#whoami_img_nedit{style: "display: #{user_signed_in? ? 'none' : 'inline'};"}
-        = image_tag tmp_user().foto.url, class: 'whoami-img'
+      -#%span#whoami_img_edit{style: "display: #{user_signed_in? ? 'inline' : 'none'};"}
+      -#  = link_to image_tag(tmp_user().foto.url, class: 'whoami-img', style: 'max-width: 100px !important; max-height: 100px !important;'), '#edit_whoami_img', onclick: 'javascript:toogleUserFotoUpload()'
+      -#%span#whoami_img_nedit{style: "display: #{user_signed_in? ? 'none' : 'inline'};"}
+      -#  = image_tag tmp_user().foto.url, class: 'whoami-img'
+      %span#whoami_img_edit
+      %span#whoami_img_nedit{style: 'display: none'}
     #user_foto_input_container{style: 'display:none;'}
       = render partial: '/users/foto.mobile', locals: {user: tmp_user()}
     %br
@@ -41,7 +43,7 @@
         .omniauth-links
           .button.facebook_login
             -# , origin: "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}#{request.env['REQUEST_URI']}"
-            = link_to user_omniauth_authorize_path(:facebook) do
+            = link_to "#{user_omniauth_authorize_path(:facebook)}#c=" do
               = image_tag 'facebook-icon.png', style: 'width: 25px; height: 25px;'
   #lang_select{style: 'float: right;'}
     - lcls = lang_change_links request, ['c']

@@ -102,8 +102,31 @@ class window.Storage.Model
         for poi, i in pois
           Model._syncPois poi, callback, i
 
-  loadPeers: () ->
-    console.log('TODO: ...')
+  loadUsers: (locationId = -1, callback = null) ->
+    if APP.isOnline()
+      $.ajax
+        type: 'GET'
+        dataType: 'json'
+        url: '<%= peers_path(location_id: ':location_id') %>'.replace(/:location_id/, locationId)
+      .done (msg) ->
+          for peer in msg
+            callback peer
+          # load in case 
+          APP.users().subscribeToAllPeerChannels()
+      .fail (jqXHR, textStatus) ->
+          # get from localStorage
+          console.log('TODO: maybe get from local storage')
+          #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
+    else
+      if (Modernizr.localstorage)
+        if locationId == -1
+          peers = APP.storage().getPeers()
+        else
+          # TODO peers = APP.storage().peerssWithinSearchBounds(searchBounds(lat, lng, VoyageX.SEARCH_RADIUS_METERS))
+          console.log('TODO: implement search redius for peers ...')
+          peers = APP.storage().getPeers()
+        for peer in peers
+          callback peer
 
   # called from batch-upload to upload queue
  #syncUploadCachedQPoiData: (formData, poi = null, callback) ->

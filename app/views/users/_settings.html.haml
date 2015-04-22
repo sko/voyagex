@@ -1,9 +1,11 @@
 %div
   %span#whoami_img_container
-    %span#whoami_img_edit{style: "display: #{user_signed_in? ? 'inline' : 'none'};"}
-      = link_to image_tag(tmp_user().foto.url, class: 'whoami-img', style: 'max-width: 100px !important; max-height: 100px !important;'), '#', onclick: 'javascript:VoyageX.Sandbox.instance().toogleUserFotoUpload()'
-    %span#whoami_img_nedit{style: "display: #{user_signed_in? ? 'none' : 'inline'};"}
-      = image_tag tmp_user().foto.url, class: 'whoami-img'
+    -#%span#whoami_img_edit{style: "display: #{user_signed_in? ? 'inline' : 'none'};"}
+    -#= link_to image_tag(tmp_user().foto.url, class: 'whoami-img', style: 'max-width: 100px !important; max-height: 100px !important;'), '#', onclick: 'javascript:VoyageX.Sandbox.instance().toogleUserFotoUpload()'
+    -#%span#whoami_img_nedit{style: "display: #{user_signed_in? ? 'none' : 'inline'};"}
+    -#= image_tag tmp_user().foto.url, class: 'whoami-img'
+    %span#whoami_img_edit{style: 'display: none'}
+    %span#whoami_img_nedit
   #user_foto_input_container{style: 'display:none;'}
     = render partial: '/users/foto', locals: {user: tmp_user()}
   = form_tag '', method: :post, remote: true do 
