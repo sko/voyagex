@@ -307,7 +307,7 @@ class window.VoyageX.TemplateHelper
     pathKey = if curPath? then "'"+APP.storage().pathKey(curPath)+"'" else 'null'
 
     TemplateHelper._updateIds('tmpl_radar_editor').
-    replace(/\{search_radius_meters\}/, VoyageX.SEARCH_RADIUS_METERS).
+    replace(/\{search_radius_meters\}/, APP.user().searchRadiusMeters).
     replace(/\{user_id\}/g, APP.user().id).
     replace(/\{path_key\}/g, pathKey)
 
@@ -337,10 +337,10 @@ class window.VoyageX.TemplateHelper
         min: 100,
         max: 5000,
         step: 100,
-        value: VoyageX.SEARCH_RADIUS_METERS,
+        value: APP.user().searchRadiusMeters,
         stop: (event, u) ->
             APP.setSearchRadius u.value
-            $('#search_radius_meters').html VoyageX.SEARCH_RADIUS_METERS
+            $('#search_radius_meters').html APP.user().searchRadiusMeters
     })
     APP.view().setRealPositionWatchedIcon if APP.isRealPositionWatched() then 'on' else 'off'
     APP.view().setTraceCtrlIcon APP.user(), marker, if curPath? then 'start' else 'stop'

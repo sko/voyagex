@@ -1,6 +1,7 @@
 require 'net/http'
 
 module UserHelper
+  include ::GeoUtils
 
   def user_json user
     last_loc = user.snapshot.location||nearby_location(Location.new(latitude: user.snapshot.lat, longitude: user.snapshot.lng), 10)
@@ -22,8 +23,10 @@ module UserHelper
                url: user.foto.url,
                width: foto_width,
                height: foto_height
-             } }
+             },
+             searchRadiusMeters: user.search_radius_meters||1000 }
     json[:lastLocation][:poiId] = last_loc_poi.id if last_loc_poi.present?
+    json[:sear][:poiId] = last_loc_poi.id if last_loc_poi.present?
     
     json
   end

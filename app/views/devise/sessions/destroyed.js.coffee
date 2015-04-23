@@ -1,28 +1,25 @@
 $('#settings_form').attr('action', '<%= user_path id: tmp_user.id -%>')
-#$('.login-link').each () ->
-#  $(this).css('display', 'block')
-#$('.reg-link').each () ->
-#  $(this).css('display', 'block')
-$('#sign_up_or_in').first().css('display', 'block')
-$('.logout-link').each () ->
-  $(this).css('display', 'none')
+# $('#sign_up_or_in').first().css('display', 'block')
+# $('.logout-link').each () ->
+#   $(this).css('display', 'none')
 # you are always someone
 <%
 geometry = Paperclip::Geometry.from_file(tmp_user.foto)
 foto_width = geometry.present? ? geometry.width.to_i : -1
 foto_height = geometry.present? ? geometry.height.to_i : -1
 %>
-window.VoyageX.SEARCH_RADIUS_METERS = <%= tmp_user.search_radius_meters||1000 %>
 peers = APP.storage().getPeers()
 for peer in peers
   USERS.unsubscribeFromPeerChannels peer
+  APP.markers().removeForPeer peer.id
 APP.storage().clearCache({tiles: false, poiNotes: false, users: true})
 newU = { id: <%= tmp_user.id -%>,\
          username: '<%= tmp_user.username -%>',\
          foto: {url: '<%= tmp_user.foto.url -%>', width: <%= foto_width -%>, height: <%= foto_height -%>},\
          homebaseLocationId: -1,\
          lastLocation: {lat: <%= tmp_user.last_location.latitude -%>, lng: <%= tmp_user.last_location.longitude -%>},\
-         curCommitHash: null }
+         searchRadiusMeters: <%= tmp_user.search_radius_meters||1000 %>,\
+         curCommitHash: '<%= tmp_user.snapshot.cur_commit.hash_id -%>' }
 # peerPort is set further down in resetSystemContext
 APP.storage().saveCurrentUser newU
 APP.view().setupForCurrentUser()

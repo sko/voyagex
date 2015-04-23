@@ -29,7 +29,7 @@ class window.Storage.Model
       type: 'POST'
       dataType: 'json'
       url: '<%= set_user_detail_path(detail: 'radar_settings') %>'
-      data: {search_radius_meters: VoyageX.SEARCH_RADIUS_METERS}
+      data: {search_radius_meters: APP.user().searchRadiusMeters}
     .done (user) ->
         callback user
     .fail (jqXHR, textStatus) ->
@@ -98,19 +98,20 @@ class window.Storage.Model
           #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
     else
       if (Modernizr.localstorage)
-        pois = APP.storage().poisWithinSearchBounds(searchBounds(lat, lng, VoyageX.SEARCH_RADIUS_METERS))
+        pois = APP.storage().poisWithinSearchBounds(searchBounds(lat, lng, APP.user().searchRadiusMeters))
         for poi, i in pois
           Model._syncPois poi, callback, i
 
-  loadUsers: (locationId = -1, callback = null) ->
+  loadUsers: (callback, locationId = -1) ->
     if APP.isOnline()
       $.ajax
         type: 'GET'
         dataType: 'json'
         url: '<%= peers_path(location_id: ':location_id') %>'.replace(/:location_id/, locationId)
       .done (msg) ->
-          for peer in msg
-            callback peer
+          numPeers = msg.length
+          for peer, i in msg
+            callback peer, i, numPeers
           # load in case 
           APP.users().subscribeToAllPeerChannels()
       .fail (jqXHR, textStatus) ->
@@ -122,7 +123,7 @@ class window.Storage.Model
         if locationId == -1
           peers = APP.storage().getPeers()
         else
-          # TODO peers = APP.storage().peerssWithinSearchBounds(searchBounds(lat, lng, VoyageX.SEARCH_RADIUS_METERS))
+          # TODO peers = APP.storage().peerssWithinSearchBounds(searchBounds(lat, lng, APP.user().searchRadiusMeters))
           console.log('TODO: implement search redius for peers ...')
           peers = APP.storage().getPeers()
         for peer in peers

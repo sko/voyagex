@@ -28,8 +28,8 @@ class UsersController < ApplicationController
           peer_sys_channel_enc_key = peer_port.sys_channel_enc_key
           msg = { type: :subscription_grant_request, peer: { id: @user.id, username: @user.username, channel_enc_key: @user.comm_port.channel_enc_key } }
           add_foto_to_msg @user, msg
-          #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
-          comm_adapter.publish :system, peer_sys_channel_enc_key, msg
+          Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
+          #comm_adapter.publish :system, peer_sys_channel_enc_key, msg
         end
       end
       peer_ids[1].each do |peer_id|
@@ -185,6 +185,13 @@ class UsersController < ApplicationController
         when 'radar_settings'
           current_user.update_attribute :search_radius_meters, params[:search_radius_meters]
           user_json[:search_radius_meters] = params[:search_radius_meters]
+        when 'edit_username'
+          render "users/change_username", formats: [:js], locals: { edit: true }
+          return
+        when 'save_username'
+          current_user.update_attribute(:username, params[:username])
+          render "users/change_username", formats: [:js], locals: { edit: false }
+          return
         end
         render json: user_json.to_json
         return

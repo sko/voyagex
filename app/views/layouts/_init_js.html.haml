@@ -10,7 +10,6 @@
   window.VoyageX['PEER_CHANNEL_PREFIX'] = '#{PEER_CHANNEL_PREFIX}';
   window.VoyageX.TILE_URL_TEMPLATE = '#{Leaflet.tile_layer}';
   window.VoyageX.USE_GLOBAL_SUBSCRIBE = #{USE_GLOBAL_SUBSCRIBE};
-  window.VoyageX.SEARCH_RADIUS_METERS = #{tmp_user.search_radius_meters||100};
   window.VoyageX.IMAGES_MARKER_POI_PATH = '#{image_path('marker-icon-red.png')}';
   window.VoyageX.IMAGES_MARKER_PEER_PATH = '#{image_path('marker-icon-yellow.png')}';
   window.VoyageX.IMAGES_MARKER_BEAM_PATH = '#{image_path('marker-icon-beam.png')}';
@@ -24,15 +23,9 @@
   window.VoyageX.SOUNDS_ALERT_PATH = '#{asset_path('Treat.mp3')}';
   window.VoyageX.SOUNDS_MSG_IN_PATH = '#{asset_path('3rd_man_gugu.mp3')}'; // Drop.mp3
   
-  / -# required for the very first time when there's no user in localStorage
-  / - geometry = Paperclip::Geometry.from_file(tmp_user.foto) if user_signed_in? && tmp_user.foto.present?
-  / - foto_width = geometry.present? ? geometry.width.to_i : -1
-  / - foto_height = geometry.present? ? geometry.height.to_i : -1
-  / window.currentUser = { id: #{tmp_user.id}, username: '#{tmp_user.username}', foto: {url: '#{tmp_user.foto.url}', width: #{foto_width}, height: #{foto_height}}, homebaseLocationId: #{tmp_user.home_base.present? ? tmp_user.home_base.id : -1}, lastLocation: {lat: #{@lat||'null'}, lng: #{@lng||'null'}}, curCommitHash: '#{tmp_user.snapshot.cur_commit.hash_id}' };
   window.currentAddress = '';
   window.subscribeTo = [];
-  -#window.unsubscribeFrom = [];
-  window.initArgs = {peers: []};
+  -#window.initArgs = {peers: []};
   window.defaultLatLng = [#{@lat||Location.default.latitude}, #{@lng||Location.default.longitude}];
   window.showSearchRadius = false;
   -#

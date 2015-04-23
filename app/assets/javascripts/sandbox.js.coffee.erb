@@ -37,7 +37,7 @@ class window.VoyageX.Sandbox
     if selected.id == 'search_radius_display_show'
       window.showSearchRadius = true
       #VoyageX.Main.markerManager()._showSearchRadius = true
-      VoyageX.Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, APP.map())
+      VoyageX.Main.markerManager().searchBounds(APP.user().searchRadiusMeters, APP.map())
     else
       window.showSearchRadius = false
       #VoyageX.Main.markerManager()._showSearchRadius = false

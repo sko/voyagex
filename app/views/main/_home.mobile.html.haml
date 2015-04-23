@@ -21,13 +21,18 @@
     #user_foto_input_container{style: 'display:none;'}
       = render partial: '/users/foto.mobile', locals: {user: tmp_user()}
     %br
-    %span#whoami_edit{style: "display: #{user_signed_in? ? 'inline' : 'none'};"}>
-      = link_to change_username_path, data: { remote: "true", format: :js } do
-        %span.whoami>
-          = t('auth.whoami', username: tmp_user().username).html_safe
-    %span#whoami_nedit{style: "display: #{user_signed_in? ? 'none' : 'inline'};"}>
-      %span.whoami>
-        = t('auth.whoami', username: tmp_user().username).html_safe
+    -#%span#whoami_edit{style: "display: #{user_signed_in? ? 'inline' : 'none'};"}>
+    -#  = link_to change_username_path, data: { remote: "true", format: :js } do
+    -#    %span.whoami>
+    -#      = t('auth.whoami', username: tmp_user().username).html_safe
+    -#%span#whoami_nedit{style: "display: #{user_signed_in? ? 'none' : 'inline'};"}>
+    -#  %span.whoami>
+    -#    = t('auth.whoami', username: tmp_user().username).html_safe
+    %span#whoami_form{style: 'display: none'}
+      - @_details = [:username]
+      = render('/users/edit_details')
+    %span#whoami_edit
+    %span#whoami_nedit{style: 'display: none'}
   .auth_ctrl{style: 'float: left; padding: 10px 0px 0px 5px;'}
     .logout-link{style: "display: #{user_signed_in? ? 'block' : 'none'}; padding: 13px 0px 0px 0px;"}
       = link_to t('auth.sign_out'), destroy_user_session_path, style: 'margin-left: 20px;', data: { remote: "true", format: :js, method: :delete }
@@ -38,7 +43,7 @@
       %br
       .reg-link
         = link_to t('auth.sign_up'), '#sign_up_modal', popup_params
-      - if Rails.env.to_sym == :development || true
+      - if Rails.env.to_sym == :development# || true
         %br
         .omniauth-links
           .button.facebook_login

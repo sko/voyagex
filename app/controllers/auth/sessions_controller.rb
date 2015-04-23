@@ -23,7 +23,7 @@ module Auth
       return invalid_login_attempt unless @user
       if @user.valid_password?(params[:user][:password])
         sign_in(@user)
-        session.delete(:tmp_user_id)
+        session.delete :tmp_user_id
         render "devise/sessions/success", layout: false, formats: [:js], locals: {resource: @user, resource_name: :user}
       else
         @user.errors.add ' ', t('devise.failure.invalid', authentication_keys: 'email')
@@ -32,8 +32,12 @@ module Auth
     end
     
     def destroy
+binding.pry
       @user = current_user
-      sign_out @user
+      if @user.present?
+        sign_out @user
+      end
+      #session.delete :tmp_user_id
       render "devise/sessions/destroyed", layout: false, formats: [:js], locals: { resource: User.new, resource_name: :user }
     end
 

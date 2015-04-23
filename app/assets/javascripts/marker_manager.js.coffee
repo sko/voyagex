@@ -68,15 +68,19 @@ class window.VoyageX.MarkerManager
         if withLocation?
           m._location = withLocation
         else
-          @_markers.splice i, 1
-          popup = m.target().getPopup()
-          if popup?
-            if popup._isOpen
-              m.target().closePopup()
-            m.target().unbindPopup()
-            @_map.removeLayer(popup)
-          @_map.removeLayer(m.target())
+          this._removeAt i
         break
+
+  _removeAt: (index) ->
+    m =  @_markers[index]
+    @_markers.splice index, 1
+    popup = m.target().getPopup()
+    if popup?
+      if popup._isOpen
+        m.target().closePopup()
+      m.target().unbindPopup()
+      @_map.removeLayer(popup)
+    @_map.removeLayer(m.target())
 
   sel: (replaceMarker, lat, lng, callBack) ->
     if replaceMarker == null
@@ -141,6 +145,12 @@ class window.VoyageX.MarkerManager
         poi = APP.storage().get Comm.StorageController.poiKey({id: m.location().poiId})
         return MarkerManager.metaJSON m, {poi: poi}
     null
+
+  removeForPeer: (peerId) ->
+    for m, idx in @_markers
+      if m._flags.peer? && m._flags.peer.id == peerId
+        this._removeAt idx
+        break
 
   forPeer: (peerId) ->
     for m in @_markers

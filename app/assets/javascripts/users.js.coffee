@@ -1,14 +1,14 @@
 if window.VoyageX?
-  window.VoyageX.UserManager = {}
+  window.VoyageX.Users = {}
 else
-  window.VoyageX = { UserManager: {} }
+  window.VoyageX = { Users: {} }
 
-class window.VoyageX.UserManager
+class window.VoyageX.Users
   
   @_SINGLETON = null
 
   constructor: () ->
-    UserManager._SINGLETON = this
+    Users._SINGLETON = this
     window.USERS = this
 
   initPeer: (peer, callback = null) ->
@@ -34,6 +34,7 @@ class window.VoyageX.UserManager
     if APP.isOnline() && APP._comm.isReady()
       USERS.subscribeToPeerChannels peer
     else
+      BANG
       subscribeTo.push peer
     #APP.storage().saveUser {id: #{cs.user.id}, username: '#{cs.user.username}', peerPort: {id: #{cs.id}, channel_enc_key: '#{cs.channel_enc_key'}});
     APP.view().addIFollow peer
@@ -56,19 +57,31 @@ class window.VoyageX.UserManager
       APP.view().addFollowsMe user
     else if flags.wants_to_follow_me?
       APP.view().addWantsToFollowMe user
+    # if window.isMobile()
+    #   # required for applying layout
+    #   $('#comm_peer_data').trigger("create")
 
   initUsers: (users) ->
     #APP.view().clearFollows()
     for user in users
       USERS.initUser user
+    # if window.isMobile()
+    #   # required for applying layout
+    #   $('#comm_peer_data').trigger("create")
 
+  # saveCB recommended for currentUser
+  # USERS.refreshUserPhoto newU, null, (user, flags) ->
+  #     APP.storage().saveCurrentUser user
   refreshUserPhoto: (user, flags = null, saveCB = null) ->
     unless flags?
       flags = { foto: user.foto }
     userPhotoUrl = Storage.Model.storedUserPhoto user
-    console.log '!!! TODO: curUser is double now'
     if (typeof userPhotoUrl == 'string') 
       user.foto.url = userPhotoUrl
+      if flags?
+        if flags.foto? then (flags.foto.url = userPhotoUrl) else (flags.foto = {url: userPhotoUrl})
+      else
+        flags = {foto: {url: userPhotoUrl}}
       if saveCB?
         saveCB user, flags
       else
@@ -78,13 +91,17 @@ class window.VoyageX.UserManager
       else
         $('.whoami-img').attr('src', userPhotoUrl)
     else if (typeof userPhotoUrl.then == 'function')
-      unless flags.peerPort?
-        $('.whoami-img').attr('src', VoyageX.IMAGES_SWIPER_LOADING_PATH)
       # Assume we are dealing with a promise.
-      #((u) ->
+      if flags.peerPort?
+        $('img[name=peer_photo_'+user.id+']').attr 'src', VoyageX.IMAGES_SWIPER_LOADING_PATH
+      else
+        $('.whoami-img').attr 'src', VoyageX.IMAGES_SWIPER_LOADING_PATH
       userPhotoUrl.then (url) ->
           user.foto.url = url
-          # overwrite url
+          if flags?
+            if flags.foto? then (flags.foto.url = url) else (flags.foto = {url: url})
+          else
+            flags = {foto: {url: url}}
           if saveCB?
             saveCB user, flags
           else
@@ -92,8 +109,7 @@ class window.VoyageX.UserManager
           if flags.peerPort?
             $('img[name=peer_photo_'+user.id+']').attr 'src', url
           else
-            $('.whoami-img').attr('src', url)
-      #)(user)
+            $('.whoami-img').attr 'src', url
 
   resetConnection: (peerId) ->
     peerChannelEncKey = $('#i_follow_'+peerId).attr('data-channelEncKey')
@@ -103,6 +119,7 @@ class window.VoyageX.UserManager
   subscribeToAllPeerChannels: () ->
     if APP.isOnline() && APP._comm.isReady()
       while (peer = subscribeTo.pop())
+        BANG
         USERS.subscribeToPeerChannels peer
 
   subscribeToPeerChannels: (peer) ->

@@ -44,7 +44,7 @@
 #tmpl_auth_whoami{style: 'display: none;'}
   = t('auth.whoami', username: ':username').html_safe
 #tmpl_whoami_edit{style: 'display: none;'}
-  = link_to change_username_path, data: { remote: "true", format: :js }, class: 'menu_link' do
+  = link_to set_user_detail_path(detail: :edit_username), data: { remote: "true", format: :js }, class: 'menu_link' do
     %span.whoami>
       {auth_whoami}
 #tmpl_auth_whoami_img{style: 'display: none;'}

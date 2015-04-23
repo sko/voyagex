@@ -30,6 +30,9 @@
               -#%span#whoami_nedit{style: "display: #{user_signed_in? ? 'none' : 'inline'};", class: 'navbar-inverse navbar-brand'}
               -#  %span.whoami>
               -#    #{t('auth.whoami', username: tmp_user().username).html_safe}
+              %span#whoami_form{style: 'display: none'}
+                - @_details = [:username]
+                = render('/users/edit_details')
               %span#whoami_edit
               %span#whoami_nedit{style: 'display: none'}
             %span.myfoto{style: 'float :left; z-index:1003;'}
@@ -46,10 +49,11 @@
                 = link_to t('auth.sign_up'), '#', id: 'show_sign_up', onclick: 'javascript:$("#sign_up_modal").dialog("open")', class: 'sign_opt menu_link'
                 -#%button{onclick: 'javascript:$("#sign_up_modal").dialog("open")'}
                 -#  #{t('auth.sign_up')}
-            .omniauth-links{style: "float: right; margin: 5px 10px 0px 10px;"}
-              .button.facebook_login
-                = link_to user_omniauth_authorize_path(:facebook) do
-                  = image_tag 'facebook-icon.png', style: 'width: 25px; height: 25px;'
+            - if Rails.env.to_sym == :development# || true
+              .omniauth-links{style: "float: right; margin: 5px 10px 0px 10px;"}
+                .button.facebook_login
+                  = link_to user_omniauth_authorize_path(:facebook) do
+                    = image_tag 'facebook-icon.png', style: 'width: 25px; height: 25px;'
           %li{style: 'padding: 5px 0px 0px 20px;'}
             - lcls = lang_change_links request, ['c']
             %span

@@ -43,7 +43,7 @@ VoyageX::Application.routes.draw do
   get '/manifest', to: 'main#manifest', as: :manifest
 #  get '/context_nav/:lat/:lng', to: 'main#context_nav', as: :context_nav, :constraints => { :lat => /([0-9]+\.[0-9]+|:[a-z]+)/,
 #                                                                                         :lng => /([0-9]+\.[0-9]+|:[a-z]+)/ }
-  match '/change_username', to: 'users#change_details', as: :change_username, via: [:get, :post]
+#  match '/change_username', to: 'users#change_details', as: :change_username, via: [:get, :post]
   match '/set_user_detail/:detail', to: 'users#change_details', as: :set_user_detail, via: [:get, :post]
   get '/csrf', to: 'uploads#csrf', as: :csrf
   get '/upload_comments/:poi_id/:poi_note_id', to: 'uploads#comments', as: :upload_comments

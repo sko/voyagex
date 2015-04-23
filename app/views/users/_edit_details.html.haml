@@ -1,2 +1,3 @@
-= form_tag @_action, method: :post, remote: true do 
-  = t('auth.whoami', username: text_field_tag(:username, @_user_name, class: 'whoami edit_detail')).html_safe
+- if @_details.include? :username
+  = form_tag set_user_detail_path(detail: :save_username), method: :post, remote: true do 
+    = t('auth.whoami', username: text_field_tag(:username, '', class: 'whoami edit_detail')).html_safe

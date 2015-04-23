@@ -163,6 +163,7 @@ class window.VoyageX.View
                   replace(/\{foto_url\}/, peer.foto.url)
     $('#i_follow').append(tr_template)
     # if window.isMobile()
+    #   # required for applying layout
     #   $('#comm_peer_data').trigger("create")
 
   addIWantToFollow: (peer) ->
@@ -173,6 +174,7 @@ class window.VoyageX.View
                   replace(/\{foto_url\}/, peer.foto.url)
     $('#i_want_to_follow').append(tr_template)
     # if window.isMobile()
+    #   # required for applying layout
     #   $('#comm_peer_data').trigger("create")
 
   addIDontFollow: (peer) ->
@@ -184,6 +186,7 @@ class window.VoyageX.View
                   replace(/\{foto_url\}/, peer.foto.url)
     $('#i_dont_follow').append(tr_template)
     # if window.isMobile()
+    #   # required for applying layout
     #   $('#comm_peer_data').trigger("create")
 
   addFollowsMe: (peer) ->
@@ -194,6 +197,7 @@ class window.VoyageX.View
                   replace(/\{foto_url\}/, peer.foto.url)
     $('#follow_me').append(tr_template)
     # if window.isMobile()
+    #   # required for applying layout
     #   $('#comm_peer_data').trigger("create")
 
   addWantsToFollowMe: (peer) ->
@@ -204,6 +208,7 @@ class window.VoyageX.View
                   replace(/\{foto_url\}/, peer.foto.url)
     $('#want_to_follow_me').append(tr_template)
     # if window.isMobile()
+    #   # required for applying layout
     #   $('#comm_peer_data').trigger("create")
 
   updateIFollow: (peer) ->
@@ -246,18 +251,18 @@ class window.VoyageX.View
     if window.isMobile()
       $('#comm_peer_data').trigger("create")
 
-  setPeerPosition: (userId, lat, lng) ->
+  setPeerPosition: (peerId, lat, lng) ->
     #TODO ... $('#people_of_interest')
-    sBs = searchBounds lat, lng, VoyageX.SEARCH_RADIUS_METERS
+    sBs = searchBounds lat, lng, APP.user().searchRadiusMeters
     curUserLatLng = APP.getSelectedPositionLatLng()
     if withinSearchBounds curUserLatLng[0], curUserLatLng[1], sBs
-      markerMeta = VoyageX.Main.markerManager().forPeer userId
+      markerMeta = VoyageX.Main.markerManager().forPeer peerId
       markerMeta.m.setLocation {lat: lat, lng: lng}
       unless true || APP.view()._alertOn
         APP.view().alert()
     else
       console.log '_mapEventsCB: outside searchbounds ...'
-    peer = APP.storage().getUser userId
+    peer = APP.storage().getUser peerId
     path = APP.storage().getPath peer
     if path?
       path = APP.storage().addToPath peer, {lat: lat, lng: lng}, path

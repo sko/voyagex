@@ -21,6 +21,7 @@ class window.Comm.StorageController
     @_uploadQ = new Comm.UploadQ()
     @_maxNumChatBCChatMsgs = 10
     @_maxNumChatP2PChatMsgs = 10
+    @_currentUser = null
     @_jsonObjects = {}
     @_tileDB = {}
     @_tileMeta = null
@@ -243,13 +244,19 @@ class window.Comm.StorageController
       #bookmarks (locations, locationBookmark) ->
   
   getCurrentUser: () ->
+    if @_currentUser?
+      return @_currentUser
     storeKey = 'comm.currentUser'
     JSON.parse(localStorage.getItem(storeKey))
  
-  saveCurrentUser: (currentUser) ->
+  saveCurrentUser: (currentUser, oldCurU = null) ->
     storeKey = 'comm.currentUser'
+    if oldCurU?
+      for attrKey in Object.keys oldCurU
+        if `currentUser[attrKey] === undefined`
+          currentUser[attrKey] = oldCurU[attrKey]
     localStorage.setItem storeKey, JSON.stringify(currentUser)
-    currentUser
+    @_currentUser = currentUser
   
   getUser: (userId) ->
     storeKey = 'comm.users'
@@ -260,11 +267,19 @@ class window.Comm.StorageController
       if users.peers? && (peer = users.peers[userId])?
         user.peerPort = peer.peerPort
       #delete user.chat
+    else
+      console.log 'getUser: getting current user for id '+userId+'?'
+      user = this.getCurrentUser()
     user
   
   # a user ist created from scratch to avoid temporary attributes from being saved
   # all unkodified attributes will be saved -> xUser
   saveUser: (user, flags = {}) ->
+    curU = this.getCurrentUser()
+    # current user must be saved before any other user
+    if user.id == curU.id
+      console.log 'getUser: saving current user for id '+user.id+'!'
+      return this.saveCurrentUser(user, curU)
     storeKey = 'comm.users'
     users = JSON.parse(localStorage.getItem(storeKey))
     unless users

@@ -1,11 +1,7 @@
 $('#settings_form').attr('action', '<%= user_path id: current_user.id -%>')
-#$('.login-link').each () ->
-#  $(this).css('display', 'none')
-#$('.reg-link').each () ->
-#  $(this).css('display', 'none')
-$('#sign_up_or_in').first().css('display', 'none')
-$('.logout-link').each () ->
-  $(this).css('display', 'block')
+# $('#sign_up_or_in').first().css('display', 'none')
+# $('.logout-link').each () ->
+#   $(this).css('display', 'block')
 <% if is_mobile -%>
 $('#sign_in_cancel').click()
 <% end -%>
@@ -21,19 +17,16 @@ geometry = Paperclip::Geometry.from_file(current_user.foto)
 foto_width = geometry.present? ? geometry.width.to_i : -1
 foto_height = geometry.present? ? geometry.height.to_i : -1
 %>
-window.VoyageX.SEARCH_RADIUS_METERS = <%= current_user.search_radius_meters||1000 %>
 newU = { id: <%= current_user.id -%>,\
          username: '<%= current_user.username -%>',\
          foto: {url: '<%= current_user.foto.url -%>', width: <%= foto_width -%>, height: <%= foto_height -%>},\
          homebaseLocationId: <%= current_user.home_base.present? ? current_user.home_base.id : -1 -%>,\
          lastLocation: {lat: <%= lat -%>, lng: <%= lng -%>},\
+         searchRadiusMeters: <%= current_user.search_radius_meters||1000 %>,\
          curCommitHash: '<%= current_user.snapshot.cur_commit.hash_id -%>' }
-# real peerPort is set further down in resetSystemContext
-# user needs peerPort to stay signed in (@see APP.signedIn())
-newU.peerPort = { channel_enc_key: null,\
-                  sys_channel_enc_key: 'resetting' }
 APP.storage().saveCurrentUser newU
-USERS.refreshUserPhoto newU
+#USERS.refreshUserPhoto newU, null, (user, flags) ->
+#    APP.storage().saveCurrentUser user
 $('.whoami').each () ->
     $(this).html("<%= t('auth.whoami', username: current_user.username) -%>")
 $('#whoami_edit').show()

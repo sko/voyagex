@@ -1,6 +1,7 @@
 module Comm
   class CommController < ::ActionController::Base  
     include ::AuthUtils
+    include ::ApplicationHelper
     include ::UserHelper
 
     def ping
@@ -12,15 +13,17 @@ module Comm
     # to subscribe on their own.
     # this way they also can have a dialog whether they are interested at all
     def register
-      #@user = User.find(params[:user_id])
+      # also users that are not signed in can use faye - at least for the system-channel
       @user = tmp_user
       unless @user.comm_port.present?
         comm_port = CommPort.create(user: @user, channel_enc_key: enc_key, sys_channel_enc_key: enc_key)
         @user.comm_port = comm_port
       end
-
-      if params[:subscribe_to_peers] == 'true'
-        subscribe_user_to_peers @user
+      if user_signed_in?
+        if params[:subscribe_to_peers] == 'true'
+binding.pry
+          subscribe_user_to_peers @user
+        end
       end
       res = user_json @user
       res[:peerPort] = { sys_channel_enc_key: @user.comm_port.sys_channel_enc_key,

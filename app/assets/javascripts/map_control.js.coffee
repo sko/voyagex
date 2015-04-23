@@ -42,7 +42,7 @@ class window.VoyageX.MapControl
             x = parseInt(MC._map.project(MC._map.getCenter()).x/256)
             y = parseInt(MC._map.project(MC._map.getCenter()).y/256)
             view = {zoom: MC._map.getZoom(), tile: {column: x, row: y}, subdomain: MC._mapOptions.subdomains[0]}
-            MC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS
+            MC._prefetchArea view, APP.user().searchRadiusMeters
     @_map.on 'moveend', (event) ->
         console.log '### map-event: moveend ...'
         if MapControl.instance()._showTileInfo
@@ -52,7 +52,7 @@ class window.VoyageX.MapControl
             x = parseInt(MC._map.project(MC._map.getCenter()).x/256)
             y = parseInt(MC._map.project(MC._map.getCenter()).y/256)
             view = {zoom: MC._map.getZoom(), tile: {column: x, row: y}, subdomain: MC._mapOptions.subdomains[0]}
-            MC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS
+            MC._prefetchArea view, APP.user().searchRadiusMeters
         posLatLng = VoyageX.MapControl.instance()._map.getCenter()
         #position = {coords: {latitude: posLatLng.lat, longitude: posLatLng.lng}}
         #APP._initPositionCB(position, null, true)
@@ -308,8 +308,8 @@ class window.VoyageX.MapControl
           y = parseInt(MC._map.project(MC._map.getCenter()).y/256)
           view = {zoom: MC._map.getZoom(), tile: {column: x, row: y}, subdomain: e.viewSubdomain}
           #delete e.deferredModeParams.fileStatusCB
-          #MC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS, e.deferredModeParams
-          MC._cacheStrategy.getEntryCreatedCB view, VoyageX.SEARCH_RADIUS_METERS, e.deferredModeParams
+          #MC._prefetchArea view, APP.user().searchRadiusMeters, e.deferredModeParams
+          MC._cacheStrategy.getEntryCreatedCB view, APP.user().searchRadiusMeters, e.deferredModeParams
         MC._tileLoadQueue = {}
     else
       # file was sucessfully read

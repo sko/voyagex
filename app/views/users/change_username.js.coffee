@@ -1,15 +1,18 @@
 <% if edit %>
-  <% @_details = [:username]
-     @_action = change_username_path
-     @_user_name = tmp_user().username %>
-  $('#whoami_edit').html("<%= j render('/users/edit_details') -%>")
-<% else
-  whoami = "<span class=\"whoami\">#{t('auth.whoami', username: tmp_user().username)}</span>".html_safe
-  %>
+  $('#whoami_form').show()
+  $('#whoami_edit').hide()
+  $('#whoami_nedit').hide()
+<% else %>
   curU = APP.user()
   curU.username = '<%= tmp_user().username -%>'
   APP.storage().saveCurrentUser curU
-  APP.storage().saveUser { id: curU.id, username: curU.username }
-  window.currentUser.username = '<%= tmp_user().username -%>'
-  $('#whoami_edit').html("<%= escape_javascript(link_to whoami, change_username_path, class: 'navbar-inverse navbar-brand', data: { remote: 'true', format: :js })-%>")
+  $('.whoami').each () ->
+      $(this).html("<%= t('auth.whoami', username: tmp_user().username) -%>")
+  $('#whoami_form').hide()
+  $('#whoami_edit').show()
+  $('#whoami_nedit').hide()
+  $('#whoami_img_edit').show()
+  $('#whoami_img_nedit').hide()
 <% end %>
+
+

@@ -35,7 +35,7 @@ class window.VoyageX.Main
     #@_initPoisOnMap = []
     Main._STORAGE_MODEL = new Storage.Model()
     Main._UPLOAD_HELPER = new VoyageX.UploadHelper()
-    Main._USER_MANAGER = new VoyageX.UserManager()
+    Main._USER_MANAGER = new VoyageX.Users()
     @_cacheStrategy = null
     window.addEventListener "offline", (e) ->
         console.log 'Main: went offline ...'
@@ -108,7 +108,7 @@ class window.VoyageX.Main
                       console.log 'breakpoint to check deferredModeParams'
                       origCB deferredModeParams, created
                 )(deferredModeParams, deferredModeParams.fileStatusCB)
-                MC._prefetchArea view, VoyageX.SEARCH_RADIUS_METERS, deferredModeParams
+                MC._prefetchArea view, curU.searchRadiusMeters
                 # TODO - replace tile-images-src with cache-url
                 # solution #1
                 # $('#map > .leaflet-map-pane > .leaflet-tile-pane .leaflet-tile-container:parent > .leaflet-tile').not('[src]').each () ->
@@ -126,7 +126,8 @@ class window.VoyageX.Main
           navigator.geolocation.getCurrentPosition(APP._initPositionCB, (error) ->
               #alert('geolocation timed out - manual selection required.\nsetting default location...')
               curU = APP.user()
-              APP._initPositionCB { coords: { latitude: curU.lastLocation.lat, longitude: curU.lastLocation.lng } }
+              initLocation = curU.lastLocation||{ lat:defaultLatLng[0], lng:defaultLatLng[1] }
+              APP._initPositionCB { coords: { latitude: initLocation.lat, longitude: initLocation.lng } }
           , { enableHighAccuracy: true, timeout : 5000 })
         #APP._initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
         if isMobile()
@@ -191,8 +192,9 @@ class window.VoyageX.Main
         # APP.refreshUserPhoto curU, null, (user, flags) ->
         #     APP.view().setupForCurrentUser()
         # # only if signedIn?
-        # Storage.Model.instance().loadUsers -1, (peer) ->
+        # Storage.Model.instance().loadUsers (peer, idx, numPeers) ->
         #     APP.initUser peer
+        #   , -1
         
         Comm.Comm.initSystemContext curU.peerPort.sys_channel_enc_key
 
@@ -373,17 +375,20 @@ class window.VoyageX.Main
         curU.homebaseLocationId = user.home_base.id
         APP.storage().saveCurrentUser curU
 
-  setSearchRadius: (value) ->
+  setSearchRadius: (searchRadiusMeters) ->
     unless $('#search_radius_display_show').prop('checked')
       $('#search_radius_display_hide').prop('checked', false)
       $('#search_radius_display_show').prop('checked', true)
-    VoyageX.SEARCH_RADIUS_METERS = value
-    sBs = searchBounds(APP.map().getCenter().lat, APP.map().getCenter().lng, VoyageX.SEARCH_RADIUS_METERS)
+    curU = APP.user()
+    curU.searchRadiusMeters = searchRadiusMeters
+    APP.storage().saveCurrentUser curU
+    sBs = searchBounds(APP.map().getCenter().lat, APP.map().getCenter().lng, searchRadiusMeters)
     APP.map().fitBounds L.latLngBounds(L.latLng(sBs.lat_south, sBs.lng_west), L.latLng(sBs.lat_north, sBs.lng_east))
-    VoyageX.Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, APP.map())
+    VoyageX.Main.markerManager().searchBounds(searchRadiusMeters, APP.map())
     Storage.Model.instance().setRadarSettings (user) ->
         `;`
 
+  # location: {id:?} will load location from localStorage or backend first
   loadLocation: (location, fetch = true) ->
     if location.lat? || !fetch
       APP._initPositionCB { coords: { latitude: location.lat, longitude: location.lng } }, location.address, true
@@ -460,7 +465,7 @@ class window.VoyageX.Main
     if @_debug # debugRealePos
       this._pathPredictionOnPosSelect lat, lng
     if showSearchRadius
-      Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, APP.map())
+      Main.markerManager().searchBounds APP.user().searchRadiusMeters, APP.map()
 
   _zoomEnd: (e) ->
     $('#zoom_level').html('<span style="color:white;">zoom: '+APP.map().getZoom()+'</span>')
@@ -692,6 +697,12 @@ class window.VoyageX.Main
     if message.type == 'ready_notification'
       curU = APP.user()
       if APP.signedIn(curU)
+        #$('#settings_form').attr('action', '<%= user_path id: ":id" %>'.replace(/:id/, curU.id))
+        $('#sign_up_or_in').first().css('display', 'none')
+        $('.logout-link').each () ->
+          $(this).css('display', 'block')
+        #if isMobile()
+        #  $('#sign_in_cancel').click()
         systemInitCB() # admin-stuff. @see _init_js.html.haml
         for channel in VoyageX.Main.commChannels()
           Comm.Comm.setChannelContext channel, curU.peerPort.channel_enc_key
@@ -700,10 +711,19 @@ class window.VoyageX.Main
         #    APP.storage().saveUser u, {foto: u.foto}
         APP.view().setupForCurrentUser()
       else
+        #$('#settings_form').attr('action', '<%= user_path id: ":id" %>'.replace(/:id/, curU.id))
+        $('#sign_up_or_in').first().css('display', 'block')
+        $('.logout-link').each () ->
+          $(this).css('display', 'none')
         APP.view().setupForCurrentUser()
       # only if signedIn?
-      Storage.Model.instance().loadUsers -1, (peer) ->
+      Storage.Model.instance().loadUsers (peer, idx, numPeers) ->
           USERS.initUser peer
+          # if idx==(numPeers-1)
+          #   if isMobile()
+          #     # required for applying layout
+          #     $('#comm_peer_data').trigger("create")
+        , -1
     else if message.type == 'subscription_grant_request'
     else if message.type == 'subscription_granted'
       message.peer.peerPort = {channel_enc_key: message.peer.channel_enc_key}
@@ -792,38 +812,7 @@ class window.VoyageX.Main
 
   # TODO: provide callback
   contextNav: () ->
-#    selectedTab = $('#context_nav_panel ul[role=tablist] [class~=ui-tabs-active]').attr('aria-controls')
-#    switch selectedTab
-#      when 'pois_preview'
-    # pois have already been loaded - when map got initialized - and are updated with the syncer
-    # @see _initPositionCB
-    # BUT! notes have not been loaded maybe
-    #sBs = Main.markerManager().searchBounds(VoyageX.SEARCH_RADIUS_METERS, this.map())
-#     pois = APP.storage().getPois (poi) ->
-#         sBs = window.searchBounds APP._selectedPosition.lat, APP._selectedPosition.lng, VoyageX.SEARCH_RADIUS_METERS
-#         if poi.lat >= sBs.lat_south && poi.lat <= sBs.lat_north &&
-#            poi.lng >= sBs.lng_west && poi.lng <= sBs.lng_east
-# #          unless poi.notes && poi.notes.length >= 1
-#           # dummy-poiNote for swiper - replaced when attachments are loaded
-#           unless poi.notes? && poi.notes.length >= 1
-#             poi.notes = [{id: -1, attachment: {url: VoyageX.IMAGES_SWIPER_LOADING_PATH, content_type: 'image/png', width: 200, height: 100}}]
-#           Storage.Model.instance().loadPoiNotes poi.id, null, (poiClone) ->
-#               swiperDummy = $('#poi_swiper_'+poi.id+' [data-poiNoteId=-1]')
-#               if swiperDummy.length >= 1
-#                 # if there is a template ist must be swiper's loading-dummy
-#                 swiperDummy.remove()
-#                 for note in poiClone.notes
-#                   swiperSlideHtml = VoyageX.TemplateHelper.swiperSlideHtml poi, note
-#                   $('#poi_swiper_'+poi.id+' .swiper-wrapper').append(swiperSlideHtml)
-#                   mySwiper = window['myPoiSwiper'+poi.id]
-#                   mySwiper.reInit()
-#               else
-#                 # template didn't insert swiperDummy yet, so we can use the real data
-#                 poi.notes = poiClone.notes
-#           return true
-#         else
-#           return false
-    sBs = window.searchBounds APP._selectedPosition.lat, APP._selectedPosition.lng, VoyageX.SEARCH_RADIUS_METERS
+    sBs = window.searchBounds APP._selectedPosition.lat, APP._selectedPosition.lng, APP.user().searchRadiusMeters
     pois = APP.storage().poisWithinSearchBounds sBs, (poi) ->
         # dummy-poiNote for swiper - replaced when attachments are loaded
         unless poi.notes? && poi.notes.length >= 1

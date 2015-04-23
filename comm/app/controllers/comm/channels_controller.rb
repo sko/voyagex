@@ -176,19 +176,21 @@ module Comm
           case data['type']
           when 'click'
             user = User.where(id: data['userId']).first
-            location = nearby_location Location.new(latitude: data['lat'], longitude: data['lng']), 10
-            if location.persisted?
-              user.snapshot.location = location
-              user.snapshot.lat = nil
-              user.snapshot.lng = nil
-              user.snapshot.address = nil
-            else
-              user.snapshot.location = nil
-              user.snapshot.lat = location.latitude
-              user.snapshot.lng = location.longitude
-              user.snapshot.address = shorten_address location, true
+            if user.present?
+              location = nearby_location Location.new(latitude: data['lat'], longitude: data['lng']), 10
+              if location.persisted?
+                user.snapshot.location = location
+                user.snapshot.lat = nil
+                user.snapshot.lng = nil
+                user.snapshot.address = nil
+              else
+                user.snapshot.location = nil
+                user.snapshot.lat = location.latitude
+                user.snapshot.lng = location.longitude
+                user.snapshot.address = shorten_address location, true
+              end
+              user.snapshot.save!
             end
-            user.snapshot.save!
           end
         rescue => e
           Rails.logger.error "!!!!!! #{e.message}"
