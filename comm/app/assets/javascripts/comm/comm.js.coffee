@@ -65,6 +65,11 @@ class window.Comm.Comm
     this.isOnline() && systemReady
 
   send: (channel, message, peer = null) ->
+    unless APP.signedIn() || channel.match(/^\/?system/)
+      # FIXME - mobile doesn't alert
+      #alert('only whene signed-in')
+      console.log 'publish to '+channel+' only when signed-in'
+      return false
     # 1) client wants to publish before register-ajax-response set the enc_key
     #    1.1: store request and send after register (local storage)
     # 2) the same goes for requests when client is offline

@@ -251,11 +251,12 @@ class window.Comm.StorageController
       return @_currentUser
     storeKey = 'comm.currentUser'
     curU = JSON.parse(localStorage.getItem(storeKey))
-    curU.lastLocation = () ->
-        StorageController._SINGLETON.getLocation curU.lastLocationId
+    if curU?
+      curU.lastLocation = () ->
+          StorageController._SINGLETON.getLocation curU.lastLocationId
     curU
 
- 
+  # functions don't get stored
   saveCurrentUser: (currentUser, oldCurU = null) ->
     storeKey = 'comm.currentUser'
     if oldCurU?
@@ -263,6 +264,9 @@ class window.Comm.StorageController
         if `currentUser[attrKey] === undefined`
           currentUser[attrKey] = oldCurU[attrKey]
     localStorage.setItem storeKey, JSON.stringify(currentUser)
+    if `currentUser.lastLocation === undefined`
+      currentUser.lastLocation = () ->
+          StorageController._SINGLETON.getLocation currentUser.lastLocationId
     @_currentUser = currentUser
   
   getUser: (userId) ->

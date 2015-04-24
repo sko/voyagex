@@ -43,7 +43,7 @@ module Comm
         # notify peer about user
         msg = { type: :subscription_notification, peers: [channel_enc_key: user.comm_port.channel_enc_key, user: { id: user.id, username: user.username }] }
         #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer.comm_port.channel_enc_key}", msg)
-        COMM_ADAPTER.send :system, peer.comm_port.channel_enc_key, msg
+        comm_adapter.send :system, peer.comm_port.channel_enc_key, msg
       end
 #      # notify user about peers - but user doesn't have key now
 #      msg = { type: :subscription_notification, peers: peers_data }

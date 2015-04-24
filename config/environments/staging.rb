@@ -58,6 +58,7 @@ Rails.application.configure do
 
   Faye.logger = lambda { |m| Rails.logger.info m if m.match(/connectiontype/i).present? }
   FAYE_URL = 'http://voyagex.info.tm/comm'
+  FAYE_URL_LOCAL = 'http://localhost:3000/comm'
   GIT_REMOTE_URL = 'git@github.com:/sko/voyagex_data'
   COMM_ADAPTER_CLASS = 'Comm::Adapter'
 end

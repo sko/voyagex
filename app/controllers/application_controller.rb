@@ -1,5 +1,7 @@
 class ApplicationController < ActionController::Base
 
+  @@comm_adapter = nil
+
   before_filter :set_locale, :store_location
   
   protect_from_forgery with: :null_session
@@ -10,6 +12,11 @@ class ApplicationController < ActionController::Base
     
   layout :mobile_by_useragent
  
+  def self.comm_adapter
+    #@comm_adapter ||= Object.const_get(COMM_ADAPTER_CLASS).new
+    @@comm_adapter ||= (@@comm_adapter = Object.const_get(COMM_ADAPTER_CLASS).new)
+  end
+
   #
   #
   #

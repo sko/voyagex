@@ -2,7 +2,7 @@
 class PostCommit
   include PoiHelper
   
-  FAYE_CLIENT = Faye::Client.new(::FAYE_URL)
+  FAYE_CLIENT = Faye::Client.new(::FAYE_URL_LOCAL)
 
   # queue for resque
   @queue = :post_commit
@@ -13,7 +13,27 @@ class PostCommit
     case args_hash['action']
       when 'sync_poi'
         PostCommit.sync_poi args_hash['user_id'], args_hash['poi_id'], args_hash['min_local_time_secs']
+      when 'update_follows'
+        PostCommit.update_follows args_hash['channel'], args_hash['msg'], args_hash['user_id']
     end
+  end
+
+  def self.update_follows channel, msgJSON, user_id
+    PostCommit.new.update_follows channel, msgJSON, user_id
+  end
+  
+  def update_follows channel, msgJSON, user_id
+    #puts "################# msgJSON[#{msgJSON.class}] = #{msgJSON}"
+    msg = msgJSON # JSON.parse msgJSON
+    #puts "################# msg[#{msg.class}] = #{msg}"
+    EM.run {
+      num_jobs = 1
+      jobs_done_count = 0
+
+      publication = PostCommit::FAYE_CLIENT.publish("/#{channel}", msg)
+      publication.callback { Rails.logger.debug("sender #{user_id} to #{channel}"); EM.stop if (jobs_done_count += 1) == num_jobs }
+      publication.errback {|error| Rails.logger.error("#{channel} - error: #{error.message}"); EM.stop if (jobs_done_count += 1) == num_jobs }
+    }
   end
 
   # updates the users repository:
@@ -98,19 +118,20 @@ class PostCommit
                               poi: @poi_json_for_others }
 
     EM.run {
-      num_cbs = 0
+      num_jobs = 2
+      jobs_done_count = 0
 
       channel_path = '/system'
       channel_path += "#{PEER_CHANNEL_PREFIX}#{@user.comm_port.sys_channel_enc_key}" unless USE_GLOBAL_SUBSCRIBE
       publication_1 = PostCommit::FAYE_CLIENT.publish(channel_path, system_msg_for_user)
-      publication_1.callback { Rails.logger.debug("sent poi-sync-msg to user: commit_hash = #{cur_commit}"); EM.stop if (num_cbs += 1) == 2 }
-      publication_1.errback {|error| Rails.logger.error("poi-sync-msg to user: commit_hash = #{cur_commit} - error: #{error.message}"); EM.stop if (num_cbs += 1) == 2 }
+      publication_1.callback { Rails.logger.debug("sent poi-sync-msg to user: commit_hash = #{cur_commit}"); EM.stop if (jobs_done_count += 1) == num_jobs }
+      publication_1.errback {|error| Rails.logger.error("poi-sync-msg to user: commit_hash = #{cur_commit} - error: #{error.message}"); EM.stop if (jobs_done_count += 1) == num_jobs }
 
       channel_path = '/uploads'
       channel_path += "#{PEER_CHANNEL_PREFIX}#{@user.comm_port.channel_enc_key}" unless USE_GLOBAL_SUBSCRIBE
       publication_2 = PostCommit::FAYE_CLIENT.publish(channel_path, upload_msg_for_others)
-      publication_2.callback { Rails.logger.debug("sent poi-sync-msg to others: commit_hash = #{cur_commit}"); EM.stop if (num_cbs += 1) == 2 }
-      publication_2.errback {|error| Rails.logger.error("poi-sync-msg to others: commit_hash = #{cur_commit} - error: #{error.message}"); EM.stop if (num_cbs += 1) == 2 }
+      publication_2.callback { Rails.logger.debug("sent poi-sync-msg to others: commit_hash = #{cur_commit}"); EM.stop if (jobs_done_count += 1) == num_jobs }
+      publication_2.errback {|error| Rails.logger.error("poi-sync-msg to others: commit_hash = #{cur_commit} - error: #{error.message}"); EM.stop if (jobs_done_count += 1) == num_jobs }
     }
   end
 
