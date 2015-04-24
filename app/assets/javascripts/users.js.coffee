@@ -119,7 +119,6 @@ class window.VoyageX.Users
   subscribeToAllPeerChannels: () ->
     if APP.isOnline() && APP._comm.isReady()
       while (peer = subscribeTo.pop())
-        BANG
         USERS.subscribeToPeerChannels peer
 
   subscribeToPeerChannels: (peer) ->

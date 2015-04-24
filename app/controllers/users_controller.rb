@@ -28,8 +28,8 @@ class UsersController < ApplicationController
           peer_sys_channel_enc_key = peer_port.sys_channel_enc_key
           msg = { type: :subscription_grant_request, peer: { id: @user.id, username: @user.username, channel_enc_key: @user.comm_port.channel_enc_key } }
           add_foto_to_msg @user, msg
-          Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
-          #comm_adapter.publish :system, peer_sys_channel_enc_key, msg
+          #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
+          comm_adapter.publish :system, peer_sys_channel_enc_key, msg, @user
         end
       end
       peer_ids[1].each do |peer_id|
@@ -44,14 +44,14 @@ class UsersController < ApplicationController
             peer_sys_channel_enc_key = peer_port.sys_channel_enc_key
             msg = { type: :quit_subscription, peer: { id: @user.id, username: @user.username, channel_enc_key: @user.comm_port.channel_enc_key } }
             #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
-            comm_adapter.publish :system, peer_sys_channel_enc_key, msg
+            comm_adapter.publish :system, peer_sys_channel_enc_key, msg, @user
           else
             @cancel_subscription_requests << peer_port.user
             # notify peer that @user does not request grant anymore
             peer_sys_channel_enc_key = peer_port.sys_channel_enc_key
             msg = { type: :cancel_subscription_grant_request, peer: { id: @user.id, username: @user.username, channel_enc_key: @user.comm_port.channel_enc_key } }
             #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
-            comm_adapter.publish :system, peer_sys_channel_enc_key, msg
+            comm_adapter.publish :system, peer_sys_channel_enc_key, msg, @user
           end
         end
       end
@@ -77,7 +77,7 @@ class UsersController < ApplicationController
           msg = { type: :subscription_granted, peer: { id: @user.id, username: @user.username, channel_enc_key:  @user.comm_port.channel_enc_key } }
           add_foto_to_msg @user, msg
           #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
-          comm_adapter.publish :system, peer_sys_channel_enc_key, msg
+          comm_adapter.publish :system, peer_sys_channel_enc_key, msg, @user
         end
       end
       peer_ids[1].each do |peer_id|
@@ -92,7 +92,7 @@ class UsersController < ApplicationController
             comm_peer.destroy 
             # notify peer that his subscription-grant is revoked by @user
             #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
-            comm_adapter.publish :system, peer_sys_channel_enc_key, msg
+            comm_adapter.publish :system, peer_sys_channel_enc_key, msg, @user
           end
         end
       end
@@ -111,7 +111,7 @@ class UsersController < ApplicationController
           msg = { type: :subscription_denied, peer: { id: @user.id, username: @user.username, channel_enc_key: @user.comm_port.channel_enc_key } }
           add_foto_to_msg @user, msg
           #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
-          comm_adapter.publish :system, peer_sys_channel_enc_key, msg
+          comm_adapter.publish :system, peer_sys_channel_enc_key, msg, @user
         end
       end
     end

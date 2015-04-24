@@ -311,6 +311,22 @@ class window.VoyageX.TemplateHelper
     replace(/\{user_id\}/g, APP.user().id).
     replace(/\{path_key\}/g, pathKey)
 
+  @initRadarEditorSlider: (popup) ->
+    # init slider:
+    $(popup._contentNode).find('> .radar_editor > fieldset').first().trigger('create');
+    #noteEditor = $('#'+typeId).closest('.radar_editor').first()
+    #noteEditor.closest('.leaflet-popup-content').first().scrollTop(noteEditor.offset().top)
+    #$('#'+typeId).focus()
+    $('#search_radius_ctrl').slider({
+        min: 100,
+        max: 5000,
+        step: 100,
+        value: APP.user().searchRadiusMeters,
+        stop: (event, u) ->
+            APP.setSearchRadius u.value
+            $('#search_radius_meters').html APP.user().searchRadiusMeters
+    })
+
   @openRadarEditor: () ->
     marker = APP.getOpenPopupMarker()
     unless marker?
@@ -329,19 +345,20 @@ class window.VoyageX.TemplateHelper
       #$('#tmpl_radar_editor > .radar_editor').remove()
     marker.openPopup()
     # init slider:
-    $(popup._contentNode).find('> .radar_editor > fieldset').first().trigger('create');
-    #noteEditor = $('#'+typeId).closest('.radar_editor').first()
-    #noteEditor.closest('.leaflet-popup-content').first().scrollTop(noteEditor.offset().top)
-    #$('#'+typeId).focus()
-    $('#search_radius_ctrl').slider({
-        min: 100,
-        max: 5000,
-        step: 100,
-        value: APP.user().searchRadiusMeters,
-        stop: (event, u) ->
-            APP.setSearchRadius u.value
-            $('#search_radius_meters').html APP.user().searchRadiusMeters
-    })
+    TemplateHelper.initRadarEditorSlider popup
+    # $(popup._contentNode).find('> .radar_editor > fieldset').first().trigger('create');
+    # #noteEditor = $('#'+typeId).closest('.radar_editor').first()
+    # #noteEditor.closest('.leaflet-popup-content').first().scrollTop(noteEditor.offset().top)
+    # #$('#'+typeId).focus()
+    # $('#search_radius_ctrl').slider({
+    #     min: 100,
+    #     max: 5000,
+    #     step: 100,
+    #     value: APP.user().searchRadiusMeters,
+    #     stop: (event, u) ->
+    #         APP.setSearchRadius u.value
+    #         $('#search_radius_meters').html APP.user().searchRadiusMeters
+    # })
     APP.view().setRealPositionWatchedIcon if APP.isRealPositionWatched() then 'on' else 'off'
     APP.view().setTraceCtrlIcon APP.user(), marker, if curPath? then 'start' else 'stop'
 
@@ -371,7 +388,7 @@ class window.VoyageX.TemplateHelper
       #$('#tmpl_radar_editor > .radar_editor').remove()
     marker.openPopup()
     # init slider:
-    $(popup._contentNode).find('> .radar_editor > fieldset').first().trigger('create');
+    TemplateHelper.initRadarEditorSlider popup
     APP.view().setRealPositionWatchedIcon if APP.isRealPositionWatched() then 'on' else 'off'
 
   @_resetMarkerControlsPopup: (popup, skipKey) ->

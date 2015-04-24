@@ -243,11 +243,18 @@ class window.Comm.StorageController
       this.bookmark id, text
       #bookmarks (locations, locationBookmark) ->
   
+  isCurrentUser: (user) ->
+    this.getCurrentUser().id == user.id
+
   getCurrentUser: () ->
     if @_currentUser?
       return @_currentUser
     storeKey = 'comm.currentUser'
-    JSON.parse(localStorage.getItem(storeKey))
+    curU = JSON.parse(localStorage.getItem(storeKey))
+    curU.lastLocation = () ->
+        StorageController._SINGLETON.getLocation curU.lastLocationId
+    curU
+
  
   saveCurrentUser: (currentUser, oldCurU = null) ->
     storeKey = 'comm.currentUser'
@@ -274,14 +281,14 @@ class window.Comm.StorageController
   
   # a user ist created from scratch to avoid temporary attributes from being saved
   # all unkodified attributes will be saved -> xUser
-  saveUser: (user, flags = {}) ->
+  saveUser: (user, flags = {}, db = null) ->
     curU = this.getCurrentUser()
     # current user must be saved before any other user
     if user.id == curU.id
       console.log 'getUser: saving current user for id '+user.id+'!'
       return this.saveCurrentUser(user, curU)
     storeKey = 'comm.users'
-    users = JSON.parse(localStorage.getItem(storeKey))
+    users = if db? then db else JSON.parse(localStorage.getItem(storeKey))
     unless users
       users = {}
     xUser = users[user.id]
@@ -365,9 +372,13 @@ class window.Comm.StorageController
     path[0].timestamp
 
   getPaths: (user) ->
-    storeKey = 'comm.users'
-    users = JSON.parse(localStorage.getItem(storeKey))
-    if users? then (if users[user.id]? then users[user.id].paths else null) else null
+    curU = this.getCurrentUser()
+    if curU.id == user.id
+      curU.paths
+    else
+      storeKey = 'comm.users'
+      users = JSON.parse(localStorage.getItem(storeKey))
+      if users? then (if users[user.id]? then users[user.id].paths else null) else null
 
   getPath: (user, pathKey = null, notDone = true) ->
     paths = this.getPaths user
@@ -383,26 +394,42 @@ class window.Comm.StorageController
   # no error-handling if user not in localStroage
   # TODO - currently just next path is added without checking last path for done.
   #        no way yet to continue path before last path
-  startTracePath: (user, position, db = {}) ->
-    storeKey = 'comm.users'
-    users = JSON.parse(localStorage.getItem(storeKey))
-    paths = users[user.id].paths
+  startTracePath: (userId, position, db = {}) ->
+    curU = this.getCurrentUser()
+    if curU.id == userId
+      dbUser = curU
+    else
+      storeKey = 'comm.users'
+      users = JSON.parse(localStorage.getItem(storeKey))
+      dbUser = users[userId]
+    
+    paths = dbUser.paths
     unless paths?
       paths = {}
-      users[user.id]['paths'] = paths
+      dbUser['paths'] = paths
     now = new Date().getTime()
     path = {done: false, entries: [{timestamp: now, lat: position.lat, lng: position.lng}]}
     paths[now] = path
-    localStorage.setItem storeKey, JSON.stringify(users)
+    
+    if curU.id == userId
+      this.saveCurrentUser dbUser
+    else
+      localStorage.setItem storeKey, JSON.stringify(users)
     db['users'] = users
     path.entries
 
   # creates path if none exists for user or selected path is done
   # no error-handling if pathKey doesn't exist
-  addToPath: (user, position, path = null) ->
-    storeKey = 'comm.users'
-    users = JSON.parse(localStorage.getItem(storeKey))
-    paths = users[user.id].paths
+  addToPath: (userId, position, path = null) ->
+    curU = this.getCurrentUser()
+    if curU.id == userId
+      dbUser = curU
+    else
+      storeKey = 'comm.users'
+      users = JSON.parse(localStorage.getItem(storeKey))
+      dbUser = users[userId]
+
+    paths = dbUser.paths
     if paths?
       if path?
         pathKey = path[0].timestamp
@@ -412,26 +439,49 @@ class window.Comm.StorageController
       curPath = paths[pathKey]
     else
       db = {}
-      curPath = startTracePath user, position, db
+      curPath = startTracePath dbUser, position, db
+      # curU/users was saved in startTracePath
+      dbUser = this.getCurrentUser()
       users = db.users
+    
     curPath.entries.push {timestamp: new Date().getTime(), lat: position.lat, lng: position.lng}
-    localStorage.setItem storeKey, JSON.stringify(users)
+    
+    if curU.id == userId
+      this.saveCurrentUser dbUser
+    else
+      localStorage.setItem storeKey, JSON.stringify(users)
     curPath.entries
 
-  deleteFromPath: (user, pathKey, index) ->
-    storeKey = 'comm.users'
-    users = JSON.parse(localStorage.getItem(storeKey))
-    paths = users[user.id].paths
+  deleteFromPath: (userId, pathKey, index) ->
+    curU = this.getCurrentUser()
+    if curU.id == userId
+      dbUser = curU
+    else
+      storeKey = 'comm.users'
+      users = JSON.parse(localStorage.getItem(storeKey))
+      dbUser = users[userId]
+    
+    paths = dbUser.paths
     paths[pathKey].entries.splice index, 1
-    localStorage.setItem storeKey, JSON.stringify(users)
+    
+    if curU.id == userId
+      this.saveCurrentUser dbUser
+    else
+      localStorage.setItem storeKey, JSON.stringify(users)
     paths[pathKey].entries
 
   # no error-handling if user not in localStroage
   # no error-handling if paths doesn't exist
-  stopTracePath: (user, curPath = null) ->
-    storeKey = 'comm.users'
-    users = JSON.parse(localStorage.getItem(storeKey))
-    paths = users[user.id].paths
+  stopTracePath: (userId, curPath = null) ->
+    curU = this.getCurrentUser()
+    if curU.id == userId
+      dbUser = curU
+    else
+      storeKey = 'comm.users'
+      users = JSON.parse(localStorage.getItem(storeKey))
+      dbUser = users[userId]
+    
+    paths = dbUser.paths
     if curPath?
       path = paths[curPath[0].timestamp]
     else
@@ -441,20 +491,34 @@ class window.Comm.StorageController
       path.done = true
     else
       delete paths[path.entries[0].timestamp]
-    localStorage.setItem storeKey, JSON.stringify(users)
+    
+    if curU.id == userId
+      this.saveCurrentUser dbUser
+    else
+      localStorage.setItem storeKey, JSON.stringify(users)
     path.entries
 
   # no error-handling if user not in localStroage
   # no error-handling if paths doesn't exist
-  deleteTracePath: (user, pathKey = null) ->
-    storeKey = 'comm.users'
-    users = JSON.parse(localStorage.getItem(storeKey))
-    paths = users[user.id].paths
+  deleteTracePath: (userId, pathKey = null) ->
+    curU = this.getCurrentUser()
+    if curU.id == userId
+      dbUser = curU
+    else
+      storeKey = 'comm.users'
+      users = JSON.parse(localStorage.getItem(storeKey))
+      dbUser = users[userId]
+    
+    paths = dbUser.paths
     unless pathKey?
       pathKeys = Object.keys(paths)
       pathKey = pathKeys[pathKeys.length-1]
     delete paths[pathKey]
-    localStorage.setItem storeKey, JSON.stringify(users)
+    
+    if curU.id == userId
+      this.saveCurrentUser dbUser
+    else
+      localStorage.setItem storeKey, JSON.stringify(users)
 
   storePoi: (poi, flatten = true) ->
     poiKey = StorageController.poiKey poi

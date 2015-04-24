@@ -1,5 +1,11 @@
-- @lat = tmp_user.snapshot.location.present? ? tmp_user.snapshot.location.latitude : tmp_user.snapshot.lat
-- @lng = tmp_user.snapshot.location.present? ? tmp_user.snapshot.location.longitude : tmp_user.snapshot.lng
+- if tmp_user.snapshot.location.present?
+  - @initLocId = tmp_user.snapshot.location.latitude
+  - @initLocLat = tmp_user.snapshot.location.latitude
+  - @initLocLng = tmp_user.snapshot.location.longitude
+- else
+  - @initLocId = tmp_user.snapshot.lat
+  - @initLocLat = tmp_user.snapshot.lat
+  - @initLocLng = tmp_user.snapshot.lng
 = javascript_tag do
   -#window.scrollTo(0,1);
   window.DEBUG = false;
@@ -25,8 +31,7 @@
   
   window.currentAddress = '';
   window.subscribeTo = [];
-  -#window.initArgs = {peers: []};
-  window.defaultLatLng = [#{@lat||Location.default.latitude}, #{@lng||Location.default.longitude}];
+  window.initLocation = { id: #{@initLocId||Location.default.id}, lat: #{@initLocLat||Location.default.latitude}, lng: #{@initLocLng||Location.default.longitude} };
   window.showSearchRadius = false;
   -#
   -# for admin it's ok to have hard-coded data in app-cache. admin actually should clear appcache before signing in

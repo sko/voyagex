@@ -32,8 +32,7 @@
     var view = new VoyageX.View();
     var offlineZooms = [4,8,12,16];
     var zooms = [#{(1..16).collect{|n|",#{n}"}.join.sub(/^,/,'')}];
-    -#var mapOptions = { center: new L.LatLng(#{@lat||Location.default.latitude}, #{@lng||Location.default.longitude}),
-    var mapOptions = { center: new L.LatLng(defaultLatLng[0], defaultLatLng[1]),
+    var mapOptions = { center: new L.LatLng(initLocation.lat, initLocation.lng),
     zooms: zooms,
     zoom: 16,
     subdomains: ['a'],

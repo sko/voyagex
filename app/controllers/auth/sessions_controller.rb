@@ -32,13 +32,12 @@ module Auth
     end
     
     def destroy
-binding.pry
       @user = current_user
       if @user.present?
         sign_out @user
       end
       #session.delete :tmp_user_id
-      render "devise/sessions/destroyed", layout: false, formats: [:js], locals: { resource: User.new, resource_name: :user }
+      render "devise/sessions/destroyed", layout: false, formats: [:js]
     end
 
     protected

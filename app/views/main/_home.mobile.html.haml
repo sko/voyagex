@@ -43,7 +43,7 @@
       %br
       .reg-link
         = link_to t('auth.sign_up'), '#sign_up_modal', popup_params
-      - if Rails.env.to_sym == :development# || true
+      - if Rails.env.to_sym == :development || true
         %br
         .omniauth-links
           .button.facebook_login

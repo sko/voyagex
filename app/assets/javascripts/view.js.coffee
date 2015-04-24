@@ -265,7 +265,7 @@ class window.VoyageX.View
     peer = APP.storage().getUser peerId
     path = APP.storage().getPath peer
     if path?
-      path = APP.storage().addToPath peer, {lat: lat, lng: lng}, path
+      path = APP.storage().addToPath peer.id, {lat: lat, lng: lng}, path
       unless APP.smoothenPath peer, path
         VoyageX.Main.mapControl().drawPath peer, path, true
 

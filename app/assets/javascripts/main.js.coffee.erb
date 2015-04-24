@@ -126,10 +126,9 @@ class window.VoyageX.Main
           navigator.geolocation.getCurrentPosition(APP._initPositionCB, (error) ->
               #alert('geolocation timed out - manual selection required.\nsetting default location...')
               curU = APP.user()
-              initLocation = curU.lastLocation||{ lat:defaultLatLng[0], lng:defaultLatLng[1] }
-              APP._initPositionCB { coords: { latitude: initLocation.lat, longitude: initLocation.lng } }
+              initLoc = curU.lastLocation||window.initLocation
+              APP._initPositionCB { coords: { latitude: initLoc.lat, longitude: initLoc.lng } }
           , { enableHighAccuracy: true, timeout : 5000 })
-        #APP._initPositionCB { coords: { latitude: defaultLatLng[0], longitude: defaultLatLng[1] } }
         if isMobile()
           # if not set then jquery-mobil will add origin header to request -  causing No 'Access-Control-Allow-Origin' 
           #$.mobile.ajaxEnabled = false
@@ -184,18 +183,21 @@ class window.VoyageX.Main
 
   register: () ->
     Main._BACKEND.register (curU) ->
+        poiId = curU.lastLocation.poiId
+        if poiId?
+          APP.storage().saveLocation curU.lastLocation, {poi: {id: lastLocation.poiId}}
+        else
+          APP.storage().saveLocation curU.lastLocation
         isSignedIn = APP.storage().getCurrentUser()? && APP.signedIn(curU)
-        lastLocation = curU.lastLocation
+        curU.lastLocationId = curU.lastLocation.id
         delete curU.lastLocation
         APP.storage().saveCurrentUser curU
-        
         # APP.refreshUserPhoto curU, null, (user, flags) ->
         #     APP.view().setupForCurrentUser()
         # # only if signedIn?
         # Storage.Model.instance().loadUsers (peer, idx, numPeers) ->
         #     APP.initUser peer
         #   , -1
-        
         Comm.Comm.initSystemContext curU.peerPort.sys_channel_enc_key
 
   isBackendOnline: () ->
@@ -292,7 +294,7 @@ class window.VoyageX.Main
     if window.tTDblClick
       isDoubleClick = true
       if path?
-        APP.storage().stopTracePath user, path
+        APP.storage().stopTracePath user.id, path
         APP.view().setTraceCtrlIcon user, marker, 'stop'
       VoyageX.View.editTracePaths user
       return true
@@ -304,19 +306,19 @@ class window.VoyageX.Main
 
     marker = APP.getOpenPopupMarker true
     if path?
-      APP.storage().stopTracePath user, path
+      APP.storage().stopTracePath user.id, path
       APP.view().setTraceCtrlIcon user, marker, 'stop'
     else
       if user.id == APP.user().id 
         position = {lat: APP._selectedPosition.lat, lng: APP._selectedPosition.lng}
       else
         position = {lat: marker.m.location().lat, lng: marker.m.location().lng}
-      APP.storage().startTracePath user, position
+      APP.storage().startTracePath user.id, position
       APP.view().setTraceCtrlIcon user, marker, 'start'
 
   deleteTracePath: (user, pathKey) ->
     APP.view().hideTracePath pathKey
-    APP.storage().deleteTracePath user, pathKey
+    APP.storage().deleteTracePath user.id, pathKey
     $('#tp_e_'+pathKey).remove()
 
   #publishPosition: (bookmarkLocation = false, posLatLng = null, setHomeBase = false) ->
@@ -331,7 +333,7 @@ class window.VoyageX.Main
                                 #setHomeBase: setHomeBase})
     path = APP.storage().getPath APP.user()
     if path?
-      path = APP.storage().addToPath APP.user(), @_selectedPosition, path
+      path = APP.storage().addToPath APP.user().id, @_selectedPosition, path
       VoyageX.Main.mapControl().drawPath APP.user(), path, true
     $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').click()
 
@@ -511,7 +513,7 @@ class window.VoyageX.Main
             shortDist = L.latLng(path[maxIdx-2].lat, path[maxIdx-2].lng).distanceTo L.latLng(path[maxIdx].lat, path[maxIdx].lng)
             factor4 = (thirdLastDist+fourthLastDist) / 2 / shortDist
             unless shortDist >= (thirdLastDist+fourthLastDist)/2*inaccuracyFactor1
-              path = APP.storage().deleteFromPath user, APP.storage().pathKey(path), maxIdx-1
+              path = APP.storage().deleteFromPath user.id, APP.storage().pathKey(path), maxIdx-1
               APP.view().hideTracePath APP.storage().pathKey(path)
               VoyageX.Main.mapControl().drawPath APP.user(), path
               return true
@@ -538,7 +540,7 @@ class window.VoyageX.Main
                                 lng: APP._realPosition.lng})
       path = APP.storage().getPath APP.user()
       if path?
-        path = APP.storage().addToPath APP.user(), APP._realPosition, path
+        path = APP.storage().addToPath APP.user().id, APP._realPosition, path
         unless APP.smoothenPath APP.user(), path
           # don't draw gps-location-error
           VoyageX.Main.mapControl().drawPath APP.user(), path, true
@@ -709,6 +711,7 @@ class window.VoyageX.Main
         USERS.subscribeToAllPeerChannels()
         #APP.refreshUserPhoto curU, null, (u, flags) ->
         #    APP.storage().saveUser u, {foto: u.foto}
+        APP.loadLocation {id: curU.lastLocationId }
         APP.view().setupForCurrentUser()
       else
         #$('#settings_form').attr('action', '<%= user_path id: ":id" %>'.replace(/:id/, curU.id))

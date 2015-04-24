@@ -15,35 +15,39 @@ module Comm
     channel '/system**' do
       monitor :subscribe do
         ###### Client igt3vtbefo1rfmo5afi7wig5y7x3vx7 subscribed to /system@8jruy0aws.
-        Rails.logger.debug "###### Client #{client_id} subscribed to #{channel}."
+        Rails.logger.debug "### #{channel} - subscribe ### Client #{client_id} subscribed ..."
         subscription_enc_key = channel.match(/^\/system#{PEER_CHANNEL_PREFIX}([^\/]+)/)
         if subscription_enc_key.present?
           #
           # when a client subscribes he gets a ready-notification
           #
           begin
-            comm_port = CommPort.where(sys_channel_enc_key: subscription_enc_key[1]).first
-            Rails.logger.debug "###### Found User #{comm_port.user.id} for Client #{client_id}. comm_port.unsubscribe_ts = #{comm_port.unsubscribe_ts}"
-            if comm_port.unsubscribe_ts.present?
-              msg = { type: :unsubscribed_notification, old_client_id: comm_port.current_faye_client_id, seconds_ago: ((DateTime.now - comm_port.unsubscribe_ts.to_datetime) * 24 * 60 * 60).to_i }
+            admin_cp = CommPort.joins(:user).where(current_faye_client_id: client_id, users: {email: ::ADMIN_EMAIL_ADDRESS}).first
+            # admin user can subscribe to system-channel from other user
+            unless admin_cp.present? && admin_cp.sys_channel_enc_key != subscription_enc_key[1]
+              comm_port = CommPort.where(sys_channel_enc_key: subscription_enc_key[1]).first
+              Rails.logger.debug "### #{channel} - subscribe ### Found User #{comm_port.user.id} for Client #{client_id}. comm_port.unsubscribe_ts = #{comm_port.unsubscribe_ts}"
+              if comm_port.unsubscribe_ts.present?
+                msg = { type: :unsubscribed_notification, old_client_id: comm_port.current_faye_client_id, seconds_ago: ((DateTime.now - comm_port.unsubscribe_ts.to_datetime) * 24 * 60 * 60).to_i }
+                Comm::ChannelsController.publish(channel, msg)
+                comm_port.update_attributes(current_faye_client_id: client_id, unsubscribe_ts: nil)
+              else
+                comm_port.update_attribute(:current_faye_client_id, client_id)
+              end
+              # now that current_faye_client_id is set, the client can start to communicate
+              # first it should register to it's own bidirectional channels
+              #msg = { type: :ready_notification, channel_enc_key: comm_port.channel_enc_key }
+              msg = { type: :ready_notification }
+             #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{subscription_enc_key[1]}", msg)
               Comm::ChannelsController.publish(channel, msg)
-              comm_port.update_attributes(current_faye_client_id: client_id, unsubscribe_ts: nil)
-            else
-              comm_port.update_attribute(:current_faye_client_id, client_id)
             end
-            # now that current_faye_client_id is set, the client can start to communicate
-            # first it should register to it's own bidirectional channels
-            #msg = { type: :ready_notification, channel_enc_key: comm_port.channel_enc_key }
-            msg = { type: :ready_notification }
-           #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{subscription_enc_key[1]}", msg)
-            Comm::ChannelsController.publish(channel, msg)
           rescue => e
-            Rails.logger.error "!!!!!! #{e.message}"
+            Rails.logger.error "!!! #{channel} - subscribe !!! #{e.message}"
           end
         end
       end
       monitor :unsubscribe do
-        Rails.logger.debug "###### Client #{client_id} unsubscribed from #{channel}."
+        Rails.logger.debug "### #{channel} - unsubscribe ### Client #{client_id} unsubscribed ..."
 ###### Client 0wsoszcovhq9k2y9xhpax15wvam4jld unsubscribed from /system@gyimlwqrh.
         subscription_enc_key = channel.match(/^\/system#{PEER_CHANNEL_PREFIX}([^\/]+)/)
         if subscription_enc_key.present?
@@ -51,15 +55,15 @@ module Comm
             # store info and send to client on next subscription
             # since unsubscribed client would'n receive it here
             comm_port = CommPort.where(sys_channel_enc_key: subscription_enc_key[1]).first
-            Rails.logger.debug "###### Found User #{comm_port.user.id} for Client #{client_id}."
+            Rails.logger.debug "### #{channel} - unsubscribe ### Found User #{comm_port.user.id} for Client #{client_id}."
             comm_port.update_attribute(:unsubscribe_ts, DateTime.now)
           rescue => e
-            Rails.logger.error "!!!!!! #{e.message}"
+            Rails.logger.error "!!! #{channel} - unsubscribe !!! #{e.message}"
           end
         end
       end
       monitor :publish do
-        Rails.logger.debug "###### Client #{client_id} published #{data.inspect} to #{channel}."
+        Rails.logger.debug "### #{channel} - publish ### #{data.inspect}"
       end
     end
 

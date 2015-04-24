@@ -49,7 +49,7 @@
                 = link_to t('auth.sign_up'), '#', id: 'show_sign_up', onclick: 'javascript:$("#sign_up_modal").dialog("open")', class: 'sign_opt menu_link'
                 -#%button{onclick: 'javascript:$("#sign_up_modal").dialog("open")'}
                 -#  #{t('auth.sign_up')}
-            - if Rails.env.to_sym == :development# || true
+            - if Rails.env.to_sym == :development || true
               .omniauth-links{style: "float: right; margin: 5px 10px 0px 10px;"}
                 .button.facebook_login
                   = link_to user_omniauth_authorize_path(:facebook) do
