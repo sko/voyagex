@@ -179,15 +179,32 @@ class window.Storage.Model
     else
       alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
 
+  deletePoi: (poiId, callback, isCurUserCommit = true) ->
+    if isCurUserCommit
+      url = '<%= poi_note_path(id: ':id') %>'.replace(/:id/, poiId)
+      $.ajax
+          type: 'DELETE'
+          dataType: 'json'
+          url: url
+      .done (msg) ->
+          console.log('TODO: anything to do?')
+          callback APP.storage().deletePoi(poiId)
+      .fail (jqXHR, textStatus) ->
+          # get from localStorage
+          console.log('TODO: maybe get from local storage')
+          #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
+    else
+      callback APP.storage().deletePoi(poiId)
+    
   # @deprecated - instantly saves data only if offline - else uploads data first and saves on backend-response
   # -> use savePoiNote(offlineCallback) instead
   uploadPoiNote: (formData, callback, uploadTargetId = null) ->
     if APP.isOnline()
       if uploadTargetId? && uploadTargetId >= 0
-        url = '<%= upload_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
+        url = '<%= poi_note_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
         formData.append('_method', 'put')
       else
-        url = '<%= uploads_path %>'
+        url = '<%= poi_notes_path %>'
       $.ajax
           type: 'POST'
 #          beforeSend: (xhr) ->
@@ -219,10 +236,10 @@ class window.Storage.Model
   uploadPoiNote64: (data, callback, uploadTargetId = null) ->
     if APP.isOnline()
       if uploadTargetId? && uploadTargetId >= 0
-        url = '<%= upload_base64_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
+        url = '<%= poi_base64_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
         data._method = 'put'
       else
-        url = '<%= uploads_base64_path %>'
+        url = '<%= pois_base64_path %>'
       $.ajax
         type: 'POST'
         dataType: 'json'
@@ -250,10 +267,10 @@ class window.Storage.Model
   uploadEmbed: (data, callback, uploadTargetId = null) ->
     if APP.isOnline()
       if uploadTargetId? && uploadTargetId >= 0
-        url = '<%= upload_embed_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
+        url = '<%= poi_embed_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
         data._method = 'put'
       else
-        url = '<%= uploads_embed_path %>'
+        url = '<%= pois_embed_path %>'
       $.ajax
         type: 'POST'
         dataType: 'json'
@@ -281,10 +298,10 @@ class window.Storage.Model
   uploadPlainText: (data, callback, uploadTargetId = null) ->
     if APP.isOnline()
       if uploadTargetId? && uploadTargetId >= 0
-        url = '<%= upload_plain_text_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
+        url = '<%= poi_plain_text_path(id: ':id') %>'.replace(/:id/, uploadTargetId)
         data._method = 'put'
       else
-        url = '<%= uploads_plain_text_path %>'
+        url = '<%= pois_plain_text_path %>'
       $.ajax
         type: 'POST'
         dataType: 'json'
@@ -388,7 +405,7 @@ class window.Storage.Model
     $.ajax
       type: 'GET'
       dataType: 'json'
-      url: '<%= upload_comments_path(poi_id: ':poi_id', poi_note_id: '') %>'.replace(/:poi_id/, poiId)+poiNoteId
+      url: '<%= poi_comments_path(poi_id: ':poi_id', poi_note_id: '') %>'.replace(/:poi_id/, poiId)+poiNoteId
     .done (msg) ->
         Model.setupPoiForNote msg.poi
         loadStats = { numAdded: msg.poi.notes.length, numLeft: msg.poi.notes.length }

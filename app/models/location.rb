@@ -18,9 +18,6 @@ class Location < ActiveRecord::Base
 
   def self.default
     # hagen - uni
-    return @@default_location if @@default_location.present?
-    @@default_location = Location.where(latitude: 51.3767, longitude: 7.4938).first
-    @@default_location = Location.create(latitude: 51.3767, longitude: 7.4938) unless @@default_location.present?
-    @@default_location
+    @@default_location ||= (Location.where(latitude: 51.3766024, longitude: 7.4940061).first || Location.create(latitude: 51.3766024, longitude: 7.4940061))
   end
 end

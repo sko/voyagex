@@ -26,7 +26,7 @@
 //= require chat_control
 //= require media_manager
 //= require client_state
-//= require upload_helper
+//= require uploads
 //= require users
 //= require main
 //= require view

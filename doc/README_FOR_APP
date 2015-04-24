@@ -13,6 +13,11 @@ Homer: "Das ist mein erster Tag!"
 Burns: "Hehehe, warum sagen Sie das nicht gleich?"
 
 
+##########################
+map: iPhone 4: mob-resol: 320x500
+settings: iPhone 6: mob-resol: 375x600
+
+
 ################################## find all mediafiles actually used in app
 grep -oR "[^ '\"]\\+\\.\\(png\\|gif\\|jpe\\?g\\|mp3\\|mpeg\\)" app/ | sed "s/^.\\+://" | sort
 

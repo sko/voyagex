@@ -92,12 +92,14 @@ class window.Comm.Comm
       else
         alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
 
+  # subscribe to 1 or 2 system-cannels: /system for system-broadcasts and /system@d63zd for system-callbacks
   @initSystemContext: (sys_channel_enc_key) ->
     Comm.channelCallBacksJSON.system.channel_enc_key = sys_channel_enc_key
     channelPath = '/system'
+    Comm.subscribeTo channelPath, Comm._systemSubscriptionListener
     unless window.VoyageX.USE_GLOBAL_SUBSCRIBE 
       channelPath += VoyageX.PEER_CHANNEL_PREFIX+sys_channel_enc_key
-    Comm.subscribeTo channelPath, Comm._systemSubscriptionListener
+      Comm.subscribeTo channelPath, Comm._systemSubscriptionListener
     # this is done via serverside publishing to systemchannel 
     # @see ChannelsController - system:monitor
     # @see Comm.subscribeTo - subscribe-callback

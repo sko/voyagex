@@ -1,13 +1,13 @@
 <% environment.context_class.instance_eval { include Rails.application.routes.url_helpers } %>
 
 # collects/sets-up upload-data from forms
-class window.VoyageX.UploadHelper
+class window.VoyageX.Uploads
 
   @_SINGLETON = null
   @CACHE_BEFORE_UPLOAD = true
 
   constructor: () ->
-    UploadHelper._SINGLETON = this
+    Uploads._SINGLETON = this
 
   getUploadTargetId: () ->
     #commentsOnId = parseInt $('#upload_form').attr('data-commentsOnId')
@@ -17,7 +17,7 @@ class window.VoyageX.UploadHelper
   # uploadStrategy: { add: () -> ..., done: afterCB }
   upload: (uploadStrategy) ->
     # used for offline-queueing
-    if UploadHelper.CACHE_BEFORE_UPLOAD
+    if Uploads.CACHE_BEFORE_UPLOAD
       # complexity because of asynchronous-data prepare (blob)
       # data to save is set by uploadStrategy 
       transactionConf = { getTransaction: (afterSaveCB) -> # @see Model - savePoiNote
@@ -89,9 +89,9 @@ class window.VoyageX.UploadHelper
       $('#upload_plain_text_container').css('display', 'block')
 
   @instance: () ->
-    unless UploadHelper._SINGLETON?
-      UploadHelper._SINGLETON = new UploadHelper()
-    UploadHelper._SINGLETON
+    unless Uploads._SINGLETON?
+      Uploads._SINGLETON = new Uploads()
+    Uploads._SINGLETON
 
 jQuery ->
   window.toggleUploadType = (selected) ->

@@ -76,57 +76,6 @@ class window.VoyageX.View
     for listener in View.instance()._commListeners.map_events
       listener(mapEvent)
 
-  # _uploadsCB: (upload) ->
-  #   console.log 'got an uploads - message: ' + upload.type
-  #   if upload.type == 'callback'
-  #     # async backend response
-  #     if upload.action? && upload.action == 'poi_sync'
-  #       # assume that sync already performed with backend-response - here we hava after-commit-faye-callback
-  #       curU = APP.user()
-  #       curU.curCommitHash = upload.commit_hash
-  #       APP.storage().saveCurrentUser curU
-  #       #qPoiId = if upload.poi.local_time_secs? then -upload.poi.local_time_secs else upload.poi.id
-  #       storedPoi = APP.storage().getPoi upload.poi.id
-  #       callback = ((oldNotes) ->
-  #           (cbPoi, cbNewNotes) ->
-  #               #  
-  #               # there could also be some new pois from other users! order might be mixed
-  #               #
-  #               location = APP.storage().getLocation(cbPoi.locationId)
-  #               newNotes = oldNotes.slice 0, oldNotes.length-cbNewNotes.length
-  #               for note, idx in cbNewNotes
-  #                 newNotes.push note
-  #                 if note.user?
-  #                   note.userId = note.user.id
-  #                   delete note.user
-  #                 delete note.local_time_secs
-  #               cbPoi.notes = newNotes
-  #               VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
-  #               APP.view().scrollToPoiNote cbNewNotes[cbNewNotes.length-1].id
-  #           )(storedPoi.notes)
-  #       # save attachments from new other user's notes
-  #       loadStats = { numAdded: upload.poi.notes.length, numLeft: upload.poi.notes.length }
-  #       for note in upload.poi.notes
-  #         Storage.Model.instance().syncWithStorage upload, callback, note, loadStats, note.local_time_secs?
-  #   else if upload.type == 'poi_note_upload'
-  #     unless upload.poi_note.user.id == APP.userId()
-  #       # TODO: unify json-format, until then avoid circular structure
-  #       poi = upload.poi_note.poi
-  #       Storage.Model.setupPoiForNote poi
-  #       msg = { poi: poi }
-  #       Storage.Model.instance().syncWithStorage msg, View.addPoiNotes, upload.poi_note
-  #       APP.view().alert()
-  #   else if upload.type == 'poi_sync'
-  #     if upload.poi.user.id != APP.userId()
-  #       delete upload.poi.user
-  #       poi = upload.poi
-  #       Storage.Model.setupPoiForNote poi
-  #       msg = { poi: poi }
-  #       loadStats = { numAdded: poi.notes.length, numLeft: poi.notes.length }
-  #       for note in poi.notes
-  #         Storage.Model.instance().syncWithStorage msg, View.addPoiNotes, note, loadStats
-  #       APP.view().alert()
-
   # clearFollows: () ->
   #   $('#i_follow').html('')
   #   $('#i_want_to_follow').html('')
@@ -163,7 +112,7 @@ class window.VoyageX.View
                   replace(/\{foto_url\}/, peer.foto.url)
     $('#i_follow').append(tr_template)
     # if window.isMobile()
-    #   # required for applying layout
+    #   # required for applying layout and activating checkbox
     #   $('#comm_peer_data').trigger("create")
 
   addIWantToFollow: (peer) ->
@@ -173,9 +122,9 @@ class window.VoyageX.View
                   replace(/tmpl-src/, 'src').
                   replace(/\{foto_url\}/, peer.foto.url)
     $('#i_want_to_follow').append(tr_template)
-    # if window.isMobile()
-    #   # required for applying layout
-    #   $('#comm_peer_data').trigger("create")
+    if window.isMobile()
+      # required for applying layout and activating checkbox
+      $('#comm_peer_data').trigger("create")
 
   addIDontFollow: (peer) ->
     tr_template = $('#i_dont_follow_template').html().
@@ -185,9 +134,9 @@ class window.VoyageX.View
                   replace(/tmpl-src/, 'src').
                   replace(/\{foto_url\}/, peer.foto.url)
     $('#i_dont_follow').append(tr_template)
-    # if window.isMobile()
-    #   # required for applying layout
-    #   $('#comm_peer_data').trigger("create")
+    if window.isMobile()
+      # required for applying layout and activating checkbox
+      $('#comm_peer_data').trigger("create")
 
   addFollowsMe: (peer) ->
     tr_template = $('#follows_me_template').html().
@@ -196,9 +145,9 @@ class window.VoyageX.View
                   replace(/tmpl-src/, 'src').
                   replace(/\{foto_url\}/, peer.foto.url)
     $('#follow_me').append(tr_template)
-    # if window.isMobile()
-    #   # required for applying layout
-    #   $('#comm_peer_data').trigger("create")
+    if window.isMobile()
+      # required for applying layout and activating checkbox
+      $('#comm_peer_data').trigger("create")
 
   addWantsToFollowMe: (peer) ->
     tr_template = $('#wants_to_follow_me_template').html().
@@ -207,9 +156,9 @@ class window.VoyageX.View
                   replace(/tmpl-src/, 'src').
                   replace(/\{foto_url\}/, peer.foto.url)
     $('#want_to_follow_me').append(tr_template)
-    # if window.isMobile()
-    #   # required for applying layout
-    #   $('#comm_peer_data').trigger("create")
+    if window.isMobile()
+      # required for applying layout and activating checkbox
+      $('#comm_peer_data').trigger("create")
 
   updateIFollow: (peer) ->
     $('#i_follow_'+peer.id).remove()
@@ -253,18 +202,22 @@ class window.VoyageX.View
 
   setPeerPosition: (peerId, lat, lng) ->
     #TODO ... $('#people_of_interest')
+    peer = APP.storage().getUser peerId
+    path = APP.storage().getPath peer
+
     sBs = searchBounds lat, lng, APP.user().searchRadiusMeters
     curUserLatLng = APP.getSelectedPositionLatLng()
-    if withinSearchBounds curUserLatLng[0], curUserLatLng[1], sBs
+    if withinSearchBounds(curUserLatLng[0], curUserLatLng[1], sBs) || path?
       markerMeta = VoyageX.Main.markerManager().forPeer peerId
       markerMeta.m.setLocation {lat: lat, lng: lng}
       unless true || APP.view()._alertOn
         APP.view().alert()
     else
-      console.log '_mapEventsCB: outside searchbounds ...'
-    peer = APP.storage().getUser peerId
-    path = APP.storage().getPath peer
-    if path?
+      console.log 'setPeerPosition: outside searchbounds ...'
+      # remove from $('#people_of_interest')
+      APP.markers().removeForPeer peerId
+
+    if path? # leave separated from withinSearchBounds although it could go in block
       path = APP.storage().addToPath peer.id, {lat: lat, lng: lng}, path
       unless APP.smoothenPath peer, path
         VoyageX.Main.mapControl().drawPath peer, path, true
@@ -335,6 +288,7 @@ class window.VoyageX.View
         slidesPerView: 'auto',
         onSlideClick: APP.swiperPhotoClicked
       })
+      window['myPoiSwiper'+poi.id].reInit()
     if window.isMobile()
       $('#open_context_nav_btn').click()
     else
@@ -343,6 +297,36 @@ class window.VoyageX.View
         $('#context_nav_panel').parent().addClass('seethrough_panel')
     # select initial tab
     $('#pois_preview_btn').click()
+
+  previewBookmarks: () ->
+    bookmarksPanel = $('#location_bookmarks')
+    bookmarksPanel.find('.bookmark-container').remove()
+
+    APP.storage().bookmarks (locations, bookmark, num, idx) ->
+        locationsBookmarksHTML = VoyageX.TemplateHelper.locationsBookmarksHTML [bookmark]
+        if idx >= 1
+          bookmarksPanel.find('.bookmark-container').first().before(locationsBookmarksHTML)
+        else
+          bookmarksPanel.find('table').first().append(locationsBookmarksHTML)
+        false
+
+  previewUsers: () ->
+    if true
+      console.log 'TODO: previewUsers ...'
+      return false
+      
+    bookmarksPanel = $('#people_of_interest')
+    bookmarksPanel.find('.user-container').remove()
+
+    APP.storage().getUsers (users, user, num, userIdx, peerIdx) ->
+        if user.isPeer()
+        else
+        locationsBookmarksHTML = VoyageX.TemplateHelper.locationsBookmarksHTML [bookmark]
+        if idx >= 1
+          bookmarksPanel.find('.bookmark-container').first().before(locationsBookmarksHTML)
+        else
+          bookmarksPanel.find('table').first().append(locationsBookmarksHTML)
+        false
 
   viewAttachment: (poiNoteId) ->
     #poiId = $('#poi_notes_container').attr('data-poiId')
@@ -461,7 +445,7 @@ class window.VoyageX.View
       mySwiper = window['myPoiSwiper'+poi.id]
     mySwiper.reInit()
     #mySwiper.resizeFix()
-    for listener in View.instance()._commListeners.uploads
+    for listener in View.instance()._commListeners.pois
       listener(poi, newNotes)
     
     # add to popup

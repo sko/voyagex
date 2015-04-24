@@ -11,13 +11,14 @@ class window.Comm.StorageController
   @_SINGLETON = null
   #@_FS = null
 
-  constructor: (fsInitCB) ->
+  constructor: (initLocation, fsInitCB) ->
     unless Modernizr.localstorage
       alert('This Browser Doesn\'t Support Local Storage.')
     if StorageController._SINGLETON != null
       alert('ERROR: StorageController is Singleton')
       return null
     StorageController._SINGLETON = this
+    this.saveLocation initLocation
     @_uploadQ = new Comm.UploadQ()
     @_maxNumChatBCChatMsgs = 10
     @_maxNumChatP2PChatMsgs = 10
@@ -141,12 +142,13 @@ class window.Comm.StorageController
         localStorage.setItem storeKey, JSON.stringify(locations)
       # setup return-value
       location.id = locationId
-      location.bookmark = bookmark
+      bookmark.location = location
       if locations.pois? && locations.pois[locationId]?
         storeKey = StorageController.poiKey locations.pois[locationId]
         location.poi = this.get storeKey
-    #bookmark
-    location
+      bookmark
+    else
+      null
   
   bookmarks: (callback = null) ->
     storeKey = 'comm.locations'
@@ -154,18 +156,20 @@ class window.Comm.StorageController
     #locations = this.get 'comm.locations'
     if locations.bookmarks?
       bookmarks = []
-      for locationId in Object.keys(locations.bookmarks)
-        if callback?
-          if callback(locations, locations.bookmarks[locationId])
-            bookmarks = []
-            break
+      locationIds = Object.keys(locations.bookmarks)
+      for locationId, idx in locationIds
         bookmark = locations.bookmarks[locationId]
         bookmark.location = locations[locationId]
         bookmark.location.id = locationId
         if locations.pois? && locations.pois[locationId]?
           storeKey = StorageController.poiKey locations.pois[locationId].id
           bookmark.location.poi = this.get storeKey
-        bookmarks.push bookmark
+        if callback?
+          if callback(locations, bookmark, locationIds.length, idx)
+            bookmarks = null
+            break
+        else
+          bookmarks.push bookmark
       bookmarks
     else
       []
@@ -185,6 +189,23 @@ class window.Comm.StorageController
   getPoi: (poiId) ->
     poiKey = StorageController.poiKey {id: poiId}
     JSON.parse(localStorage.getItem(poiKey))
+
+  deletePoi: (poiId) ->
+    poiKey = StorageController.poiKey {id: poiId}
+    
+    poi = JSON.parse(localStorage.getItem(poiKey))
+    if StorageController.isFileBased()
+      for note in poi.notes
+        Comm.FileUtils.instance().clear {poiNoteIds: [note.id]}
+
+    locations = APP.storage().get('comm.locations')
+    delete locations.pois[poi.locationId]
+    if Object.keys(locations.pois).length == 0
+      delete locations.pois
+    localStorage.setItem 'comm.locations', JSON.stringify(locations)
+
+    localStorage.removeItem poiKey
+    poi
 
   # callback 
   getPois: (callback = null) ->
@@ -269,6 +290,34 @@ class window.Comm.StorageController
           StorageController._SINGLETON.getLocation currentUser.lastLocationId
     @_currentUser = currentUser
   
+  getUsers: (callback = null, userDB = null) ->
+    storeKey = 'comm.users'
+    unless userDB?
+      userDB = JSON.parse(localStorage.getItem(storeKey))
+    if userDB?
+      users = []
+      peers = userDB.peers||{}
+      userIds = Object.keys(userDB)
+      peerIdx = -1
+      for userId, idx in userIds
+        user = users[userId]
+        peer = peers[userId]
+        if peer?
+          user.peerPort = peer.peerPort
+          peerIdx += 1
+        userIdx = idx - (peerIdx+1)
+        user.isPeer = () ->
+            this.peerPort?
+        if callback?
+          if callback(userDB, user, userIds.length, userIdx, peerIdx)
+            users = null
+            break
+        else
+          users.push user
+      users
+    else
+      []
+
   getUser: (userId) ->
     storeKey = 'comm.users'
     users = JSON.parse(localStorage.getItem(storeKey))
@@ -322,7 +371,7 @@ class window.Comm.StorageController
   getPeers: () ->
     storeKey = 'comm.users'
     users = JSON.parse(localStorage.getItem(storeKey))
-    if users.peers?
+    if users? && users.peers?
       peers = []
       for peerId in Object.keys(users.peers)
         peer = users[peerId]
@@ -330,7 +379,7 @@ class window.Comm.StorageController
         peer.peerPort = users.peers[peerId].peerPort
         peers.push peer
       return peers
-    null
+    []
 
   getChat: (peer = null) ->
     if peer?
@@ -805,7 +854,7 @@ class window.Comm.StorageController
                    for entryKey in Object.keys(perPoiList)
                      # cb is only needed for sync with response - but now we use faye-callback
                      # origCallback = window.afterUploadPhoto = (poi, newNotes) defined in upload_helper
-                     # .cb is called from UploadHelper-batchupload when APP.model().syncUploadCachedQPoiData
+                     # .cb is called from Uploads-batchupload when APP.model().syncUploadCachedQPoiData
                      #cb = { cb: (origCallback) ->
                      #           Comm.UploadQ.instance().syncResponseCallback location, poi, origCallback }
                      batchUpload perPoiList[entryKey]#, cb

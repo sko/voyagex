@@ -8,6 +8,7 @@ module Auth
 
           if @user.present? && @user.persisted?
             sign_in_and_redirect @user, event: :authentication
+            session.delete :tmp_user_id
             set_flash_message(:notice, :success, kind: "#{network}".capitalize) if is_navigational_format?
           else
             session["devise.#{network}_data"] = env["omniauth.auth"]

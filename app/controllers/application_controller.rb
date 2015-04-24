@@ -6,6 +6,8 @@ class ApplicationController < ActionController::Base
   
   protect_from_forgery with: :null_session
 #  skip_before_action :verify_authenticity_token, if: :json_request?
+#  skip_before_action :protect_from_forgery
+    
     
   include ApplicationHelper
   helper :all
@@ -13,6 +15,7 @@ class ApplicationController < ActionController::Base
   layout :mobile_by_useragent
  
   def self.comm_adapter
+    Rails.logger.debug "ApplicationController - self.comm_adapter: @@comm_adapter = #{@@comm_adapter}"
     #@comm_adapter ||= Object.const_get(COMM_ADAPTER_CLASS).new
     @@comm_adapter ||= (@@comm_adapter = Object.const_get(COMM_ADAPTER_CLASS).new)
   end

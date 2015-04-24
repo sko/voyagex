@@ -37,7 +37,7 @@ class UsersController < ApplicationController
         comm_peer = peer_port.comm_peers.find{|c_p|c_p.peer_id==@user.id}
         if comm_peer.present?
           comm_peer.destroy
-          if comm_peer.granted_by_peer
+          if comm_peer.granted_by_user
             @quit_subscriptions << peer_port
             #@un_subscribe << peer_port.channel_enc_key 
             # notify peer that @user does not follow anymore
@@ -58,18 +58,18 @@ class UsersController < ApplicationController
     end
     if params[:grant].present?
       # comm_peer expected 
-      # when a peer requests a grant then a comm_peer is created with status granted_by_peer = false
+      # when a peer requests a grant then a comm_peer is created with status granted_by_user = false
       peer_ids = params[:grant][:comm_peers].inject([[],[]]){|res,kv|kv[1]=='true'?res[0]<<kv[0]:res[1]<<kv[0];res}
       peer_ids[0].each do |peer_id|
         peer = User.find peer_id
         if @user.grant_to_follow(peer)
           @subscription_granted << peer
         # comm_peer = @user.comm_port.comm_peers.find{|c_p|c_p.peer_id==peer_id.to_i}
-        # unless comm_peer.present? && comm_peer.granted_by_peer
+        # unless comm_peer.present? && comm_peer.granted_by_user
         #   if comm_peer.present?
-        #     comm_peer.update_attribute(:granted_by_peer, true)
+        #     comm_peer.update_attribute(:granted_by_user, true)
         #   else
-        #     comm_peer = @user.comm_port.comm_peers.create peer: User.find(peer_id), :granted_by_peer, true
+        #     comm_peer = @user.comm_port.comm_peers.create peer: User.find(peer_id), :granted_by_user, true
         #   end
         #  peer_sys_channel_enc_key = comm_peer.peer.comm_port.sys_channel_enc_key
           peer_sys_channel_enc_key = peer.comm_port.sys_channel_enc_key
@@ -83,7 +83,7 @@ class UsersController < ApplicationController
       peer_ids[1].each do |peer_id|
         comm_peer = @user.comm_port.comm_peers.find{|c_p|c_p.peer_id==peer_id.to_i}
         if comm_peer.present?
-          if comm_peer.granted_by_peer
+          if comm_peer.granted_by_user
             @subscription_grant_revoked << comm_peer.peer
             # collect message-data before destroy
             peer_sys_channel_enc_key = comm_peer.peer.comm_port.sys_channel_enc_key

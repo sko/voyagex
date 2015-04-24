@@ -74,8 +74,6 @@ class window.VoyageX.TemplateHelper
         newPopupHtml += TemplateHelper.poiNotePopupHtmlFromTmpl(note, i+j)
       popupHtml = popup.getContent().replace(/(<div[^>]* class=["'][^'"]*\s?poi_controls(["']|\s))/, newPopupHtml+'$1')
       popup.setContent(popupHtml)
-      #$('#poi_notes_container div.upload_comment').last().prepend(newPopupHtml)
-      #popup.update()
       unless popup._isOpen
         marker.openPopup()
         VoyageX.Main.markerManager().userMarkerMouseOver false
@@ -286,19 +284,38 @@ class window.VoyageX.TemplateHelper
 
   @locationsBookmarksHTML: (bookmarkLocations) ->
     html = ''
-    for location, i in bookmarkLocations
-      if location.poi?
+    for bookmark, i in bookmarkLocations
+      if bookmark.location.poi?
         poiOrNoPoiHTML = TemplateHelper._updateAttributes('tmpl_location_bookmark_poi', ['src']).
-        replace(/\{attachment_url\}/, location.poi.notes[0].attachment.url)
+        replace(/\{attachment_url\}/, bookmark.location.poi.notes[0].attachment.url)
       else
         poiOrNoPoiHTML = $('#tmpl_location_bookmark_no_poi').html()
-      updatedAt = new Date(location.bookmark.updatedAt)
+      updatedAt = new Date(bookmark.updatedAt)
       html = $('#tmpl_location_bookmarks').html().
       replace(/\{location_poi_or_no_poi\}/, poiOrNoPoiHTML).
-      replace(/\{locationId\}/g,location.id).
-      replace(/\{lat\}/,location.lat).
-      replace(/\{lng\}/,location.lng).
-      replace(/\{address\}/,location.address).
+      replace(/\{locationId\}/g,bookmark.location.id).
+      replace(/\{lat\}/,bookmark.location.lat).
+      replace(/\{lng\}/,bookmark.location.lng).
+      replace(/\{address\}/,bookmark.location.address).
+      replace(/\{bookmark_updated_at\}/, $.datepicker.formatDate('dd.mm.yy', updatedAt)+' '+updatedAt.getHours().toString().replace(/^([0-9])$/,'0$1')+':'+updatedAt.getMinutes().toString().replace(/^([0-9])$/,'0$1')).
+      replace(/\{commented_by_user\}/, 'TODO')
+    html
+
+  @personOfInterestHTML: (users) ->
+    html = $('#tmpl_people_of_interest').html()
+    htmlIFollow = $('#tmpl_people_i_follow').html()
+    for user, i in users
+      if user.isPeer()
+        poiOrNoPoiHTML = TemplateHelper._updateAttributes('tmpl_location_bookmark_poi', ['src']).
+        replace(/\{attachment_url\}/, bookmark.location.poi.notes[0].attachment.url)
+      else
+        poiOrNoPoiHTML = $('#tmpl_location_bookmark_no_poi').html()
+      htmlIFollow = $('#tmpl_people_i_follow').html().
+      replace(/\{location_poi_or_no_poi\}/, poiOrNoPoiHTML).
+      replace(/\{locationId\}/g,bookmark.location.id).
+      replace(/\{lat\}/,bookmark.location.lat).
+      replace(/\{lng\}/,bookmark.location.lng).
+      replace(/\{address\}/,bookmark.location.address).
       replace(/\{bookmark_updated_at\}/, $.datepicker.formatDate('dd.mm.yy', updatedAt)+' '+updatedAt.getHours().toString().replace(/^([0-9])$/,'0$1')+':'+updatedAt.getMinutes().toString().replace(/^([0-9])$/,'0$1')).
       replace(/\{commented_by_user\}/, 'TODO')
     html

@@ -9,6 +9,8 @@
         = link_to image_tag('add-bookmark.png', style: 'height: 25px;', title: t('pois.bookmark'), alt: t('pois.bookmark')), '#', onclick: "javascript:APP.bookmarkLocation({poi_id})"
       %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
         = link_to image_tag('edit-note.png', style: 'height: 25px;', title: t('locations.view_note'), alt: t('locations.view_note')), '#', onclick: "javascript:APP.view().viewBookmarkNote(APP.storage().getLocation({location_id}))"
+      %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
+        = link_to image_tag('cancel.png', style: 'height: 25px;', title: t('pois.delete'), alt: t('pois.delete')), '#', onclick: "javascript:APP.deletePoi({poi_id})"
 
 #tmpl_poi_note{style: 'display: none;'}
   .triangle-border.upload_comment{class: '{toggle}', tmpl: {toggle: 'left|right'}, style: 'vertical-align: top;', data: {id: '{poi_note_id}', index: '{i}'}}

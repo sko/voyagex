@@ -19,6 +19,7 @@ en:
   pois:
     add: add POI
     bookmark: bookmark Location
+    delete: delete POI
   peers:
     chat: Chat
     add_note: Add Note

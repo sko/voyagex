@@ -54,17 +54,13 @@ class window.VoyageX.MapControl
             view = {zoom: MC._map.getZoom(), tile: {column: x, row: y}, subdomain: MC._mapOptions.subdomains[0]}
             MC._prefetchArea view, APP.user().searchRadiusMeters
         posLatLng = VoyageX.MapControl.instance()._map.getCenter()
-        #position = {coords: {latitude: posLatLng.lat, longitude: posLatLng.lng}}
-        #APP._initPositionCB(position, null, true)
         APP.showPOIs posLatLng
     @_map.on('zoomend', (e) ->
         console.log '### map-event: zoomend ...'
         APP._zoomEnd(e);
       )
     @_map.on 'click', (event) ->
-      address = null
-      APP._setSelectedPositionLatLng VoyageX.Main.markerManager().get()||VoyageX.Main.markerManager().add({lat: event.latlng.lat, lng: event.latlng.lng}, VoyageX.Main._markerEventsCB, true), event.latlng.lat, event.latlng.lng, address
-      APP.publishPosition()
+      VoyageX.Main._localMapClicked {lat: event.latlng.lat, lng: event.latlng.lng, address: null}
     # @_map.on('locationfound', (e) ->
     #     alert('found location...')
     #   )

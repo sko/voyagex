@@ -43,7 +43,7 @@ class window.VoyageX.NavBar
       VoyageX.NavBar._checkDims.w = $(window).width()
       VoyageX.NavBar._checkDims.h = $(window).height()
       VoyageX.NavBar._checkDims.n = 1
-      setTimeout('checkDims()', 500)
+      setTimeout('checkDims()', checkDimsTOMillis)
     else
       #if $('#context_nav_panel').hasClass('ui-panel-open')
       console.log 'orientationchange: to '+event.orientation+'; window-width = '+$(window).width()+', stored-width = '+NavBar._orientationDims[event.orientation][0]
@@ -67,6 +67,7 @@ class window.VoyageX.NavBar
       #   })
 
 window.clientState = new VoyageX.ClientState('map', 'camera', VoyageX.NavBar.showView, VoyageX.NavBar.hideView)
+window.checkDimsTOMillis = 500
 
 $(document).on 'click', '.activate_map', (event) ->
   VoyageX.NavBar.menuNavClick('map')
@@ -102,7 +103,7 @@ window.toggleFullScreen = (activate) ->
     $('#fullscreen_mode_icon_off').show()
     VoyageX.NavBar._checkDims.o = if window.orientation==0 then 'portrait' else 'landscape'
     VoyageX.NavBar._checkDims.n = 1
-    setTimeout('checkDims()', 500)
+    setTimeout('checkDims()', checkDimsTOMillis)
   else
     if (document.exitFullscreen) 
       document.exitFullscreen()
@@ -116,7 +117,7 @@ window.toggleFullScreen = (activate) ->
     $('#fullscreen_mode_icon_off').hide()
     VoyageX.NavBar._checkDims.o = if window.orientation==0 then 'portrait' else 'landscape'
     VoyageX.NavBar._checkDims.n = 1
-    setTimeout('checkDims()', 500)
+    setTimeout('checkDims()', checkDimsTOMillis)
 
 $("#context_nav_tabs").tabs()
 
@@ -125,7 +126,7 @@ window.checkDims = () ->
   if VoyageX.NavBar._checkDims.n <= 2
     if VoyageX.NavBar._checkDims.w == $(window).width() || VoyageX.NavBar._checkDims.h == $(window).height()
       VoyageX.NavBar._checkDims.n += 1
-      setTimeout('checkDims()', 500)
+      setTimeout('checkDims()', checkDimsTOMillis)
       return null
   VoyageX.NavBar._orientationDims[VoyageX.NavBar._checkDims.o][0] = $(window).width()
   VoyageX.NavBar._orientationDims[VoyageX.NavBar._checkDims.o][1] = $(window).height()

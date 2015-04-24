@@ -42,18 +42,24 @@ class User < ActiveRecord::Base
          #:async,
          :confirmable, :omniauthable
 
-  def last_location
-    locations.where(locations: {updated_at: locations.maximum(:updated_at)}).first||home_base||Location.default
+  def last_location only_stored = false
+   #locations.where(locations: {updated_at: locations.maximum(:updated_at)}).first||home_base||Location.default
+    l_l = snapshot.present? ?
+            snapshot.location.present? ?
+              snapshot.location :
+              only_stored ? nil : Location.new(id: -1, longitude: snapshot.lat, latitude: snapshot.lng, address: snapshot.address) :
+            nil
+    l_l||home_base||Location.default
   end
 
   def grant_to_follow peer
     comm_peer = comm_port.comm_peers.where(peer: peer).first
-    unless comm_peer.present? && comm_peer.granted_by_peer
+    unless comm_peer.present? && comm_peer.granted_by_user
       if comm_peer.present?
         # might already be granted
-        comm_peer.update_attribute :granted_by_peer, true
+        comm_peer.update_attribute :granted_by_user, true
       else
-        comm_peer = comm_port.comm_peers.create peer: peer, granted_by_peer: true
+        comm_peer = comm_port.comm_peers.create peer: peer, granted_by_user: true
       end
       return true
     end
@@ -65,8 +71,8 @@ class User < ActiveRecord::Base
   end
 
   def follows
-    #CommPort.joins(:comm_peers).where(comm_peers: { peer_id: id, granted_by_peer: true })
-    User.joins(comm_port: :comm_peers).where(comm_peers: { peer_id: id, granted_by_peer: true })
+    #CommPort.joins(:comm_peers).where(comm_peers: { peer_id: id, granted_by_user: true })
+    User.joins(comm_port: :comm_peers).where(comm_peers: { peer_id: id, granted_by_user: true })
   end
 
   def request_grant_to_follow peer
@@ -76,7 +82,7 @@ class User < ActiveRecord::Base
 
   def requested_grant_to_follow
     t = CommPeer.arel_table
-    CommPort.joins(:comm_peers, :user).where(t[:peer_id].eq(id).and(t[:granted_by_peer].eq(nil).or(t[:granted_by_peer].eq(false))))
+    CommPort.joins(:comm_peers, :user).where(t[:peer_id].eq(id).and(t[:granted_by_user].eq(nil).or(t[:granted_by_user].eq(false))))
   end
 
   def set_base64_file file_json, content_type, file_name

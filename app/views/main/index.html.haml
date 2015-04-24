@@ -29,16 +29,14 @@
   %canvas{id: 'user_foto_canvas', style: 'display: none;'}
   #map
   = javascript_tag do
-    var view = new VoyageX.View();
     var offlineZooms = [4,8,12,16];
     var zooms = [#{(1..16).collect{|n|",#{n}"}.join.sub(/^,/,'')}];
-    var mapOptions = { center: new L.LatLng(initLocation.lat, initLocation.lng),
-    zooms: zooms,
+    var mapOptions = { zooms: zooms,
     zoom: 16,
     subdomains: ['a'],
     access_token: 'pk.eyJ1Ijoic3RlcGhhbmtvZWxsZXIiLCJhIjoiZEFHdnhwayJ9.AdtZiG5HGi5JAb64G1K-jA',
     max_zoom: 30 }
-    new VoyageX.Main(view, mapOptions, offlineZooms, true) 
+    new VoyageX.Main(mapOptions, offlineZooms, true) 
 
 #tmpl_auth_whoami{style: 'display: none;'}
   = t('auth.whoami', username: ':username').html_safe

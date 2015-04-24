@@ -107,7 +107,7 @@ module Comm
           #       # allow self-subscription so that others can communicate with me
           #       granted = target.present? &&
           #                 (target.current_faye_client_id == message['clientId'] ||
-          #                  target.comm_peers.where(peer_id: user_comm_port.user.id, granted_by_peer: true).present?)
+          #                  target.comm_peers.where(peer_id: user_comm_port.user.id, granted_by_user: true).present?)
           #       if granted
           #         Rails.logger.debug "###### Inbound message: allow subscription on channel #{message['subscription']} for user #{user_comm_port.user.id}"
           #       else
@@ -202,7 +202,7 @@ module Comm
       end
     end
 
-    channel '/uploads**' do
+    channel '/pois**' do
       monitor :subscribe do
         Rails.logger.debug "###### Client #{client_id} subscribed to #{channel}."
       end
@@ -273,7 +273,7 @@ module Comm
             # allow self-subscription so that others can communicate with me
             granted = target.present? &&
                       (target.current_faye_client_id == message['clientId'] ||
-                       target.comm_peers.where(peer_id: user_comm_port.user.id, granted_by_peer: true).present?)
+                       target.comm_peers.where(peer_id: user_comm_port.user.id, granted_by_user: true).present?)
             if granted
               Rails.logger.debug "###### Inbound message: allow subscription on channel #{message['subscription']} for user #{user_comm_port.user.id}"
             else

@@ -13,27 +13,9 @@ class PostCommit
     case args_hash['action']
       when 'sync_poi'
         PostCommit.sync_poi args_hash['user_id'], args_hash['poi_id'], args_hash['min_local_time_secs']
-      when 'update_follows'
-        PostCommit.update_follows args_hash['channel'], args_hash['msg'], args_hash['user_id']
+      when 'delete_poi'
+        PostCommit.delete_poi args_hash['user_id'], args_hash['poi_id']
     end
-  end
-
-  def self.update_follows channel, msgJSON, user_id
-    PostCommit.new.update_follows channel, msgJSON, user_id
-  end
-  
-  def update_follows channel, msgJSON, user_id
-    #puts "################# msgJSON[#{msgJSON.class}] = #{msgJSON}"
-    msg = msgJSON # JSON.parse msgJSON
-    #puts "################# msg[#{msg.class}] = #{msg}"
-    EM.run {
-      num_jobs = 1
-      jobs_done_count = 0
-
-      publication = PostCommit::FAYE_CLIENT.publish("/#{channel}", msg)
-      publication.callback { Rails.logger.debug("sender #{user_id} to #{channel}"); EM.stop if (jobs_done_count += 1) == num_jobs }
-      publication.errback {|error| Rails.logger.error("#{channel} - error: #{error.message}"); EM.stop if (jobs_done_count += 1) == num_jobs }
-    }
   end
 
   # updates the users repository:
@@ -43,7 +25,7 @@ class PostCommit
     PostCommit.new.sync_poi user_id, poi_id, min_local_time_secs
   end
 
-  def sync_poi user_id, poi_id, min_local_time_secs
+  def sync_poi user_id, poi_id, min_local_time_secs, fork_publish = true
     @user = User.find user_id
     @poi = Poi.find poi_id
     is_new_poi = @poi.commit_hash.nil?
@@ -53,7 +35,7 @@ class PostCommit
     note_json_list_for_user = [] # added to upload-message for user
     note_json_list_for_others = [] # added to upload-message for others
 
-    vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, @user, false#@user.is_admin?
+    vm = VersionManager.new PoisController::MASTER, PoisController::WORK_DIR_ROOT, @user, false#@user.is_admin?
     prev_commit = vm.cur_commit
     diff = vm.changed
     # TODO - for now only add is implemented.
@@ -109,7 +91,7 @@ class PostCommit
     @poi_json_for_user.merge!({notes: note_json_list_for_user})
     
     system_msg_for_user = { type: 'callback',
-                            channel: 'uploads',
+                            channel: 'pois',
                             action: 'poi_sync',
                             commit_hash: cur_commit,
                             poi: @poi_json_for_user }
@@ -117,22 +99,71 @@ class PostCommit
                               commit_hash: cur_commit,
                               poi: @poi_json_for_others }
 
-    EM.run {
-      num_jobs = 2
-      jobs_done_count = 0
+    # EM.run {
+    #   num_jobs = 2
+    #   jobs_done_count = 0
 
-      channel_path = '/system'
-      channel_path += "#{PEER_CHANNEL_PREFIX}#{@user.comm_port.sys_channel_enc_key}" unless USE_GLOBAL_SUBSCRIBE
-      publication_1 = PostCommit::FAYE_CLIENT.publish(channel_path, system_msg_for_user)
-      publication_1.callback { Rails.logger.debug("sent poi-sync-msg to user: commit_hash = #{cur_commit}"); EM.stop if (jobs_done_count += 1) == num_jobs }
-      publication_1.errback {|error| Rails.logger.error("poi-sync-msg to user: commit_hash = #{cur_commit} - error: #{error.message}"); EM.stop if (jobs_done_count += 1) == num_jobs }
+    #   channel_path = '/system'
+    #   channel_path += "#{PEER_CHANNEL_PREFIX}#{@user.comm_port.sys_channel_enc_key}" unless USE_GLOBAL_SUBSCRIBE
+    #   publication_1 = PostCommit::FAYE_CLIENT.publish(channel_path, system_msg_for_user)
+    #   publication_1.callback { Rails.logger.debug("sent poi-sync-msg to user: commit_hash = #{cur_commit}"); EM.stop if (jobs_done_count += 1) == num_jobs }
+    #   publication_1.errback {|error| Rails.logger.error("poi-sync-msg to user: commit_hash = #{cur_commit} - error: #{error.message}"); EM.stop if (jobs_done_count += 1) == num_jobs }
 
-      channel_path = '/uploads'
-      channel_path += "#{PEER_CHANNEL_PREFIX}#{@user.comm_port.channel_enc_key}" unless USE_GLOBAL_SUBSCRIBE
-      publication_2 = PostCommit::FAYE_CLIENT.publish(channel_path, upload_msg_for_others)
-      publication_2.callback { Rails.logger.debug("sent poi-sync-msg to others: commit_hash = #{cur_commit}"); EM.stop if (jobs_done_count += 1) == num_jobs }
-      publication_2.errback {|error| Rails.logger.error("poi-sync-msg to others: commit_hash = #{cur_commit} - error: #{error.message}"); EM.stop if (jobs_done_count += 1) == num_jobs }
-    }
+    #   channel_path = '/pois'
+    #   channel_path += "#{PEER_CHANNEL_PREFIX}#{@user.comm_port.channel_enc_key}" unless USE_GLOBAL_SUBSCRIBE
+    #   publication_2 = PostCommit::FAYE_CLIENT.publish(channel_path, upload_msg_for_others)
+    #   publication_2.callback { Rails.logger.debug("sent poi-sync-msg to others: commit_hash = #{cur_commit}"); EM.stop if (jobs_done_count += 1) == num_jobs }
+    #   publication_2.errback {|error| Rails.logger.error("poi-sync-msg to others: commit_hash = #{cur_commit} - error: #{error.message}"); EM.stop if (jobs_done_count += 1) == num_jobs }
+    # }
+    msgs_data = [
+                  { channel: "/system#{PEER_CHANNEL_PREFIX}#{@user.comm_port.sys_channel_enc_key}",
+                    msg: system_msg_for_user,
+                    user_id: @user.id },
+                 #{ channel: "/pois#{PEER_CHANNEL_PREFIX}#{@user.comm_port.channel_enc_key}",
+                  { channel: "/system",
+                    msg: upload_msg_for_others,
+                    user_id: @user.id }
+                ]
+    Publisher.new.publish msgs_data, fork_publish
+  end
+
+  # updates the users repository:
+  # 1) pulls data meanwhile created by other users 
+  # 2) pushes data created by this user (vm)
+  def self.delete_poi user_id, poi_id
+    PostCommit.new.delete_poi user_id
+  end
+
+  def delete_poi user_id, poi_id, fork_publish = true
+    @user = User.find user_id
+
+    vm = VersionManager.new PoisController::MASTER, PoisController::WORK_DIR_ROOT, @user, false#@user.is_admin?
+    prev_commit = vm.cur_commit
+    
+    vm.delete_poi poi_id
+
+    vm.merge true, true
+    cur_commit = vm.cur_commit
+   
+    system_msg_for_user = { type: 'callback',
+                            channel: 'pois',
+                            action: 'poi_delete',
+                            commit_hash: cur_commit,
+                            poi_id: poi_id }
+    upload_msg_for_others = { type: 'poi_delete',
+                              commit_hash: cur_commit,
+                              poi_id: poi_id }
+
+   msgs_data = [
+                  { channel: "/system#{PEER_CHANNEL_PREFIX}#{@user.comm_port.sys_channel_enc_key}",
+                    msg: system_msg_for_user,
+                    user_id: @user.id },
+                 #{ channel: "/pois#{PEER_CHANNEL_PREFIX}#{@user.comm_port.channel_enc_key}",
+                  { channel: "/system",
+                    msg: upload_msg_for_others,
+                    user_id: @user.id }
+                ]
+    Publisher.new.publish msgs_data, fork_publish
   end
 
 end

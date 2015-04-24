@@ -2,14 +2,6 @@ class MainController < ApplicationController
   include ::AuthUtils
   include ::GeoUtils
 
-  # used when loading a location on the map 
-  # view-call (returns javascript)
-#  def location
-#    @location = Location.find(params[:location_id])
-#    nearby_m = (tmp_user.search_radius_meters||20000)
-#    load_location_data @location, nearby_m
-#  end
-
   # used from Model.js to act withLocation
   # api-call
   def location_data
@@ -28,7 +20,7 @@ class MainController < ApplicationController
     tmp_user.update_attribute(:foto, UserHelper::fetch_random_avatar(request)) unless tmp_user.foto.exists?
     if signed_in? # registered_user?
       unless tmp_user.snapshot.cur_commit.present?
-        vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, tmp_user, false#user.is_admin?
+        vm = VersionManager.new PoisController::MASTER, PoisController::WORK_DIR_ROOT, tmp_user, false#user.is_admin?
         cur_commit = Commit.where(hash_id: vm.cur_commit).first
         cur_commit = User.admin.commits.create(hash_id: vm.cur_commit, timestamp: DateTime.now) unless cur_commit.present?
         tmp_user.snapshot.update_attribute :cur_commit, cur_commit

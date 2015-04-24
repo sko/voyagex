@@ -23,7 +23,8 @@
     -#  Addresse
   -# locations = user.locations.order('updated_at desc')
   - locations = user.locations_users.joins(:location).order('updated_at desc')
-  - locations.each do |locations_user|
+  -#
+    locations.each do |locations_user|
     - location = locations_user.location
     %tbody.bookmark-container{data: {id: location.id, lat: location.latitude, lng: location.longitude}}
       %tr

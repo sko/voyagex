@@ -11,14 +11,14 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150224155747) do
+ActiveRecord::Schema.define(version: 20150424210109) do
 
   create_table "comm_peers", force: true do |t|
     t.integer  "comm_port_id",    null: false
     t.integer  "peer_id",         null: false
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.boolean  "granted_by_peer"
+    t.boolean  "granted_by_user"
     t.text     "note_follower"
     t.text     "note_followed"
   end

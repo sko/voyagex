@@ -3,6 +3,9 @@ module Auth
     include UserHelper
 
     before_filter :ensure_params_exist, only: [:create]
+    skip_before_action :verify_authenticity_token#, if: :sign_out_request?
+    #skip_before_action :protect_from_forgery, if: :sign_out_request?
+    skip_before_filter :verify_signed_out_user
 
     def new
       if request.xhr?
@@ -33,14 +36,17 @@ module Auth
     
     def destroy
       @user = current_user
-      if @user.present?
-        sign_out @user
-      end
-      #session.delete :tmp_user_id
+      sign_out @user if @user.present?
+
       render "devise/sessions/destroyed", layout: false, formats: [:js]
     end
 
     protected
+
+    # @see skip_before_action
+    def sign_out_request?
+      action_name.to_sym == :destroy
+    end
     
     def ensure_params_exist
       return unless params[:user][:email].blank? && params[:user][:password].blank?

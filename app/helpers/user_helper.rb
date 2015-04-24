@@ -26,7 +26,6 @@ module UserHelper
              },
              searchRadiusMeters: user.search_radius_meters||1000 }
     json[:lastLocation][:poiId] = last_loc_poi.id if last_loc_poi.present?
-    json[:sear][:poiId] = last_loc_poi.id if last_loc_poi.present?
     
     json
   end

@@ -5,7 +5,7 @@
     .modal-body
       #poi_note_input
 
-= render partial: '/uploads/form/tmpl', locals: {poi_note: PoiNote.new}
+= render partial: '/pois/form/tmpl', locals: {poi_note: PoiNote.new}
 = render partial: '/shared/tmpl_poi_notes'
 
 %iframe{id: "upload_target", src: csrf_path, name: "upload_target", style: "display:none;"}

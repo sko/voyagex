@@ -1,4 +1,4 @@
-class UploadsController < ApplicationController 
+class PoisController < ApplicationController 
   include GeoUtils
   include ApplicationHelper
   include PoiHelper
@@ -54,13 +54,17 @@ class UploadsController < ApplicationController
     @poi.local_time_secs = min_local_time_secs if is_new_poi
 
     if @poi.save
-      Resque.enqueue(PostCommit, {action: 'sync_poi',
-                                  user_id: @user.id,
-                                  poi_id: @poi.id,
-                                  min_local_time_secs: min_local_time_secs})
-#      PostCommit.new.sync_poi @user.id,
-#                              @poi.id,
-#                              min_local_time_secs
+      if ![:development].include?(Rails.env.to_sym)# || true
+        Resque.enqueue(PostCommit, {action: 'sync_poi',
+                                    user_id: @user.id,
+                                    poi_id: @poi.id,
+                                    min_local_time_secs: min_local_time_secs})
+      else
+        PostCommit.new.sync_poi @user.id,
+                                @poi.id,
+                                min_local_time_secs,
+                                false
+      end
       note_json_list = new_poi_notes.collect{|note| poi_note_json(note, false).
                                                     merge({local_time_secs: note.local_time_secs}) }
       poi_json = poi_json(@poi).
@@ -69,120 +73,6 @@ class UploadsController < ApplicationController
                  merge(notes: note_json_list)
 
       render json: { message: 'OK', poi: poi_json }.to_json
-    else
-      render json: { errors: @poi.errors.full_messages }, status: 401
-    end
-  end
-
-  #
-  # TODO: 
-  # +) comment-on
-  #
-  # sync pois that where edited offline
-  def sync_poi_no_resque
-    @user = current_user || tmp_user
-    # vm
-    vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, @user, false#@user.is_admin?
-    prev_commit = vm.cur_commit
-    diff = vm.changed
-    # TODO
-    # for now only add is implemented.
-    diff_added = diff['A']
-    diff_modified = diff['M']
-    diff_deleted = diff['D']
-    
-    if params[:id].present?
-      @commented_poi_note = PoiNote.find(params[:id])
-      @poi = @commented_poi_note.poi
-      # if poi is deleted then create new one - tell user to replace old ...
-    else
-      @poi = nearby_poi @user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
-      # vm
-      vm.add_location @poi.location
-    end
-    @user.locations << @poi.location unless @user.locations.find {|l|l.id==@poi.location.id}
-    is_new_poi =  @poi.notes.empty?
-
-    # TODO: decide on merge-order-algorithm
-    # TODO: only notes for given poi are added - all other changes must be sent to client after_sync
-    new_poi_notes = []
-    poi_note_json_list = []
-    if diff_added.present?
-      diff_added.each do |entry|
-        note_match = entry.match(/^note_([0-9]+)/)
-binding.pry
-        next unless note_match.present?
-        poi_note = PoiNote.where(note_match[1].to_i).first
-        if poi_note.present?
-          if poi_note.poi == @poi
-            new_poi_notes << poi_note
-            poi_note_json_list << poi_note_json(poi_note)
-          end
-        else
-          Rails.logger.warn "poi_note[id=#{note_match[1]}] found in diff from user/branch #{@user.id}/#{vm.cur_branch} but not in db"
-        end
-      end
-    end
-
-    min_local_time_secs = -1
-    params[:poi_note_ids].each do |poi_note_id|
-      poi_note_local_time_secs = poi_note_id.abs # (poi_note_id.to_i/1000).round.abs
-      min_local_time_secs = poi_note_local_time_secs if (min_local_time_secs == -1) || (poi_note_local_time_secs < min_local_time_secs)
-
-      file = params[:poi_note][poi_note_id][:file]
-      if file.present? || (embed = params[:poi_note][poi_note_id][:embed]).present?
-        upload = Upload.new(attached_to: PoiNote.new(poi: @poi, user: @user, text: params[:poi_note][poi_note_id][:text], local_time_secs: poi_note_local_time_secs))
-        upload.attached_to.attachment = upload
-        if file.present?
-          upload.build_entity file.content_type, file: file
-        else
-          upload.build_entity :embed, text: embed[:content], embed_type: UploadEntity::Embed.get_embed_type(embed[:content])
-        end
-        poi_note = upload.attached_to
-      else
-        poi_note = PoiNote.new(poi: @poi, user: @user, text: params[:poi_note][poi_note_id][:text], local_time_secs: poi_note_local_time_secs)
-      end
-      @poi.notes << poi_note
-      new_poi_notes << poi_note
-    end
-    @poi.local_time_secs = min_local_time_secs if is_new_poi
-
-    if @poi.save
-      # vm
-      vm.add_poi @poi
-      
-      (@poi.notes.length-params[:poi_note_ids].length..(@poi.notes.length-1)).each do |idx|
-        # show local_time_secs only to creator
-        poi_note_json_list << poi_note_json(@poi.notes[idx], false).
-                              merge!(@poi.notes[idx].user==@user ? {local_time_secs: @poi.notes[idx].local_time_secs} : {})
-        # vm
-        vm.add_poi_note @poi, @poi.notes[idx]
-      end
-
-      # vm
-      vm.merge true, true
-      cur_commit = vm.cur_commit
-      
-      @poi.update_attribute :commit_hash, cur_commit unless @poi.commit_hash.present?
-      new_poi_notes.each {|p_n|p_n.update_attribute(:commit_hash, cur_commit) unless p_n.commit_hash.present?}
-      commit = @user.commits.create hash_id: cur_commit, timestamp: DateTime.now, local_time_secs: params[:poi_note_ids].first.to_i.abs # (params[:poi_note_ids].first.to_i/1000).round.abs
-      @user.snapshot.update_attribute :cur_commit, commit
-      
-      @poi_json = poi_json(@poi).
-                  merge(is_new_poi && @poi.user==@user ? {local_time_secs: @poi.local_time_secs} : {})
-      @poi_json[:user] = { id: @user.id }
-      @poi_json[:notes] = poi_note_json_list
-      
-      data = @poi_json.to_json
-      render json: data
-    
-      # http://stackoverflow.com/questions/552659/assigning-git-sha1s-without-git
-      # "blob " + filesize + "\0" + data
-#      commit_hash = Digest::SHA1.new << "blob #{data.size}\0#{data}"
-#      @poi.update_attribute :commit_hash, commit_hash.to_s
-#      new_poi_notes.each {|p_n|p_n.update_attribute(:commit_hash, commit_hash.to_s)}
-
-      after_sync
     else
       render json: { errors: @poi.errors.full_messages }, status: 401
     end
@@ -405,13 +295,24 @@ binding.pry
     after_save
   end
 
+  # @deprecated - sync_poi is used by client after saving data first locally
   def destroy
     # TODO don't delete if first poiNote - can only be deleted via poi
-    @upload = Upload.find(params[:id])
-    @upload.attached_to.destroy
-    render "uploads/deleted", formats: [:js]
+    @poi = Poi.find(params[:id])
+    @poi.destroy
+    if ![:development].include?(Rails.env.to_sym)# || true
+      Resque.enqueue(PostCommit, {action: 'delete_poi',
+                                  user_id: current_user.id,
+                                  poi_id: params[:id]})
+    else
+      PostCommit.new.delete_poi current_user.id,
+                                params[:id],
+                                false
+    end
+    render json: { message: 'OK' }.to_json
   end
 
+  # api
   def pois
     user = current_user || tmp_user
 
@@ -424,6 +325,7 @@ binding.pry
     render json: {pois: pois_json}.to_json
   end
 
+  # api
   def comments
     user = current_user || tmp_user
     if params[:poi_note_id] != '-1'
@@ -448,7 +350,7 @@ binding.pry
 
   # TODO local_time_secs
   def new_version user, poi, is_new_poi, poi_note, local_time_secs = nil
-    vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, user, false#@user.is_admin?
+    vm = VersionManager.new PoisController::MASTER, PoisController::WORK_DIR_ROOT, user, false#@user.is_admin?
     prev_commit = vm.cur_commit
     vm.add_poi poi if is_new_poi
     vm.add_poi_note poi, poi_note
@@ -464,12 +366,12 @@ binding.pry
     upload_msg = { type: 'poi_sync',
                    poi: @poi_json }
 
-    channel_path = '/uploads'
+    channel_path = '/pois'
     channel_path += "#{PEER_CHANNEL_PREFIX}#{@user.comm_port.channel_enc_key}" unless USE_GLOBAL_SUBSCRIBE
-    #Comm::ChannelsController.publish(channel_path, upload_msg)
-    comm_adapter.send :uploads, @user.comm_port.channel_enc_key, upload_msg
+    comm_adapter.send :pois, @user.comm_port.channel_enc_key, upload_msg
   end
 
+  # TODO: system_broadcast/sync -channel message informs only followers/peers - not all users
   def after_save
     #geometry = Paperclip::Geometry.from_file(@upload.file)
     #file_data = { type: 'image', url: @upload.file.url, width: geometry.width.to_i, height: geometry.height.to_i }
@@ -480,9 +382,8 @@ binding.pry
 #                   poi_note: poi_note_json(poi_note) }
                    poi_note: @poi_note_json }
 
-    channel_path = '/uploads'
+    channel_path = '/pois'
     channel_path += "#{PEER_CHANNEL_PREFIX}#{@upload.attached_to.user.comm_port.channel_enc_key}" unless USE_GLOBAL_SUBSCRIBE
-    #Comm::ChannelsController.publish(channel_path, upload_msg)
-    comm_adapter.send :uploads, @upload.attached_to.user.comm_port.channel_enc_key, upload_msg
+    comm_adapter.send :pois, @upload.attached_to.user.comm_port.channel_enc_key, upload_msg
   end
 end

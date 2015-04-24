@@ -6,7 +6,8 @@ Benutzer denen ich folge oder folgen will ...
 %h4{colspan: 4}
   #{t('admin.i_follow')}
 %table
-  - user.follows.each do |u|
+  -#
+    user.follows.each do |u|
     - last_location = u.snapshot.location.present? ? u.snapshot.location : Location.new(latitude: u.snapshot.lat, longitude: u.snapshot.lng)
     %tr{data: {userId: u.id}}
       %td

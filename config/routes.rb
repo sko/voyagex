@@ -24,33 +24,30 @@ VoyageX::Application.routes.draw do
   get '/location_bookmarks', to: 'main#index'
 #  get '/location/:location_id', to: 'main#location', as: :location
   get '/location_data/:location_id', to: 'main#location_data', as: :location_data
-  get '/pois/:lat/:lng', to: 'uploads#pois', as: :pois, :constraints => { :lat => /([0-9]+\.[0-9]+|:[a-z]+)/,
+  get '/pois/:lat/:lng', to: 'pois#pois', as: :pois, :constraints => { :lat => /([0-9]+\.[0-9]+|:[a-z]+)/,
                                                                           :lng => /([0-9]+\.[0-9]+|:[a-z]+)/ }
-
-  resources :uploads, only: [:index, :create, :update, :destroy] do
-  end
-  post '/uploads_base64', to: 'uploads#create_from_base64', as: :uploads_base64
-  put '/upload_base64/:id', to: 'uploads#update_from_base64', as: :upload_base64
-  post '/uploads_embed', to: 'uploads#create_from_embed', as: :uploads_embed
-  put '/uploads_embed/:id', to: 'uploads#update_from_embed', as: :upload_embed
-  post '/uploads_plain_text', to: 'uploads#create_from_plain_text', as: :uploads_plain_text
-  put '/uploads_plain_text/:id', to: 'uploads#update_from_plain_text', as: :upload_plain_text
-  post '/sync_pois', to: 'uploads#sync_poi', as: :sync_pois
-  put '/sync_poi/:id', to: 'uploads#sync_poi', as: :sync_poi
-  post '/uploads', to: 'uploads#create', as: :poi_notes
-  put '/uploads/:id', to: 'uploads#update', as: :poi_note
+  #resources :pois, only: [:index, :create, :update, :destroy] do
+  #end
+  post '/pois_base64', to: 'pois#create_from_base64', as: :pois_base64
+  put '/poi_base64/:id', to: 'pois#update_from_base64', as: :poi_base64
+  post '/pois_embed', to: 'pois#create_from_embed', as: :pois_embed
+  put '/pois_embed/:id', to: 'pois#update_from_embed', as: :poi_embed
+  post '/pois_plain_text', to: 'pois#create_from_plain_text', as: :pois_plain_text
+  put '/pois_plain_text/:id', to: 'pois#update_from_plain_text', as: :poi_plain_text
+  post '/sync_pois', to: 'pois#sync_poi', as: :sync_pois
+  put '/sync_poi/:id', to: 'pois#sync_poi', as: :sync_poi
+  post '/pois', to: 'pois#create', as: :poi_notes
+  put '/pois/:id', to: 'pois#update', as: :poi_note
+  delete '/pois/:id', to: 'pois#destroy'
 
   get '/manifest', to: 'main#manifest', as: :manifest
-#  get '/context_nav/:lat/:lng', to: 'main#context_nav', as: :context_nav, :constraints => { :lat => /([0-9]+\.[0-9]+|:[a-z]+)/,
-#                                                                                         :lng => /([0-9]+\.[0-9]+|:[a-z]+)/ }
-#  match '/change_username', to: 'users#change_details', as: :change_username, via: [:get, :post]
   match '/set_user_detail/:detail', to: 'users#change_details', as: :set_user_detail, via: [:get, :post]
-  get '/csrf', to: 'uploads#csrf', as: :csrf
-  get '/upload_comments/:poi_id/:poi_note_id', to: 'uploads#comments', as: :upload_comments
-  #put '/upload_comments/:upload_id', to: 'uploads#comments', as: :create_upload_comment
-  #put '/upload_file', to: 'uploads#create'
-  #post '/upload_file', to: 'uploads#update'
-  #put '/upload_file64', to: 'uploads#create_from_base64', as: :json_uploads
+  get '/csrf', to: 'pois#csrf', as: :csrf
+  get '/poi_comments/:poi_id/:poi_note_id', to: 'pois#comments', as: :poi_comments
+  #put '/poi_comments/:poi_id', to: 'pois#comments', as: :create_poi_comment
+  #put '/poi_file', to: 'pois#create'
+  #post '/poi_file', to: 'pois#update'
+  #put '/poi_file64', to: 'pois#create_from_base64', as: :json_pois
   get '/ping/:key', to: 'comm/comm#ping', as: :comm_ping
   put '/register', to: 'comm/comm#register', as: :comm_register
   #post '/subscribe/:channel', to: 'comm/comm#subscribe', as: :comm_subscribe

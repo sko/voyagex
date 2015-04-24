@@ -139,6 +139,12 @@ class window.VoyageX.MarkerManager
         return MarkerManager.metaJSON m, {}
     null
 
+  removeForPoi: (poiId) ->
+    for m, idx in @_markers
+      if m.location().poiId == poiId
+        this._removeAt idx
+        break
+
   forPoi: (poiId) ->
     for m in @_markers
       if m.location().poiId == poiId

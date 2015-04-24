@@ -209,6 +209,12 @@ data
     File.open(file, 'w+') { |f| f.write(data) }
   end
 
+  def delete_poi poi_id, poi_dir = nil
+    poi_dir = "#{work_dir}/poi_#{poi_id}" 
+    return false unless File.exist? poi_dir
+    FileUtils.rm_rf poi_dir
+  end
+
   def self.init_version_control_from_db
     master = 'model/master'
     work_dir_root = "#{Rails.root}/version_control"

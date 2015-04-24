@@ -19,6 +19,7 @@ de:
   pois:
     add: POI eintragen
     bookmark: Ort merken
+    delete: POI löschen
   peers:
     chat: Chat
     add_note: Notiz hinzufügen

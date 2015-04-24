@@ -9,12 +9,12 @@ class window.VoyageX.Main
   @_MARKER_MANAGER = null
   @_PATH_PREDICTION = null
   @_CHAT_CONTROL = null
-  @_COMM_CHANNELS = ['system', 'talk', 'map_events', 'uploads', 'radar']
+  @_COMM_CHANNELS = ['system', 'talk', 'map_events', 'pois', 'radar']
   @_STORAGE_MODEL = null
   @_UPLOAD_HELPER = null
   @_USER_MANAGER = null
 
-  constructor: (view, mapOptions, offlineZooms, online) ->
+  constructor: (mapOptions, offlineZooms, online) ->
     Main._SINGLETON = this
     window.APP = this
     @_debug = false
@@ -23,7 +23,7 @@ class window.VoyageX.Main
     window.forceOffline = false
     @_online = online && (!forceOffline)
     @_navigatorOnline = @_online
-    @_view = view
+    @_view = new VoyageX.View()
     @_comm = null
     @_realPosition = {lat: -1.0, lng: -1.0}
     @_realPositionWatch = null
@@ -34,7 +34,7 @@ class window.VoyageX.Main
     @_curPOI = null
     #@_initPoisOnMap = []
     Main._STORAGE_MODEL = new Storage.Model()
-    Main._UPLOAD_HELPER = new VoyageX.UploadHelper()
+    Main._UPLOAD_HELPER = new VoyageX.Uploads()
     Main._USER_MANAGER = new VoyageX.Users()
     @_cacheStrategy = null
     window.addEventListener "offline", (e) ->
@@ -51,7 +51,7 @@ class window.VoyageX.Main
     #    alert("Error fetching manifest: a good chance we are offline")
     # at first the map need's to be initialized ...
     $(document).ready () ->
-        APP._init view, mapOptions, offlineZooms, window.VoyageX.TILE_HANDLER
+        APP._init mapOptions, offlineZooms, window.VoyageX.TILE_HANDLER
         # test for address-bar removal / fullscreen @see application.mobile as well
 #        if isMobile()
 #          if !window.pageYOffset
@@ -61,14 +61,15 @@ class window.VoyageX.Main
   # TODO - clean initialisation of all components in order to enable modularized usage auf single components
   #        (when reused in another application)
   #
-  _init: (view, mapOptions, offlineZooms, tileHandler = null) ->
+  _init: (mapOptions, offlineZooms, tileHandler = null) ->
     APP._initState += 1
     switch APP._initState
       when 1
         Main._BACKEND = new VoyageX.Backend()
-        Main._STORAGE_CONTROLLER = new Comm.StorageController((initError) ->
+        Main._STORAGE_CONTROLLER = new Comm.StorageController(initLocation, (initError) ->
             console.log 'StorageController initialized FileSystem with message: '+(if initError then 'FAILED' else 'OK')
-            APP._init view, mapOptions, offlineZooms, tileHandler
+            mapOptions.center = new L.LatLng(initLocation.lat, initLocation.lng)
+            APP._init mapOptions, offlineZooms, tileHandler
           )
       when 2
         curU = APP.user()
@@ -81,9 +82,9 @@ class window.VoyageX.Main
         # Communication initialisation (Faye-Client)
         APP._comm = new Comm.Comm(APP.userId(),
                                   [['/talk', APP._talkCB, channelEncKey],
-                                   ['/map_events', view._mapEventsCB, channelEncKey],
-                                   ['/uploads', APP._uploadsCB, channelEncKey],
-                                   ['/radar', view._radarCB, channelEncKey]],
+                                   ['/map_events', APP._view._mapEventsCB, channelEncKey],
+                                   ['/pois', APP._poisCB, channelEncKey],
+                                   ['/radar', APP._view._radarCB, channelEncKey]],
                                    sysChannelEncKey,
                                    APP._systemCB,
                                    Main._BACKEND.commConnStateCB)
@@ -126,7 +127,7 @@ class window.VoyageX.Main
           navigator.geolocation.getCurrentPosition(APP._initPositionCB, (error) ->
               #alert('geolocation timed out - manual selection required.\nsetting default location...')
               curU = APP.user()
-              initLoc = curU.lastLocation||window.initLocation
+              initLoc = curU.lastLocation()||window.initLocation
               APP._initPositionCB { coords: { latitude: initLoc.lat, longitude: initLoc.lng } }
           , { enableHighAccuracy: true, timeout : 5000 })
         if isMobile()
@@ -185,7 +186,7 @@ class window.VoyageX.Main
     Main._BACKEND.register (curU) ->
         poiId = curU.lastLocation.poiId
         if poiId?
-          APP.storage().saveLocation curU.lastLocation, {poi: {id: lastLocation.poiId}}
+          APP.storage().saveLocation curU.lastLocation, {poi: {id: poiId}}
         else
           APP.storage().saveLocation curU.lastLocation
         isSignedIn = APP.storage().getCurrentUser()? && APP.signedIn(curU)
@@ -283,6 +284,11 @@ class window.VoyageX.Main
       locationData = APP.storage().getLocation poi.locationId
       posLatLng = [locationData.lat, locationData.lng]
     Storage.Model.instance().addBookmark posLatLng, VoyageX.View.addBookmark
+  
+  deletePoi: (poiId) ->
+    Storage.Model.instance().deletePoi poiId, (poi) ->
+        if poi?
+          APP.markers().removeForPoi poi.id
 
   # user-marker-tools
   radarSettings: () ->
@@ -454,9 +460,9 @@ class window.VoyageX.Main
       APP.cacheTiles()
 
   _setSelectedPositionLatLng: (marker, lat, lng, address) ->
-    poi = {lat: lat, lng: lng}
+    location = {lat: trimPosVal(lat), lng: trimPosVal(lng)}
     if marker == null
-      marker = Main.markerManager().add poi, Main._markerEventsCB
+      marker = Main.markerManager().add location, Main._markerEventsCB
     else
       marker = Main.markerManager().sel marker, lat, lng, Main._markerEventsCB
     @_selectedPosition.lat = lat
@@ -473,17 +479,14 @@ class window.VoyageX.Main
     $('#zoom_level').html('<span style="color:white;">zoom: '+APP.map().getZoom()+'</span>')
 
   _initPositionCB: (position, address = null, isReInit = false) ->
-    #APP._setRealPosition(position) unless isReInit
     location = {lat: position.coords.latitude, lng: position.coords.longitude}
     if isReInit
       marker = Main.markerManager().get()
     else
       marker = Main.markerManager().add location, Main._markerEventsCB, {isUserMarker: true, isPeerMarker: false}
     APP._setSelectedPositionLatLng marker, position.coords.latitude, position.coords.longitude, address
-    APP.map().panTo([position.coords.latitude, position.coords.longitude])
-    #APP.map().setView [position.coords.latitude, position.coords.longitude], 16
-    unless isReInit
-      APP.publishPosition()
+    APP.map().panTo [position.coords.latitude, position.coords.longitude]
+    APP.publishPosition()
     APP.showPOIs location
 
   # check if second-last path is inaccuracyFactor-times than both last and third last
@@ -700,6 +703,7 @@ class window.VoyageX.Main
       curU = APP.user()
       if APP.signedIn(curU)
         #$('#settings_form').attr('action', '<%= user_path id: ":id" %>'.replace(/:id/, curU.id))
+        # next 3 lines also done in success on sign_in - but omniauth doesn't get there
         $('#sign_up_or_in').first().css('display', 'none')
         $('.logout-link').each () ->
           $(this).css('display', 'block')
@@ -711,20 +715,20 @@ class window.VoyageX.Main
         USERS.subscribeToAllPeerChannels()
         #APP.refreshUserPhoto curU, null, (u, flags) ->
         #    APP.storage().saveUser u, {foto: u.foto}
-        APP.loadLocation {id: curU.lastLocationId }
-        APP.view().setupForCurrentUser()
       else
         #$('#settings_form').attr('action', '<%= user_path id: ":id" %>'.replace(/:id/, curU.id))
+        # next 3 lines also done in destroy on sign_out - maybe redundant here
         $('#sign_up_or_in').first().css('display', 'block')
         $('.logout-link').each () ->
           $(this).css('display', 'none')
-        APP.view().setupForCurrentUser()
+      APP.loadLocation {id: curU.lastLocationId }
+      APP.view().setupForCurrentUser()
       # only if signedIn?
       Storage.Model.instance().loadUsers (peer, idx, numPeers) ->
           USERS.initUser peer
           # if idx==(numPeers-1)
           #   if isMobile()
-          #     # required for applying layout
+          #     # required for applying layout and activating checkbox
           #     $('#comm_peer_data').trigger("create")
         , -1
     else if message.type == 'subscription_grant_request'
@@ -738,11 +742,11 @@ class window.VoyageX.Main
     else if message.type == 'quit_subscription'
       true # do nothing
     else if message.type == 'callback'
-      if message.channel == 'uploads'
+      if message.channel == 'pois'
         delete message.channel
         #message.type = message.action
         #delete message.action
-        APP._uploadsCB message
+        APP._poisCB message
     APP._view._systemCB message
   
   _talkCB: (message) ->
@@ -752,38 +756,42 @@ class window.VoyageX.Main
     message['peer'] = peer
     APP._view._talkCB message
   
-  _uploadsCB: (upload) ->
+  _poisCB: (upload) ->
     console.log 'got an uploads - message: ' + upload.type
     if upload.type == 'callback'
-      # async backend response
-      if upload.action? && upload.action == 'poi_sync'
-        # assume that sync already performed with backend-response - here we hava after-commit-faye-callback
-        curU = APP.user()
-        curU.curCommitHash = upload.commit_hash
-        APP.storage().saveCurrentUser curU
-        #qPoiId = if upload.poi.local_time_secs? then -upload.poi.local_time_secs else upload.poi.id
-        storedPoi = APP.storage().getPoi upload.poi.id
-        callback = ((oldNotes) ->
-            (cbPoi, cbNewNotes) ->
-                #  
-                # there could also be some new pois from other users! order might be mixed
-                #
-                location = APP.storage().getLocation(cbPoi.locationId)
-                newNotes = oldNotes.slice 0, oldNotes.length-cbNewNotes.length
-                for note, idx in cbNewNotes
-                  newNotes.push note
-                  if note.user?
-                    note.userId = note.user.id
-                    delete note.user
-                  delete note.local_time_secs
-                cbPoi.notes = newNotes
-                VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
-                APP.view().scrollToPoiNote cbNewNotes[cbNewNotes.length-1].id
-            )(storedPoi.notes)
-        # save attachments from new other user's notes
-        loadStats = { numAdded: upload.poi.notes.length, numLeft: upload.poi.notes.length }
-        for note in upload.poi.notes
-          Storage.Model.instance().syncWithStorage upload, callback, note, loadStats, note.local_time_secs?
+      # callbacks are async backend response for user who changed/committed something
+      # other users often get type for action
+      if upload.action?
+        if upload.action == 'poi_sync'
+          # assume that sync already performed with backend-response - here we hava after-commit-faye-callback
+          curU = APP.user()
+          curU.curCommitHash = upload.commit_hash
+          APP.storage().saveCurrentUser curU
+          #qPoiId = if upload.poi.local_time_secs? then -upload.poi.local_time_secs else upload.poi.id
+          storedPoi = APP.storage().getPoi upload.poi.id
+          callback = ((oldNotes) ->
+              (cbPoi, cbNewNotes) ->
+                  #  
+                  # there could also be some new pois from other users! order might be mixed
+                  #
+                  location = APP.storage().getLocation(cbPoi.locationId)
+                  newNotes = oldNotes.slice 0, oldNotes.length-cbNewNotes.length
+                  for note, idx in cbNewNotes
+                    newNotes.push note
+                    if note.user?
+                      note.userId = note.user.id
+                      delete note.user
+                    delete note.local_time_secs
+                  cbPoi.notes = newNotes
+                  VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
+                  APP.view().scrollToPoiNote cbNewNotes[cbNewNotes.length-1].id
+              )(storedPoi.notes)
+          # save attachments from new other user's notes
+          loadStats = { numAdded: upload.poi.notes.length, numLeft: upload.poi.notes.length }
+          for note in upload.poi.notes
+            Storage.Model.instance().syncWithStorage upload, callback, note, loadStats, note.local_time_secs?
+        else if upload.action == 'poi_delete'
+          console.log 'my poi_delete was published to everbody'
     else if upload.type == 'poi_note_upload'
       unless upload.poi_note.user.id == APP.userId()
         # TODO: unify json-format, until then avoid circular structure
@@ -802,6 +810,12 @@ class window.VoyageX.Main
         for note in poi.notes
           Storage.Model.instance().syncWithStorage msg, VoyageX.View.addPoiNotes, note, loadStats
         APP.view().alert()
+    else if upload.type == 'poi_delete'
+      if upload.poi.user.id != APP.userId()
+        Storage.Model.instance().deletePoi poiId, (poi) ->
+            APP.markers().removeForPoi poi.id
+            #APP.view().alert()
+          , false
 
   _syncPoiCB: (cbPoi, cbNewNotes) ->
     VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
@@ -823,17 +837,21 @@ class window.VoyageX.Main
         Storage.Model.instance().loadPoiNotes poi.id, null, (poiClone) ->
             swiperDummy = $('#poi_swiper_'+poi.id+' [data-poiNoteId=-1]')
             if swiperDummy.length >= 1
-              # if there is a template ist must be swiper's loading-dummy
+              # if there is a template it must be swiper's loading-dummy
               swiperDummy.remove()
               for note in poiClone.notes
                 swiperSlideHtml = VoyageX.TemplateHelper.swiperSlideHtml poi, note
                 $('#poi_swiper_'+poi.id+' .swiper-wrapper').append(swiperSlideHtml)
-                mySwiper = window['myPoiSwiper'+poi.id]
-                mySwiper.reInit()
+              mySwiper = window['myPoiSwiper'+poi.id]
+              mySwiper.reInit()
             else
               # template didn't insert swiperDummy yet, so we can use the real data
               poi.notes = poiClone.notes
     this.view().previewPois pois
+
+    this.view().previewBookmarks()
+    
+    this.view().previewUsers()
 #      when 'location_bookmarks'
 #        APP.model().contextNav @_selectedPosition.lat, @_selectedPosition.lng, (pois) ->
 #            console.log('TODO: APP.contextNav for location_bookmarks ...')
@@ -963,6 +981,12 @@ class window.VoyageX.Main
         targetType = 'bookmark'
         console.log('_checkSaveNote: saving note for location '+Comm.StorageController.instance().getLocation(targetId).address)
       Storage.Model.instance().addNote targetType, targetId, textArea.val()
+
+  # 
+  @_localMapClicked: (location) ->
+    APP.preTogglePopup()
+    APP._setSelectedPositionLatLng Main.markerManager().get()||Main.markerManager().add(location, Main._markerEventsCB, true), location.lat, location.lng, location.address
+    APP.publishPosition()
 
   @_markerEventsCB: (event) ->
     address = null

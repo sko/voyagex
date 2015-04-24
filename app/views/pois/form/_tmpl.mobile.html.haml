@@ -17,13 +17,13 @@
       .ui-button-text
         #{t('uploads.upload_plain_text').html_safe}
   .upload_data_container{style: 'display: none; width: 100%;', tmpl: {id: :upload_cam_container}}
-    /= render partial: '/uploads/form/camera_data.mobile', locals: {poi_note: poi_note}
-    = render partial: '/uploads/form/tmpl_camera_data.mobile', locals: {poi_note: poi_note}
+    /= render partial: '/pois/form/camera_data.mobile', locals: {poi_note: poi_note}
+    = render partial: '/pois/form/tmpl_camera_data.mobile', locals: {poi_note: poi_note}
   .upload_data_container{style: 'display: none; width: 100%;', tmpl: {id: :upload_file_container}}
     %script
-      var updateActionPathTmpl = '#{upload_path(id: ':comments_on_id')}';
+      var updateActionPathTmpl = '#{poi_note_path(id: ':comments_on_id')}';
     = form_for poi_note, remote: true, :html => { class: nil, multipart: true, 'tmpl-id' => 'upload_form', target: 'upload_target', 'data-poiId' => ':poi_id', 'data-commentsOnId' => ':comments_on_id' } do |f|
-      = render partial: '/uploads/form/tmpl_file_data', locals: {poi_note: poi_note, f: f}
+      = render partial: '/pois/form/tmpl_file_data', locals: {poi_note: poi_note, f: f}
       = hidden_field_tag 'location[latitude]', '', id: ':remove', 'tmpl-id' => 'location_latitude'
       = hidden_field_tag 'location[longitude]', '', id: ':remove', 'tmpl-id' => 'location_longitude'
   .upload_data_container{style: 'display: none; width: 100%;', tmpl: {id: :upload_embed_container}}

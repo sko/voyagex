@@ -61,7 +61,22 @@ class window.Comm.FileUtils
       this._removeDirectory 'poiNotes'
     if flags.users? && flags.users
       this._removeDirectory 'users'
-  
+
+  clear: (flags = {tilePaths: [], poiNoteIds: [], userIds: []}) ->
+    if flags.tilePaths?
+      for tilePath in tilePaths
+        `TODO`
+    if flags.poiNoteIds?
+      for poiNoteId in flags.poiNoteIds
+        @_dirReaders.entry.getFile '/poiNotes/attachments/'+poiNoteId, {}, (fileEntry) ->
+            fileEntry.remove (e) ->
+                  console.log 'clear: deleted file /poiNotes/attachments/'+poiNoteId
+                , (error) ->
+                    console.log 'clear: error when deleting /poiNotes/attachments/'+poiNoteId+': '+error
+    if flags.userIds?
+      for userId in userIds
+        `TODO`
+
   resolvedCB: (tileKey) ->
     delete this._tileLoadQueue[tileKey]
 
