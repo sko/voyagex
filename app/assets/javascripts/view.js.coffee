@@ -303,29 +303,21 @@ class window.VoyageX.View
     bookmarksPanel.find('.bookmark-container').remove()
 
     APP.storage().bookmarks (locations, bookmark, num, idx) ->
-        locationsBookmarksHTML = VoyageX.TemplateHelper.locationsBookmarksHTML [bookmark]
+        bookmarksHTML = VoyageX.TemplateHelper.bookmarksHTML [bookmark]
         if idx >= 1
-          bookmarksPanel.find('.bookmark-container').first().before(locationsBookmarksHTML)
+          bookmarksPanel.find('.bookmark-container').first().before(bookmarksHTML)
         else
-          bookmarksPanel.find('table').first().append(locationsBookmarksHTML)
+          bookmarksPanel.find('table').first().append(bookmarksHTML)
         false
 
   previewUsers: () ->
-    if true
-      console.log 'TODO: previewUsers ...'
-      return false
-      
-    bookmarksPanel = $('#people_of_interest')
-    bookmarksPanel.find('.user-container').remove()
+    usersPanel = $('#people_of_interest')
+    #usersPanel.find('table').html('')
+    usersPanel.find('.user-container').remove()
 
-    APP.storage().getUsers (users, user, num, userIdx, peerIdx) ->
-        if user.isPeer()
-        else
-        locationsBookmarksHTML = VoyageX.TemplateHelper.locationsBookmarksHTML [bookmark]
-        if idx >= 1
-          bookmarksPanel.find('.bookmark-container').first().before(locationsBookmarksHTML)
-        else
-          bookmarksPanel.find('table').first().append(locationsBookmarksHTML)
+    APP.storage().getPeers (userDB, peer, num, peerIdx) ->
+        peerHTML = VoyageX.TemplateHelper.personOfInterestHTML [peer]
+        usersPanel.find('table').first().append(peerHTML)
         false
 
   viewAttachment: (poiNoteId) ->
@@ -344,12 +336,39 @@ class window.VoyageX.View
       $('#attachment_view_panel').dialog('open')
   
   # called for either poi- or user-marker
-  viewBookmarkNote: (location) ->
-    VoyageX.TemplateHelper.openNoteEditor location
+  viewBookmarkNote: (bookmark) ->
+    VoyageX.TemplateHelper.openNoteEditor bookmark
   
   viewPeerNote: (peer) ->
     markerMeta = VoyageX.Main.markerManager().forPeer peer.id
     VoyageX.TemplateHelper.openPeerNoteEditor peer, markerMeta.target()
+
+  viewPoiNotes: (poi, poiNoteId, marker = null, resetTitle = false) ->
+    VoyageX.TemplateHelper.openPOINotePopup poi, marker, resetTitle
+    if poiNoteId >= 1
+      APP.view().scrollToPoiNote poiNoteId
+    bookmark = APP.storage().getBookmark(if poi.locationId? then poi.locationId else poi.location.id)
+    if bookmark? && bookmark.text?
+      $('#save-note').hide()
+      $('#edit-note').show()
+    else
+      $('#save-note').show()
+      $('#edit-note').hide()
+
+  viewUserMarkerMenu: () ->
+    marker = APP.markers().get()
+#    address = null  
+#    APP._setSelectedPositionLatLng marker, marker._latlng.lat, marker._latlng.lng, address
+    VoyageX.TemplateHelper.openMarkerControlsPopup()
+    location = APP.getUserMarker(true).m.location()
+    bookmarkedLocation = APP.storage().getLocalLocation(location.lat, location.lng)
+    if bookmarkedLocation?
+      if bookmarkedLocation.bookmark? && bookmarkedLocation.bookmark.text?
+        $('#save-note').hide()
+        $('#edit-note').show()
+      else
+        $('#save-note').show()
+        $('#edit-note').hide()
 
   viewTracePath: (user, pathKey) ->
     path = APP.storage().getPath user, pathKey, false
@@ -456,16 +475,16 @@ class window.VoyageX.View
   @afterSyncPoiNotes: (poi, newNotes) ->
     console.log 'afterSyncPoiNotes: TODO: update data (address, id, ...)'
 
-  @addBookmark: (bookmarkLocation) ->
-    View.instance().viewBookmarkNote bookmarkLocation
+  @addBookmark: (bookmark) ->
+    View.instance().viewBookmarkNote bookmark
     bookmarksPanel = $('#location_bookmarks')
-    if bookmarksPanel.find('.bookmark-container[data-id='+bookmarkLocation.id+']').length == 0
-      locationsBookmarksHTML = VoyageX.TemplateHelper.locationsBookmarksHTML [bookmarkLocation]
+    if bookmarksPanel.find('.bookmark-container[data-id='+bookmark.location.id+']').length == 0
+      bookmarksHTML = VoyageX.TemplateHelper.bookmarksHTML [bookmark]
       bookmarkEntries = $('#location_bookmarks .bookmark-container')
       if bookmarkEntries.length >= 1
-        $('#location_bookmarks .bookmark-container').first().before(locationsBookmarksHTML)
+        $('#location_bookmarks .bookmark-container').first().before(bookmarksHTML)
       else
-        $('#location_bookmarks table').first().append(locationsBookmarksHTML)
+        $('#location_bookmarks table').first().append(bookmarksHTML)
 
   @editRadar: () ->
     VoyageX.TemplateHelper.openRadarEditor()

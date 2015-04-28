@@ -88,7 +88,7 @@ class window.VoyageX.TemplateHelper
     popup = marker.getPopup()
     isNewPopup = !popup?
     if isNewPopup
-      popup = L.popup {minWidth: 200, maxHeight: 300, autoPan: !isMobile()} #autoPan: false, 
+      popup = L.popup {minWidth: 200, maxHeight: 300, autoPan: !isMobile(), closeOnClick: false} #autoPan: false, 
       marker.bindPopup(popup)
       marker.off('click', marker.togglePopup, marker)
     popup.setContent(popupHtml)
@@ -110,7 +110,7 @@ class window.VoyageX.TemplateHelper
     popup = marker.getPopup()
     isNewPopup = !popup?
     if isNewPopup
-      popup = L.popup(autoPan: !isMobile())# {autoPan: false, minWidth: 200, maxHeight: 300}
+      popup = L.popup(autoPan: !isMobile(), closeOnClick: false)# {autoPan: false, minWidth: 200, maxHeight: 300}
       marker.bindPopup(popup)
       marker.off('click', marker.togglePopup, marker)
     popup.setContent(if contentCallback? then contentCallback(popupHtml, peer, marker, messages) else popupHtml)
@@ -131,7 +131,7 @@ class window.VoyageX.TemplateHelper
     popup = marker.getPopup()
     isNewPopup = !popup?
     if isNewPopup
-      popup = L.popup(autoPan: false)
+      popup = L.popup(autoPan: false, closeOnClick: false)
       marker.bindPopup popup
       marker.off('click', marker.togglePopup, marker)
     popup.setContent popupHtml
@@ -164,12 +164,12 @@ class window.VoyageX.TemplateHelper
     noteEditor.closest('.leaflet-popup-content').first().scrollTop(noteEditor.offset().top)
     $('#'+typeId).focus()
 
-  @openNoteEditor: (location) ->
+  @openNoteEditor: (bookmark) ->
     marker = APP.getOpenPopupMarker()
     unless marker?
       marker = VoyageX.Main.markerManager().get()
-    TemplateHelper.editorFor location, marker, 'note_bookmark_'+location.id, (location) ->
-        TemplateHelper.noteHtml 'bookmark_'+location.id, if location.bookmark? && location.bookmark.text? then location.bookmark.text else ''
+    TemplateHelper.editorFor bookmark, marker, 'note_bookmark_'+bookmark.location.id, (bookmark) ->
+        TemplateHelper.noteHtml 'bookmark_'+bookmark.location.id, if bookmark.text? then bookmark.text else ''
 
   @openPeerNoteEditor: (peer, marker) ->
     TemplateHelper.editorFor peer, marker, 'note_peer_'+peer.id, (peer) ->
@@ -282,16 +282,16 @@ class window.VoyageX.TemplateHelper
     replace(/\{width\}/g, width).
     replace(/\{height\}/g, maxHeight)
 
-  @locationsBookmarksHTML: (bookmarkLocations) ->
+  @bookmarksHTML: (bookmarks) ->
     html = ''
-    for bookmark, i in bookmarkLocations
+    for bookmark, i in bookmarks
       if bookmark.location.poi?
         poiOrNoPoiHTML = TemplateHelper._updateAttributes('tmpl_location_bookmark_poi', ['src']).
         replace(/\{attachment_url\}/, bookmark.location.poi.notes[0].attachment.url)
       else
         poiOrNoPoiHTML = $('#tmpl_location_bookmark_no_poi').html()
       updatedAt = new Date(bookmark.updatedAt)
-      html = $('#tmpl_location_bookmarks').html().
+      html += $('#tmpl_location_bookmarks').html().
       replace(/\{location_poi_or_no_poi\}/, poiOrNoPoiHTML).
       replace(/\{locationId\}/g,bookmark.location.id).
       replace(/\{lat\}/,bookmark.location.lat).
@@ -301,23 +301,20 @@ class window.VoyageX.TemplateHelper
       replace(/\{commented_by_user\}/, 'TODO')
     html
 
-  @personOfInterestHTML: (users) ->
-    html = $('#tmpl_people_of_interest').html()
-    htmlIFollow = $('#tmpl_people_i_follow').html()
-    for user, i in users
-      if user.isPeer()
-        poiOrNoPoiHTML = TemplateHelper._updateAttributes('tmpl_location_bookmark_poi', ['src']).
-        replace(/\{attachment_url\}/, bookmark.location.poi.notes[0].attachment.url)
-      else
-        poiOrNoPoiHTML = $('#tmpl_location_bookmark_no_poi').html()
-      htmlIFollow = $('#tmpl_people_i_follow').html().
-      replace(/\{location_poi_or_no_poi\}/, poiOrNoPoiHTML).
-      replace(/\{locationId\}/g,bookmark.location.id).
-      replace(/\{lat\}/,bookmark.location.lat).
-      replace(/\{lng\}/,bookmark.location.lng).
-      replace(/\{address\}/,bookmark.location.address).
-      replace(/\{bookmark_updated_at\}/, $.datepicker.formatDate('dd.mm.yy', updatedAt)+' '+updatedAt.getHours().toString().replace(/^([0-9])$/,'0$1')+':'+updatedAt.getMinutes().toString().replace(/^([0-9])$/,'0$1')).
-      replace(/\{commented_by_user\}/, 'TODO')
+  @personOfInterestHTML: (peers) ->
+    html = ''
+    for peer, i in peers
+      lastLocation = peer.lastLocation()
+      followHtml = TemplateHelper._updateAttributes('tmpl_people_i_follow', ['src']).
+      replace(/\{user_id\}/g, peer.id).
+      replace(/\{username\}/, peer.username).
+      replace(/\{peer_foto_url\}/, peer.foto.url).
+      replace(/\{last_location\}/, if lastLocation.address? then lastLocation.address else 'unknown').
+      replace(/\{lastLocationId\}/, lastLocation.id).
+      replace(/\{lastLat\}/, lastLocation.lat).
+      replace(/\{lastLng\}/, lastLocation.lng).
+      replace(/\{lastAddress\}/g, lastLocation.address)
+      html += followHtml
     html
 
   @radarSettingsHtml: (curPath) ->

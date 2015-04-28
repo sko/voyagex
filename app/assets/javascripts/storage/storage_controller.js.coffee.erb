@@ -51,6 +51,22 @@ class window.Comm.StorageController
   @uploadQueueKey: (storePath) ->
     storePath[0]+'/'+storePath[1]
 
+  getLocalLocation: (lat, lng) ->
+    storeKey = 'comm.locations'
+    locations = JSON.parse(localStorage.getItem(storeKey))
+    if locations?
+      tLat = trimPosVal lat
+      tLng = trimPosVal lng
+      locationIds = Object.keys(locations)
+      for locationId, idx in locationIds
+        location = locations[locationId]
+        if location.lat == tLat && location.lng == tLng
+          location.id = locationId
+          if locations.bookmarks? && (bookmark = locations.bookmarks[locationId])?
+            location.bookmark = bookmark
+          return location
+    null
+
   getLocation: (locationId) ->
     storeKey = 'comm.locations'
     locations = JSON.parse(localStorage.getItem(storeKey))
@@ -78,8 +94,10 @@ class window.Comm.StorageController
     unless locations
       locations = {}
     # decimal-scale: 7
-    locations[location.id] = { lat: Math.round(location.lat*10000000)/10000000,\
-                               lng: Math.round(location.lng*10000000)/10000000,\
+    # locations[location.id] = { lat: Math.round(location.lat*10000000)/10000000,\
+    #                            lng: Math.round(location.lng*10000000)/10000000,\
+    locations[location.id] = { lat: trimPosVal(location.lat),\
+                               lng: trimPosVal(location.lng),\
                                address: location.address}
     if flags.homeBase?
       locations.homeBase = location.id
@@ -150,6 +168,18 @@ class window.Comm.StorageController
     else
       null
   
+  deleteBookmark: (locationId) ->
+    storeKey = 'comm.locations'
+    locations = JSON.parse(localStorage.getItem(storeKey))
+    if locations? && locations.bookmarks?
+      bookmark = locations.bookmarks[locationId]
+      if bookmark?
+        delete locations.bookmarks[locationId]
+        if locations.bookmarks.length == 0
+          delete locations.bookmarks
+        console.log 'TODO: STORAGE - deleteBookmark: maybe delete location as well if no poi, peer, ...'
+        localStorage.setItem storeKey, JSON.stringify(locations)
+
   bookmarks: (callback = null) ->
     storeKey = 'comm.locations'
     locations = JSON.parse(localStorage.getItem(storeKey))
@@ -162,7 +192,7 @@ class window.Comm.StorageController
         bookmark.location = locations[locationId]
         bookmark.location.id = locationId
         if locations.pois? && locations.pois[locationId]?
-          storeKey = StorageController.poiKey locations.pois[locationId].id
+          storeKey = StorageController.poiKey locations.pois[locationId]
           bookmark.location.poi = this.get storeKey
         if callback?
           if callback(locations, bookmark, locationIds.length, idx)
@@ -224,7 +254,6 @@ class window.Comm.StorageController
           pois.push poi
     pois
   
- #pois: (searchBounds, callback = null) ->
   poisWithinSearchBounds: (searchBounds, callback = null) ->
     this.getPois (poi) ->
       if withinSearchBounds(poi.lat, poi.lng, searchBounds)
@@ -233,37 +262,22 @@ class window.Comm.StorageController
         true
       else
         false
-    # storeKey = 'comm.locations'
-    # locations = JSON.parse(localStorage.getItem(storeKey))
-    # #locations = this.get 'comm.locations'
-    # if locations.pois?
-    #   pois = []
-    #   for locationId in Object.keys(locations.pois)
-    #     location = locations[locationId]
-    #     if withinSearchBounds(location.lat, location.lng, searchBounds)
-    #       poiKey = StorageController.poiKey {id: locations.pois[locationId].id}
-    #       if callback?
-    #         if callback(locations, locations[locationId], locations.pois[locationId].id)
-    #           pois = []
-    #           break
-    #       else
-    #         #poi = StorageController.instance().get poiKey
-    #         poi = JSON.parse(localStorage.getItem(poiKey))
-    #         poi.lat = location.lat
-    #         poi.lng = location.lng
-    #         poi.address = location.address
-    #         pois.push poi
-    #   pois
-    # else
-    #   []
 
+  # for peers and pois
   saveNote: (type, id, text) ->
     if type == 'peer'
       this.saveUser(this.getUser(id), {note: text})
     else
       this.bookmark id, text
-      #bookmarks (locations, locationBookmark) ->
   
+  deleteNote: (type, id) ->
+    if type == 'peer'
+      user = this.getUser id
+      delete user.note
+      this.saveUser user, {'delete': ['note']}
+    else
+      this.deleteBookmark id
+
   isCurrentUser: (user) ->
     this.getCurrentUser().id == user.id
 
@@ -300,7 +314,8 @@ class window.Comm.StorageController
       userIds = Object.keys(userDB)
       peerIdx = -1
       for userId, idx in userIds
-        user = users[userId]
+        user = userDB[userId]
+        user.id = userId
         peer = peers[userId]
         if peer?
           user.peerPort = peer.peerPort
@@ -308,6 +323,8 @@ class window.Comm.StorageController
         userIdx = idx - (peerIdx+1)
         user.isPeer = () ->
             this.peerPort?
+        user.lastLocation = () ->
+            StorageController._SINGLETON.getLocation user.lastLocationId
         if callback?
           if callback(userDB, user, userIds.length, userIdx, peerIdx)
             users = null
@@ -327,13 +344,18 @@ class window.Comm.StorageController
       if users.peers? && (peer = users.peers[userId])?
         user.peerPort = peer.peerPort
       #delete user.chat
+      user.isPeer = () ->
+          this.peerPort?
+      user.lastLocation = () ->
+          StorageController._SINGLETON.getLocation user.lastLocationId
     else
       console.log 'getUser: getting current user for id '+userId+'?'
       user = this.getCurrentUser()
     user
   
-  # a user ist created from scratch to avoid temporary attributes from being saved
+  # a user is created from scratch to avoid temporary attributes from being saved
   # all unkodified attributes will be saved -> xUser
+  # to delete attribute add flags = {delete: ['note',...]}
   saveUser: (user, flags = {}, db = null) ->
     curU = this.getCurrentUser()
     # current user must be saved before any other user
@@ -347,7 +369,7 @@ class window.Comm.StorageController
     xUser = users[user.id]
     unless xUser?
       xUser = {}
-    users[user.id] = {username: user.username}
+    users[user.id] = {username: user.username, lastLocationId: user.lastLocationId}
     delete xUser.username
     if flags.peerPort?
       unless users.peers?
@@ -364,21 +386,24 @@ class window.Comm.StorageController
     unmodifiedAttrKeys = Object.keys xUser
     if unmodifiedAttrKeys?
       for attrKey in unmodifiedAttrKeys
+        if flags.delete? && (attrKey in flags.delete)
+          continue
         users[user.id][attrKey] = xUser[attrKey]
     localStorage.setItem storeKey, JSON.stringify(users)
     user
   
-  getPeers: () ->
-    storeKey = 'comm.users'
-    users = JSON.parse(localStorage.getItem(storeKey))
-    if users? && users.peers?
-      peers = []
-      for peerId in Object.keys(users.peers)
-        peer = users[peerId]
-        peer.id = parseInt peerId
-        peer.peerPort = users.peers[peerId].peerPort
-        peers.push peer
-      return peers
+  getPeers: (callback = null) ->
+    peers = []
+    users = JSON.parse(localStorage.getItem('comm.users'))
+    this.getUsers (userDB, user, num, userIdx, peerIdx) ->
+        if user.isPeer()
+          if callback?
+            if callback(userDB, user, userDB.peers.length, peerIdx)
+              return null
+          else
+            peers.push user
+        false
+      , users
     []
 
   getChat: (peer = null) ->
@@ -643,7 +668,7 @@ class window.Comm.StorageController
     for key, i in Object.keys(localStorage)
       if (key.match(/\.poi\./)? || key.match(/\.locations$/)?) && (!(flags.poiNotes?&&flags.poiNotes))
         continue
-      if key.match(/\.users$/)? && (!(flags.users?&&flags.users))
+      if key.match(/\.(users|currentUser)$/)? && (!(flags.users?&&flags.users))
         continue
       console.log('StorageController - clearCache: deleting \''+key+'\' ...')
       this.delete(key)

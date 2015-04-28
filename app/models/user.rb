@@ -47,7 +47,7 @@ class User < ActiveRecord::Base
     l_l = snapshot.present? ?
             snapshot.location.present? ?
               snapshot.location :
-              only_stored ? nil : Location.new(id: -1, longitude: snapshot.lat, latitude: snapshot.lng, address: snapshot.address) :
+              only_stored ? nil : Location.new(id: -1, latitude: snapshot.lat, longitude: snapshot.lng, address: snapshot.address) :
             nil
     l_l||home_base||Location.default
   end

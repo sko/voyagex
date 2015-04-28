@@ -125,6 +125,30 @@ class UsersController < ApplicationController
     render json: peers_json.to_json
   end
 
+  def delete_details
+    if current_user.present?
+      if params[:detail].present?
+        user_json = {id:current_user.id}
+        case params[:detail]
+        when 'notes'
+          if params[:peer_id].present?
+            comm_peer = CommPeer.where(peer_id: current_user.id).first
+            comm_peer.update_attribute(:note_follower, nil) if comm_peer.present?
+            user_json[:note] = {id: comm_peer.comm_port.user.id}
+          else
+            location = Location.find(params[:location_id])
+            locations_user = current_user.locations_users.where(location_id: location.id).first
+            locations_user.destroy if locations_user.present?
+            user_json[:note] = {id: location.id, lat: location.latitude, lng:location.longitude, address:shorten_address(location)}
+          end
+        end
+        render json: user_json.to_json
+        return
+      end
+    end
+    render json: {message: "no action taken"}.to_json
+  end
+
   def change_details
     if current_user.present?
       if params[:detail].present?

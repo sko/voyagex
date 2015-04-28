@@ -43,8 +43,8 @@ class window.Storage.Model
       data: {lat: latLng[0], lng: latLng[1]}
     .done (user) ->
         APP.storage().saveLocation user.last_location
-        bookmarkLocation = APP.storage().bookmark user.last_location.id
-        callback bookmarkLocation
+        bookmark = APP.storage().bookmark user.last_location.id
+        callback bookmark
     .fail (jqXHR, textStatus) ->
         console.log('TODO: errorhandling')
 
@@ -58,6 +58,17 @@ class window.Storage.Model
       data: if type=='peer' then {peer_id: id, text: text} else {location_id: id, text: text}
     .done (user) ->
         APP.storage().saveNote type, id, text
+    .fail (jqXHR, textStatus) ->
+        console.log('TODO: errorhandling')
+
+  deleteNote: (type, id) ->
+    $.ajax
+      type: 'DELETE'
+      dataType: 'json'
+      url: '<%= set_user_detail_path(detail: 'notes') %>'
+      data: if type=='peer' then {peer_id: id} else {location_id: id}
+    .done (user) ->
+        APP.storage().deleteNote type, id
     .fail (jqXHR, textStatus) ->
         console.log('TODO: errorhandling')
 
@@ -195,7 +206,7 @@ class window.Storage.Model
           #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
     else
       callback APP.storage().deletePoi(poiId)
-    
+
   # @deprecated - instantly saves data only if offline - else uploads data first and saves on backend-response
   # -> use savePoiNote(offlineCallback) instead
   uploadPoiNote: (formData, callback, uploadTargetId = null) ->

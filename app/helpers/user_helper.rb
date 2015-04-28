@@ -13,11 +13,10 @@ module UserHelper
     json = { id: user.id,
              username: user.username,
              lastLocation: {
-               id: last_loc.id||'null',
+               id: last_loc.id,
                lat: last_loc.latitude,
                lng: last_loc.longitude,
-               address: shorten_address(last_loc, true),
-               width: foto_width
+               address: shorten_address(last_loc, true)
              },
              foto: {
                url: user.foto.url,

@@ -23,6 +23,7 @@ en:
   peers:
     chat: Chat
     add_note: Add Note
+    people_of_interest: Users i follow ...
   uploads:
     upload: Upload
     take_photo: Take a Photo

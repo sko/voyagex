@@ -1,33 +1,9 @@
-- if is_mobile
+-#
+  if is_mobile
   %h4
     People of Interest
-Benutzer denen ich folge oder folgen will ...
+= t('peers.people_of_interest')
 %br
 %h4{colspan: 4}
   #{t('admin.i_follow')}
 %table
-  -#
-    user.follows.each do |u|
-    - last_location = u.snapshot.location.present? ? u.snapshot.location : Location.new(latitude: u.snapshot.lat, longitude: u.snapshot.lng)
-    %tr{data: {userId: u.id}}
-      %td
-        = image_tag u.foto.url, style: 'max-width: 35px !important;'
-      %td{width: 15}
-        &nbsp;
-      %td
-        #{u.username}
-      %td{width: 15}
-        &nbsp;
-      %td
-        -#= link_to shorten_address(u.snapshot.location), location_path(location_id: u.snapshot.location.id), data: { remote: 'true', format: :js }
-        = link_to shorten_address(last_location, true), '#', onclick: "javascript:APP.loadLocation({id: #{last_location.id||'null'}, lat: #{u.snapshot.lat||'null'}, lng: #{u.snapshot.lng||'null'}, address: #{u.snapshot.address.present? ? "'#{u.snapshot.address}'" : 'null'}});".html_safe
-
-%h4{colspan: 4}
-  #{t('admin.i_want_to_follow')}
-%table
-  - user.requested_grant_to_follow.each do |cs|
-    %tr{data: {userId: cs.user.id}}
-      %td
-        #{cs.user.username}
-      %td{width: 15}
-        &nbsp;

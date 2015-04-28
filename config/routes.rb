@@ -42,6 +42,7 @@ VoyageX::Application.routes.draw do
 
   get '/manifest', to: 'main#manifest', as: :manifest
   match '/set_user_detail/:detail', to: 'users#change_details', as: :set_user_detail, via: [:get, :post]
+  delete '/set_user_detail/:detail', to: 'users#delete_details'
   get '/csrf', to: 'pois#csrf', as: :csrf
   get '/poi_comments/:poi_id/:poi_note_id', to: 'pois#comments', as: :poi_comments
   #put '/poi_comments/:poi_id', to: 'pois#comments', as: :create_poi_comment

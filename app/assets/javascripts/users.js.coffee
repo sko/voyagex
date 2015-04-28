@@ -22,8 +22,10 @@ class window.VoyageX.Users
       delete lastLocation.poiId
       APP.storage().saveLocation lastLocation, {poi: {id: lastLocation.poiId}}
     else
-      if lastLocation.id?
-        APP.storage().saveLocation lastLocation
+      unless lastLocation.id?
+        # this is just required locally (not in Backend) - to access peers lastLocation later
+        lastLocation.id = -peer.id
+      APP.storage().saveLocation lastLocation
     # ---------------------
     peer.lastLocationId = lastLocation.id
     USERS.refreshUserPhoto peer, {peerPort: peer.peerPort}, (user, flags) ->
@@ -47,14 +49,14 @@ class window.VoyageX.Users
       USERS.initPeer user
     else
       if flags.i_want_to_follow?
-        #((u) ->
         USERS.refreshUserPhoto user, {peerPort: {}}, (u, flags) ->
             APP.storage().saveUser u, {foto: u.foto}
-        APP.view().addIWantToFollow user
-        #)(user)
+            APP.view().addIWantToFollow u
       APP.view().addIDontFollow user
     if flags.follows_me?
-      APP.view().addFollowsMe user
+      USERS.refreshUserPhoto user, {peerPort: {}}, (u, flags) ->
+          APP.storage().saveUser u, {foto: u.foto}
+          APP.view().addFollowsMe u
     else if flags.wants_to_follow_me?
       APP.view().addWantsToFollowMe user
     # if window.isMobile()

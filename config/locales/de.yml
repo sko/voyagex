@@ -23,6 +23,7 @@ de:
   peers:
     chat: Chat
     add_note: Notiz hinzufügen
+    people_of_interest: Benutzer denen ich folge ...
   uploads:
     upload: Hochladen
     take_photo: Foto aufnehmen

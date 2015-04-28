@@ -24,7 +24,7 @@
   
   window.currentAddress = '';
   window.subscribeTo = [];
-  window.initLocation = { id: #{l_l.id}, lat: #{l_l.latitude}, lng: #{l_l.longitude}, address: '#{l_l.address}' };
+  window.initLocation = { id: #{l_l.id >= 0 ? l_l.id : -tmp_user.id}, lat: #{l_l.latitude}, lng: #{l_l.longitude}, address: '#{l_l.address}' };
   window.showSearchRadius = false;
   -#
   -# for admin it's ok to have hard-coded data in app-cache. admin actually should clear appcache before signing in

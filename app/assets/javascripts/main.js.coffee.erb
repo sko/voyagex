@@ -184,6 +184,8 @@ class window.VoyageX.Main
 
   register: () ->
     Main._BACKEND.register (curU) ->
+        unless curU.lastLocation.id?
+          curU.lastLocation.id = -curU.id
         poiId = curU.lastLocation.poiId
         if poiId?
           APP.storage().saveLocation curU.lastLocation, {poi: {id: poiId}}
@@ -275,6 +277,7 @@ class window.VoyageX.Main
     APP.map()._resetView APP.map().getCenter(), APP.map().getZoom(), true
 
   # user-marker-tools
+  # no text required for bookmarks 
   bookmarkLocation: (poiId = -1) ->
     if poiId == -1
       posLatLng = this.getSelectedPositionLatLng()
@@ -337,10 +340,12 @@ class window.VoyageX.Main
                                 lng: posLatLng[1]})#,\
                                 #bookmarkLocation: bookmarkLocation,\
                                 #setHomeBase: setHomeBase})
-    path = APP.storage().getPath APP.user()
-    if path?
-      path = APP.storage().addToPath APP.user().id, @_selectedPosition, path
-      VoyageX.Main.mapControl().drawPath APP.user(), path, true
+    if APP.user()?
+      # on initialisation when users are deleted locally (reset) currentUser might be null on first call
+      path = APP.storage().getPath APP.user()
+      if path?
+        path = APP.storage().addToPath APP.user().id, @_selectedPosition, path
+        VoyageX.Main.mapControl().drawPath APP.user(), path, true
     $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').click()
 
   initBCChatMessages: () ->
@@ -440,12 +445,22 @@ class window.VoyageX.Main
   showPOI: (poiId, poiNoteId) ->
     Storage.Model.instance().loadPoiNotes poiId, poiNoteId, (poi) ->
         #APP.panPosition(poi.lat, poi.lng, poi.address)
-        VoyageX.TemplateHelper.openPOINotePopup poi
-        APP.view().scrollToPoiNote poiNoteId
+        #VoyageX.TemplateHelper.openPOINotePopup poi
+        #APP.view().scrollToPoiNote poiNoteId
+        APP.view().viewPoiNotes poi, poiNoteId
     if isMobile()
       $("#context_nav_panel").panel("close")
     else
       contextNavPanel.dialog("close")
+
+  showPeer: (peer, lastLocation = null) ->
+    unless lastLocation?
+      lastLocation = peer.lastLocation()
+    APP.loadLocation lastLocation
+    userMarker = APP.getUserMarker(true).m
+    APP.markers()._checkVisible lastLocation, userMarker
+    markerMeta = APP.markers().forPeer peer.id
+    VoyageX.TemplateHelper.openPeerPopup peer, markerMeta.target()
 
   getSelectedPositionLatLng: () ->
     return [@_selectedPosition.lat, @_selectedPosition.lng]
@@ -721,7 +736,7 @@ class window.VoyageX.Main
         $('#sign_up_or_in').first().css('display', 'block')
         $('.logout-link').each () ->
           $(this).css('display', 'none')
-      APP.loadLocation {id: curU.lastLocationId }
+      APP.loadLocation {id: (if curU.lastLocationId >= 1 then curU.lastLocationId else -curU.id)}
       APP.view().setupForCurrentUser()
       # only if signedIn?
       Storage.Model.instance().loadUsers (peer, idx, numPeers) ->
@@ -783,8 +798,9 @@ class window.VoyageX.Main
                       delete note.user
                     delete note.local_time_secs
                   cbPoi.notes = newNotes
-                  VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
-                  APP.view().scrollToPoiNote cbNewNotes[cbNewNotes.length-1].id
+                  #VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
+                  #.view().scrollToPoiNote cbNewNotes[cbNewNotes.length-1].id
+                  APP.view().viewPoiNotes cbPoi, cbNewNotes[cbNewNotes.length-1].id, null, true
               )(storedPoi.notes)
           # save attachments from new other user's notes
           loadStats = { numAdded: upload.poi.notes.length, numLeft: upload.poi.notes.length }
@@ -818,8 +834,9 @@ class window.VoyageX.Main
           , false
 
   _syncPoiCB: (cbPoi, cbNewNotes) ->
-    VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
-    APP.view().scrollToPoiNote cbNewNotes[cbNewNotes.length-1].id
+    # VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
+    # APP.view().scrollToPoiNote cbNewNotes[cbNewNotes.length-1].id
+    APP.view().viewPoiNotes cbPoi, cbNewNotes[cbNewNotes.length-1].id, null, true
 
   panPosition: (lat, lng, address) ->
     APP._setSelectedPositionLatLng Main.markerManager().get(), lat, lng, address
@@ -880,10 +897,11 @@ class window.VoyageX.Main
 #  })
 
   markerControls: () ->
-    marker = Main.markerManager().get()
-#    address = null
-#    APP._setSelectedPositionLatLng marker, marker._latlng.lat, marker._latlng.lng, address
-    VoyageX.TemplateHelper.openMarkerControlsPopup()
+#     marker = Main.markerManager().get()
+# #    address = null
+# #    APP._setSelectedPositionLatLng marker, marker._latlng.lat, marker._latlng.lng, address
+#     VoyageX.TemplateHelper.openMarkerControlsPopup()
+    APP.view().viewUserMarkerMenu()
 
   poiNoteControls: () ->
     if isMobile()
@@ -973,18 +991,23 @@ class window.VoyageX.Main
     noteEditor = $('#'+contentId).parent().find('.note_editor').first()
     textArea = noteEditor.find('textarea')
     if textArea.length >= 1
+      bookmarkText = textArea.val().trim()
       targetId = parseInt textArea.attr('id').match(/[0-9]+$/)[0]
       if contentId.match(/^peer_popup_/)?
         targetType = 'peer'
-        console.log('_checkSaveNote: saving note for peer '+Comm.StorageController.instance().getUser(targetId).username)
+        console.log('_checkSaveNote: '+(if bookmarkText == '' then 'deleting' else 'saving')+' note for peer '+Comm.StorageController.instance().getUser(targetId).username)
       else
         targetType = 'bookmark'
-        console.log('_checkSaveNote: saving note for location '+Comm.StorageController.instance().getLocation(targetId).address)
-      Storage.Model.instance().addNote targetType, targetId, textArea.val()
+        console.log('_checkSaveNote: '+(if bookmarkText == '' then 'deleting' else 'saving')+' note for location '+Comm.StorageController.instance().getLocation(targetId).address)
+      if bookmarkText == ''
+        Storage.Model.instance().deleteNote targetType, targetId
+      else
+        Storage.Model.instance().addNote targetType, targetId, textArea.val()
 
   # 
   @_localMapClicked: (location) ->
     APP.preTogglePopup()
+    VoyageX.Main.markerManager().userMarkerMouseOver true
     APP._setSelectedPositionLatLng Main.markerManager().get()||Main.markerManager().add(location, Main._markerEventsCB, true), location.lat, location.lng, location.address
     APP.publishPosition()
 
@@ -1013,7 +1036,8 @@ class window.VoyageX.Main
             else
               Storage.Model.instance().loadPoiNotes markerMeta.poi.id, null, (poi) ->
                   # userMarkerMouseOver is set in openPOINotePopup
-                  VoyageX.TemplateHelper.openPOINotePopup poi, event.target
+                  #VoyageX.TemplateHelper.openPOINotePopup poi, event.target
+                  APP.view().viewPoiNotes poi, -1, event.target
       when 'mouseover'
         markerMeta = Main.markerManager().meta event.target
         if markerMeta.isUserMarker && Main.markerManager().userMarkerMouseOver()
