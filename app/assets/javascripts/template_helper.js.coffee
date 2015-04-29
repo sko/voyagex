@@ -170,10 +170,26 @@ class window.VoyageX.TemplateHelper
       marker = VoyageX.Main.markerManager().get()
     TemplateHelper.editorFor bookmark, marker, 'note_bookmark_'+bookmark.location.id, (bookmark) ->
         TemplateHelper.noteHtml 'bookmark_'+bookmark.location.id, if bookmark.text? then bookmark.text else ''
+    if bookmark.text?
+      $('#save-note').hide()
+      $('#edit-note').hide()
+      $('#delete-note').show()
+    else
+      $('#save-note').hide()
+      $('#edit-note').show()
+      $('#delete-note').hide()
 
   @openPeerNoteEditor: (peer, marker) ->
     TemplateHelper.editorFor peer, marker, 'note_peer_'+peer.id, (peer) ->
         TemplateHelper.noteHtml 'peer_'+peer.id, if peer.note? then peer.note else ''
+    if peer.note?
+      $('#save-note').hide()
+      $('#edit-note').hide()
+      $('#delete-note').show()
+    else
+      $('#save-note').hide()
+      $('#edit-note').show()
+      $('#delete-note').hide()
 
   @p2PChatMsgHtml: (from, message, messageHtml = null) ->
     unless messageHtml?
@@ -358,21 +374,7 @@ class window.VoyageX.TemplateHelper
       popup.setContent popupHtml + editorHtml
       #$('#tmpl_radar_editor > .radar_editor').remove()
     marker.openPopup()
-    # init slider:
     TemplateHelper.initRadarEditorSlider popup
-    # $(popup._contentNode).find('> .radar_editor > fieldset').first().trigger('create');
-    # #noteEditor = $('#'+typeId).closest('.radar_editor').first()
-    # #noteEditor.closest('.leaflet-popup-content').first().scrollTop(noteEditor.offset().top)
-    # #$('#'+typeId).focus()
-    # $('#search_radius_ctrl').slider({
-    #     min: 100,
-    #     max: 5000,
-    #     step: 100,
-    #     value: APP.user().searchRadiusMeters,
-    #     stop: (event, u) ->
-    #         APP.setSearchRadius u.value
-    #         $('#search_radius_meters').html APP.user().searchRadiusMeters
-    # })
     APP.view().setRealPositionWatchedIcon if APP.isRealPositionWatched() then 'on' else 'off'
     APP.view().setTraceCtrlIcon APP.user(), marker, if curPath? then 'start' else 'stop'
 

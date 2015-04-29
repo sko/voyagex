@@ -16,10 +16,12 @@ en:
       TODO: resend confirmation instructions"
   locations:
     view_note: View Note
+    delete_note: Delete Note
   pois:
     add: add POI
     bookmark: bookmark Location
     delete: delete POI
+    delete_note: delete Bookmark
   peers:
     chat: Chat
     add_note: Add Note

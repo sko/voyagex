@@ -104,10 +104,5 @@ module ::GeoUtils
     nearbys.first || location
   end
 
-  private
-
-  def setNewLocation
-  end
-
 end
 

@@ -13,6 +13,11 @@ Homer: "Das ist mein erster Tag!"
 Burns: "Hehehe, warum sagen Sie das nicht gleich?"
 
 
+
+APP.storage().clearCache({tiles: false, poiNotes: true, users: true})
+
+
+
 ##########################
 map: iPhone 4: mob-resol: 320x500
 settings: iPhone 6: mob-resol: 375x600

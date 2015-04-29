@@ -277,7 +277,7 @@ class window.VoyageX.Main
     APP.map()._resetView APP.map().getCenter(), APP.map().getZoom(), true
 
   # user-marker-tools
-  # no text required for bookmarks 
+  # no text required but dummy-text (...) set for bookmark (locally only) - no text = delete
   bookmarkLocation: (poiId = -1) ->
     if poiId == -1
       posLatLng = this.getSelectedPositionLatLng()
@@ -286,8 +286,31 @@ class window.VoyageX.Main
       poi = APP.storage().get Comm.StorageController.poiKey({id: poiId})
       locationData = APP.storage().getLocation poi.locationId
       posLatLng = [locationData.lat, locationData.lng]
-    Storage.Model.instance().addBookmark posLatLng, VoyageX.View.addBookmark
-  
+    Storage.Model.instance().addBookmark posLatLng, (bookmark) ->
+        VoyageX.View.addBookmark bookmark
+        # set dummy-text to prevent deletion (after opening - not before close!)
+        textArea = $('#note_bookmark_'+bookmark.location.id)
+        bookmarkText = textArea.val().trim()
+        if bookmarkText == ''
+          textArea.val('...')
+
+  deleteBookmark: (poiId = -1) ->
+    markerMeta = APP.getOpenPopupMarker true
+    #if poiId == -1
+    if markerMeta.isUserMarker
+      contentId = 'marker_controls'
+    #else if markerMeta.peer?
+    #  `;`
+    else if markerMeta.poi?
+      contentId = 'poi_notes_container'
+    
+    noteEditor = $('#'+contentId).parent().find('.note_editor').first()
+    textArea = noteEditor.find('textarea')
+    textArea.val('')
+
+    Main._checkSaveNote contentId, markerMeta
+    markerMeta.target().closePopup()
+
   deletePoi: (poiId) ->
     Storage.Model.instance().deletePoi poiId, (poi) ->
         if poi?
@@ -688,13 +711,18 @@ class window.VoyageX.Main
       #Main._PATH_PREDICTION.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, 16)
       tiles = Main._PATH_PREDICTION.tilesPathBetweenPositions({lat:curLatLng.lat,lng:curLatLng.lng},{lat:predictedLatLng.lat,lng:predictedLatLng.lng}, 16)
       for tile in tiles
-        view = {zoom: APP.map().getZoom(),\
-                tile: {row: tile.y, column: tile.x},\
-                subdomain: MC._mapOptions['subdomains'][0]}
-        cachedTileUrl = VoyageX.MapControl.drawTile view, {default: true}
-        #deferredModeParams = VoyageX.MapControl.deferredModeParams view, {default: true}
-        #VoyageX.MapControl.loadTileFromUrl view, deferredModeParams
+        # view = {zoom: APP.map().getZoom(),\
+        #         tile: {row: tile.y, column: tile.x},\
+        #         subdomain: MC._mapOptions['subdomains'][0]}
+        # cachedTileUrl = VoyageX.MapControl.drawTile view, {default: true}
+        APP.cacheTile tile, APP.map().getZoom()
       APP._movePredictionLastLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
+
+  cacheTile: (tile, zoom) ->
+    view = {zoom: zoom,\
+            tile: {row: tile.y, column: tile.x},\
+            subdomain: MC._mapOptions['subdomains'][0]}
+    cachedTileUrl = VoyageX.MapControl.drawTile view, {default: true}
 
   togglePredictionPathDebug: () ->
     if @_debug
@@ -966,28 +994,28 @@ class window.VoyageX.Main
     if openPopupMarkerMeta?
       if openPopupMarkerMeta.target().getPopup()? && openPopupMarkerMeta.target().getPopup()._isOpen
         if openPopupMarkerMeta.isUserMarker
-          Main._checkSaveNote 'marker_controls'
+          Main._checkSaveNote 'marker_controls', openPopupMarkerMeta
         else if openPopupMarkerMeta.peer?
-          Main._checkSaveNote 'peer_popup_'+openPopupMarkerMeta.peer.id
+          Main._checkSaveNote 'peer_popup_'+openPopupMarkerMeta.peer.id, openPopupMarkerMeta
         else
-          Main._checkSaveNote 'poi_notes_container'
+          Main._checkSaveNote 'poi_notes_container', openPopupMarkerMeta.m
         openPopupMarkerMeta.target().closePopup()
 
-  @closePopupCB: (leafletMarker) ->
-    (event) ->
-        meta = Main.markerManager().meta leafletMarker
-        if meta.isUserMarker
-          contentId = 'marker_controls'
-        else if meta.peer?
-          contentId = 'peer_popup_'+meta.peer.id
-        else
-          contentId = 'poi_notes_container'
-        console.log('closePopupCB: contentId = '+contentId+', leafletMarker = '+Main.markerManager().toString(leafletMarker, meta))
-        Main._checkSaveNote contentId
-        Main.markerManager().userMarkerMouseOver true
+  # @closePopupCB: (leafletMarker) ->
+  #   (event) ->
+  #       meta = Main.markerManager().meta leafletMarker
+  #       if meta.isUserMarker
+  #         contentId = 'marker_controls'
+  #       else if meta.peer?
+  #         contentId = 'peer_popup_'+meta.peer.id
+  #       else
+  #         contentId = 'poi_notes_container'
+  #       console.log('closePopupCB: contentId = '+contentId+', leafletMarker = '+Main.markerManager().toString(leafletMarker, meta))
+  #       Main._checkSaveNote contentId, meta
+  #       Main.markerManager().userMarkerMouseOver true
 
   # poi_notes_container | marker_controls | peer_popup_{peer_id}
-  @_checkSaveNote: (contentId) ->
+  @_checkSaveNote: (contentId, markerMeta) ->
     noteEditor = $('#'+contentId).parent().find('.note_editor').first()
     textArea = noteEditor.find('textarea')
     if textArea.length >= 1
@@ -1000,8 +1028,17 @@ class window.VoyageX.Main
         targetType = 'bookmark'
         console.log('_checkSaveNote: '+(if bookmarkText == '' then 'deleting' else 'saving')+' note for location '+Comm.StorageController.instance().getLocation(targetId).address)
       if bookmarkText == ''
+        # cached tiles are not deleted when bookmark is deleted - other cached tiles can only be batch deleted as well
+        #unless contentId.match(/^peer_popup_/)?
+        #  # maybe check first if bookmark exists - but actually doesn't matter
+        #  tile = Main.mapControl().tileForPosition markerMeta.location().lat, markerMeta.location().lng, APP.map().getZoom()
+        #  alert('TODO: Main - _checkSaveNote: delete Tiles '+APP.map().getZoom()+'/'+tile.x+'/'+tile.y+' for bookmark')
         Storage.Model.instance().deleteNote targetType, targetId
       else
+        unless contentId.match(/^peer_popup_/)?
+          tile = Main.mapControl().tileForPosition markerMeta.location().lat, markerMeta.location().lng, APP.map().getZoom()
+          #alert('TODO: Main - _checkSaveNote: store Tiles '+APP.map().getZoom()+'/'+tile.x+'/'+tile.y+' for bookmark')
+          APP.cacheTile tile, APP.map().getZoom()
         Storage.Model.instance().addNote targetType, targetId, textArea.val()
 
   # 

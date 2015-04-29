@@ -16,10 +16,12 @@ de:
       TODO: resend confirmation instructions"
   locations:
     view_note: Notiz anzeigen
+    delete_note: Notiz löschen
   pois:
     add: POI eintragen
     bookmark: Ort merken
     delete: POI löschen
+    delete_note: Lesezeichen löschen
   peers:
     chat: Chat
     add_note: Notiz hinzufügen
