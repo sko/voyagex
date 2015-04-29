@@ -47,7 +47,7 @@ class window.VoyageX.Backend
         Backend.instance()._state.pingKey = msg.ping_key
         Backend.instance()._state.online = true
         unless APP._online
-          APP.setOnline()
+          APP.setOnline msg.commit_hash
         if successCB?
           successCB()
         Backend.instance()._state.pingActive &&= (!APP._comm.isOnline())

@@ -224,7 +224,15 @@ class window.VoyageX.Main
         console.log 'Main - isOnline: navigator switched to off-line ...'
       false
 
-  setOnline: () ->
+  setOnline: (commitHash = null) ->
+    if commitHash?
+      curU = APP.user()
+      if curU.curCommitHash != commitHash
+        alert('TODO: APP - setOnline: new commits while offline: '+commitHash)
+        APP.storage().saveUser {id: curU.id, curCommitHash: commitHash}
+    #
+    # TODO - get commit id from backend and sync if changed
+    #
     #Comm.StorageController.instance()._tileLoadQueue = {}
     #this.map()._resetView this.map().getCenter(), this.map().getZoom(), true
     #if this.isBackendOnline()

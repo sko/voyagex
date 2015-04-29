@@ -5,7 +5,7 @@ module Comm
     include ::UserHelper
 
     def ping
-      msg = { ping_key: params[:key] }
+      msg = { ping_key: params[:key], commit_hash: Commit.latest.hash_id }
       render json: msg
     end
 

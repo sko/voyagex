@@ -137,7 +137,7 @@ class PostCommit
   def delete_poi user_id, poi_id, fork_publish = true
     @user = User.find user_id
 
-    vm = VersionManager.new PoisController::MASTER, PoisController::WORK_DIR_ROOT, @user, false#@user.is_admin?
+    vm = VersionManager.new Poi::MASTER, Poi::WORK_DIR_ROOT, @user, false#@user.is_admin?
     prev_commit = vm.cur_commit
     
     vm.delete_poi poi_id

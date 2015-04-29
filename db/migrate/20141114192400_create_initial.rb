@@ -3,6 +3,8 @@ CREATE DATABASE voyagex_development CHARACTER SET utf8  COLLATE utf8_unicode_ci;
 GRANT ALL ON voyagex_development.* TO sko_voyagex@localhost IDENTIFIED BY '76$sko';
 CREATE DATABASE voyagex_test CHARACTER SET utf8  COLLATE utf8_unicode_ci;
 GRANT ALL ON voyagex_test.* TO sko_voyagex@localhost IDENTIFIED BY '76$sko';
+CREATE DATABASE sko_voyagex CHARACTER SET utf8  COLLATE utf8_unicode_ci;
+GRANT ALL ON sko_voyagex.* TO voyagex@localhost IDENTIFIED BY '76$sko';
 
 dbName=voyagex_development &&
 outDir="/tmp" &&

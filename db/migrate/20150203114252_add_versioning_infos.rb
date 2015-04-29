@@ -13,7 +13,7 @@ class AddVersioningInfos < ActiveRecord::Migration
     
     now = DateTime.now
     user = User.admin
-    vm = VersionManager.new UploadsController::MASTER, UploadsController::WORK_DIR_ROOT, user, false#@user.is_admin
+    vm = VersionManager.new Poi::MASTER, Poi::WORK_DIR_ROOT, user, false#@user.is_admin
     commit = user.commits.create hash_id: vm.cur_commit, timestamp: now, local_time_secs: now.to_i
     User.all.each {|u|UserSnapshot.create(user: u, location: Location.default, cur_commit: Commit.latest)}
 

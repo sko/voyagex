@@ -20,7 +20,7 @@ class MainController < ApplicationController
     tmp_user.update_attribute(:foto, UserHelper::fetch_random_avatar(request)) unless tmp_user.foto.exists?
     if signed_in? # registered_user?
       unless tmp_user.snapshot.cur_commit.present?
-        vm = VersionManager.new PoisController::MASTER, PoisController::WORK_DIR_ROOT, tmp_user, false#user.is_admin?
+        vm = VersionManager.new Poi::MASTER, Poi::WORK_DIR_ROOT, tmp_user, false#user.is_admin?
         cur_commit = Commit.where(hash_id: vm.cur_commit).first
         cur_commit = User.admin.commits.create(hash_id: vm.cur_commit, timestamp: DateTime.now) unless cur_commit.present?
         tmp_user.snapshot.update_attribute :cur_commit, cur_commit

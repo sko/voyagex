@@ -4,9 +4,6 @@ class PoisController < ApplicationController
   include PoiHelper
 
   skip_before_filter :verify_authenticity_token, only: [:create, :update]
-  
-  MASTER = 'test/master'
-  WORK_DIR_ROOT = "#{Rails.root}/user_repos"
 
   def index
     render layout: 'uploads'
@@ -350,7 +347,7 @@ class PoisController < ApplicationController
 
   # TODO local_time_secs
   def new_version user, poi, is_new_poi, poi_note, local_time_secs = nil
-    vm = VersionManager.new PoisController::MASTER, PoisController::WORK_DIR_ROOT, user, false#@user.is_admin?
+    vm = VersionManager.new Poi::MASTER, Poi::WORK_DIR_ROOT, user, false#@user.is_admin?
     prev_commit = vm.cur_commit
     vm.add_poi poi if is_new_poi
     vm.add_poi_note poi, poi_note
