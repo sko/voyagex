@@ -11,8 +11,17 @@ class AddVersioningInfos < ActiveRecord::Migration
     remove_column :user_snapshots, :cur_commit_hash, :string
     add_column :user_snapshots, :commit_id, :integer
     
-    now = DateTime.now
+    now = DateTime.
     user = User.admin
+    unless user.present?
+      user = User.create(username: 'admin',
+                         password: 'voyagexx',
+                         password_confirmation: 'voyagexx',
+                         email: ADMIN_EMAIL_ADDRESS,
+                         search_radius_meters: 1000,
+                         foto: UserHelper::fetch_random_avatar
+                        )
+    end
     vm = VersionManager.new Poi::MASTER, Poi::WORK_DIR_ROOT, user, false#@user.is_admin
     commit = user.commits.create hash_id: vm.cur_commit, timestamp: now, local_time_secs: now.to_i
     User.all.each {|u|UserSnapshot.create(user: u, location: Location.default, cur_commit: Commit.latest)}
