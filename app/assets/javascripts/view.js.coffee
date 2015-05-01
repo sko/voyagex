@@ -25,10 +25,15 @@ class window.VoyageX.View
       View._SINGLETON.updateWantsToFollowMe message.peer
     else if message.type == 'subscription_granted'
       View._SINGLETON.updateIWantToFollow message.peer
+      console.log 'TODO: APP.view() - _systemCB: add people_of_interest (@see subscription_grant_revoked)'
+      View._SINGLETON.systemMessage 'TODO- link to open peermarkersubscription_granted: '+message.peer.username
     else if message.type == 'subscription_denied'
       View._SINGLETON.updateIWantToFollow message.peer, {denied: true}
     else if message.type == 'subscription_grant_revoked'
       View._SINGLETON.updateIFollow message.peer
+      peopleOfInterestPanel = $('#people_of_interest')
+      if peopleOfInterestPanel.length >= 1
+        peopleOfInterestPanel.find('.user-container[data-userId='+message.peer.id+']').closest('tbody').remove()
     else if message.type == 'quit_subscription'
       View._SINGLETON.removeFollowsMe message.peer
     else if message.type == 'cancel_subscription_grant_request'
@@ -275,6 +280,15 @@ class window.VoyageX.View
               `;`#window.stopSound = null
           )
       this._blinkArrow()
+
+  systemMessage: (message) ->
+    APP.showSystemMessage (systemMessageDiv) ->
+        systemMessageDiv.html(message+'<br>[<a href="#" onclick="APP.closeSystemMessage()">CLOSE</a>]')
+        unless stopSound?
+          window.stopSound = VoyageX.MediaManager.instance().playSound(VoyageX.SOUNDS_ALERT_PATH, (event) ->
+              if event.msg == 'finished'
+                window.stopSound = null
+            )
 
   previewPois: (pois) ->
     this.alert true

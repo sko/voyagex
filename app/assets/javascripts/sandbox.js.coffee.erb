@@ -28,6 +28,12 @@ class window.VoyageX.Sandbox
 
   toggleWatchPosition: (state) ->
     if state == 'on'
+      if navigator.geolocation 
+        navigator.geolocation.getCurrentPosition((position) ->
+              APP._initPositionCB position, null, true
+          , (error) ->
+              console.log 'error when trying to gps locate position: '+error
+          , { enableHighAccuracy: true, timeout : 5000 })
       APP.watchRealPosition()
     else
       APP.stopRealPositionWatch()

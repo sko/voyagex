@@ -49,6 +49,7 @@
       %span{style: 'text-align: left; z-index: 11 !important;'}
       = link_to image_tag('arrow-up-right_off.png', id: 'context_nav_open_icon', style: 'width: 32px; height: 43px;', class: 'context_nav_open_icon'), '#', onclick: 'javascript:APP.contextNav()'
     = render partial: '/main/context_nav_panel'
+    = render partial: '/main/system_message_panel'
     = javascript_include_tag "application"
     -#= javascript_include_tag params[:controller]
     

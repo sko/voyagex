@@ -18,6 +18,17 @@ class window.Comm.StorageController
       alert('ERROR: StorageController is Singleton')
       return null
     StorageController._SINGLETON = this
+    # volatileFlags are kept until next reload from server (reloading form app-cache doesn't reset values)
+    storeKey = 'comm.env'
+    env = JSON.parse(localStorage.getItem(storeKey))
+    if env?
+      env.localInitTS = Math.round(new Date().getTime()/1000)
+      if initSystemTimeStamp > env.sysInitTS
+        env.sysInitTS = initSystemTimeStamp
+        env.volatileFlags = {}
+    else
+      env = { sysInitTS: initSystemTimeStamp, localInitTS: Math.round(new Date().getTime()/1000), volatileFlags: {} }
+    localStorage.setItem storeKey, JSON.stringify(env)
     this.saveLocation initLocation
     @_uploadQ = new Comm.UploadQ()
     @_maxNumChatBCChatMsgs = 10
@@ -50,6 +61,14 @@ class window.Comm.StorageController
 
   @uploadQueueKey: (storePath) ->
     storePath[0]+'/'+storePath[1]
+
+  env: (withinEnvCB = null) ->
+    storeKey = 'comm.env'
+    env = JSON.parse(localStorage.getItem(storeKey))
+    if withinEnvCB?
+      withinEnvCB env
+      localStorage.setItem storeKey, JSON.stringify(env)
+    env
 
   getLocalLocation: (lat, lng) ->
     storeKey = 'comm.locations'
@@ -147,15 +166,15 @@ class window.Comm.StorageController
         if bookmark?
           if text?
             bookmark.text = text
-          bookmark.updatedAt = new Date().getTime()
+          bookmark.updatedAt = Math.round(new Date().getTime()/1000)
           localStorage.setItem storeKey, JSON.stringify(locations)
         else
-          bookmark = if text? then {updatedAt: new Date().getTime(), text: text} else {updatedAt: new Date().getTime()}
+          bookmark = if text? then {updatedAt: Math.round(new Date().getTime()/1000), text: text} else {updatedAt: Math.round(new Date().getTime()/1000)}
           locations.bookmarks[locationId] = bookmark
           localStorage.setItem storeKey, JSON.stringify(locations)
       else
         locations.bookmarks = {}
-        bookmark = if text? then {updatedAt: new Date().getTime(), text: text} else {updatedAt: new Date().getTime()}
+        bookmark = if text? then {updatedAt: Math.round(new Date().getTime()/1000), text: text} else {updatedAt: Math.round(new Date().getTime()/1000)}
         locations.bookmarks[locationId] = bookmark
         localStorage.setItem storeKey, JSON.stringify(locations)
       # setup return-value
@@ -392,6 +411,13 @@ class window.Comm.StorageController
     localStorage.setItem storeKey, JSON.stringify(users)
     user
   
+  deletePeer: (peer) ->
+    this.getPeers (userDB, user, num, idx) ->
+        delete user.peerPort
+        delete userDB.peers[user.id]
+        localStorage.setItem 'comm.users', JSON.stringify(userDB)
+        true
+
   getPeers: (callback = null) ->
     peers = []
     users = JSON.parse(localStorage.getItem('comm.users'))

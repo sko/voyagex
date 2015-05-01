@@ -11,7 +11,12 @@ class window.VoyageX.Users
     Users._SINGLETON = this
     window.USERS = this
 
-  initPeer: (peer, callback = null) ->
+  removePeer: (peer, callback = null) ->
+    USERS.unsubscribeFromPeerChannels peer
+    APP.markers().removeForPeer peer.id
+    APP.storage().deletePeer peer
+
+  initPeer: (peer, fromSystemCB = false, callback = null) ->
     #peerPort = peer.peerPort
     #delete peer.peerPort
     lastLocation = peer.lastLocation
@@ -39,7 +44,8 @@ class window.VoyageX.Users
       BANG
       subscribeTo.push peer
     #APP.storage().saveUser {id: #{cs.user.id}, username: '#{cs.user.username}', peerPort: {id: #{cs.id}, channel_enc_key: '#{cs.channel_enc_key'}});
-    APP.view().addIFollow peer
+    unless fromSystemCB
+      APP.view().addIFollow peer
     marker = APP.getPeerMarker peer, lastLocation
 
   initUser: (user) ->

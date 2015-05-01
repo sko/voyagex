@@ -33,7 +33,7 @@ class window.VoyageX.MapControl
     @_map = new L.Map('map', mapOptions)
     @_map.whenReady () ->
         console.log '### map-event: ready ...'
-        mapReadyCB()
+        mapReadyCB this
         #MapControl.instance().showTileInfo false
         #for poi in APP._initPoisOnMap
         #  marker = Main.markerManager().add poi.location, VoyageX.Main._markerEventsCB, false

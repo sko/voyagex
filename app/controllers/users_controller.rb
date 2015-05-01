@@ -74,7 +74,8 @@ class UsersController < ApplicationController
         #  peer_sys_channel_enc_key = comm_peer.peer.comm_port.sys_channel_enc_key
           peer_sys_channel_enc_key = peer.comm_port.sys_channel_enc_key
           # notify peer that his subscription-request is granted from @user
-          msg = { type: :subscription_granted, peer: { id: @user.id, username: @user.username, channel_enc_key:  @user.comm_port.channel_enc_key } }
+          #msg = { type: :subscription_granted, peer: { id: @user.id, username: @user.username, channel_enc_key:  @user.comm_port.channel_enc_key } }
+          msg = { type: :subscription_granted, peer: peer_json(@user.comm_port, { i_follow: true }) }
           add_foto_to_msg @user, msg
           #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
           comm_adapter.publish :system, peer_sys_channel_enc_key, msg, @user

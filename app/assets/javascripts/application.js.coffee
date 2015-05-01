@@ -22,6 +22,9 @@ class window.VoyageX.NavBar
 
 window.clientState = new VoyageX.ClientState('map', 'camera', VoyageX.NavBar.showView, VoyageX.NavBar.hideView)
 
+############################### popup ###
+# signUpDialog
+#
 allSignUpFields = $([]).add($("#auth_email")).add($("#auth_password")).add($("#auth_password_confirmation"))
 addUser = () ->
   $("#new_user").submit()
@@ -44,6 +47,9 @@ window.signUpDialog = $("#sign_up_modal").dialog({
     })
 #$("head").append("<style type='text/css'>#sign_up_modal {width:"+Math.abs($(window).width() * 0.3)+"px;}</style>");
 
+############################### popup ###
+# signInDialog
+#
 allSignInFields = $([]).add($("#auth_signin_email")).add($("#auth_signin_password"))
 signInUser = () ->
   $("#new_session").submit()
@@ -66,13 +72,9 @@ window.signInDialog = $("#sign_in_modal").dialog({
     })
 #$("head").append("<style type='text/css'>#sign_in_modal {width:"+Math.abs($(window).width() * 0.3)+"px;}</style>");
 
-#window.uploadCommentDialog = $("#upload_comment_conrols").dialog({
-#      autoOpen: false,
-#      height: Math.abs($(window).height() * 0.8),
-#      width: Math.abs($(window).width() * 0.5),
-#      modal: true
-#    })
-#$("head").append("<style type='text/css'>#sign_in_modal {width:"+Math.abs($(window).width() * 0.3)+"px;}</style>");
+############################### popup ###
+# contextNavPanel
+#
 window.contextNavPanel = $("#context_nav_panel").dialog({
       autoOpen: false,
       height: Math.abs($(window).height() * 0.8),
@@ -84,6 +86,10 @@ window.contextNavPanel = $("#context_nav_panel").dialog({
       modal: true
     })
 #$("head").append("<style type='text/css'>#context_nav_panel {positon: fixed; top:"+($(window).height()-Math.abs($(window).height() * 0.8))+"px;}</style>");
+
+############################### popup ###
+# uploadDataDialog
+#
 window.uploadDataDialog = $("#upload_data_conrols").dialog({
       autoOpen: false,
       height: Math.abs($(window).height() * 0.8),
@@ -92,10 +98,23 @@ window.uploadDataDialog = $("#upload_data_conrols").dialog({
     })
 #$("head").append("<style type='text/css'>#sign_in_modal {width:"+Math.abs($(window).width() * 0.3)+"px;}</style>");
 
+############################### popup ###
+# attachmentViewPanel
+#
 window.attachmentViewPanel = $("#attachment_view_panel").dialog({
       autoOpen: false,
       height: Math.abs($(window).height() * 0.8),
       width: Math.abs($(window).width() * 0.5),
+      modal: true
+    })
+
+############################### popup ###
+# attachmentViewPanel
+#
+window.systemMessagePanel = $("#system_message_panel").dialog({
+      autoOpen: false,
+      height: Math.abs($(window).height() * 0.3),
+      width: Math.abs($(window).width() * 0.25),
       modal: true
     })
 

@@ -68,7 +68,6 @@ class window.VoyageX.Main
         Main._BACKEND = new VoyageX.Backend()
         Main._STORAGE_CONTROLLER = new Comm.StorageController(initLocation, (initError) ->
             console.log 'StorageController initialized FileSystem with message: '+(if initError then 'FAILED' else 'OK')
-            mapOptions.center = new L.LatLng(initLocation.lat, initLocation.lng)
             APP._init mapOptions, offlineZooms, tileHandler
           )
       when 2
@@ -76,9 +75,19 @@ class window.VoyageX.Main
         if APP.signedIn curU
           channelEncKey = curU.peerPort.channel_enc_key
           sysChannelEncKey = curU.peerPort.sys_channel_enc_key
+          # don't overwrite last location when reloading from app-cache ...
+          Main._STORAGE_CONTROLLER.env (env) ->
+            unless env.volatileFlags.userInitialized?
+              if curU.lastLocationId != initLocation.id
+                env.volatileFlags.userInitialized = { lastLocation: true }
+                console.log 'APP - _init: resetting users last location ...'
+                Main._STORAGE_CONTROLLER.saveUser {id: curU.id, lastLocationId: initLocation.id}
+          #curU = APP.user()
+          mapOptions.center = new L.LatLng(curU.lastLocation().lat, curU.lastLocation().lng)
         else
           channelEncKey = null
           sysChannelEncKey = null
+          mapOptions.center = new L.LatLng(initLocation.lat, initLocation.lng)
         # Communication initialisation (Faye-Client)
         APP._comm = new Comm.Comm(APP.userId(),
                                   [['/talk', APP._talkCB, channelEncKey],
@@ -92,7 +101,12 @@ class window.VoyageX.Main
           Main._BACKEND.pingBackend()
         APP._cacheStrategy = new VoyageX.CacheStrategy true
         # Map initialisation (LeafletJS)
-        mapReadyCB = () ->
+        mapReadyCB = (map) ->
+            #  disable thsi if using geolocation on startup (some lines further down)
+            Main._MARKER_MANAGER = new VoyageX.MarkerManager map
+            curU = APP.user()
+            initLoc = curU.lastLocation()||window.initLocation
+            APP._initPositionCB { coords: { latitude: initLoc.lat, longitude: initLoc.lng } }
             #
             # maybe store current-environment-tiles even with _pathPrediction
             #
@@ -120,16 +134,17 @@ class window.VoyageX.Main
                 #     srcUrl = 'filesystem:http://ctrl.privatedns.org:3005/persistent/'+MC._map.getZoom()+'/'+x+'/'+y+''
                 #     $(this).attr('src', srcUrl)
         Main._MAP_CONTROL = new VoyageX.MapControl mapOptions, offlineZooms, APP._cacheStrategy, mapReadyCB, tileHandler
-        Main._MARKER_MANAGER = new VoyageX.MarkerManager APP.map()
+        #Main._MARKER_MANAGER = new VoyageX.MarkerManager APP.map()
         Main._PATH_PREDICTION = new VoyageX.PathPrediction Main._MAP_CONTROL
         Main._CHAT_CONTROL = new VoyageX.ChatControl()
-        if navigator.geolocation 
-          navigator.geolocation.getCurrentPosition(APP._initPositionCB, (error) ->
-              #alert('geolocation timed out - manual selection required.\nsetting default location...')
-              curU = APP.user()
-              initLoc = curU.lastLocation()||window.initLocation
-              APP._initPositionCB { coords: { latitude: initLoc.lat, longitude: initLoc.lng } }
-          , { enableHighAccuracy: true, timeout : 5000 })
+        #  if enable geolocation then disable mapReadyCB-location-setting (some lines further up)
+        # if navigator.geolocation 
+        #   navigator.geolocation.getCurrentPosition(APP._initPositionCB, (error) ->
+        #       #alert('geolocation timed out - manual selection required.\nsetting default location...')
+        #       curU = APP.user()
+        #       initLoc = curU.lastLocation()||window.initLocation
+        #       APP._initPositionCB { coords: { latitude: initLoc.lat, longitude: initLoc.lng } }
+        #   , { enableHighAccuracy: true, timeout : 5000 })
         if isMobile()
           # if not set then jquery-mobil will add origin header to request -  causing No 'Access-Control-Allow-Origin' 
           #$.mobile.ajaxEnabled = false
@@ -484,6 +499,22 @@ class window.VoyageX.Main
     else
       contextNavPanel.dialog("close")
 
+  showSystemMessage: (callback) ->
+    if window.isMobile()
+      $('#open_system_message_btn').click()
+    else
+      $('#system_message_panel').dialog('open')
+      if ! $('#system_message_panel').parent().hasClass('seethrough_panel')
+        $('#system_message_panel').parent().addClass('seethrough_panel')
+    callback $('#system_message')
+
+  closeSystemMessage: () ->
+    $('#system_message').html('')
+    if isMobile()
+      $("#system_message_panel").panel("close")
+    else
+      systemMessagePanel.dialog("close")
+
   showPeer: (peer, lastLocation = null) ->
     unless lastLocation?
       lastLocation = peer.lastLocation()
@@ -785,11 +816,12 @@ class window.VoyageX.Main
     else if message.type == 'subscription_grant_request'
     else if message.type == 'subscription_granted'
       message.peer.peerPort = {channel_enc_key: message.peer.channel_enc_key}
-      USERS.subscribeToPeerChannels message.peer
+      #USERS.subscribeToPeerChannels message.peer
+      USERS.initPeer message.peer, true
     else if message.type == 'subscription_denied'
     else if message.type == 'subscription_grant_revoked'
       message.peer.peerPort = {channel_enc_key: message.peer.channel_enc_key}
-      USERS.unsubscribeFromPeerChannels message.peer
+      USERS.removePeer message.peer
     else if message.type == 'quit_subscription'
       true # do nothing
     else if message.type == 'callback'
@@ -1112,7 +1144,7 @@ class window.VoyageX.Main
     Main._MAP_CONTROL
 
   map: () ->
-    Main._MAP_CONTROL.map()
+    if Main._MAP_CONTROL? then Main._MAP_CONTROL.map() else Main._MARKER_MANAGER._map
 
   @markerManager: () ->
     Main._MARKER_MANAGER

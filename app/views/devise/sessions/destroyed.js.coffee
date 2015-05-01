@@ -9,8 +9,9 @@ foto_height = geometry.present? ? geometry.height.to_i : -1
 # unsubscribe from peers
 peers = APP.storage().getPeers()
 for peer in peers
-  USERS.unsubscribeFromPeerChannels peer
-  APP.markers().removeForPeer peer.id
+  # USERS.unsubscribeFromPeerChannels peer
+  # APP.markers().removeForPeer peer.id
+  USERS.removePeer peer
 APP.storage().clearCache({tiles: false, poiNotes: false, users: true})
 newU = { id: <%= tmp_user.id -%>,\
          username: '<%= tmp_user.username -%>',\

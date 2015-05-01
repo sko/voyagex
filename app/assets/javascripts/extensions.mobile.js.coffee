@@ -12,7 +12,6 @@ jQuery ->
   talkExtCB = (message) ->
     console.log 'got a talk - message: ' + message
     if window.document.getElementById('content_chat').style.display == 'none'
-      #$('#audio_notify')[0].play()
       window.stopSound = VoyageX.MediaManager.instance().playSound(VoyageX.SOUNDS_MSG_IN_PATH)
       $('#nav_chat_popup_link').click()
   VoyageX.View.instance().addListener 'talk', talkExtCB
