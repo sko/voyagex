@@ -35,6 +35,30 @@ class window.Storage.Model
     .fail (jqXHR, textStatus) ->
         console.log('TODO: errorhandling')
 
+  grantFollow: (user) ->
+    this.setFollow user, true
+  
+  denyFollow: (user) ->
+    this.setFollow user, false
+
+  setFollow: (user, grant) ->
+    data = {_method: 'patch' }
+    comm_peers = {}
+    comm_peers[user.id] = true
+    if grant
+      data['grant'] = { comm_peers: comm_peers }
+    else
+      data['deny'] = { comm_peers: comm_peers }
+    $.ajax
+      type: 'POST'
+      dataType: 'script'
+      url: '<%= user_path(id: ':id') %>'.replace(/:id/, user.id)
+      data: data
+    .done (res) ->
+        APP.updateFollow user, grant
+    .fail (jqXHR, textStatus) ->
+        console.log('TODO: errorhandling')
+
   addBookmark: (latLng, callback) ->
     $.ajax
       type: 'POST'

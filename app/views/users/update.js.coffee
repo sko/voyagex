@@ -3,7 +3,8 @@ APP.view().updateIDontFollow {id:<%=peer.id%>,username:'<%=peer.username%>',foto
 <% end %>
 <% @quit_subscriptions.each do |peer_port| %>
 APP.view().updateIFollow {id:<%=peer_port.user.id%>,username:'<%=peer_port.user.username%>',foto:{url:'<%=peer_port.user.foto.url%>'}}
-USERS.unsubscribeFromPeerChannels {peerPort: {channel_enc_key: '<%=peer_port.channel_enc_key%>'}}
+#USERS.unsubscribeFromPeerChannels {peerPort:{channel_enc_key:'<%=peer_port.channel_enc_key%>'}}
+USERS.removePeer {id:<%=peer_port.user.id%>,peerPort:{channel_enc_key:'<%=peer_port.channel_enc_key%>'}}
 <% end %>
 <% @cancel_subscription_requests.each do |peer| %>
 APP.view().updateIWantToFollow {id:<%=peer.id%>,username:'<%=peer.username%>',foto:{url:'<%=peer.foto.url%>'}}, {cancelled: true}

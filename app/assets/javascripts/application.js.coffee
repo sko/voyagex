@@ -112,6 +112,7 @@ window.attachmentViewPanel = $("#attachment_view_panel").dialog({
 # attachmentViewPanel
 #
 window.systemMessagePanel = $("#system_message_panel").dialog({
+      #dialogClass: "no-close",
       autoOpen: false,
       height: Math.abs($(window).height() * 0.3),
       width: Math.abs($(window).width() * 0.25),

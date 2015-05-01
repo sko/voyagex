@@ -33,6 +33,8 @@ class window.VoyageX.Users
       APP.storage().saveLocation lastLocation
     # ---------------------
     peer.lastLocationId = lastLocation.id
+    peer.lastLocation = () ->
+        APP.storage().getLocation this.lastLocationId
     USERS.refreshUserPhoto peer, {peerPort: peer.peerPort}, (user, flags) ->
         flags.foto = user.foto
         APP.storage().saveUser user, flags
@@ -41,7 +43,6 @@ class window.VoyageX.Users
     if APP.isOnline() && APP._comm.isReady()
       USERS.subscribeToPeerChannels peer
     else
-      BANG
       subscribeTo.push peer
     #APP.storage().saveUser {id: #{cs.user.id}, username: '#{cs.user.username}', peerPort: {id: #{cs.id}, channel_enc_key: '#{cs.channel_enc_key'}});
     unless fromSystemCB
@@ -118,6 +119,12 @@ class window.VoyageX.Users
             $('img[name=peer_photo_'+user.id+']').attr 'src', url
           else
             $('.whoami-img').attr 'src', url
+
+  updateFollow: (user, grant) ->
+    if grant
+      APP.view().updateFollowsMe user
+    else
+      APP.view().updateFollowsMe user, {denied: true}
 
   resetConnection: (peerId) ->
     peerChannelEncKey = $('#i_follow_'+peerId).attr('data-channelEncKey')

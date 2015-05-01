@@ -148,14 +148,12 @@ class window.VoyageX.Main
         if isMobile()
           # if not set then jquery-mobil will add origin header to request -  causing No 'Access-Control-Allow-Origin' 
           #$.mobile.ajaxEnabled = false
-          $('#system_dialog_panel').html VoyageX.TemplateHelper._updateIds('tmpl_fullscreen_dialog')
-          $('#open_system_dialog_btn').click()
-          Main._MAP_CONTROL.reload()
-          # APP.map().invalidateSize({
-          #     reset: true,
-          #     pan: false,
-          #     animate: false
-          #   })
+          # $('#system_dialog_panel').html VoyageX.TemplateHelper._updateIds('tmpl_fullscreen_dialog')
+          # $('#open_system_dialog_btn').click()
+          APP.showSystemMessage (systemMessageDiv) ->
+              systemMessageDiv.html VoyageX.TemplateHelper._updateIds('tmpl_fullscreen_dialog')
+            #, {w: 100, h: 50}
+          #Main._MAP_CONTROL.reload()
           $('#panel_control').draggable({
 #              start: (event, ui) ->
 #                  console.log('dragging ...')
@@ -499,13 +497,29 @@ class window.VoyageX.Main
     else
       contextNavPanel.dialog("close")
 
-  showSystemMessage: (callback) ->
+  showSystemMessage: (callback, dims = {w: -1, h: -1}) ->
+    sMP = $('#system_message_panel')
     if window.isMobile()
+      unless dims.w == -1
+        # dims: n % 1 === 0  ... float -> percent - else px
+        if (dims.w+'').match(/\./)
+          styleDef = "{width: "+dims.w+"px; height: "+dims.h+"px;}"
+        else
+          styleDef = "{width: "+dims.w*100+"%; height: "+dims.h*100+"%;}"
+        styleKey = 'dim_'+dims.w+'x'+dims.h
+        style = $('#'+styleKey)
+        unless style.length >= 1
+          $("head").append("<style id="+styleKey+" type='text/css'>."+styleKey+" "+styleDef+"</style>");
+        oldDims = sMP.attr('class').match(/($| )dim_([0-9]+)x([0-9]+)/)
+        if oldDims?
+          sMP.removeClass oldDims[0].trim()
+        unless sMP.hasClass(styleKey)
+          sMP.addClass(styleKey)        
       $('#open_system_message_btn').click()
     else
-      $('#system_message_panel').dialog('open')
-      if ! $('#system_message_panel').parent().hasClass('seethrough_panel')
-        $('#system_message_panel').parent().addClass('seethrough_panel')
+      sMP.dialog('open')
+      if ! sMP.parent().hasClass('seethrough_panel')
+        sMP.parent().addClass('seethrough_panel')
     callback $('#system_message')
 
   closeSystemMessage: () ->
@@ -516,6 +530,9 @@ class window.VoyageX.Main
       systemMessagePanel.dialog("close")
 
   showPeer: (peer, lastLocation = null) ->
+    APP.closeSystemMessage()
+    clientState.setView(window.clientState.getView('map'))
+
     unless lastLocation?
       lastLocation = peer.lastLocation()
     APP.loadLocation lastLocation
@@ -523,6 +540,10 @@ class window.VoyageX.Main
     APP.markers()._checkVisible lastLocation, userMarker
     markerMeta = APP.markers().forPeer peer.id
     VoyageX.TemplateHelper.openPeerPopup peer, markerMeta.target()
+
+  updateFollow: (user, grant) ->
+    #USERS.updateFollow user, grant
+    APP.closeSystemMessage()
 
   getSelectedPositionLatLng: () ->
     return [@_selectedPosition.lat, @_selectedPosition.lng]

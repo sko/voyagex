@@ -407,6 +407,32 @@ class window.VoyageX.TemplateHelper
     TemplateHelper.initRadarEditorSlider popup
     APP.view().setRealPositionWatchedIcon if APP.isRealPositionWatched() then 'on' else 'off'
 
+  @subscriptionGrantRequestHtml: (user) ->
+    lastLocation = user.lastLocation#()
+    #html = VoyageX.TemplateHelper._updateIds('tmpl_subscription_grant_request_dialog')
+    html = TemplateHelper._updateAttributes('tmpl_subscription_grant_request_dialog', ['src']).
+    replace(/\{user_id\}/g, user.id).
+    replace(/\{username\}/, user.username).
+    replace(/\{user_foto_url\}/, user.foto.url).
+    replace(/\{last_location\}/, if lastLocation.address? then lastLocation.address else 'unknown').
+    replace(/\{lastLocationId\}/, lastLocation.id).
+    replace(/\{lastLat\}/, lastLocation.lat).
+    replace(/\{lastLng\}/, lastLocation.lng).
+    replace(/\{lastAddress\}/g, lastLocation.address)
+
+  @subscriptionGrantedHtml: (user) ->
+    lastLocation = user.lastLocation()
+    #html = VoyageX.TemplateHelper._updateIds('tmpl_subscription_granted_dialog')
+    html = TemplateHelper._updateAttributes('tmpl_subscription_granted_dialog', ['src']).
+    replace(/\{user_id\}/g, user.id).
+    replace(/\{username\}/, user.username).
+    replace(/\{user_foto_url\}/, user.foto.url).
+    replace(/\{last_location\}/, if lastLocation.address? then lastLocation.address else 'unknown').
+    replace(/\{lastLocationId\}/, lastLocation.id).
+    replace(/\{lastLat\}/, lastLocation.lat).
+    replace(/\{lastLng\}/, lastLocation.lng).
+    replace(/\{lastAddress\}/g, lastLocation.address)
+
   @_resetMarkerControlsPopup: (popup, skipKey) ->
     popupHtml = popup.getContent()
     if skipKey == 'note_editor'# || popupHtml.indexOf('note_editor') == -1

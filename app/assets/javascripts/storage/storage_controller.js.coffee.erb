@@ -343,7 +343,7 @@ class window.Comm.StorageController
         user.isPeer = () ->
             this.peerPort?
         user.lastLocation = () ->
-            StorageController._SINGLETON.getLocation user.lastLocationId
+            StorageController._SINGLETON.getLocation this.lastLocationId
         if callback?
           if callback(userDB, user, userIds.length, userIdx, peerIdx)
             users = null
@@ -366,7 +366,7 @@ class window.Comm.StorageController
       user.isPeer = () ->
           this.peerPort?
       user.lastLocation = () ->
-          StorageController._SINGLETON.getLocation user.lastLocationId
+          StorageController._SINGLETON.getLocation this.lastLocationId
     else
       console.log 'getUser: getting current user for id '+userId+'?'
       user = this.getCurrentUser()

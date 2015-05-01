@@ -125,6 +125,10 @@ a.menu_link.menu_ctrl_on {
   min-height: 100px;
 }
 
+.no-close .ui-dialog-titlebar-close {
+  display: none;
+}
+
 #context_nav_panel {
   margin: 0px !important;
   padding: 0px !important;

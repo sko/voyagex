@@ -13,3 +13,21 @@
         .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{tmpl: {id: 'disable_fullscreen'}}
           .ui-button-text
             No
+
+  #tmpl_subscription_grant_request_dialog{style: 'display: none;'}
+    subscription_grant_request:
+    %div{style: 'float: left'}
+      %img{tmpl: {src: '{user_foto_url}'}, style: 'max-width: 35px !important;'}
+    %div
+      %span{style: 'float: left; padding: 0px 0px 0px 5px;'}
+        %a{href: '#', onclick: "javascript:APP.model().grantFollow(APP.storage().getUser({user_id}));"} grant
+      %span{style: 'padding: 0px 0px 0px 5px;'}
+        %a{href: '#', onclick: "javascript:APP.model().denyFollow(APP.storage().getUser({user_id}));"} deny
+
+  #tmpl_subscription_granted_dialog{style: 'display: none;'}
+    subscription_granted
+    %div{style: 'float: left'}
+      %img{tmpl: {src: '{user_foto_url}'}, style: 'max-width: 35px !important;'}
+    %div
+      %span{style: 'float: left; padding: 0px 0px 0px 5px;'}
+        %a{href: '#', onclick: "javascript:APP.showPeer(APP.storage().getUser({user_id}), {id: {lastLocationId}, lat: {lastLat}, lng: {lastLng}, address: '{lastAddress}'.trim()!='' ? '{lastAddress}' : null});"} show

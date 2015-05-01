@@ -7,8 +7,8 @@ class UsersController < ApplicationController
   protect_from_forgery :except => :change_details 
 
   def update
-    @user = User.find(params[:id])
-    # FIXME @user = current_user
+    #@user = User.find(params[:id])
+    @user = current_user
 
     @subscription_grant_requests = []
     @quit_subscriptions = []
@@ -26,7 +26,8 @@ class UsersController < ApplicationController
           peer_port.comm_peers.create(peer_id: @user.id)
           # notify peer that @user requests subscription-grant
           peer_sys_channel_enc_key = peer_port.sys_channel_enc_key
-          msg = { type: :subscription_grant_request, peer: { id: @user.id, username: @user.username, channel_enc_key: @user.comm_port.channel_enc_key } }
+          #msg = { type: :subscription_grant_request, peer: { id: @user.id, username: @user.username, channel_enc_key: @user.comm_port.channel_enc_key } }
+          msg = { type: :subscription_grant_request, peer: peer_json(@user.comm_port, { wants_to_follow_me: true }) }
           add_foto_to_msg @user, msg
           #Comm::ChannelsController.publish("/system#{PEER_CHANNEL_PREFIX}#{peer_sys_channel_enc_key}", msg)
           comm_adapter.publish :system, peer_sys_channel_enc_key, msg, @user
@@ -118,6 +119,11 @@ class UsersController < ApplicationController
     end
     @user.attributes = params[:user].permit! if params[:user].present?
     @user.save
+
+    # respond_to do |format|
+    #   format.js {}
+    #   format.json { render :json => msg.to_json }
+    # end
   end
 
   def peers

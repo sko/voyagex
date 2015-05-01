@@ -23,10 +23,11 @@ class window.VoyageX.View
     if message.type == 'ready_notification'
     else if message.type == 'subscription_grant_request'
       View._SINGLETON.updateWantsToFollowMe message.peer
+      View._SINGLETON.systemMessage VoyageX.TemplateHelper.subscriptionGrantRequestHtml message.peer
     else if message.type == 'subscription_granted'
       View._SINGLETON.updateIWantToFollow message.peer
       console.log 'TODO: APP.view() - _systemCB: add people_of_interest (@see subscription_grant_revoked)'
-      View._SINGLETON.systemMessage 'TODO- link to open peermarkersubscription_granted: '+message.peer.username
+      View._SINGLETON.systemMessage VoyageX.TemplateHelper.subscriptionGrantedHtml message.peer
     else if message.type == 'subscription_denied'
       View._SINGLETON.updateIWantToFollow message.peer, {denied: true}
     else if message.type == 'subscription_grant_revoked'
@@ -283,7 +284,7 @@ class window.VoyageX.View
 
   systemMessage: (message) ->
     APP.showSystemMessage (systemMessageDiv) ->
-        systemMessageDiv.html(message+'<br>[<a href="#" onclick="APP.closeSystemMessage()">CLOSE</a>]')
+        systemMessageDiv.html message#+'<br>[<a href="#" onclick="APP.closeSystemMessage()">CLOSE</a>]')
         unless stopSound?
           window.stopSound = VoyageX.MediaManager.instance().playSound(VoyageX.SOUNDS_ALERT_PATH, (event) ->
               if event.msg == 'finished'

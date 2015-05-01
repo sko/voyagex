@@ -78,13 +78,13 @@ $(document).on 'click', '.activate_upload', (event) ->
 $(document).on 'click', '#enable_fullscreen', (event) ->
   toggleFullScreen true
   $("#fullscreen_dialog").hide();
-  $("#system_dialog_panel").panel("close");
+  APP.closeSystemMessage()
   $('#fullscreen_mode_icon_on').hide()
   $('#fullscreen_mode_icon_off').show()
 
 $(document).on 'click', '#disable_fullscreen', (event) ->
   $("#fullscreen_dialog").hide();
-  $("#system_dialog_panel").panel("close");
+  APP.closeSystemMessage()
   $('#fullscreen_mode_icon_on').show()
   $('#fullscreen_mode_icon_off').hide()
 

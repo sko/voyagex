@@ -82,13 +82,14 @@
         = link_to '', '#context_nav_panel', id: 'open_context_nav_btn', style: 'display: none;'
         = link_to '', '#upload_data_panel', id: 'open_upload_data_btn', style: 'display: none;'
         = link_to '', '#attachment_view_panel', id: 'open_attachment_view_btn', style: 'display: none;'
-        = link_to '', '#system_dialog_panel', id: 'open_system_dialog_btn', style: 'display: none;'
+        = link_to '', '#system_message_panel', id: 'open_system_message_btn', style: 'display: none;'
     / panels nust be beginning or end in data-role: page
     #attachment_view_panel{data: {role: 'panel', animate: 'true', display: 'overlay'}}
     #attachment_view_panel_close_btn{style: 'display: none;'}
       %div{style: 'float: right; z-index: 9999; position: absolute; top: 5px; right: 5px; padding: 0px 0px 0px 10px;'}
         %span.ui-icon.ui-icon-circle-close{onclick: '$("#attachment_view_panel").panel("close");'}
-    #system_dialog_panel{data: {role: 'panel', animate: 'true', display: 'overlay'}}
+    .system_message#system_message_panel{data: {role: 'panel', animate: 'true', display: 'overlay'}}
+      #system_message
     = javascript_include_tag 'application.mobile'
     -#= javascript_include_tag "#{params[:controller]}"
     -#= javascript_include_tag 'extensions.mobile'
