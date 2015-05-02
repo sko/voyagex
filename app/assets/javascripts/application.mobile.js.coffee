@@ -3,13 +3,8 @@ class window.VoyageX.NavBar
   @_checkDims = {o: null, w: -1, h: -1}
   @menuNavClick: (clickSrc) ->
     window.clientState.setView(window.clientState.getView(clickSrc))
-    if MC?
-      MC.reload()
-    # APP.map().invalidateSize({
-    #           reset: true,
-    #           pan: false,
-    #           animate: false
-    #         })
+    # if MC?
+    #   MC.reload()
     return false
 
   @showActiveState: (activeSelector = null) ->
@@ -33,7 +28,10 @@ class window.VoyageX.NavBar
           $('button[value=camera]').focus()
         when 'file'
           $('button[value=file]').focus()    
-  
+    else if view.key == 'map'
+      if MC?
+        MC.reload()
+
   @hideView: (view) ->
     $('#content_'+view.key).css('display', 'none')
 
@@ -61,11 +59,6 @@ class window.VoyageX.NavBar
       $("head").append("<style id='map_style' type='text/css'>#map {width:"+mapWidth+"px;height:"+mapHeight+"px;}</style>");
       if MC?
         MC.reload()
-      # APP.map().invalidateSize({
-      #     reset: true,
-      #     pan: false,
-      #     animate: false
-      #   })
 
 window.clientState = new VoyageX.ClientState('map', 'camera', VoyageX.NavBar.showView, VoyageX.NavBar.hideView)
 window.checkDimsTOMillis = 500

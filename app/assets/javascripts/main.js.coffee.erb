@@ -498,16 +498,23 @@ class window.VoyageX.Main
       contextNavPanel.dialog("close")
 
   showSystemMessage: (callback, dims = {w: -1, h: -1}, type = 'dialog') ->
-    sMP = $('#system_message_panel')
+    if type == 'popup'
+      sMP = $('#system_message_popup')
+    else
+      sMP = $('#system_message_panel')
     if window.isMobile()
       if dims?
         unless dims.w == -1
           # dims: n % 1 === 0  ... float -> percent - else px
+          # $(window).width(), $(window).height()
           if (dims.w+'').match(/\./)
-            styleDef = "{width: "+dims.w+"px; height: "+dims.h+"px;}"
+            w = Math.round dims.w*$(window).width()
+            h = Math.round dims.h*$(window).height()
+            styleDef = "{width: "+w+"px; height: "+h+"px;}"
+            styleKey = 'dim_'+w+'x'+h
           else
-            styleDef = "{width: "+dims.w*100+"%; height: "+dims.h*100+"%;}"
-          styleKey = 'dim_'+dims.w+'x'+dims.h
+            styleDef = "{width: "+dims.w+"px; height: "+dims.h+"px;}"
+            styleKey = 'dim_'+dims.w+'x'+dims.h
           style = $('#'+styleKey)
           unless style.length >= 1
             $("head").append("<style id="+styleKey+" type='text/css'>."+styleKey+" "+styleDef+"</style>");
@@ -541,13 +548,16 @@ class window.VoyageX.Main
     else
       systemMessagePanel.dialog("close")
 
-  showPeer: (peer, lastLocation = null) ->
-    APP.closeSystemMessage()
+  showPeer: (peer, lastLocation = null, type = 'dialog') ->
+    APP.closeSystemMessage(type)
     clientState.setView(window.clientState.getView('map'))
 
     unless lastLocation?
       lastLocation = peer.lastLocation()
     APP.loadLocation lastLocation
+    #clientState.setView(window.clientState.getView('map'))
+    if MC?
+      MC.reload()
     userMarker = APP.getUserMarker(true).m
     APP.markers()._checkVisible lastLocation, userMarker
     markerMeta = APP.markers().forPeer peer.id
@@ -555,7 +565,7 @@ class window.VoyageX.Main
 
   updateFollow: (user, grant) ->
     #USERS.updateFollow user, grant
-    APP.closeSystemMessage()
+    APP.closeSystemMessage('popup')
 
   getSelectedPositionLatLng: () ->
     return [@_selectedPosition.lat, @_selectedPosition.lng]
@@ -744,7 +754,7 @@ class window.VoyageX.Main
   cacheTiles: () ->
     dist = L.latLng(APP._movePredictionLastLatLng.lat, APP._movePredictionLastLatLng.lng).distanceTo L.latLng(APP._realPosition.lat, APP._realPosition.lng)
     if dist >= 100
-      predictDistMeters = 1000
+      predictDistMeters = APP.user().searchRadiusMeters
       distFactor = predictDistMeters / dist
 
       headingLat = APP._realPosition.lat - APP._movePredictionLastLatLng.lat
@@ -776,12 +786,12 @@ class window.VoyageX.Main
                   m2 = event.target
                   VoyageX.DEBUG_PREDICTION_PATHS.push {done: null,\
                                                        pred: L.polyline([m1._latlng, m2._latlng], {color: 'yellow'}).addTo(APP.map())}
-                  Main._PATH_PREDICTION.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, 16)
+                  Main._PATH_PREDICTION.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, APP.map().getZoom())
                   #TODO: enable cachetiles with drag and droop - reset _movePredictionLastLatLng and then APP.cacheTiles()
             , {isUserMarker: false, beam: true}
       
-      #Main._PATH_PREDICTION.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, 16)
-      tiles = Main._PATH_PREDICTION.tilesPathBetweenPositions({lat:curLatLng.lat,lng:curLatLng.lng},{lat:predictedLatLng.lat,lng:predictedLatLng.lng}, 16)
+      #Main._PATH_PREDICTION.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, APP.map().getZoom())
+      tiles = Main._PATH_PREDICTION.tilesPathBetweenPositions({lat:curLatLng.lat,lng:curLatLng.lng},{lat:predictedLatLng.lat,lng:predictedLatLng.lng}, APP.map().getZoom())
       for tile in tiles
         # view = {zoom: APP.map().getZoom(),\
         #         tile: {row: tile.y, column: tile.x},\

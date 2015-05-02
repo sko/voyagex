@@ -29,7 +29,8 @@ class window.VoyageX.PathPrediction
 
       state.cX += (distToTileEndX*directionFactorX)
       moveTileEndLng = @_map.unproject L.point(state.cX, state.cY), zoom
-      VoyageX.DEBUG_PREDICTION_PATH_TILE_STEPS.push L.polyline([state.cLatLng, L.latLng(state.cLatLng.lat, moveTileEndLng.lng)], {color: 'blue'}).addTo(APP.map())
+      if APP._debug
+        VoyageX.DEBUG_PREDICTION_PATH_TILE_STEPS.push L.polyline([state.cLatLng, L.latLng(state.cLatLng.lat, moveTileEndLng.lng)], {color: 'blue'}).addTo(APP.map())
       distRelLat = relDist * distToTileEndX
       state.cY += (distRelLat*directionFactorY)
       moveRelLat = @_map.unproject L.point(state.cX, state.cY), zoom
@@ -46,8 +47,9 @@ class window.VoyageX.PathPrediction
         this._addPredictionPathTile tiles, rightTileX, tileY
         this._addPredictionPathTile tiles, leftTileX, tileY
       
-      VoyageX.DEBUG_PREDICTION_PATH_TILE_STEPS.push L.polyline([L.latLng(moveTileEndLng.lat, moveTileEndLng.lng), state.cLatLng], {color: 'blue'}).addTo(APP.map())
-      @_mapControl.showSelTileInfo tiles, zoom
+      if APP._debug
+        VoyageX.DEBUG_PREDICTION_PATH_TILE_STEPS.push L.polyline([L.latLng(moveTileEndLng.lat, moveTileEndLng.lng), state.cLatLng], {color: 'blue'}).addTo(APP.map())
+        @_mapControl.showSelTileInfo tiles, zoom
     
     state
   
@@ -61,7 +63,8 @@ class window.VoyageX.PathPrediction
     state.dLngX -= distToTileEndX
 
     moveTileEndLng = @_map.unproject L.point(state.cX, state.cY), zoom
-    VoyageX.DEBUG_PREDICTION_PATH_TILE_STEPS.push L.polyline([L.latLng(pos1.lat, pos1.lng), L.latLng(pos1.lat, moveTileEndLng.lng)], {color: 'blue'}).addTo(APP.map())
+    if APP._debug
+      VoyageX.DEBUG_PREDICTION_PATH_TILE_STEPS.push L.polyline([L.latLng(pos1.lat, pos1.lng), L.latLng(pos1.lat, moveTileEndLng.lng)], {color: 'blue'}).addTo(APP.map())
     
     # step down
     distRelLat = relDist * distToTileEndX
@@ -81,8 +84,9 @@ class window.VoyageX.PathPrediction
       this._addPredictionPathTile tiles, rightTileX, tileY
       this._addPredictionPathTile tiles, leftTileX, tileY
 
-    VoyageX.DEBUG_PREDICTION_PATH_TILE_STEPS.push L.polyline([L.latLng(moveTileEndLng.lat, moveTileEndLng.lng), state.cLatLng], {color: 'blue'}).addTo(APP.map())
-    @_mapControl.showSelTileInfo tiles, zoom
+    if APP._debug
+      VoyageX.DEBUG_PREDICTION_PATH_TILE_STEPS.push L.polyline([L.latLng(moveTileEndLng.lat, moveTileEndLng.lng), state.cLatLng], {color: 'blue'}).addTo(APP.map())
+      @_mapControl.showSelTileInfo tiles, zoom
 
     state
   
@@ -92,7 +96,8 @@ class window.VoyageX.PathPrediction
     state.cX = tilePos2.latX
     moveLng = @_map.unproject L.point(state.cX, state.cY), zoom
     
-    VoyageX.DEBUG_PREDICTION_PATH_TILE_STEPS.push L.polyline([state.cLatLng, L.latLng(state.cLatLng.lat, moveLng.lng)], {color: 'blue'}).addTo(APP.map())
+    if APP._debug
+      VoyageX.DEBUG_PREDICTION_PATH_TILE_STEPS.push L.polyline([state.cLatLng, L.latLng(state.cLatLng.lat, moveLng.lng)], {color: 'blue'}).addTo(APP.map())
     
     distRelLat = relDist * distToPos2X
     state.cY += (distRelLat*directionFactorY)
@@ -105,8 +110,9 @@ class window.VoyageX.PathPrediction
     if this._tileIndex(tiles, tilePos2.x, tilePos2.y) == -1
       tiles.push {x: tilePos2.x, y: tilePos2.y}
     
-    VoyageX.DEBUG_PREDICTION_PATH_TILE_STEPS.push L.polyline([L.latLng(moveLng.lat, moveLng.lng), state.cLatLng], {color: 'blue'}).addTo(APP.map())
-    @_mapControl.showSelTileInfo tiles, zoom
+    if APP._debug
+      VoyageX.DEBUG_PREDICTION_PATH_TILE_STEPS.push L.polyline([L.latLng(moveLng.lat, moveLng.lng), state.cLatLng], {color: 'blue'}).addTo(APP.map())
+      @_mapControl.showSelTileInfo tiles, zoom
 
     state
 
@@ -114,8 +120,9 @@ class window.VoyageX.PathPrediction
     this._checkForVerticalSkippedTiles tiles, tilePos1.x, tilePos2.y
     if this._tileIndex(tiles, tilePos2.x, tilePos2.y) == -1
       tiles.push {x: tilePos2.x, y: tilePos2.y}
-    VoyageX.DEBUG_PREDICTION_PATH_TILE_STEPS.push L.polyline([L.latLng(pos1.lat, pos1.lng), L.latLng(pos2.lat, pos1.lng)], {color: 'blue'}).addTo(APP.map())
-    VoyageX.DEBUG_PREDICTION_PATH_TILE_STEPS.push L.polyline([L.latLng(pos2.lat, pos1.lng), L.latLng(pos2.lat, pos2.lng)], {color: 'blue'}).addTo(APP.map())
+    if APP._debug
+      VoyageX.DEBUG_PREDICTION_PATH_TILE_STEPS.push L.polyline([L.latLng(pos1.lat, pos1.lng), L.latLng(pos2.lat, pos1.lng)], {color: 'blue'}).addTo(APP.map())
+      VoyageX.DEBUG_PREDICTION_PATH_TILE_STEPS.push L.polyline([L.latLng(pos2.lat, pos1.lng), L.latLng(pos2.lat, pos2.lng)], {color: 'blue'}).addTo(APP.map())
 
   # m1 = APP.markers().forPoi(36).target()
   # m2 = APP.markers().forPoi(37).target()
@@ -194,7 +201,8 @@ class window.VoyageX.PathPrediction
       
       state = this._setupLastTile tiles, tilePos2, pos2, directionFactorX, directionFactorYLast, relDist, {cX: cursorX, cY: cursorY, cLatLng: cursorLatLng}, zoom
 
-    @_mapControl.showSelTileInfo tiles, zoom
+    if APP._debug
+      @_mapControl.showSelTileInfo tiles, zoom
     tiles
 
   _tileIndex: (tiles, x, y) ->

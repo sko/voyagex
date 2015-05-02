@@ -23,11 +23,11 @@ class window.VoyageX.View
     if message.type == 'ready_notification'
     else if message.type == 'subscription_grant_request'
       View._SINGLETON.updateWantsToFollowMe message.peer
-      View._SINGLETON.systemMessage VoyageX.TemplateHelper.subscriptionGrantRequestHtml message.peer
+      View._SINGLETON.systemMessage VoyageX.TemplateHelper.subscriptionGrantRequestHtml(message.peer)
     else if message.type == 'subscription_granted'
       View._SINGLETON.updateIWantToFollow message.peer
       console.log 'TODO: APP.view() - _systemCB: add people_of_interest (@see subscription_grant_revoked)'
-      View._SINGLETON.systemMessage VoyageX.TemplateHelper.subscriptionGrantedHtml message.peer
+      View._SINGLETON.systemMessage VoyageX.TemplateHelper.subscriptionGrantedHtml(message.peer)
     else if message.type == 'subscription_denied'
       View._SINGLETON.updateIWantToFollow message.peer, {denied: true}
     else if message.type == 'subscription_grant_revoked'
@@ -290,6 +290,7 @@ class window.VoyageX.View
               if event.msg == 'finished'
                 window.stopSound = null
             )
+      , {w: 0.5, h: 0.3}, 'popup'
 
   previewPois: (pois) ->
     this.alert true
