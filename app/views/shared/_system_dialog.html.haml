@@ -1,3 +1,9 @@
+- if is_mobile
+  %div{id: 'system_message_popup', 'data-role' => 'popup'}
+    %a{href: '#', 'data-rel' => 'back', class: 'nav_popup_close ui-btn ui-corner-all ui-shadow ui-btn-a ui-icon-delete ui-btn-icon-notext ui-btn-right'}
+      Close
+    #system_message_as_popup
+
 #tmpl_system_dialog_container{style: 'display: none;'}
   #tmpl_fullscreen_dialog{style: 'display: none;'}
     %center
@@ -31,3 +37,9 @@
     %div
       %span{style: 'float: left; padding: 0px 0px 0px 5px;'}
         %a{href: '#', onclick: "javascript:APP.showPeer(APP.storage().getUser({user_id}), {id: {lastLocationId}, lat: {lastLat}, lng: {lastLng}, address: '{lastAddress}'.trim()!='' ? '{lastAddress}' : null});"} show
+
+  #tmpl_message_received_popup{style: 'display: none;'}
+    %span{style: 'color:black;'}
+      Message Received
+      %button{class: 'activate_chat'}
+        show

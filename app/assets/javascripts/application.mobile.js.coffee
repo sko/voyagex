@@ -24,6 +24,7 @@ class window.VoyageX.NavBar
     activeSelector.css('background-color', '#'+colors.active)
 
   @showView: (view) ->
+    #$('#activate_'+view.key).focus()
     NavBar.showActiveState()
     $('#content_'+view.key).css('display', 'block')
     if view.key == 'home'

@@ -37,14 +37,7 @@
       .navbar-header{'data-role' => 'navbar'}
         %ul
           %li
-            %a{id: 'nav_chat_popup_link', style: 'display:none;', href: '#nav_chat_popup', 'data-rel' => 'popup', 'data-position-to' => 'origin'}
-            %div{id: 'nav_chat_popup', 'data-role' => 'popup'}
-              %a{href: '#', 'data-rel' => 'back', class: 'nav_popup_close ui-btn ui-corner-all ui-shadow ui-btn-a ui-icon-delete ui-btn-icon-notext ui-btn-right'}
-                Close
-              %span{style: 'color:black;'}
-                Message Received
-                %button{class: 'activate_chat'}
-                  show
+            -#%a{id: 'system_message_popup_link', style: 'display:none;', href: '#system_message_popup', 'data-rel' => 'popup', 'data-position-to' => 'origin'}
             %button{class: 'activate_chat', value: 'chat', 'data-icon' => 'comment', 'data-iconpos' => 'top'}
           %li
             %button{class: 'activate_map', value: 'map', 'data-icon' => 'location', 'data-iconpos' => 'top'}
@@ -83,6 +76,7 @@
         = link_to '', '#upload_data_panel', id: 'open_upload_data_btn', style: 'display: none;'
         = link_to '', '#attachment_view_panel', id: 'open_attachment_view_btn', style: 'display: none;'
         = link_to '', '#system_message_panel', id: 'open_system_message_btn', style: 'display: none;'
+        = link_to '', '#system_message_popup', id: 'system_message_popup_link', style: 'display: none;', 'data-rel' => 'popup', 'data-position-to' => 'window'
     / panels nust be beginning or end in data-role: page
     #attachment_view_panel{data: {role: 'panel', animate: 'true', display: 'overlay'}}
     #attachment_view_panel_close_btn{style: 'display: none;'}
