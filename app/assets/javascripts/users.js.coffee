@@ -61,9 +61,13 @@ class window.VoyageX.Users
             APP.view().addIWantToFollow u
       APP.view().addIDontFollow user
     if flags.follows_me?
-      USERS.refreshUserPhoto user, {peerPort: {}}, (u, flags) ->
-          APP.storage().saveUser u, {foto: u.foto}
-          APP.view().addFollowsMe u
+      if flags.i_follow?
+        # foto already stored and peerport saved
+        APP.view().addFollowsMe user
+      else
+        USERS.refreshUserPhoto user, {peerPort: {}}, (u, flags) ->
+            APP.storage().saveUser u, {foto: u.foto}
+            APP.view().addFollowsMe u
     else if flags.wants_to_follow_me?
       APP.view().addWantsToFollowMe user
     # if window.isMobile()

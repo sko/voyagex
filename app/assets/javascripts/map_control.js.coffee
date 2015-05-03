@@ -160,33 +160,6 @@ class window.VoyageX.MapControl
       color = 'red'
     tileSelector.after('<div data-role="tileInfo" style="position: absolute; '+style+' z-index: 9999; opacity: 0.5; text-align: center; vertical-align: middle; border: 1px solid '+color+'; color: '+color+'; font-weight: bold;">'+key+'</div>')
 
-  showSelTileInfo: (tiles, zoom) ->
-    #  = []
-    pixelOrigin = APP.map().getPixelOrigin()
-    # ((tileInfos, pixelOrigin) ->
-    #     MC._eachTile (xOff, yOff, tile, style) ->
-    #         for t, idx in tiles
-    #           if t.x*256 <= pixelOrigin.x+xOff <= ((t.x+1)*256) 
-    #             if t.y*256 <= pixelOrigin.y+yOff <= ((t.y+1)*256)
-    #               console.log 'x = '+t.x+', xOff = '+xOff+', t.y = '+t.y+', yOff = '+yOff
-    #               #MC._drawTileInfo t.x, t.y, zoom, style, $(tile)
-    #               tileInfos.push {x: t.x, y: t.y, z: zoom, s: style, tS: $(tile)}
-    #       , false
-    # )(tileInfos, pixelOrigin)
-    ts = $('#map > .leaflet-map-pane > .leaflet-tile-pane .leaflet-tile-container:parent > .leaflet-tile')
-    remove = ts.first().parent().children('div[data-role=tileInfo]')
-    remove.remove()
-    # for tI in tileInfos
-    #   MC._drawTileInfo tI.x, tI.y, tI.z, tI.s, tI.tS, true
-    for t, idx in tiles
-      tileData = { x: t.x, y: t.y, latX: t.x*256, latY: t.y*256 }
-      this.tileImageForPosition -1, -1, zoom, tileData, (top, left) ->
-          key = zoom+' / '+t.x+' / '+t.y
-          style = 'width: 256px; height: 256px; top: '+top+'px; left: '+left+'px; background-color: green;'
-          color = 'yellow'
-          $("#map > .leaflet-map-pane > .leaflet-tile-pane .leaflet-tile-container:parent").
-          append('<div data-role="tileInfo" style="position: absolute; '+style+' z-index: 9999; opacity: 0.5; text-align: center; vertical-align: middle; border: 1px solid '+color+'; color: '+color+'; font-weight: bold;">'+key+'</div>')
-
   showTileInfo: (set = true) ->
     if set
       @_showTileInfo = !@_showTileInfo
@@ -196,6 +169,20 @@ class window.VoyageX.MapControl
         y = parseInt(APP.map().project(latLngOff).y/256)
         MC._drawTileInfo x, y, APP.map().getZoom(), style, $(tile)
       , (!@_showTileInfo)
+
+  showSelTileInfo: (tiles, zoom) ->
+    pixelOrigin = APP.map().getPixelOrigin()
+    ts = $('#map > .leaflet-map-pane > .leaflet-tile-pane .leaflet-tile-container:parent > .leaflet-tile')
+    remove = ts.first().parent().children('div[data-role=tileInfo]')
+    remove.remove()
+    for t, idx in tiles
+      tileData = { x: t.x, y: t.y, latX: t.x*256, latY: t.y*256 }
+      this.tileImageForPosition -1, -1, zoom, tileData, (top, left) ->
+          key = zoom+' / '+t.x+' / '+t.y
+          style = 'width: 256px; height: 256px; top: '+top+'px; left: '+left+'px; background-color: green;'
+          color = 'yellow'
+          $("#map > .leaflet-map-pane > .leaflet-tile-pane .leaflet-tile-container:parent").
+          append('<div data-role="tileInfo" style="position: absolute; '+style+' z-index: 9999; opacity: 0.5; text-align: center; vertical-align: middle; border: 1px solid '+color+'; color: '+color+'; font-weight: bold;">'+key+'</div>')
 
   drawPath: (user, path, append = false) ->
     pathKey = APP.storage().pathKey path

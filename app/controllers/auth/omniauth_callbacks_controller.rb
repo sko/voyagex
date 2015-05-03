@@ -6,9 +6,11 @@ module Auth
         def #{network}
           @user = User.find_for_oauth(env["omniauth.auth"], current_user)
 
+          Rails.logger.error "##################### @user = \#{@user}, session[:provider] = \#{session[:provider]}"
           if @user.present? && @user.persisted?
             sign_in_and_redirect @user, event: :authentication
             session.delete :tmp_user_id
+            session[:vx_id_provider] = '#{network}'
             set_flash_message(:notice, :success, kind: "#{network}".capitalize) if is_navigational_format?
           else
             session["devise.#{network}_data"] = env["omniauth.auth"]

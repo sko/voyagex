@@ -275,6 +275,7 @@ class window.VoyageX.Main
         $('#network_state_offline').prop('checked', true)
       VoyageX.NavBar.showActiveState()
 
+  # FIXME move to map_control
   setProvider: (providerParts) ->
     if providerParts? && (providerParts!='')
       parts = providerParts.split('.')
@@ -291,6 +292,8 @@ class window.VoyageX.Main
 
   clearCache: () ->
     Comm.StorageController.instance().clearCache()
+    if @_debug
+      Comm.StorageController.instance().clearCache {tiles: false, poiNotes: true, users: true}
     cacheStats()
 
   refreshMap: () ->
@@ -530,7 +533,10 @@ class window.VoyageX.Main
         callback $('#system_message')
         $('#open_system_message_btn').click()
     else
-      callback $('#system_message')
+      if type == 'popup'
+        callback $('#system_message_as_popup')
+      else
+        callback $('#system_message')
       sMP.dialog('open')
       if ! sMP.parent().hasClass('seethrough_panel')
         sMP.parent().addClass('seethrough_panel')
@@ -546,7 +552,10 @@ class window.VoyageX.Main
         # data-role-panel
         $("#system_message_panel").panel("close")
     else
-      systemMessagePanel.dialog("close")
+      if type == 'popup'
+        systemMessagePopup.dialog("close")
+      else
+        systemMessagePanel.dialog("close")
 
   showPeer: (peer, lastLocation = null, type = 'dialog') ->
     APP.closeSystemMessage(type)
@@ -873,6 +882,17 @@ class window.VoyageX.Main
         #message.type = message.action
         #delete message.action
         APP._poisCB message
+    else if message.type == 'poi_sync'
+      if message.poi.user.id != APP.userId()
+        delete message.poi.user
+        poi = message.poi
+        Storage.Model.setupPoiForNote poi
+        msg = { poi: poi }
+        loadStats = { numAdded: poi.notes.length, numLeft: poi.notes.length }
+        for note in poi.notes
+          Storage.Model.instance().syncWithStorage msg, VoyageX.View.addPoiNotes, note, loadStats
+        APP.view().alert()
+        return true
     APP._view._systemCB message
   
   _talkCB: (message) ->
@@ -927,16 +947,17 @@ class window.VoyageX.Main
         msg = { poi: poi }
         Storage.Model.instance().syncWithStorage msg, VoyageX.View.addPoiNotes, upload.poi_note
         APP.view().alert()
-    else if upload.type == 'poi_sync'
-      if upload.poi.user.id != APP.userId()
-        delete upload.poi.user
-        poi = upload.poi
-        Storage.Model.setupPoiForNote poi
-        msg = { poi: poi }
-        loadStats = { numAdded: poi.notes.length, numLeft: poi.notes.length }
-        for note in poi.notes
-          Storage.Model.instance().syncWithStorage msg, VoyageX.View.addPoiNotes, note, loadStats
-        APP.view().alert()
+    # else if upload.type == 'poi_sync'
+    #   # moved to system ... 
+    #   if upload.poi.user.id != APP.userId()
+    #     delete upload.poi.user
+    #     poi = upload.poi
+    #     Storage.Model.setupPoiForNote poi
+    #     msg = { poi: poi }
+    #     loadStats = { numAdded: poi.notes.length, numLeft: poi.notes.length }
+    #     for note in poi.notes
+    #       Storage.Model.instance().syncWithStorage msg, VoyageX.View.addPoiNotes, note, loadStats
+    #     APP.view().alert()
     else if upload.type == 'poi_delete'
       if upload.poi.user.id != APP.userId()
         Storage.Model.instance().deletePoi poiId, (poi) ->

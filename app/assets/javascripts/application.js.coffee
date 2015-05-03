@@ -109,9 +109,16 @@ window.attachmentViewPanel = $("#attachment_view_panel").dialog({
     })
 
 ############################### popup ###
-# attachmentViewPanel
+# systemMessagePanel | systemMessagePopup
 #
 window.systemMessagePanel = $("#system_message_panel").dialog({
+      #dialogClass: "no-close",
+      autoOpen: false,
+      height: Math.abs($(window).height() * 0.3),
+      width: Math.abs($(window).width() * 0.25),
+      modal: true
+    })
+window.systemMessagePopup = $("#system_message_popup").dialog({
       #dialogClass: "no-close",
       autoOpen: false,
       height: Math.abs($(window).height() * 0.3),

@@ -4,11 +4,16 @@ class UsersController < ApplicationController
   include PoiHelper
   include UserHelper
 
-  protect_from_forgery :except => :change_details 
+  #protect_from_forgery :except => :change_details 
+  skip_before_action :verify_authenticity_token, if: :any_request?
 
   def update
-    #@user = User.find(params[:id])
     @user = current_user
+    Rails.logger.error "##################### @user = #{@user}, session[:provider] = #{session[:provider]}"
+    # unless @user.present?
+    #   @user = User.find(params[:id])
+    #   #unless @user.identities
+    # end
 
     @subscription_grant_requests = []
     @quit_subscriptions = []
@@ -239,6 +244,11 @@ class UsersController < ApplicationController
   end
 
   protected
+
+  # @see skip_before_action
+  def any_request?
+    [:update, :change_details].include? action_name.to_sym
+  end
 
   def add_foto_to_msg user, msg
     geometry = Paperclip::Geometry.from_file(user.foto)
