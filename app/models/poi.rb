@@ -1,6 +1,6 @@
 class Poi < ActiveRecord::Base
   
-  MASTER = 'test/master'
+  MASTER = GIT_MASTER
   WORK_DIR_ROOT = "#{Rails.root}/user_repos"
 
   belongs_to :commit#, dependent: :destroy

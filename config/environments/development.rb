@@ -45,5 +45,6 @@ Rails.application.configure do
   FAYE_URL = 'http://localhost:3005/comm'
   FAYE_URL_LOCAL = 'http://localhost:3005/comm'
   GIT_REMOTE_URL = 'github:/sko/voyagex_data'
+  GIT_MASTER = 'test/master'
   COMM_ADAPTER_CLASS = 'Comm::Adapter'
 end

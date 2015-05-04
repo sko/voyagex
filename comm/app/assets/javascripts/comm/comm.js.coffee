@@ -131,6 +131,16 @@ class window.Comm.Comm
         continue
       Comm.setChannelContext channel, initParams.channel_enc_key
 
+  @hasSubscription: (channel, enc_key) ->
+    unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
+      channelPath = '/'+channel
+      unless window.VoyageX.USE_GLOBAL_SUBSCRIBE 
+        channelPath += VoyageX.PEER_CHANNEL_PREFIX+enc_key
+      r = new RegExp('^\/?talk'+VoyageX.PEER_CHANNEL_PREFIX+'(.*)')
+      if (m = channelPath.match(r)) && (m[1] == Comm.channelCallBacksJSON.talk.channel_enc_key)
+        channelPath += '_p2p'
+    client._channels.hasSubscription(channelPath)
+
   @subscribeTo: (channel, callBack, defaultCBMapping = true) ->
     unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
       r = new RegExp('^\/?talk'+VoyageX.PEER_CHANNEL_PREFIX+'(.*)')

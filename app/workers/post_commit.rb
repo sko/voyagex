@@ -2,7 +2,7 @@
 class PostCommit
   include PoiHelper
   
-  FAYE_CLIENT = Faye::Client.new(::FAYE_URL_LOCAL)
+  #FAYE_CLIENT = Faye::Client.new(::FAYE_URL_LOCAL)
 
   # queue for resque
   @queue = :post_commit
@@ -15,7 +15,96 @@ class PostCommit
         PostCommit.sync_poi args_hash['user_id'], args_hash['poi_id'], args_hash['min_local_time_secs']
       when 'delete_poi'
         PostCommit.delete_poi args_hash['user_id'], args_hash['poi_id']
+      when 'pull_pois'
+        PostCommit.sync args_hash['user_id'], args_hash['commit_hash']
     end
+  end
+
+  def self.pull_pois user_id, commit_hash
+    PostCommit.new.pull_pois user_id, commit_hash
+  end
+
+  #
+  # read only - for write/commit @see sync_poi
+  #
+  def pull_pois user_id, commit_hash, fork_publish = true
+    @user = User.find user_id
+
+    vm = VersionManager.new Poi::MASTER, Poi::WORK_DIR_ROOT, @user, false#@user.is_admin?
+    prev_commit = vm.cur_commit
+
+    # Commit.latest.hash_id
+
+    if prev_commit != commit_hash
+#binding.pry if Rails.env.to_sym == :development
+      vm.forward commit_hash
+      prev_commit = commit_hash
+    end
+    
+    @new_pois = []
+    @modified_pois = []
+    @deleted_pois = []
+
+    diff = vm.changed
+    # TODO - for now only add is implemented.
+    diff_added = diff['A']
+    diff_modified = diff['M']
+    diff_deleted = diff['D']
+    if diff_added.present?
+#binding.pry if Rails.env.to_sym == :development
+      # entries are sorted by poi. every time the (list)poi changes, a new poi is started
+      poi_ids = []
+      pois = {}
+      diff_added.each do |entry|
+        note_match = entry.match(/^location_([0-9]+)/)
+        next if note_match.present?
+        note_match = entry.match(/^note_([0-9]+)/)
+        unless note_match.present?
+          poi_match = entry.match(/^poi_([0-9]+)/)
+#binding.pry if Rails.env.to_sym == :development
+          poi_ids << poi_match[1].to_i
+          next
+        end
+        poi_note = PoiNote.where(id: note_match[1].to_i).first
+        if poi_note.present?
+          cur_poi_note_jsons = pois[poi_note.poi.id]
+          same_poi = cur_poi_note_jsons.present?
+          unless same_poi
+            cur_poi_note_jsons = []
+            pois[poi_note.poi.id] = cur_poi_note_jsons
+          end
+          cur_poi_note_jsons << poi_note_json(poi_note, !same_poi)
+        else
+          Rails.logger.warn "poi_note[id=#{note_match[1]}] found in diff from user/branch #{@user.id}/#{vm.cur_branch} but not in db"
+        end
+      end
+      pois.each do |poi_id, poi_notes|
+        if poi_ids.include? poi_id
+          @new_pois << poi_notes
+        else
+          @modified_pois << poi_notes
+        end 
+      end
+    end
+    
+    #Commit.latest.hash_id
+    vm.fast_forward
+    cur_commit = vm.cur_commit
+
+    system_msg_for_user = { type: 'callback',
+                            channel: 'pois',
+                            action: 'pull',
+                            commit_hash: cur_commit,
+                            new_pois: @new_pois,
+                            modified_pois: @modified_pois,
+                            deleted_pois: @deleted_pois }
+
+    msgs_data = [
+                  { channel: "/system#{PEER_CHANNEL_PREFIX}#{@user.comm_port.sys_channel_enc_key}",
+                    msg: system_msg_for_user,
+                    user_id: @user.id }
+                ]
+    Publisher.new.publish msgs_data, fork_publish
   end
 
   # updates the users repository:
@@ -73,7 +162,7 @@ class PostCommit
       diff_added.each do |entry|
         note_match = entry.match(/^note_([0-9]+)/)
         next unless note_match.present?
-        poi_note = PoiNote.where(note_match[1].to_i).first
+        poi_note = PoiNote.where(id: note_match[1].to_i).first
         if poi_note.present?
           if poi_note.poi == @poi
             note_json_list_for_user.unshift poi_note_json(poi_note)
@@ -131,7 +220,7 @@ class PostCommit
   # 1) pulls data meanwhile created by other users 
   # 2) pushes data created by this user (vm)
   def self.delete_poi user_id, poi_id
-    PostCommit.new.delete_poi user_id
+    PostCommit.new.delete_poi user_id, poi_id
   end
 
   def delete_poi user_id, poi_id, fork_publish = true

@@ -25,7 +25,7 @@ Rails.application.configure do
   config.serve_static_assets = false
 
   # Compress JavaScripts and CSS.
-  config.assets.js_compressor = :uglifier
+  # TODO: reenable; config.assets.js_compressor = :uglifier
   # config.assets.css_compressor = :sass
 
   # Do not fallback to assets pipeline if a precompiled asset is missed.
@@ -97,5 +97,6 @@ Rails.application.configure do
   FAYE_URL = 'http://voyagex.info.tm/comm'
   FAYE_URL_LOCAL = 'http://localhost:3000/comm'
   GIT_REMOTE_URL = 'git@github.com:/sko/voyagex_data'
+  GIT_MASTER = 'master'
   COMM_ADAPTER_CLASS = 'Comm::Adapter'
 end

@@ -47,5 +47,6 @@ Rails.application.configure do
 
   FAYE_URL = 'http://test.host/comm'
   GIT_REMOTE_URL = 'github:/sko/voyagex_data'
+  GIT_MASTER = 'spec/master'
   COMM_ADAPTER_CLASS = 'CommAdapterMock'
 end

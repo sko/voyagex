@@ -16,6 +16,7 @@ class window.VoyageX.Users
     APP.markers().removeForPeer peer.id
     APP.storage().deletePeer peer
 
+  # also subscribes to peer channel if online, otherwise
   initPeer: (peer, fromSystemCB = false, callback = null) ->
     #peerPort = peer.peerPort
     #delete peer.peerPort
@@ -33,7 +34,7 @@ class window.VoyageX.Users
       APP.storage().saveLocation lastLocation
     # ---------------------
     peer.lastLocationId = lastLocation.id
-    peer.lastLocation = () ->
+    peer.getLastLocation = () ->
         APP.storage().getLocation this.lastLocationId
     USERS.refreshUserPhoto peer, {peerPort: peer.peerPort}, (user, flags) ->
         flags.foto = user.foto
@@ -48,6 +49,8 @@ class window.VoyageX.Users
     unless fromSystemCB
       APP.view().addIFollow peer
     marker = APP.getPeerMarker peer, lastLocation
+    #unless marker?
+    #  Main.markerManager().add location, Main._markerEventsCB
 
   initUser: (user) ->
     flags = user.flags||{}
@@ -134,6 +137,9 @@ class window.VoyageX.Users
     peerChannelEncKey = $('#i_follow_'+peerId).attr('data-channelEncKey')
     USERS.unsubscribeFromPeerChannels {peerPort: {channel_enc_key: peerChannelEncKey}}
     USERS.subscribeToPeerChannels {peerPort: {channel_enc_key: peerChannelEncKey}}
+
+  isSubscribed: (peer, channel) ->
+    Comm.Comm.hasSubscription channel, peer.peerPort.channel_enc_key
 
   subscribeToAllPeerChannels: () ->
     if APP.isOnline() && APP._comm.isReady()

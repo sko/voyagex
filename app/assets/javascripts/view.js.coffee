@@ -42,8 +42,6 @@ class window.VoyageX.View
 
   _talkCB: (message) ->
     console.log 'got a talk - message: ' + message.type
-    if APP.userId() == message.userId
-      return null
     switch message.type
       when 'message'
         View.addChatMessage message, false
@@ -51,17 +49,6 @@ class window.VoyageX.View
         View.addChatMessage message, false, {peer: message.peer}
     for listener in View.instance()._commListeners.talk
       listener(message)
-
-  _radarCB: (radarEvent) ->
-    #
-    # draw path modus -> no positionieg
-    #
-    console.log 'got a radar - message: ' + radarEvent.type
-    if APP.userId() == radarEvent.userId# && radarEvent.type == 'move'
-      return null
-    View.instance().setPeerPosition radarEvent.userId, radarEvent.lat, radarEvent.lng
-    for listener in View.instance()._commListeners.radar
-      listener(radarEvent)
 
   _mapEventsCB: (mapEvent) ->
     console.log '_mapEventsCB: got a map_events - message: ' + mapEvent.type
@@ -81,6 +68,15 @@ class window.VoyageX.View
     View.instance().setPeerPosition mapEvent.userId, mapEvent.lat, mapEvent.lng
     for listener in View.instance()._commListeners.map_events
       listener(mapEvent)
+
+  _radarCB: (radarEvent) ->
+    #
+    # draw path modus -> no positionieg
+    #
+    console.log 'got a radar - message: ' + radarEvent.type
+    View.instance().setPeerPosition radarEvent.userId, radarEvent.lat, radarEvent.lng
+    for listener in View.instance()._commListeners.radar
+      listener(radarEvent)
 
   # clearFollows: () ->
   #   $('#i_follow').html('')

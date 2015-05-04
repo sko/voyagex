@@ -14,6 +14,25 @@ class PoisController < ApplicationController
   # +) comment-on
   #
   # sync pois that where edited offline
+  def pull_pois
+    @user = current_user || tmp_user
+    if ![:development].include?(Rails.env.to_sym)# || true
+      Resque.enqueue(PostCommit, {action: 'pull_pois',
+                                  user_id: @user.id,
+                                  commit_hash: params[:commit_hash]})
+    else
+      PostCommit.new.pull_pois @user.id,
+                               params[:commit_hash],
+                               false
+    end
+    render json: { message: 'OK' }.to_json
+  end
+
+  #
+  # TODO: 
+  # +) comment-on
+  #
+  # sync pois that where edited offline
   def sync_poi
     @user = current_user || tmp_user
     if params[:id].present?
@@ -319,7 +338,7 @@ class PoisController < ApplicationController
       pois_json << poi_json(poi)
     end
     
-    render json: {pois: pois_json}.to_json
+    render json: pois_json.to_json
   end
 
   # api

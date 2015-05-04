@@ -78,12 +78,22 @@ class window.VoyageX.Main
           # don't overwrite last location when reloading from app-cache ...
           Main._STORAGE_CONTROLLER.env (env) ->
             unless env.volatileFlags.userInitialized?
+              userData = {id: curU.id}
+              if curU.curCommitHash != initCommitHash
+                userData.dirty = true
+                userData.curCommitHash = initCommitHash
               if curU.lastLocationId != initLocation.id
-                env.volatileFlags.userInitialized = { lastLocation: true }
-                console.log 'APP - _init: resetting users last location ...'
-                Main._STORAGE_CONTROLLER.saveUser {id: curU.id, lastLocationId: initLocation.id}
-          #curU = APP.user()
-          mapOptions.center = new L.LatLng(curU.lastLocation().lat, curU.lastLocation().lng)
+                userData.dirty = true
+                userData.lastLocationId = initLocation.id
+              if userData.dirty?
+                console.log 'APP - _init: resetting user ...'
+                delete userData.dirty
+                Main._STORAGE_CONTROLLER.saveUser userData
+                #env.volatileFlags.userInitialized = { lastLocation: true, curCommitHash: true }
+                env.volatileFlags.userInitialized = { reset: Math.round(Date.now()/1000)}
+          # reload since env might have hanged
+          curU = APP.user()
+          mapOptions.center = new L.LatLng(curU.getLastLocation().lat, curU.getLastLocation().lng)
         else
           channelEncKey = null
           sysChannelEncKey = null
@@ -91,12 +101,14 @@ class window.VoyageX.Main
         # Communication initialisation (Faye-Client)
         APP._comm = new Comm.Comm(APP.userId(),
                                   [['/talk', APP._talkCB, channelEncKey],
-                                   ['/map_events', APP._view._mapEventsCB, channelEncKey],
+                                   ['/map_events', APP._mapEventsCB, channelEncKey],
                                    ['/pois', APP._poisCB, channelEncKey],
-                                   ['/radar', APP._view._radarCB, channelEncKey]],
+                                   ['/radar', APP._radarCB, channelEncKey]],
                                    sysChannelEncKey,
                                    APP._systemCB,
                                    Main._BACKEND.commConnStateCB)
+        #unless APP.isOnline()
+        #  d
         unless forceOffline
           Main._BACKEND.pingBackend()
         APP._cacheStrategy = new VoyageX.CacheStrategy true
@@ -105,7 +117,7 @@ class window.VoyageX.Main
             #  disable thsi if using geolocation on startup (some lines further down)
             Main._MARKER_MANAGER = new VoyageX.MarkerManager map
             curU = APP.user()
-            initLoc = curU.lastLocation()||window.initLocation
+            initLoc = (if curU? then curU.getLastLocation() else null)||window.initLocation
             APP._initPositionCB { coords: { latitude: initLoc.lat, longitude: initLoc.lng } }
             #
             # maybe store current-environment-tiles even with _pathPrediction
@@ -142,7 +154,7 @@ class window.VoyageX.Main
         #   navigator.geolocation.getCurrentPosition(APP._initPositionCB, (error) ->
         #       #alert('geolocation timed out - manual selection required.\nsetting default location...')
         #       curU = APP.user()
-        #       initLoc = curU.lastLocation()||window.initLocation
+        #       initLoc = curU.getLastLocation()||window.initLocation
         #       APP._initPositionCB { coords: { latitude: initLoc.lat, longitude: initLoc.lng } }
         #   , { enableHighAccuracy: true, timeout : 5000 })
         if isMobile()
@@ -237,30 +249,29 @@ class window.VoyageX.Main
         console.log 'Main - isOnline: navigator switched to off-line ...'
       false
 
-  setOnline: (commitHash = null) ->
-    if commitHash?
-      curU = APP.user()
-      if curU.curCommitHash != commitHash
-        alert('TODO: APP - setOnline: new commits while offline: '+commitHash)
-        APP.storage().saveUser {id: curU.id, curCommitHash: commitHash}
-    #
-    # TODO - get commit id from backend and sync if changed
-    #
-    #Comm.StorageController.instance()._tileLoadQueue = {}
-    #this.map()._resetView this.map().getCenter(), this.map().getZoom(), true
-    #if this.isBackendOnline()
+  setOnline: () ->
     @_online = true
+    Main._BACKEND.curCommit (msg) ->
+        curU = APP.user()
+        if curU? && (curU.curCommitHash != msg.commit_hash)
+          APP.model().pullPois()
+          # queue is uploaded after pull -> @see _systemCB
+        else
+          if APP.storage().hasQueue()
+            APP.storage().uploadQueue (cbPoi, cbNewPoiNotes) ->
+                console.log 'Main - setOnline: done with queue-sync ...'
+        unless VoyageX.Main._BACKEND._state.pingActive
+          setTimeout "VoyageX.Main._BACKEND.pingBackend()", VoyageX.Backend._PING_CHECK_DELAY_MILLIS
+    #Comm.StorageController.instance()._tileLoadQueue = {}
+    
     Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
     for n in [Main._MAP_CONTROL._minZoom..Main._MAP_CONTROL._maxZoom]
       Main._MAP_CONTROL._zooms.push n
-    #APP.storage().uploadQueue()
+    
     unless $('#network_state_online').prop('checked')
       $('#network_state_online').prop('checked', true)
-    #this.map()._resetView this.map().getCenter(), this.map().getZoom(), true
-    setTimeout "APP.refreshMap()", 1500
-    unless VoyageX.Main._BACKEND._state.pingActive
-      setTimeout "VoyageX.Main._BACKEND.pingBackend()", VoyageX.Backend._PING_CHECK_DELAY_MILLIS
     VoyageX.NavBar.showActiveState()
+    setTimeout "APP.refreshMap()", 1500
 
   setOffline: () ->
     if @_online
@@ -479,18 +490,18 @@ class window.VoyageX.Main
       Storage.Model.instance().withLocation location.id, (location) ->
           APP.loadLocation location, false
 
-  showPOIs: (location) ->
-    Storage.Model.instance().loadPois location.lat, location.lng, (poi) ->
-      location = {id: poi.locationId, lat: poi.lat, lng: poi.lng, address: poi.address, poiId: poi.id}
-      markerMeta = APP.getMarker poi, true
-      if markerMeta?
-        markerMeta.m.setLocation location
-      else
-        Main.markerManager().add location, Main._markerEventsCB
-      #APP._initPoisOnMap.push poi
+  showPOIs: (location, flags = {withNotes: true, reset: false}) ->
+    APP.model().loadPois location.lat, location.lng, (poi) ->
+        location = {id: poi.locationId, lat: poi.lat, lng: poi.lng, address: poi.address, poiId: poi.id}
+        markerMeta = APP.getMarker poi, true
+        unless markerMeta?
+          # pois don't change location
+          Main.markerManager().add location, Main._markerEventsCB
+        #APP._initPoisOnMap.push poi
+      , flags
 
   showPOI: (poiId, poiNoteId) ->
-    Storage.Model.instance().loadPoiNotes poiId, poiNoteId, (poi) ->
+    Storage.Model.instance().loadPoiNotes poiId, poiNoteId, (poi, newPoiNotes) ->
         #APP.panPosition(poi.lat, poi.lng, poi.address)
         #VoyageX.TemplateHelper.openPOINotePopup poi
         #APP.view().scrollToPoiNote poiNoteId
@@ -562,14 +573,15 @@ class window.VoyageX.Main
     clientState.setView(window.clientState.getView('map'))
 
     unless lastLocation?
-      lastLocation = peer.lastLocation()
+      lastLocation = peer.getLastLocation()
     APP.loadLocation lastLocation
     #clientState.setView(window.clientState.getView('map'))
     if MC?
       MC.reload()
     userMarker = APP.getUserMarker(true).m
     APP.markers()._checkVisible lastLocation, userMarker
-    markerMeta = APP.markers().forPeer peer.id
+    #markerMeta = APP.markers().forPeer peer.id
+    markerMeta = APP.getPeerMarker peer, lastLocation, true
     VoyageX.TemplateHelper.openPeerPopup peer, markerMeta.target()
 
   updateFollow: (user, grant) ->
@@ -832,8 +844,13 @@ class window.VoyageX.Main
         this.map().removeLayer entry.pred
 
   _systemCB: (message) ->
+    unless APP._online
+      # for debug only - _online might be false if actually true
+      console.log 'disable _systemCB for debugging offline: ' + upload.type
+      return false
     console.log 'got a system - message: ' + message.type
     if message.type == 'ready_notification'
+      # curU is guranteed - either known in init from localStorage or initialized in register
       curU = APP.user()
       if APP.signedIn(curU)
         #$('#settings_form').attr('action', '<%= user_path id: ":id" %>'.replace(/:id/, curU.id))
@@ -855,15 +872,22 @@ class window.VoyageX.Main
         $('#sign_up_or_in').first().css('display', 'block')
         $('.logout-link').each () ->
           $(this).css('display', 'none')
-      APP.loadLocation {id: (if curU.lastLocationId >= 1 then curU.lastLocationId else -curU.id)}
+      
+      # map-center already set in init
+      #APP.loadLocation {id: (if curU.lastLocationId >= 1 then curU.lastLocationId else -curU.id)}
       APP.view().setupForCurrentUser()
-      # only if signedIn?
-      Storage.Model.instance().loadUsers (peer, idx, numPeers) ->
-          USERS.initUser peer
-          # if idx==(numPeers-1)
+      # all users are loaded - to enable follow-requests for everybody
+      Storage.Model.instance().loadUsers (user, idx, numUsers) ->
+          USERS.initUser user
+          # if idx==(numUsers-1)
           #   if isMobile()
           #     # required for applying layout and activating checkbox
           #     $('#comm_peer_data').trigger("create")
+          # pois are loaded in showPoi
+          # if idx==(numUsers-1)
+          #   APP.model().loadPois curU.getLastLocation().lat, curU.getLastLocation().lng, (poi) ->
+          #       console.log 'loaded poi '+poi.id+' ...'
+          #     , {withNotes: true, reset: true}
         , -1
     else if message.type == 'subscription_grant_request'
     else if message.type == 'subscription_granted'
@@ -883,7 +907,9 @@ class window.VoyageX.Main
         #delete message.action
         APP._poisCB message
     else if message.type == 'poi_sync'
-      if message.poi.user.id != APP.userId()
+      curU = APP.user()
+      if message.poi.user.id != curU.id
+        # other user committed
         delete message.poi.user
         poi = message.poi
         Storage.Model.setupPoiForNote poi
@@ -891,18 +917,56 @@ class window.VoyageX.Main
         loadStats = { numAdded: poi.notes.length, numLeft: poi.notes.length }
         for note in poi.notes
           Storage.Model.instance().syncWithStorage msg, VoyageX.View.addPoiNotes, note, loadStats
+        Main._STORAGE_CONTROLLER.saveUser {id: curU.id, curCommitHash: message.commit_hash}
         APP.view().alert()
         return true
+    else if message.type == 'poi_delete'
+      curU = APP.user()
+      Main._STORAGE_CONTROLLER.saveUser {id: curU.id, curCommitHash: message.commit_hash}
+      Storage.Model.instance().deletePoi message.poi_id, (poi) ->
+          APP.markers().removeForPoi poi.id
+          #APP.view().alert()
+        , false
     APP._view._systemCB message
-  
+
   _talkCB: (message) ->
+    unless APP._online
+      # for debug only - _online might be false if actually true
+      console.log 'disable _talkCB for debugging offline: ' + message.type
+      return false
+    if APP.userId() == message.userId
+      return null
     peer = APP.storage().getUser parseInt(message.userId)
     APP.storage().addChatMessage message.text, peer, message.type == 'p2p-message'
     delete message.userId
     message['peer'] = peer
     APP._view._talkCB message
+
+  _mapEventsCB: (mapEvent) ->
+    unless APP._online
+      # for debug only - _online might be false if actually true
+      console.log 'disable _mapEventsCB for debugging offline: ' + mapEvent.type
+      return false
+    curU = APP.user()
+    if curU.id == mapEvent.userId# && mapEvent.type == 'click'
+      #"type":"click","userId":264,"lat":52.49724380849507,"lng":13.416409492492676,"locationId":4289,"address":"Kreuzberg, Admiralst"
+      if mapEvent.locationId?
+        locationId = mapEvent.locationId
+        unless APP.storage().getLocation(mapEvent.locationId)?
+          mapEvent.id = mapEvent.locationId
+          APP.storage().saveLocation mapEvent
+      else
+        locationId = -curU.id
+        mapEvent.id = -curU.id
+        APP.storage().saveLocation mapEvent
+      APP.storage().saveCurrentUser {lastLocationId: locationId}, curU
+    APP._view._mapEventsCB mapEvent
   
   _poisCB: (upload) ->
+    unless APP._online
+      # for debug only - _online might be false if actually true
+      console.log 'disable _poisCB for debugging offline: ' + upload.type
+      return false
     console.log 'got an uploads - message: ' + upload.type
     if upload.type == 'callback'
       # callbacks are async backend response for user who changed/committed something
@@ -911,8 +975,9 @@ class window.VoyageX.Main
         if upload.action == 'poi_sync'
           # assume that sync already performed with backend-response - here we hava after-commit-faye-callback
           curU = APP.user()
-          curU.curCommitHash = upload.commit_hash
-          APP.storage().saveCurrentUser curU
+          #curU.curCommitHash = upload.commit_hash
+          #APP.storage().saveCurrentUser curU
+          Main._STORAGE_CONTROLLER.saveUser {id: curU.id, curCommitHash: upload.commit_hash}
           #qPoiId = if upload.poi.local_time_secs? then -upload.poi.local_time_secs else upload.poi.id
           storedPoi = APP.storage().getPoi upload.poi.id
           callback = ((oldNotes) ->
@@ -939,6 +1004,34 @@ class window.VoyageX.Main
             Storage.Model.instance().syncWithStorage upload, callback, note, loadStats, note.local_time_secs?
         else if upload.action == 'poi_delete'
           console.log 'my poi_delete was published to everbody'
+          curU = APP.user()
+          Main._STORAGE_CONTROLLER.saveUser {id: curU.id, curCommitHash: upload.commit_hash}
+        else if upload.action == 'pull'
+          console.log 'TODO: deletes on pull ...'
+          curU = APP.user()
+          # save commit_hash
+          Main._STORAGE_CONTROLLER.saveUser {id: curU.id, curCommitHash: upload.commit_hash}
+          for modPoiNotes in upload.modified_pois
+            modPoi = modPoiNotes[0].poi
+            loadStats = { numAdded: modPoiNotes.length, numLeft: modPoiNotes.length }
+            for newNote in modPoiNotes
+              Storage.Model.instance().syncWithStorage {poi: modPoi}, (poi, newNotes) ->
+                  console.log 'added #'+newNotes.length+' notes to poi '+poi.id
+                , newNote
+          for modPoiNotes in upload.new_pois
+            modPoi = modPoiNotes[0].poi
+            Storage.Model.setupPoiForNote modPoi
+            loadStats = { numAdded: modPoiNotes.length, numLeft: modPoiNotes.length }
+            for newNote in modPoiNotes
+              Storage.Model.instance().syncWithStorage {poi: modPoi}, (poi, newNotes) ->
+                  console.log 'added new poi '+poi.id+' with #'+newNotes.length+' notes'
+                , newNote
+          # after pull we could sync queue
+          # @see setOnline
+          if APP.storage().hasQueue()
+            # sync with commit - backend calls back via /system
+            APP.storage().uploadQueue (cbPoi, cbNewPoiNotes) ->
+                console.log 'done with upload - pulling other changes now'
     else if upload.type == 'poi_note_upload'
       unless upload.poi_note.user.id == APP.userId()
         # TODO: unify json-format, until then avoid circular structure
@@ -958,12 +1051,21 @@ class window.VoyageX.Main
     #     for note in poi.notes
     #       Storage.Model.instance().syncWithStorage msg, VoyageX.View.addPoiNotes, note, loadStats
     #     APP.view().alert()
-    else if upload.type == 'poi_delete'
-      if upload.poi.user.id != APP.userId()
-        Storage.Model.instance().deletePoi poiId, (poi) ->
-            APP.markers().removeForPoi poi.id
-            #APP.view().alert()
-          , false
+    # else if upload.type == 'poi_delete'
+    #   if upload.poi.user.id != APP.userId()
+    #     Storage.Model.instance().deletePoi poiId, (poi) ->
+    #         APP.markers().removeForPoi poi.id
+    #         #APP.view().alert()
+    #       , false
+
+  _radarCB: (radarEvent) ->
+    unless APP._online
+      # for debug only - _online might be false if actually true
+      console.log 'disable _radarCB for debugging offline: ' + radarEvent.type
+      return false
+    if APP.userId() == radarEvent.userId# && radarEvent.type == 'move'
+      return null
+    APP._view._radarCB radarEvent
 
   _syncPoiCB: (cbPoi, cbNewNotes) ->
     # VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
@@ -983,7 +1085,7 @@ class window.VoyageX.Main
         # dummy-poiNote for swiper - replaced when attachments are loaded
         unless poi.notes? && poi.notes.length >= 1
           poi.notes = [{id: -1, attachment: {url: VoyageX.IMAGES_SWIPER_LOADING_PATH, content_type: 'image/png', width: 200, height: 100}}]
-        Storage.Model.instance().loadPoiNotes poi.id, null, (poiClone) ->
+        Storage.Model.instance().loadPoiNotes poi.id, null, (poiClone, newPoiNotes) ->
             swiperDummy = $('#poi_swiper_'+poi.id+' [data-poiNoteId=-1]')
             if swiperDummy.length >= 1
               # if there is a template it must be swiper's loading-dummy
@@ -1175,7 +1277,7 @@ class window.VoyageX.Main
             if markerMeta.peer?
               VoyageX.TemplateHelper.openPeerPopup markerMeta.peer, event.target
             else
-              Storage.Model.instance().loadPoiNotes markerMeta.poi.id, null, (poi) ->
+              Storage.Model.instance().loadPoiNotes markerMeta.poi.id, null, (poi, newPoiNotes) ->
                   # userMarkerMouseOver is set in openPOINotePopup
                   #VoyageX.TemplateHelper.openPOINotePopup poi, event.target
                   APP.view().viewPoiNotes poi, -1, event.target

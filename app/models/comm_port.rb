@@ -1,3 +1,8 @@
+
+#
+# users follow themselves:
+# CommPeer.joins(comm_port: :user).where('`comm_ports`.user_id = `users`.id and `comm_peers`.peer_id = `users`.id')
+#
 class CommPort < ActiveRecord::Base
   belongs_to :user
   has_many :comm_peers, dependent: :destroy

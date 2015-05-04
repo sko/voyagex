@@ -217,6 +217,7 @@ class window.VoyageX.TemplateHelper
 
   @openP2PChat: (peer, newMessages = []) ->
     markerMeta = VoyageX.Main.markerManager().forPeer peer.id
+    #markerMeta = APP.getPeerMarker peer, lastLocation, true
     popup = markerMeta.target().getPopup()
     if popup?
       popupHtml = popup.getContent()
@@ -320,7 +321,7 @@ class window.VoyageX.TemplateHelper
   @personOfInterestHTML: (peers) ->
     html = ''
     for peer, i in peers
-      lastLocation = peer.lastLocation()
+      lastLocation = peer.getLastLocation()
       followHtml = TemplateHelper._updateAttributes('tmpl_people_i_follow', ['src']).
       replace(/\{user_id\}/g, peer.id).
       replace(/\{username\}/, peer.username).
@@ -421,7 +422,7 @@ class window.VoyageX.TemplateHelper
     replace(/\{lastAddress\}/g, lastLocation.address)
 
   @subscriptionGrantedHtml: (user) ->
-    lastLocation = user.lastLocation()
+    lastLocation = user.getLastLocation()
     #html = VoyageX.TemplateHelper._updateIds('tmpl_subscription_granted_dialog')
     html = TemplateHelper._updateAttributes('tmpl_subscription_granted_dialog', ['src']).
     replace(/\{user_id\}/g, user.id).

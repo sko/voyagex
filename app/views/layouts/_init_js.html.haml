@@ -26,6 +26,7 @@
   window.currentAddress = '';
   window.subscribeTo = [];
   window.initSystemTimeStamp = #{DateTime.now.to_i};
+  window.initCommitHash = '#{Commit.latest.hash_id}';
   window.initLocation = { id: #{l_l.id >= 0 ? l_l.id : -tmp_user.id}, lat: #{l_l.latitude}, lng: #{l_l.longitude}, address: '#{l_l.address}' };
   window.showSearchRadius = false;
   -#

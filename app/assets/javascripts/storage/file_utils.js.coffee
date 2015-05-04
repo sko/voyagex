@@ -62,7 +62,7 @@ class window.Comm.FileUtils
     if flags.users? && flags.users
       this._removeDirectory 'users'
 
-  clear: (flags = {tilePaths: [], poiNoteIds: [], userIds: []}) ->
+  clear: (flags = {tilePaths: [], poiNoteIds: [], userIds: []}, callback = null) ->
     if flags.tilePaths?
       for tilePath in tilePaths
         `TODO`
@@ -71,8 +71,12 @@ class window.Comm.FileUtils
         @_dirReaders.entry.getFile '/poiNotes/attachments/'+poiNoteId, {}, (fileEntry) ->
             fileEntry.remove (e) ->
                   console.log 'clear: deleted file /poiNotes/attachments/'+poiNoteId
+                  if callback?
+                    callback 'ok: '+poiNoteId
                 , (error) ->
                     console.log 'clear: error when deleting /poiNotes/attachments/'+poiNoteId+': '+error
+                    if callback?
+                      callback 'error: '+poiNoteId+' - '+error
     if flags.userIds?
       for userId in userIds
         `TODO`

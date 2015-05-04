@@ -237,7 +237,11 @@ class window.Comm.StorageController
 
   getPoi: (poiId) ->
     poiKey = StorageController.poiKey {id: poiId}
-    JSON.parse(localStorage.getItem(poiKey))
+    poi = JSON.parse(localStorage.getItem(poiKey))
+    if poi?
+      poi.getLocation = () ->
+        APP.storage().getLocation this.locationId
+    poi
 
   deletePoi: (poiId) ->
     poiKey = StorageController.poiKey {id: poiId}
@@ -282,6 +286,21 @@ class window.Comm.StorageController
       else
         false
 
+  deletePoiNotes: (poi, callback = null) ->
+    poiKey = StorageController.poiKey {id: poi.id}
+    callCB = true
+    if StorageController.isFileBased()
+      if poi.notes.length >= 1
+        callCB = false
+        for note, idx in poi.notes
+          Comm.FileUtils.instance().clear {poiNoteIds: [note.id]}, (msg) ->
+              if idx==(poi.notes.length - 1)
+                callback poi
+    poi.notes = []
+    this.storePoi poi
+    if callCB
+      callback poi
+
   # for peers and pois
   saveNote: (type, id, text) ->
     if type == 'peer'
@@ -306,8 +325,8 @@ class window.Comm.StorageController
     storeKey = 'comm.currentUser'
     curU = JSON.parse(localStorage.getItem(storeKey))
     if curU?
-      curU.lastLocation = () ->
-          StorageController._SINGLETON.getLocation curU.lastLocationId
+      curU.getLastLocation = () ->
+          StorageController._SINGLETON.getLocation this.lastLocationId
     curU
 
   # functions don't get stored
@@ -318,9 +337,9 @@ class window.Comm.StorageController
         if `currentUser[attrKey] === undefined`
           currentUser[attrKey] = oldCurU[attrKey]
     localStorage.setItem storeKey, JSON.stringify(currentUser)
-    if `currentUser.lastLocation === undefined`
-      currentUser.lastLocation = () ->
-          StorageController._SINGLETON.getLocation currentUser.lastLocationId
+    if `currentUser.getLastLocation === undefined`
+      currentUser.getLastLocation = () ->
+          StorageController._SINGLETON.getLocation this.lastLocationId
     @_currentUser = currentUser
   
   getUsers: (callback = null, userDB = null) ->
@@ -342,7 +361,7 @@ class window.Comm.StorageController
         userIdx = idx - (peerIdx+1)
         user.isPeer = () ->
             this.peerPort?
-        user.lastLocation = () ->
+        user.getLastLocation = () ->
             StorageController._SINGLETON.getLocation this.lastLocationId
         if callback?
           if callback(userDB, user, userIds.length, userIdx, peerIdx)
@@ -365,7 +384,7 @@ class window.Comm.StorageController
       #delete user.chat
       user.isPeer = () ->
           this.peerPort?
-      user.lastLocation = () ->
+      user.getLastLocation = () ->
           StorageController._SINGLETON.getLocation this.lastLocationId
     else
       console.log 'getUser: getting current user for id '+userId+'?'
@@ -430,7 +449,7 @@ class window.Comm.StorageController
             peers.push user
         false
       , users
-    []
+    peers
 
   getChat: (peer = null) ->
     if peer?
@@ -632,10 +651,11 @@ class window.Comm.StorageController
       localStorage.setItem poiKey, JSON.stringify(poi)
 
   @_storeWithSeparateLocation: (poiKey, poi) ->
-    StorageController.instance().saveLocation {id: poi.locationId,\
-                                               lat: poi.lat,\
-                                               lng: poi.lng,\
-                                               address: poi.address}, {poi: {id: poi.id}}
+    if poi.lat?
+      StorageController.instance().saveLocation {id: poi.locationId,\
+                                                 lat: poi.lat,\
+                                                 lng: poi.lng,\
+                                                 address: poi.address}, {poi: {id: poi.id}}
     locationAttrs = ['lat','lng','address']
     storePoi = {}
     for key in Object.keys(poi)
@@ -655,7 +675,7 @@ class window.Comm.StorageController
       notePoi = note.poi
       delete note.poi
       poiNoteClone = JSON.parse(JSON.stringify(note))
-      storedJSON = Storage.Model._storeWithSeparateUser poiKey, poiNoteClone
+      storedJSON = StorageController._storeWithSeparateUser poiKey, poiNoteClone
       note.poi = notePoi
       storedJSON
     else
@@ -861,7 +881,7 @@ class window.Comm.StorageController
     @_uploadQ.queueUpload poi, poiNote, callback, attachmentData, deferredModeParams
 
   # called with params only for instant upload when app is online
-  uploadQueue: (qPoi = null, qNewNote = null) ->
+  uploadQueue: (qPoi = null, qNewNote = null, afterSyncCB = null) ->
     console.log 'Storage - uploadQueue: ...'
     uploadQKey = 'comm.uploadQ.poiNotes'
     stored = localStorage.getItem(uploadQKey)
@@ -902,7 +922,8 @@ class window.Comm.StorageController
                    perPoiList[poi.id].fileData[poiNote.id] = { file: file, name: fileName }
                  if perPoiList.numLeft == 0
                    delete perPoiList.numLeft
-                   for entryKey in Object.keys(perPoiList)
+                   perPoiListKeys = Object.keys(perPoiList)
+                   for entryKey, idx in perPoiListKeys
                      # cb is only needed for sync with response - but now we use faye-callback
                      # origCallback = window.afterUploadPhoto = (poi, newNotes) defined in upload_helper
                      # .cb is called from Uploads-batchupload when APP.model().syncUploadCachedQPoiData
@@ -1132,75 +1153,78 @@ class Comm.UploadQ
   #   # this method is called after batch-upload with the actually persisted poi/note-data
   #   # from the backend. (especially the backend-ids)
   #   (cbPoi, cbNewPoiNotes) ->
-  syncResponseCallback: (location, poi, cbPoi, cbNewPoiNotes) ->
-        qPoiId = poi.id
-        #oldIdMarker = APP.getMarker poi, true
+  syncResponseCallback: (location, poi, cbPoi, cbNewPoiNotes, afterSyncCB = null) ->
+    qPoiId = poi.id
+    #oldIdMarker = APP.getMarker poi, true
 
-        if location.id < 0
-          location = APP.storage().resetLocation location, { id: cbPoi.locationId,\
-                                                             lat: cbPoi.lat,\
-                                                             lng: cbPoi.lng,\
-                                                             address: cbPoi.address }, cbPoi
-          location.poiId = cbPoi.id
-          currentAddress = cbPoi.address
-          APP.markers().replace {id: poi.locationId}, location
-        if poi.id < 0
-          if poi.locationId >= 0
-            location.poiId = cbPoi.id
-            APP.markers().replace {id: poi.locationId}, location
-          poiKey = Comm.StorageController.poiKey {id: poi.id}
-          localStorage.removeItem poiKey
-          poi.id = cbPoi.id
-          poi.locationId = location.id
-        # 1) find first locally-added/unsynched poiNote
-        curNewPoiNoteIdx = 0
-        for n, idx in poi.notes
-          if n.id < 0
-            curNewPoiNoteIdx = idx
-            break
-        # 2) merge new notes into poi - new notes can be from local-user or from remote-user
-        #                               local-notes are marked with local_time_secs <-> -id
-        for cbN, cbIdx in cbNewPoiNotes
-          if cbN.local_time_secs?
-            # there are as many notes with id < 0 as cbNewPoiNotes
-            # FIXME that's not true - there could be more notes added meanwhile from other users 
-            # so use local_time_secs: <-> id in backend-response (cb)
-            qN = poi.notes[curNewPoiNoteIdx]
-            if qN.attachment? && (!qN.attachment.content_type.match(/^embed:/))
-              ((poiNote, cbPoiNote) ->
-                APP.storage()._fileUtils._dirReaders.entries.poiNotes.entries.attachments.entry.getFile poiNote.id, {}, (fileEntry) ->
-                    fileEntry.moveTo APP.storage()._fileUtils._dirReaders.entries.poiNotes.entries.attachments.entry, cbPoiNote.id
-                    # next can only be done after file is moved
-                    # the new note is passed on to display - use local file-system-url to work offline later
-                    cbPoiNote.attachment.url = poiNote.attachment.url
-                    attachment = $('#poi_notes_container > div[data-id='+cbPoiNote.id+'] img')
-                    if attachment.length >= 1
-                      attachment.attr('src', poiNote.attachment.url)
-                  , (e) ->
-                      console.log('syncResponseCallback - '+e)
-              )(qN, cbN)
-              qN.attachment.url = qN.attachment.url.replace(/[^\/]+$/, cbN.id)
-            qN.id = cbN.id
-          else
-            # new note added by other user - inserted @ backend-calculated pos
-            # !! has to be updated in view
-            cbN.updateView = true
-            poi.notes.splice curNewPoiNoteIdx, 0, cbN
-            curNewPoiNoteIdx += 1
-          curNewPoiNoteIdx += 1
-        
-        # save the poi with new id and new note-ids
-        poiKey = Comm.StorageController.poiKey {id: poi.id}
-        localStorage.setItem poiKey, JSON.stringify(poi)
+    if location.id < 0
+      location = APP.storage().resetLocation location, { id: cbPoi.locationId,\
+                                                         lat: cbPoi.lat,\
+                                                         lng: cbPoi.lng,\
+                                                         address: cbPoi.address }, cbPoi
+      location.poiId = cbPoi.id
+      currentAddress = cbPoi.address
+      APP.markers().replace {id: poi.locationId}, location
+    if poi.id < 0
+      if poi.locationId >= 0
+        location.poiId = cbPoi.id
+        APP.markers().replace {id: poi.locationId}, location
+      poiKey = Comm.StorageController.poiKey {id: poi.id}
+      localStorage.removeItem poiKey
+      poi.id = cbPoi.id
+      poi.locationId = location.id
+    # 1) find first locally-added/unsynched poiNote
+    curNewPoiNoteIdx = 0
+    for n, idx in poi.notes
+      if n.id < 0
+        curNewPoiNoteIdx = idx
+        break
+    # 2) merge new notes into poi - new notes can be from local-user or from remote-user
+    #                               local-notes are marked with local_time_secs <-> -id
+    for cbN, cbIdx in cbNewPoiNotes
+      if cbN.local_time_secs?
+        # there are as many notes with id < 0 as cbNewPoiNotes
+        # FIXME that's not true - there could be more notes added meanwhile from other users 
+        # so use local_time_secs: <-> id in backend-response (cb)
+        qN = poi.notes[curNewPoiNoteIdx]
+        if qN.attachment? && (!qN.attachment.content_type.match(/^embed:/))
+          ((poiNote, cbPoiNote) ->
+            APP.storage()._fileUtils._dirReaders.entries.poiNotes.entries.attachments.entry.getFile poiNote.id, {}, (fileEntry) ->
+                fileEntry.moveTo APP.storage()._fileUtils._dirReaders.entries.poiNotes.entries.attachments.entry, cbPoiNote.id
+                # next can only be done after file is moved
+                # the new note is passed on to display - use local file-system-url to work offline later
+                cbPoiNote.attachment.url = poiNote.attachment.url
+                attachment = $('#poi_notes_container > div[data-id='+cbPoiNote.id+'] img')
+                if attachment.length >= 1
+                  attachment.attr('src', poiNote.attachment.url)
+              , (e) ->
+                  console.log('syncResponseCallback - '+e)
+          )(qN, cbN)
+          qN.attachment.url = qN.attachment.url.replace(/[^\/]+$/, cbN.id)
+        qN.id = cbN.id
+      else
+        # new note added by other user - inserted @ backend-calculated pos
+        # !! has to be updated in view
+        cbN.updateView = true
+        poi.notes.splice curNewPoiNoteIdx, 0, cbN
+        curNewPoiNoteIdx += 1
+      curNewPoiNoteIdx += 1
+    
+    # save the poi with new id and new note-ids
+    poiKey = Comm.StorageController.poiKey {id: poi.id}
+    localStorage.setItem poiKey, JSON.stringify(poi)
 
-        UploadQ._removeFromQueue qPoiId
+    UploadQ._removeFromQueue qPoiId
 
-       #origCallback cbPoi, cbNewPoiNotes
-        # add all old notes
-        for i in [0..poi.notes.length-cbNewPoiNotes.length-1] by 1
-          cbPoi.notes.splice i, 0, poi.notes[i]
+   #origCallback cbPoi, cbNewPoiNotes
+    # add all old notes
+    for i in [0..poi.notes.length-cbNewPoiNotes.length-1] by 1
+      cbPoi.notes.splice i, 0, poi.notes[i]
 
-        APP._syncPoiCB cbPoi, cbNewPoiNotes
+    if afterSyncCB?
+      afterSyncCB cbPoi, cbNewPoiNotes
+    else
+      APP._syncPoiCB cbPoi, cbNewPoiNotes
 
 #  addQEntry: (poi, poiNote) ->
 #    uploadQKey = 'comm.uploadQ.poiNotes'

@@ -39,6 +39,7 @@ VoyageX::Application.routes.draw do
   post '/pois', to: 'pois#create', as: :poi_notes
   put '/pois/:id', to: 'pois#update', as: :poi_note
   delete '/pois/:id', to: 'pois#destroy'
+  match '/pull_pois', to: 'pois#pull_pois', as: :pull_pois, via: [:get, :post]
 
   get '/manifest', to: 'main#manifest', as: :manifest
   match '/set_user_detail/:detail', to: 'users#change_details', as: :set_user_detail, via: [:get, :post]

@@ -39,6 +39,7 @@ module UserHelper
     json
   end
 
+  # actually this is users, not peers
   def peers_json location_id
     peers_json = []
     peers_index = {}

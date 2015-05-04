@@ -113,7 +113,7 @@ class window.Storage.Model
       .fail (jqXHR, textStatus) ->
           console.log('TODO: errorhandling')
 
-  loadPois: (lat, lng, callback) ->
+  loadPois: (lat, lng, callback, flags = {withNotes: true, reset: false}) ->
     # TODO - check cache since there could have been an offline period meanwhile
     if APP.storage().hasQueue()
       # get all pois via sync (TODO: add view-range for response)
@@ -124,9 +124,26 @@ class window.Storage.Model
         type: 'GET'
         dataType: 'json'
         url: '<%= pois_path(lat: ':lat', lng: ':lng') %>'.replace(/:lat/, lat).replace(/:lng/, lng)
-      .done (msg) ->
-          for poi, i in msg.pois
-            Model._syncPois poi, callback, i
+      .done (pois) ->
+          for poi, i in pois
+            if flags.withNotes
+              sPoi = APP.storage().getPoi poi.id
+              unless sPoi?
+                sPoi = Model._syncPoi poi, (sPoi) ->
+                    console.log 'synced poi '+sPoi.id+' ...'
+              if flags.reset
+                APP.storage().deletePoiNotes sPoi, (poi) ->
+                    APP.model().loadPoiNotes poi.id, null, (poi, newPoiNotes) ->
+                        console.log 'loaded #'+newPoiNotes.length+' notes for poi '+poi.id+' ...'
+                        callback poi, newPoiNotes
+                      , false
+              else
+                APP.model().loadPoiNotes poi.id, null, (poi, newPoiNotes) ->
+                    console.log 'loaded #'+newPoiNotes.length+' notes for poi '+poi.id+' ...'
+                    callback poi, newPoiNotes
+                  , true
+            else
+              Model._syncPoi poi, callback
       .fail (jqXHR, textStatus) ->
           # get from localStorage
           console.log('TODO: maybe get from local storage')
@@ -135,7 +152,7 @@ class window.Storage.Model
       if (Modernizr.localstorage)
         pois = APP.storage().poisWithinSearchBounds(searchBounds(lat, lng, APP.user().searchRadiusMeters))
         for poi, i in pois
-          Model._syncPois poi, callback, i
+          Model._syncPoi poi, callback
 
   loadUsers: (callback, locationId = -1) ->
     if APP.isOnline()
@@ -144,11 +161,13 @@ class window.Storage.Model
         dataType: 'json'
         url: '<%= peers_path(location_id: ':location_id') %>'.replace(/:location_id/, locationId)
       .done (msg) ->
-          numPeers = msg.length
-          for peer, i in msg
-            callback peer, i, numPeers
-          # load in case 
-          APP.users().subscribeToAllPeerChannels()
+          numUsers = msg.length
+          for user, i in msg
+            user.isPeer = () ->
+                this.peerPort?
+            user.getLastLocation = () ->
+                StorageController._SINGLETON.getLocation this.lastLocationId
+            callback user, i, numUsers
       .fail (jqXHR, textStatus) ->
           # get from localStorage
           console.log('TODO: maybe get from local storage')
@@ -164,9 +183,23 @@ class window.Storage.Model
         for peer in peers
           callback peer
 
+  pullPois: () ->
+    $.ajax
+      type: 'POST'
+#      beforeSend: (xhr) ->
+#          xhr.setRequestHeader('X-CSRF-Token', $('meta[name=csrf-token]').first().attr('content'))
+      dataType: 'json'
+      url: '<%= pull_pois_path %>'
+      data: { commit_hash: APP.user().curCommitHash }
+    .done (res) ->
+        console.log('res.message OK = '+(res.message=='OK'))
+    .fail (jqXHR, textStatus) ->
+      # get from localStorage
+      console.log('TODO: ?')
+      #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
+
   # called from batch-upload to upload queue
- #syncUploadCachedQPoiData: (formData, poi = null, callback) ->
-  syncUploadCachedQPoiData: (formData, poi = null) ->
+  syncUploadCachedQPoiData: (formData, poi = null, afterSyncCB = null) ->
     if poi?
       url = '<%= sync_poi_path(id: ':id') %>'.replace(/:id/, poi.notes[0].id)
       formData.append('_method', 'put')
@@ -188,7 +221,7 @@ class window.Storage.Model
         # same poi as in params for syncUploadCachedQPoiData
         poi = APP.storage().getPoi qPoiId
         location = APP.storage().getLocation(poi.locationId)
-        Comm.UploadQ.instance().syncResponseCallback(location, poi, res.poi, res.poi.notes)
+        Comm.UploadQ.instance().syncResponseCallback(location, poi, res.poi, res.poi.notes, afterSyncCB)
     .fail (jqXHR, textStatus) ->
       # get from localStorage
       console.log('TODO: ?')
@@ -430,10 +463,10 @@ class window.Storage.Model
       if poiNoteId?
         for poiNote in poi.notes
           if poiNote.id == poiNoteId
-            callback poi
+            callback poi, [poiNote]
             return poi.notes
       else
-        callback poi
+        callback poi, poi.notes
         return poi.notes
     unless poiNoteId?
       poiNoteId = -1
@@ -493,7 +526,7 @@ class window.Storage.Model
         poi.notes = []
       APP.storage().storePoi poi
 
-  @_syncPois: (poi, callback, i) ->
+  @_syncPoi: (poi, callback) ->
     #storeKey = Comm.StorageController.poiKey poi
     #localPoiData = APP.storage().get storeKey
     localPoiData = APP.storage().getPoi poi.id
@@ -504,7 +537,7 @@ class window.Storage.Model
         if poi[key]?
           if key == 'notes'
             # TODO compare and clean up attachments; currently notes are not part of the response - they are handled separately
-            console.log('TODO: Model - _syncPois: compare and clean up attachments')
+            console.log('TODO: Model - _syncPoi: compare and clean up attachments')
         else
           poi[key] = localPoiData[key]
     else
@@ -512,6 +545,7 @@ class window.Storage.Model
         poi.notes = []
     APP.storage().storePoi poi
     callback poi
+    poi
 
   # - might be called multiple times within backend-response/callback for new poinotes (->loadStats)
   #   stores each note to localStorage (!)

@@ -1,5 +1,7 @@
 class VersionManager
 
+  attr_reader :git_args 
+
   def initialize master_branch, work_dir_root, user, is_repo_owner=false
     @master = master_branch
     @user = user
@@ -89,6 +91,23 @@ class VersionManager
 
   def files_commited commit_hash
     `git #{@git_args} show --pretty="format:" --name-only #{commit_hash}`.split
+  end
+
+  #
+  # forwards to #{commit_hash} of master
+  # can check files with git update-ref -m "forward" refs/heads/test/master f8b3d41343a12c39bdefdad4b2ebaa98e5d7c15d
+  #
+  def forward commit_hash
+    `git #{@git_args} fetch`
+    `git #{@git_args} rebase --onto #{commit_hash} #{cur_commit}`
+  end
+
+  #
+  # forwards to HEAD of master
+  #
+  def fast_forward
+    `git #{@git_args} fetch`
+    `git #{@git_args} rebase origin/#{@master}`
   end
 
   def set_branch branch
@@ -216,29 +235,28 @@ data
   end
 
   def self.init_version_control_from_db
-    master = 'model/master'
-    work_dir_root = "#{Rails.root}/version_control"
+    master = Poi::MASTER # 'model/master'
+    work_dir_root = Poi::WORK_DIR_ROOT # "#{Rails.root}/version_control"
     admin = User.admin
     vm = VersionManager.new master, work_dir_root, admin
     #
     # user and location will actually not change
     #
-    Location.each do |location|
+    Location.all.each do |location|
       location_dir = "#{vm.work_dir}/location_#{location.id}"
-      add_location location, location_dir unless File.exist? location_dir
+      vm.add_location location, location_dir unless File.exist? location_dir
     end
-    Poi.each do |poi|
+    Poi.all.each do |poi|
       poi_dir = "#{vm.work_dir}/poi_#{poi.id}"
-      add_poi poi, poi_dir unless File.exist? poi_dir
+     vm.add_poi poi, poi_dir unless File.exist? poi_dir
       poi.notes.each do |note|
         note_dir = "#{vm.work_dir}/poi_#{poi.id}/note_#{note.id}"
-        add_poi_note poi, note, note_dir unless File.exist? note_dir
+        vm.add_poi_note poi, note, note_dir unless File.exist? note_dir
       end
     end
     `git #{vm.git_args} add -A`
-    #{}`git #{@git_args} add -u`
-    `git #{@git_args} commit -m 'commit before changing branch'`
-    #vm.push
+    `git #{vm.git_args} commit -m 'commit before changing branch'`
+    `git #{vm.git_args} push`
   end
 
   def self.hash_for_poi poi

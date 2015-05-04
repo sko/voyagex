@@ -47,7 +47,7 @@ class window.VoyageX.Backend
         Backend.instance()._state.pingKey = msg.ping_key
         Backend.instance()._state.online = true
         unless APP._online
-          APP.setOnline msg.commit_hash
+          APP.setOnline()
         if successCB?
           successCB()
         Backend.instance()._state.pingActive &&= (!APP._comm.isOnline())
@@ -92,6 +92,17 @@ class window.VoyageX.Backend
         # Comm.Comm.initSystemContext msg.sys_channel_enc_key
     .fail (jqXHR, textStatus) ->
         alert('TODO: handle registration failure...')
+
+  curCommit: (callback) ->
+    pingKey = Math.round(Math.random() * 100000)
+    $.ajax
+      type: 'GET'
+      url: '<%= comm_ping_path(key: ':key') %>'.replace(/:key/, pingKey)
+      dataType: 'json'
+    .done (msg) ->
+        callback msg
+    .fail (jqXHR, textStatus) ->
+        callback {message: 'error: '+textStatus, error: 'connection'}
 
   @instance: () ->
     Backend._SINGLETON

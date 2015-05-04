@@ -39,8 +39,7 @@ class window.VoyageX.Uploads
       else
         uploadStrategy.do.call APP.model(), data, uploadStrategy.done
 
- #batchUpload: (perPoiEntry, callback) ->
-  batchUpload: (perPoiEntry) ->
+  batchUpload: (perPoiEntry, afterSyncCB = null) ->
     formData = new FormData()
     formData.append 'location[latitude]', perPoiEntry.location.lat
     formData.append 'location[longitude]', perPoiEntry.location.lng
@@ -63,8 +62,8 @@ class window.VoyageX.Uploads
         )(formData, skipInputNames)
     # FIXME - orig callback is not afterUploadPhoto always
     APP.model().syncUploadCachedQPoiData formData,
-                                         (if perPoiEntry.poi.id >= 0 then perPoiEntry.poi else null)#,
-                                         #(if callback? then callback.cb(afterUploadPhoto) else afterUploadPhoto)
+                                         (if perPoiEntry.poi.id >= 0 then perPoiEntry.poi else null),
+                                         afterSyncCB
 
   toggleUploadType: (selected) ->
     if selected.value == 'file'
