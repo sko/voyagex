@@ -158,23 +158,23 @@ class VersionManager
     merge
   end
 
-  def add_location location, location_dir = nil
-    unless location_dir.present?
-      location_dir = "#{work_dir}/location_#{location.id}"
-      return false if File.exist? location_dir
-    end
-    Dir.mkdir location_dir 
-    data  = <<data
-{
-  lat: #{location.latitude}
-  lng: #{location.longitude}
-  address: '#{location.address.gsub(/'/, "\\\'")}'
-}
-data
-    file = File.join(location_dir, 'data')
-    File.open(file, 'w+') { |f| f.write(data) }
-    true
-  end
+#   def add_location location, location_dir = nil
+#     unless location_dir.present?
+#       location_dir = "#{work_dir}/location_#{location.id}"
+#       return false if File.exist? location_dir
+#     end
+#     Dir.mkdir location_dir 
+#     data  = <<data
+# {
+#   lat: #{location.latitude}
+#   lng: #{location.longitude}
+#   address: '#{location.address.gsub(/'/, "\\\'")}'
+# }
+# data
+#     file = File.join(location_dir, 'data')
+#     File.open(file, 'w+') { |f| f.write(data) }
+#     true
+#   end
 
   def add_poi poi, poi_dir = nil
     unless poi_dir.present?
@@ -239,13 +239,11 @@ data
     work_dir_root = Poi::WORK_DIR_ROOT # "#{Rails.root}/version_control"
     admin = User.admin
     vm = VersionManager.new master, work_dir_root, admin
-    #
-    # user and location will actually not change
-    #
-    Location.all.each do |location|
-      location_dir = "#{vm.work_dir}/location_#{location.id}"
-      vm.add_location location, location_dir unless File.exist? location_dir
-    end
+    ## user and location will actually not change
+    #Location.all.each do |location|
+    #  location_dir = "#{vm.work_dir}/location_#{location.id}"
+    #  vm.add_location location, location_dir unless File.exist? location_dir
+    #end
     Poi.all.each do |poi|
       poi_dir = "#{vm.work_dir}/poi_#{poi.id}"
      vm.add_poi poi, poi_dir unless File.exist? poi_dir

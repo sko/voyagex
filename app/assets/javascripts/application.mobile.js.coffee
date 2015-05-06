@@ -82,6 +82,10 @@ $(document).on 'click', '#disable_fullscreen', (event) ->
   $('#fullscreen_mode_icon_on').show()
   $('#fullscreen_mode_icon_off').hide()
 
+window.hideAjaxLoading = () ->
+  $('html').first().removeClass('ui-loading')
+  $('html').first().removeClass('ui-overlay-a')
+
 window.toggleFullScreen = (activate) ->
   if activate
     b = $('body')[0]

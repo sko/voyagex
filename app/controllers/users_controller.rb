@@ -4,8 +4,12 @@ class UsersController < ApplicationController
   include PoiHelper
   include UserHelper
 
-  #protect_from_forgery :except => :change_details 
-  skip_before_action :verify_authenticity_token, if: :any_request?
+  #protect_from_forgery :except => :change_details
+  #
+  # FIXME there's a problem with csrf from app-cache (after updating version) - 
+  #       no current_user will be set then.
+  #
+  skip_before_action :verify_authenticity_token, if: :current_user_required?
 
   def update
     @user = current_user
@@ -246,8 +250,8 @@ class UsersController < ApplicationController
   protected
 
   # @see skip_before_action
-  def any_request?
-    [:update, :change_details].include? action_name.to_sym
+  def current_user_required?
+    [:update, :change_details, :delete_details].include? action_name.to_sym
   end
 
   def add_foto_to_msg user, msg

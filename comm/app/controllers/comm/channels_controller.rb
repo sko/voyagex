@@ -6,16 +6,17 @@ include ::ApplicationHelper
 module Comm
   class ChannelsController < FayeRails::Controller
 
+    LOGGER = Logger.new("#{Rails.root}/log/channels.log")
+
     # TODO
     # https://github.com/jamesotron/faye-rails#model-observers
     #observe Channel, :after_create do |new_channel|
     #  ChannelsController.publish('/widgets', new_widget.attributes)
     #end
-
     channel '/system**' do
       monitor :subscribe do
-        ###### Client igt3vtbefo1rfmo5afi7wig5y7x3vx7 subscribed to /system@8jruy0aws.
-        Rails.logger.debug "### #{channel} - subscribe ### Client #{client_id} subscribed ..."
+        #Client igt3vtbefo1rfmo5afi7wig5y7x3vx7 subscribed to /system@8jruy0aws.
+        LOGGER.debug "+++ #{channel} - subscribe ### Client #{client_id}"
         subscription_enc_key = channel.match(/^\/system#{PEER_CHANNEL_PREFIX}([^\/]+)/)
         if subscription_enc_key.present?
           #
@@ -26,7 +27,7 @@ module Comm
             # admin user can subscribe to system-channel from other user
             unless admin_cp.present? && admin_cp.sys_channel_enc_key != subscription_enc_key[1]
               comm_port = CommPort.where(sys_channel_enc_key: subscription_enc_key[1]).first
-              Rails.logger.debug "### #{channel} - subscribe ### Found User #{comm_port.user.id} for Client #{client_id}. comm_port.unsubscribe_ts = #{comm_port.unsubscribe_ts}"
+              LOGGER.debug "+++ #{channel} - subscribe ### Found User #{comm_port.user.id} for Client #{client_id}. comm_port.unsubscribe_ts = #{comm_port.unsubscribe_ts}"
               if comm_port.unsubscribe_ts.present?
                 msg = { type: :unsubscribed_notification, old_client_id: comm_port.current_faye_client_id, seconds_ago: ((DateTime.now - comm_port.unsubscribe_ts.to_datetime) * 24 * 60 * 60).to_i }
                 Comm::ChannelsController.publish(channel, msg)
@@ -42,40 +43,39 @@ module Comm
               Comm::ChannelsController.publish(channel, msg)
             end
           rescue => e
-            Rails.logger.error "!!! #{channel} - subscribe !!! #{e.message}"
+            LOGGER.error "!!! #{channel} - subscribe !!! #{e.message}"
           end
         end
       end
       monitor :unsubscribe do
-        Rails.logger.debug "### #{channel} - unsubscribe ### Client #{client_id} unsubscribed ..."
-###### Client 0wsoszcovhq9k2y9xhpax15wvam4jld unsubscribed from /system@gyimlwqrh.
+        LOGGER.debug "--- #{channel} - unsubscribe ### Client #{client_id}"
         subscription_enc_key = channel.match(/^\/system#{PEER_CHANNEL_PREFIX}([^\/]+)/)
         if subscription_enc_key.present?
           begin
             # store info and send to client on next subscription
             # since unsubscribed client would'n receive it here
             comm_port = CommPort.where(sys_channel_enc_key: subscription_enc_key[1]).first
-            Rails.logger.debug "### #{channel} - unsubscribe ### Found User #{comm_port.user.id} for Client #{client_id}."
+            LOGGER.debug "--- #{channel} - unsubscribe ### Found User #{comm_port.user.id} for Client #{client_id}."
             comm_port.update_attribute(:unsubscribe_ts, DateTime.now)
           rescue => e
-            Rails.logger.error "!!! #{channel} - unsubscribe !!! #{e.message}"
+            LOGGER.error "!!! #{channel} - unsubscribe !!! #{e.message}"
           end
         end
       end
       monitor :publish do
-        Rails.logger.debug "### #{channel} - publish ### #{data.inspect}"
+        LOGGER.debug "### #{channel} - publish ### #{data.inspect}"
       end
     end
 
     channel '/talk**' do
       monitor :subscribe do
-        Rails.logger.debug "###### Client #{client_id} subscribed to #{channel}."
+        LOGGER.debug "+++ #{channel} - subscribe ### Client #{client_id}"
       end
       monitor :unsubscribe do
-        Rails.logger.debug "###### Client #{client_id} unsubscribed from #{channel}."
+        LOGGER.debug "--- #{channel} - unsubscribe ### Client #{client_id}"
       end
       monitor :publish do
-        Rails.logger.debug "###### Client #{client_id} published #{data.inspect} to #{channel}."
+        LOGGER.debug "### #{channel} - publish ### Client #{client_id} ### #{data.inspect}"
         # 1: here we could implement dynamic groups that should not know about channel-id so they
         #    can be removed any-time
         # 2: alternatively other users could subscribe by receiving the key
@@ -92,14 +92,14 @@ module Comm
 #[1] pry(#<FayeRails::Filter::DSL>)> message
 #=> {"channel"=>"/meta/subscribe", "clientId"=>"dv2njyqmg7yvsy4q63143faf7m4iyby", "subscription"=>"/map_events", "id"=>"b"}
 #[2] pry(#<FayeRails::Filter::DSL>)> 
-###### Inbound message {"channel"=>"/meta/subscribe", "clientId"=>"adv6zxtpglnbcovod8ecbu4wwb2ykkm", "subscription"=>"/map_events@rxbcin9nc", "id"=>"4"}.
+#Inbound message {"channel"=>"/meta/subscribe", "clientId"=>"adv6zxtpglnbcovod8ecbu4wwb2ykkm", "subscription"=>"/map_events@rxbcin9nc", "id"=>"4"}.
         block_msg = nil
-        Rails.logger.debug "###### Inbound message #{message}. (self: #{self.hash} / #{self.object_id})"
+        LOGGER.debug ">>> #{message}. (self: #{self.hash} / #{self.object_id})"
         if message['channel'].match(/^\/meta\/subscribe/).present?
           block_msg = ChannelsController::check_subscribe_permission message
           # subscription_enc_key = message['subscription'].match(/^.+?#{PEER_CHANNEL_PREFIX}([^\/]+)/)
           # if subscription_enc_key.present?
-          #   Rails.logger.debug "###### Inbound message: found subscription_enc_key '#{subscription_enc_key[1]}'"
+          #   LOGGER.debug ">>> found subscription_enc_key '#{subscription_enc_key[1]}'"
           #   begin
           #     user_comm_port = CommPort.where(current_faye_client_id: message['clientId']).first
           #     if user_comm_port.present?
@@ -109,17 +109,17 @@ module Comm
           #                 (target.current_faye_client_id == message['clientId'] ||
           #                  target.comm_peers.where(peer_id: user_comm_port.user.id, granted_by_user: true).present?)
           #       if granted
-          #         Rails.logger.debug "###### Inbound message: allow subscription on channel #{message['subscription']} for user #{user_comm_port.user.id}"
+          #         LOGGER.debug ">>> allow subscription on channel #{message['subscription']} for user #{user_comm_port.user.id}"
           #       else
-          #         Rails.logger.debug "###### Inbound message: deny subscription on channel #{message['subscription']} for user #{user_comm_port.user.id} because grant missing"
+          #         LOGGER.debug ">>> deny subscription on channel #{message['subscription']} for user #{user_comm_port.user.id} because grant missing"
           #         block_msg = 'grant required for subscription'
           #       end
           #     else
-          #       Rails.logger.debug "###### Inbound message: deny subscription on channel #{message['subscription']} because user not signed in"
+          #       LOGGER.debug ">>> deny subscription on channel #{message['subscription']} because user not signed in"
           #       block_msg = 'only subscribable for signed in users...'
           #     end
           #   rescue => e
-          #     Rails.logger.error "!!!!!! #{e.message}"
+          #     LOGGER.error "!!!!!! #{e.message}"
           #   end
           # end
         end
@@ -134,7 +134,7 @@ module Comm
 #=> {"channel"=>"/map_events", "data"=>{"type"=>"click", "userId"=>"129", "lat"=>51.377941781653284, "lng"=>7.493147850036621}, "clientId"=>"l80967ybiset8aevchha4z6bmkqnced", "id"=>"r"}
 #[2] pry(#<FayeRails::Filter::DSL>)> message.class
 #=> Hash
-        Rails.logger.debug "###### Outbound message #{message}."
+        LOGGER.debug "<<< #{message}."
         publish_data = message['data']
         if publish_data.present?
           begin
@@ -155,27 +155,27 @@ module Comm
                       address = parts.drop([parts.size - 2, 2].min).join(',').strip
                     end
                   end
-                  Rails.logger.debug "###### providing reverse-geocoding-service: #{address}"
+                  LOGGER.debug "<<< providing reverse-geocoding-service: #{address}"
                   publish_data['address'] = address
                 rescue => e
-                  Rails.logger.error "!!!!!! #{e.message}"
+                  LOGGER.error "!!!!!! #{e.message}"
                 end
               end
             end
           rescue => e
-            Rails.logger.error "!!!!!! #{e.message}"
+            LOGGER.error "!!!!!! #{e.message}"
           end
         end
         pass
       end
       monitor :subscribe do
-        Rails.logger.debug "###### Client #{client_id} subscribed to #{channel}."
+        LOGGER.debug "+++ #{channel} - subscribe ### Client #{client_id}"
       end
       monitor :unsubscribe do
-        Rails.logger.debug "###### Client #{client_id} unsubscribed from #{channel}."
+        LOGGER.debug "--- #{channel} - unsubscribe ### Client #{client_id}"
       end
       monitor :publish do
-        Rails.logger.debug "###### Client #{client_id} published #{data.inspect} to #{channel}."
+        LOGGER.debug "### #{channel} - publish ### Client #{client_id} ### #{data.inspect}"
         begin
           case data['type']
           when 'click'
@@ -197,27 +197,27 @@ module Comm
             end
           end
         rescue => e
-          Rails.logger.error "!!!!!! #{e.message}"
+          LOGGER.error "!!!!!! #{e.message}"
         end
       end
     end
 
     channel '/pois**' do
       monitor :subscribe do
-        Rails.logger.debug "###### Client #{client_id} subscribed to #{channel}."
+        LOGGER.debug "+++ #{channel} - subscribe ### Client #{client_id}"
       end
       monitor :unsubscribe do
-        Rails.logger.debug "###### Client #{client_id} unsubscribed from #{channel}."
+        LOGGER.debug "--- #{channel} - unsubscribe ### Client #{client_id}"
       end
       monitor :publish do
-        Rails.logger.debug "###### Client #{client_id} published #{data.inspect} to #{channel}."
+        LOGGER.debug "### #{channel} - publish ### Client #{client_id} ### #{data.inspect}"
       end
     end
     
     channel '/radar**' do
       filter :in do
         block_msg = nil
-        Rails.logger.debug "###### Inbound message #{message}. (self: #{self.hash} / #{self.object_id})"
+        LOGGER.debug ">>> #{message}. (self: #{self.hash} / #{self.object_id})"
         if message['channel'].match(/^\/meta\/subscribe/).present?
           block_msg = ChannelsController::check_subscribe_permission message
         end
@@ -228,13 +228,13 @@ module Comm
         end
       end
       monitor :subscribe do
-        Rails.logger.debug "###### Client #{client_id} subscribed to #{channel}."
+        LOGGER.debug "+++ #{channel} - subscribe ### Client #{client_id}"
       end
       monitor :unsubscribe do
-        Rails.logger.debug "###### Client #{client_id} unsubscribed from #{channel}."
+        LOGGER.debug "--- #{channel} - unsubscribe ### Client #{client_id}"
       end
       monitor :publish do
-        Rails.logger.debug "###### Client #{client_id} published #{data.inspect} to #{channel}."
+        LOGGER.debug "### #{channel} - publish ### Client #{client_id} ### #{data.inspect}"
         # begin
         #   case data['type']
         #   when 'move'
@@ -254,7 +254,7 @@ module Comm
         #     user.snapshot.save!
         #   end
         # rescue => e
-        #   Rails.logger.error "!!!!!! #{e.message}"
+        #   LOGGER.error "!!!!!! #{e.message}"
         # end
       end
     end
@@ -265,7 +265,7 @@ module Comm
       block_msg = nil
       subscription_enc_key = message['subscription'].match(/^.+?#{PEER_CHANNEL_PREFIX}([^\/]+)/)
       if subscription_enc_key.present?
-        Rails.logger.debug "###### Inbound message: found subscription_enc_key '#{subscription_enc_key[1]}'"
+        LOGGER.debug "... found subscription_enc_key '#{subscription_enc_key[1]}'"
         begin
           user_comm_port = CommPort.where(current_faye_client_id: message['clientId']).first
           if user_comm_port.present?
@@ -275,17 +275,17 @@ module Comm
                       (target.current_faye_client_id == message['clientId'] ||
                        target.comm_peers.where(peer_id: user_comm_port.user.id, granted_by_user: true).present?)
             if granted
-              Rails.logger.debug "###### Inbound message: allow subscription on channel #{message['subscription']} for user #{user_comm_port.user.id}"
+              LOGGER.debug "... allow subscription on channel #{message['subscription']} for user #{user_comm_port.user.id}"
             else
-              Rails.logger.debug "###### Inbound message: deny subscription on channel #{message['subscription']} for user #{user_comm_port.user.id} because grant missing"
+              LOGGER.debug "... deny subscription on channel #{message['subscription']} for user #{user_comm_port.user.id} because grant missing"
               block_msg = 'grant required for subscription'
             end
           else
-            Rails.logger.debug "###### Inbound message: deny subscription on channel #{message['subscription']} because user not signed in"
+            LOGGER.debug "... deny subscription on channel #{message['subscription']} because user not signed in"
             block_msg = 'only subscribable for signed in users...'
           end
         rescue => e
-          Rails.logger.error "!!!!!! #{e.message}"
+          LOGGER.error "!!!!!! #{e.message}"
         end
       end
       block_msg

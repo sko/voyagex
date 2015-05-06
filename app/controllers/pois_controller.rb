@@ -3,7 +3,12 @@ class PoisController < ApplicationController
   include ApplicationHelper
   include PoiHelper
 
-  skip_before_filter :verify_authenticity_token, only: [:create, :update]
+  #
+  # FIXME there's a problem with csrf from app-cache (after updating version) - 
+  #       no current_user will be set then.
+  #
+  #skip_before_filter :verify_authenticity_token, only: [:create, :update]
+  skip_before_action :verify_authenticity_token, if: :current_user_required?
 
   def index
     render layout: 'uploads'
@@ -15,7 +20,7 @@ class PoisController < ApplicationController
   #
   # sync pois that where edited offline
   def pull_pois
-    @user = current_user || tmp_user
+    @user = tmp_user
     if ![:development].include?(Rails.env.to_sym)# || true
       Resque.enqueue(PostCommit, {action: 'pull_pois',
                                   user_id: @user.id,
@@ -34,7 +39,7 @@ class PoisController < ApplicationController
   #
   # sync pois that where edited offline
   def sync_poi
-    @user = current_user || tmp_user
+    @user = tmp_user
     if params[:id].present?
       @commented_poi_note = PoiNote.find(params[:id])
       @poi = @commented_poi_note.poi
@@ -360,6 +365,13 @@ class PoisController < ApplicationController
 
   def csrf
     render "shared/csrf", layout: 'uploads'
+  end
+
+  protected
+
+  # @see skip_before_action
+  def current_user_required?
+    [:pull_pois, :sync_poi, :destroy, :pois, :comments, :create, :update].include? action_name.to_sym
   end
 
   private

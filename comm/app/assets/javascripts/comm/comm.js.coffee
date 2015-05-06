@@ -64,6 +64,23 @@ class window.Comm.Comm
   isReady: () ->
     this.isOnline() && systemReady
 
+  _queueMessage: (channel, message, peer) ->
+    if (Modernizr.localstorage)
+      unless message.cacheId?
+        # queue only once
+        console.log('queueing publish to '+channel)
+        # later send: @_storageController.pop('comm.publish')
+        message.cacheId = Math.round(Math.random()*1000000)
+        cacheEntry = { channel: channel, message: message, peer: peer }
+        @_storageController.addToList('comm.publish', 'push', cacheEntry)
+    else
+      alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
+
+  _sendMessageQueue: () ->
+    while (qEntry = Comm.instance()._storageController.pop('comm.publish'))
+      console.log('sending queued-publish to '+qEntry.channel)
+      Comm.instance().send qEntry.channel, qEntry.message, qEntry.peer
+
   send: (channel, message, peer = null) ->
     unless APP.signedIn() || channel.match(/^\/?system/)
       # FIXME - mobile doesn't alert
@@ -73,24 +90,19 @@ class window.Comm.Comm
     # 1) client wants to publish before register-ajax-response set the enc_key
     #    1.1: store request and send after register (local storage)
     # 2) the same goes for requests when client is offline
-    unless Comm.channelCallBacksJSON[channel.substr(1)] == null or !systemReady or !APP.isOnline()
+    if peer?
+      channelEncKey = if peer.peerPort? then peer.peerPort.channel_enc_key+'_p2p' else null
+    else
+      channelEncKey = Comm.channelCallBacksJSON[channel.substr(1)].channel_enc_key
+    unless channelEncKey == null or !systemReady or !APP.isOnline()
       channelPath = channel
       unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
-        channelPath += VoyageX.PEER_CHANNEL_PREFIX +
-                       if peer? then peer.peerPort.channel_enc_key+'_p2p' else Comm.channelCallBacksJSON[channel.substr(1)].channel_enc_key
+        channelPath += VoyageX.PEER_CHANNEL_PREFIX + channelEncKey
       if message.cacheId?
         delete message.cacheId
       client.publish(channelPath, message)
     else
-      if (Modernizr.localstorage)
-        unless message.cacheId?
-          console.log('caching publish to '+channel)
-          # later send: @_storageController.pop('comm.publish')
-          message.cacheId = Math.round(Math.random()*1000000)
-          cacheEntry = { channel: channel, message: message, peer: peer }
-          @_storageController.addToList('comm.publish', 'push', cacheEntry)
-      else
-        alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
+      this._queueMessage channel, message, peer
 
   # subscribe to 1 or 2 system-cannels: /system for system-broadcasts and /system@d63zd for system-callbacks
   @initSystemContext: (sys_channel_enc_key) ->
@@ -184,9 +196,7 @@ class window.Comm.Comm
     if message.type == 'ready_notification'
       Comm.initChannelContexts message, Comm.channelCallBacksJSON
       systemReady = true
-      while (cacheEntry = Comm.instance()._storageController.pop('comm.publish'))
-        console.log('sending cached-publish to '+cacheEntry.channel)
-        Comm.instance().send cacheEntry.channel, cacheEntry.message, cacheEntry.peer
+      Comm.instance()._sendMessageQueue()
     # since unsubscribed client will not receive anymore - but server will send this on next subscription
     # before ready_notification
     # if client disconnects by itself, then:

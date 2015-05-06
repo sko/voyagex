@@ -217,6 +217,8 @@ class window.Storage.Model
       processData: false
     .done (res) ->
         console.log('res.message OK = '+(res.message=='OK'))
+        if isMobile()
+          hideAjaxLoading()
         qPoiId = if res.poi.local_time_secs? then -res.poi.local_time_secs else res.poi.id
         # same poi as in params for syncUploadCachedQPoiData
         poi = APP.storage().getPoi qPoiId
@@ -240,6 +242,9 @@ class window.Storage.Model
           doneCB qPoi, qNewPoiNote
           if APP.isOnline()
             APP.storage().uploadQueue qPoi, qNewPoiNote
+          else
+            if isMobile()
+              hideAjaxLoading()
       if transactionConf?
         this._queuePoiNote poiId, transactionConf.getTransaction(afterSaveCB)
       else
