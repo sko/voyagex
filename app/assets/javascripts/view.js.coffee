@@ -52,20 +52,18 @@ class window.VoyageX.View
 
   _mapEventsCB: (mapEvent) ->
     console.log '_mapEventsCB: got a map_events - message: ' + mapEvent.type
+    location = mapEvent.user.getLastLocation()
     if APP.userId() == mapEvent.userId# && mapEvent.type == 'click'
       window.currentAddress = mapEvent.address
       $('#current_address').html(mapEvent.address+(if mapEvent.locationId? then ' ('+mapEvent.locationId+')' else ''))
       return null
-    if false # move to event-ordinates
-      if mapEvent.address?
-        APP._setSelectedPositionLatLng VoyageX.Main.markerManager().get(), mapEvent.lat, mapEvent.lng, mapEvent.address
-      else
-        APP._setSelectedPositionLatLng VoyageX.Main.markerManager().get(), mapEvent.lat, mapEvent.lng, null
-      APP.map().panTo([mapEvent.lat, mapEvent.lng])
-      #APP.map().setView [mapEvent.lat, mapEvent.lng], 16
     #poiId ... $('#pois_preview > .poi-preview-container[data-id=68]')
     #locationId ... $('#location_bookmarks .bookmark-container[data-id=4016]')
-    View.instance().setPeerPosition mapEvent.userId, mapEvent.lat, mapEvent.lng
+    View.instance().setPeerPosition mapEvent.user, location
+    if APP._debug
+      USERS.checkDistance mapEvent.user, location, (peer, inRange) ->
+          if inRange
+            View._SINGLETON.systemMessage VoyageX.TemplateHelper.peerInRangeHtml(peer)
     for listener in View.instance()._commListeners.map_events
       listener(mapEvent)
 
@@ -74,7 +72,11 @@ class window.VoyageX.View
     # draw path modus -> no positionieg
     #
     console.log 'got a radar - message: ' + radarEvent.type
-    View.instance().setPeerPosition radarEvent.userId, radarEvent.lat, radarEvent.lng
+    location = radarEvent.user.getLastLocation()
+    View.instance().setPeerPosition radarEvent.user, location
+    USERS.checkDistance radarEvent.user, location, (peer, inRange) ->
+        if inRange
+          View._SINGLETON.systemMessage VoyageX.TemplateHelper.peerInRangeHtml(peer)
     for listener in View.instance()._commListeners.radar
       listener(radarEvent)
 
@@ -202,25 +204,34 @@ class window.VoyageX.View
     if window.isMobile()
       $('#comm_peer_data').trigger("create")
 
-  setPeerPosition: (peerId, lat, lng) ->
+  setPeerPosition: (peer, location) ->
     #TODO ... $('#people_of_interest')
-    peer = APP.storage().getUser peerId
+    #TODO2 ... enters radius - notification, state = within, leaves radius: state = withour
     path = APP.storage().getPath peer
 
-    sBs = searchBounds lat, lng, APP.user().searchRadiusMeters
-    curUserLatLng = APP.getSelectedPositionLatLng()
-    if withinSearchBounds(curUserLatLng[0], curUserLatLng[1], sBs) || path?
-      markerMeta = VoyageX.Main.markerManager().forPeer peerId
-      markerMeta.m.setLocation {lat: lat, lng: lng}
-      unless true || APP.view()._alertOn
-        APP.view().alert()
-    else
-      console.log 'setPeerPosition: outside searchbounds ...'
-      # remove from $('#people_of_interest')
-      APP.markers().removeForPeer peerId
+    # moved to APP - always save peer position
+    # sBs = searchBounds lat, lng, APP.user().searchRadiusMeters
+    # curUserLatLng = APP.getSelectedPositionLatLng()
+    # if withinSearchBounds(curUserLatLng[0], curUserLatLng[1], sBs) || path?
+    #   #markerMeta = VoyageX.Main.markerManager().forPeer peerId
+    #   #closestLocation = APP.storage().getLocalLocation curUserLatLng[0], curUserLatLng[1]
+    #   peerLocation = APP.storage().getLocalLocation lat, lng
+    #   unless peerLocation?
+    #     peerLocation = APP.storage().saveLocation {id: -peer.id, lat: lat, lng: lng}
+    #   markerMeta = APP.getPeerMarker peer, peerLocation, true
+    #   markerMeta.m.setLocation peerLocation # {lat: lat, lng: lng}
+    #   unless true || APP.view()._alertOn
+    #     APP.view().alert()
+    # else
+    #   console.log 'setPeerPosition: outside searchbounds ...'
+    #   # remove from $('#people_of_interest')
+    #   # set state outside with algorithm
+    #   APP.markers().removeForPeer peerId
+    markerMeta = APP.getPeerMarker peer, location, true
+    markerMeta.m.setLocation location # {lat: lat, lng: lng}
 
     if path? # leave separated from withinSearchBounds although it could go in block
-      path = APP.storage().addToPath peer.id, {lat: lat, lng: lng}, path
+      path = APP.storage().addToPath peer.id, {lat: location.lat, lng: location.lng}, path
       unless APP.smoothenPath peer, path
         VoyageX.Main.mapControl().drawPath peer, path, true
 

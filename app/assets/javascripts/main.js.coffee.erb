@@ -388,16 +388,12 @@ class window.VoyageX.Main
     APP.storage().deleteTracePath user.id, pathKey
     $('#tp_e_'+pathKey).remove()
 
-  #publishPosition: (bookmarkLocation = false, posLatLng = null, setHomeBase = false) ->
   publishPosition: () ->
-    unless posLatLng?
-      posLatLng = [@_selectedPosition.lat, @_selectedPosition.lng]
+    posLatLng = [@_selectedPosition.lat, @_selectedPosition.lng]
     @_comm.send('/map_events', {type: 'click',\
                                 userId: APP.userId(),\
                                 lat: posLatLng[0],\
-                                lng: posLatLng[1]})#,\
-                                #bookmarkLocation: bookmarkLocation,\
-                                #setHomeBase: setHomeBase})
+                                lng: posLatLng[1]})
     if APP.user()?
       # on initialisation when users are deleted locally (reset) currentUser might be null on first call
       path = APP.storage().getPath APP.user()
@@ -458,6 +454,12 @@ class window.VoyageX.Main
     VoyageX.Main.markerManager().searchBounds(searchRadiusMeters, APP.map())
     Storage.Model.instance().setRadarSettings (user) ->
         `;`
+    # doesn't really make sense here
+    # peers = APP.storage().getPeers()
+    # for peer in peers
+    #   USERS.checkDistance peer, {lat: APP.map().getCenter().lat, lng: APP.map().getCenter().lng}, (peer, inRange) ->
+    #       if inRange
+    #         APP.view().systemMessage VoyageX.TemplateHelper.peerInRangeHtml(peer)
 
   # location: {id:?} will load location from localStorage or backend first
   loadLocation: (location, fetch = true) ->
@@ -605,14 +607,20 @@ class window.VoyageX.Main
     if marker == null
       marker = Main.markerManager().add location, Main._markerEventsCB
     else
-      marker = Main.markerManager().sel marker, lat, lng, Main._markerEventsCB
-    @_selectedPosition.lat = lat
-    @_selectedPosition.lng = lng
+      marker = Main.markerManager().sel marker, location.lat, location.lng, Main._markerEventsCB
+    @_selectedPosition.lat = location.lat
+    @_selectedPosition.lng = location.lng
     @_selectedPosition.address = address
 #    if address != null
 #      $('#cur_loc_addr').html(address)
     if @_debug # debugRealePos
-      this._pathPredictionOnPosSelect lat, lng
+      this._pathPredictionOnPosSelect location.lat, location.lng
+      peers = APP.storage().getPeers()
+      for peer in peers
+        peerLL = peer.getLastLocation()
+        USERS.checkDistance peer, {lat: peerLL.lat, lng: peerLL.lng}, (peer, inRange) ->
+            if inRange
+              APP.view().systemMessage VoyageX.TemplateHelper.peerInRangeHtml(peer)
     if showSearchRadius
       Main.markerManager().searchBounds APP.user().searchRadiusMeters, APP.map()
 
@@ -694,6 +702,12 @@ class window.VoyageX.Main
         APP._movePredictionLastLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
       else
         APP.cacheTiles()
+      peers = APP.storage().getPeers()
+      for peer in peers
+        peerLL = peer.getLastLocation()
+        USERS.checkDistance peer, {lat: peerLL.lat, lng: peerLL.lng}, (peer, inRange) ->
+            if inRange
+              APP.view().systemMessage VoyageX.TemplateHelper.peerInRangeHtml(peer)
     APP.watchRealPosition()
 
   stopRealPositionWatch: () ->
@@ -947,19 +961,14 @@ class window.VoyageX.Main
       # for debug only - _online might be false if actually true
       console.log 'disable _mapEventsCB for debugging offline: ' + mapEvent.type
       return false
+    user = APP.storage().getUser mapEvent.userId
+    location = APP._setEventLocation user, mapEvent
     curU = APP.user()
-    if curU.id == mapEvent.userId# && mapEvent.type == 'click'
-      #"type":"click","userId":264,"lat":52.49724380849507,"lng":13.416409492492676,"locationId":4289,"address":"Kreuzberg, Admiralst"
-      if mapEvent.locationId?
-        locationId = mapEvent.locationId
-        unless APP.storage().getLocation(mapEvent.locationId)?
-          mapEvent.id = mapEvent.locationId
-          APP.storage().saveLocation mapEvent
-      else
-        locationId = -curU.id
-        mapEvent.id = -curU.id
-        APP.storage().saveLocation mapEvent
-      APP.storage().saveCurrentUser {lastLocationId: locationId}, curU
+    if curU.id == user.id
+      mapEvent.user = APP.storage().saveCurrentUser {lastLocationId: location.id}, curU
+    else
+      user.lastLocationId = location.id
+      mapEvent.user = APP.storage().saveUser user
     APP._view._mapEventsCB mapEvent
   
   _poisCB: (upload) ->
@@ -1065,12 +1074,32 @@ class window.VoyageX.Main
       return false
     if APP.userId() == radarEvent.userId# && radarEvent.type == 'move'
       return null
+    user = APP.storage().getUser radarEvent.userId
+    location = APP._setEventLocation user, radarEvent
+    user.lastLocationId = location.id
+    radarEvent.user = APP.storage().saveUser user
     APP._view._radarCB radarEvent
 
   _syncPoiCB: (cbPoi, cbNewNotes) ->
     # VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
     # APP.view().scrollToPoiNote cbNewNotes[cbNewNotes.length-1].id
     APP.view().viewPoiNotes cbPoi, cbNewNotes[cbNewNotes.length-1].id, null, true
+
+  # _setPeerPosition: (peer, lat, lng) ->
+  #   peerLocation = APP.storage().getLocalLocation lat, lng
+  #   unless peerLocation?
+  #     peerLocation = APP.storage().saveLocation {id: -peer.id, lat: lat, lng: lng}
+  #   peerLocation
+  _setEventLocation: (user, event) ->
+    if event.locationId?
+      location = APP.storage().getLocation event.locationId
+      unless location?
+        event.id = event.locationId
+        location = APP.storage().saveLocation event
+    else
+      event.id = -user.id
+      location = APP.storage().saveLocation event
+    location
 
   panPosition: (lat, lng, address) ->
     APP._setSelectedPositionLatLng Main.markerManager().get(), lat, lng, address

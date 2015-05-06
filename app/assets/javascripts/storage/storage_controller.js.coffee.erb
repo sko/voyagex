@@ -76,6 +76,7 @@ class window.Comm.StorageController
     if locations?
       tLat = trimPosVal lat
       tLng = trimPosVal lng
+#      closestLocation = {location: null, dist: -1}
       locationIds = Object.keys(locations)
       for locationId, idx in locationIds
         location = locations[locationId]
@@ -84,6 +85,11 @@ class window.Comm.StorageController
           if locations.bookmarks? && (bookmark = locations.bookmarks[locationId])?
             location.bookmark = bookmark
           return location
+#        else
+#          dist = L.latLng(lat, lng).distanceTo L.latLng(location.lat, location.lng)
+#          if dist < closestLocation.dist
+#            closestLocation.location = location
+#      return closestLocation.location
     null
 
   getLocation: (locationId) ->
@@ -373,6 +379,11 @@ class window.Comm.StorageController
     else
       []
 
+  #
+  # lastRelPosChange: date-secs
+  # curRelPosState: in|out
+  # relPos: {lastChange: State:}
+  #
   getUser: (userId) ->
     storeKey = 'comm.users'
     users = JSON.parse(localStorage.getItem(storeKey))
@@ -409,6 +420,10 @@ class window.Comm.StorageController
       xUser = {}
     users[user.id] = {username: user.username, lastLocationId: user.lastLocationId}
     delete xUser.username
+    delete xUser.lastLocationId
+    if user.distance?
+      users[user.id].distance = user.distance
+      delete xUser.distance
     if flags.peerPort?
       unless users.peers?
         users.peers = {}
@@ -428,6 +443,8 @@ class window.Comm.StorageController
           continue
         users[user.id][attrKey] = xUser[attrKey]
     localStorage.setItem storeKey, JSON.stringify(users)
+    user.getLastLocation = () ->
+        StorageController._SINGLETON.getLocation this.lastLocationId
     user
   
   deletePeer: (peer) ->

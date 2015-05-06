@@ -16,6 +16,36 @@ class window.VoyageX.Users
     APP.markers().removeForPeer peer.id
     APP.storage().deletePeer peer
 
+  checkDistance: (peer, curPeerLocation, stateChangedCB = null) ->
+    curU = APP.user()
+    curUSelLatLng = APP.getSelectedPositionLatLng()
+    nowSecs = Math.round(new Date().getTime()/1000)
+    dist = L.latLng(curUSelLatLng[0], curUSelLatLng[1]).distanceTo L.latLng(curPeerLocation.lat, curPeerLocation.lng)
+    inRange = dist <= curU.searchRadiusMeters
+    unless peer.distance?
+      sPeer = APP.storage().getUser peer.id
+      if sPeer?
+        peer.distance = sPeer.distance
+    if peer.distance?
+      stateChanged = if inRange then !peer.distance.stateInRange else peer.distance.stateInRange
+      if stateChanged
+        if nowSecs - peer.distance.lastStateChange >= 20 # 60*5 # 5 minutes
+          if stateChangedCB?
+            stateChangedCB peer, inRange
+          if peer.distance.historyQ.length >= 5
+            peer.distance.historyQ.splice 0, 1
+          peer.distance.historyQ.push {lSC: peer.distance.lastStateChange, sIR: peer.distance.stateInRange}
+          peer.distance = {lastStateChange: nowSecs, stateInRange: inRange, historyQ: peer.distance.historyQ}
+          APP.storage().saveUser peer # {id: peer.id, distance: peer.distance}
+          return true
+        peer.distance = {lastStateChange: nowSecs, stateInRange: inRange, historyQ: peer.distance.historyQ}
+      else
+        peer.distance = {lastStateChange: peer.distance.lastStateChange, stateInRange: inRange, historyQ: peer.distance.historyQ}
+    else
+      peer.distance = {lastStateChange: nowSecs, stateInRange: inRange, historyQ: []}
+    APP.storage().saveUser peer # {id: peer.id, distance: peer.distance}
+    false
+
   # also subscribes to peer channel if online, otherwise
   initPeer: (peer, fromSystemCB = false, callback = null) ->
     #peerPort = peer.peerPort
