@@ -1,6 +1,9 @@
 class window.VoyageX.MarkerManager
 
+  @_SINGLETON = null
+
   constructor: (map) ->
+    MarkerManager._SINGLETON = this
     @_map = map
     @_selectedMarker = null
     @_markers = []
@@ -206,6 +209,9 @@ class window.VoyageX.MarkerManager
       'user_' + leafletMarker._leaflet_id
     else
       'poi['+meta.poi.id+']_' + leafletMarker._leaflet_id
+
+  @instance: () ->
+    @_SINGLETON
 
 class VoyageX.Marker
 

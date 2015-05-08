@@ -343,7 +343,11 @@ class window.VoyageX.Main
     textArea = noteEditor.find('textarea')
     textArea.val('')
 
-    Main._checkSaveNote contentId, markerMeta
+    #@see Main._checkSaveNote contentId, markerMeta
+    targetId = parseInt textArea.attr('id').match(/[0-9]+$/)[0]
+    console.log('_checkSaveNote: deleting note for location '+Comm.StorageController.instance().getLocation(targetId).address)
+    Storage.Model.instance().deleteNote 'bookmark', targetId
+    
     markerMeta.target().closePopup()
 
   deletePoi: (poiId) ->
@@ -1336,7 +1340,7 @@ class window.VoyageX.Main
     Comm.StorageController.instance()
 
   @mapControl: () ->
-    Main._MAP_CONTROL
+    Main._MAP_CONTROL||VoyageX.MapControl.instance()
 
   map: () ->
     if Main._MAP_CONTROL? then Main._MAP_CONTROL.map() else Main._MARKER_MANAGER._map

@@ -11,7 +11,15 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150424210109) do
+ActiveRecord::Schema.define(version: 20150508081733) do
+
+  create_table "chat_messages", force: true do |t|
+    t.integer  "user_id",    null: false
+    t.text     "text"
+    t.datetime "created_at"
+  end
+
+  add_index "chat_messages", ["user_id"], name: "index_chat_messages_on_user_id", using: :btree
 
   create_table "comm_peers", force: true do |t|
     t.integer  "comm_port_id",    null: false

@@ -75,14 +75,23 @@ module Comm
         LOGGER.debug "--- #{channel} - unsubscribe ### Client #{client_id}"
       end
       monitor :publish do
-        LOGGER.debug "### #{channel} - publish ### Client #{client_id} ### #{data.inspect}"
-        # 1: here we could implement dynamic groups that should not know about channel-id so they
-        #    can be removed any-time
-        # 2: alternatively other users could subscribe by receiving the key
-        # FIXME 2 is better - a session-key can be used
-        channel_enc_key_match = channel.match(/_\$(.+)/)
+        # /talk@o74s558g2 - publish ### Client  ### {"type"=>"message", "userId"=>264, "text"=>"wqeqeqw\n"}
+        LOGGER.debug "### #{channel} - publish ### Client #{data['fci']} ### #{data.inspect}"
+        channel_enc_key_match = channel.match(/^.+?#{PEER_CHANNEL_PREFIX}([^\/_]+)(_p2p|)/)
         if channel_enc_key_match.present?
-          channel_enc_key = channel_enc_key_match[1]
+          is_p2p = channel_enc_key_match[2] == '_p2p'
+          unless is_p2p
+            begin
+              sender = User.find data['userId']
+              if sender.comm_port.current_faye_client_id == data['fci']
+                ChatMessage.create user: sender, text: data['text']
+              else
+                LOGGER.warn "!!! #{channel} - publish: fake user message: sender: #{sender.id} / #{sender.username}"
+              end
+            rescue => e
+              LOGGER.error "!!! #{channel} - publish !!! #{e.message}"
+            end
+          end
         end
       end
     end
@@ -292,7 +301,7 @@ module Comm
     end
 
     def check_read_permission channel
-      channel_enc_key_match = channel.match(/_\$(.+)/)
+      channel_enc_key_match = channel.match(/^.+?#{PEER_CHANNEL_PREFIX}([^\/_]+)(_p2p|)/)
       if channel_enc_key_match.present?
         channel_enc_key = channel_enc_key_match[1]
       end

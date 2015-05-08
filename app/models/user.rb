@@ -21,6 +21,7 @@ class User < ActiveRecord::Base
   has_many :identities, dependent: :destroy
   has_many :users_groups, inverse_of: :user
   has_many :groups, :through => :users_groups
+  has_many :chat_messages
   has_one :comm_port, inverse_of: :user, dependent: :destroy
   has_one :snapshot, class_name: 'UserSnapshot', dependent: :destroy
   belongs_to :home_base, class_name: 'Location', foreign_key: :home_base_id

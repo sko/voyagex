@@ -100,6 +100,7 @@ class window.Comm.Comm
         channelPath += VoyageX.PEER_CHANNEL_PREFIX + channelEncKey
       if message.cacheId?
         delete message.cacheId
+      message.fci = client._clientId
       client.publish(channelPath, message)
     else
       this._queueMessage channel, message, peer
