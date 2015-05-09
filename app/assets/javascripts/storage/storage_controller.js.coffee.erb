@@ -479,8 +479,8 @@ class window.Comm.StorageController
       conference = JSON.parse(localStorage.getItem(conferenceKey))
       return conference
 
-  addChatMessage: (messageText, peer, p2p = false) ->
-    if p2p
+  addChatMessage: (messageText, peer, p2pFrom = null) ->
+    if p2pFrom?
       # no error-handling if peer not in localStroage
       storeKey = 'comm.users'
       users = JSON.parse(localStorage.getItem(storeKey))
@@ -488,10 +488,16 @@ class window.Comm.StorageController
       unless chat?
         chat = {}
         users[peer.id]['chat'] = chat
-      chat[new Date().getTime()] = messageText
+      entry = {}
+      entry[p2pFrom.id] = messageText
+      chat[Math.round(new Date().getTime()/1000)] = entry
       msgKeys = Object.keys(chat)
-      if msgKeys.lenght >= this._maxNumChatP2PChatMsgs
-        delete chat[msgKeys.sort()[0]]
+      # if msgKeys.length >= this._maxNumChatP2PChatMsgs
+      #   delete chat[msgKeys.sort()[0]]
+      for key, idx in msgKeys.sort()
+        if idx >= (msgKeys.length-this._maxNumChatP2PChatMsgs)
+          break
+        delete chat[key]
       localStorage.setItem storeKey, JSON.stringify(users)
       return chat
     else
@@ -501,10 +507,14 @@ class window.Comm.StorageController
         conference = {}
       entry = {}
       entry[peer.id] = messageText
-      conference[new Date().getTime()] = entry
+      conference[Math.round(new Date().getTime()/1000)] = entry
       msgKeys = Object.keys(conference)
-      if msgKeys.lenght >= this._maxNumChatBCChatMsgs
-        delete conference[msgKeys.sort()[0]]
+      # if msgKeys.length >= this._maxNumChatBCChatMsgs
+      #   delete conference[msgKeys.sort()[0]]
+      for key, idx in msgKeys.sort()
+        if idx >= (msgKeys.length-this._maxNumChatBCChatMsgs)
+          break
+        delete conference[key]
       localStorage.setItem conferenceKey, JSON.stringify(conference)
       return conference
 

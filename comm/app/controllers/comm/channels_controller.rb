@@ -68,6 +68,14 @@ module Comm
     end
 
     channel '/talk**' do
+      filter :out do
+        LOGGER.debug "<<< #{message}."
+        publish_data = message['data']
+        if publish_data.present?
+          publish_data.delete 'fci'
+        end
+        pass
+      end
       monitor :subscribe do
         LOGGER.debug "+++ #{channel} - subscribe ### Client #{client_id}"
       end
@@ -105,7 +113,7 @@ module Comm
         block_msg = nil
         LOGGER.debug ">>> #{message}. (self: #{self.hash} / #{self.object_id})"
         if message['channel'].match(/^\/meta\/subscribe/).present?
-          block_msg = ChannelsController::check_subscribe_permission message
+          block_msg = Comm::ChannelsController.check_subscribe_permission message
           # subscription_enc_key = message['subscription'].match(/^.+?#{PEER_CHANNEL_PREFIX}([^\/]+)/)
           # if subscription_enc_key.present?
           #   LOGGER.debug ">>> found subscription_enc_key '#{subscription_enc_key[1]}'"
@@ -228,7 +236,7 @@ module Comm
         block_msg = nil
         LOGGER.debug ">>> #{message}. (self: #{self.hash} / #{self.object_id})"
         if message['channel'].match(/^\/meta\/subscribe/).present?
-          block_msg = ChannelsController::check_subscribe_permission message
+          block_msg = Comm::ChannelsController.check_subscribe_permission message
         end
         if block_msg.nil?
           pass

@@ -434,7 +434,7 @@ class window.VoyageX.View
         #<div class="chat_message chat_message_'+meOrOther+' triangle-border '+leftOrRight+'">'+messageText+'</div>'
         msgInput = peerChatMeta.msgInput
       else
-        VoyageX.TemplateHelper.openP2PChat peerChatMeta.peer, [messageText]
+        VoyageX.TemplateHelper.openP2PChat peerChatMeta.peer, [{from: peerChatMeta.peer, text: messageText}]
       APP.view().scrollToLastChatMessage peerChatMeta.peer, true
     else
       #$('.chat_view').append '<div class="chat_message_sep"></div><div class="chat_message chat_message_'+meOrOther+' triangle-border '+leftOrRight+'">'+messageText+'</div>'

@@ -211,7 +211,8 @@ class window.VoyageX.TemplateHelper
     #i = $('.leaflet-popup .p2p_chat_msg').length
     newMessagesHtml = ''
     for msg, j in messages
-      newMessagesHtml += TemplateHelper.p2PChatMsgHtml(peer, msg, messageHtml)
+      #newMessagesHtml += TemplateHelper.p2PChatMsgHtml(peer, msg, messageHtml)
+      newMessagesHtml += TemplateHelper.p2PChatMsgHtml(msg.from, msg.text, messageHtml)
     p2pChatHtml.
     replace(/(<\/div>\s*<div[^>]* class=['"]\s*p2p_chat_input\s*['"][^>]*>)/m, newMessagesHtml+'$1')
 
@@ -225,7 +226,7 @@ class window.VoyageX.TemplateHelper
       # $('#peer_popup_196 > .p2p_chat_container > .p2p_chat_view > p2p_chat_msg')
       if popupHtml.indexOf('p2p_chat_container') == -1
         # maybe add-chat should go to APP (initChat())
-        APP.initP2PChatMessages peer, newMessages
+        CHAT.initP2PChatMessages peer, newMessages
         p2pChatHtml = TemplateHelper.p2PChatHtml peer, newMessages
       else
         # chat opened - new messages from peer

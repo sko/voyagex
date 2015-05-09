@@ -406,27 +406,6 @@ class window.VoyageX.Main
         VoyageX.Main.mapControl().drawPath APP.user(), path, true
     $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').click()
 
-  initBCChatMessages: () ->
-    conference = APP.storage().getChat()
-    entries = []
-    if conference?
-      entryKeys = Object.keys(conference).sort()
-      for entryKey, i in entryKeys
-        entries.push conference[entryKey]
-        userId = parseInt Object.keys(conference[entryKey])[0]
-        user = APP.storage().getUser userId
-        message = {peer: user, text: conference[entryKey][userId]}
-        VoyageX.View.addChatMessage message, user.id == APP.user().id
-    entries
-
-  initP2PChatMessages: (peer, messages) ->
-    chat = APP.storage().getChat peer
-    if chat?
-      msgKeys = Object.keys(chat).sort()
-      for msgKey, i in msgKeys
-        messages.push chat[msgKey]
-    messages
-
   bcChatMessage: (messageText) ->
     APP.storage().addChatMessage messageText, APP.user()
     @_comm.send('/talk', {type: 'message',\
@@ -434,7 +413,7 @@ class window.VoyageX.Main
                           text: messageText})
 
   p2pChatMessage: (peer, messageText) ->
-    APP.storage().addChatMessage messageText, peer, true
+    APP.storage().addChatMessage messageText, peer, APP.user()
     @_comm.send('/talk', {type: 'p2p-message',\
                           userId: APP.userId(),\
                           text: messageText}, peer)
@@ -955,7 +934,7 @@ class window.VoyageX.Main
     if APP.userId() == message.userId
       return null
     peer = APP.storage().getUser parseInt(message.userId)
-    APP.storage().addChatMessage message.text, peer, message.type == 'p2p-message'
+    APP.storage().addChatMessage message.text, peer, if message.type == 'p2p-message' then peer else null
     delete message.userId
     message['peer'] = peer
     APP._view._talkCB message
@@ -1349,7 +1328,7 @@ class window.VoyageX.Main
     Main._MARKER_MANAGER
 
   markers: () ->
-    Main._MARKER_MANAGER
+    Main._MARKER_MANAGER||VoyageX.MarkerManager.instance()
 
   chat: () ->
     Main._CHAT_CONTROL
