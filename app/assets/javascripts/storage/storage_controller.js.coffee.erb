@@ -399,7 +399,8 @@ class window.Comm.StorageController
           StorageController._SINGLETON.getLocation this.lastLocationId
     else
       console.log 'getUser: getting current user for id '+userId+'?'
-      user = this.getCurrentUser()
+      curU = this.getCurrentUser()
+      user = if userId == curU.id then curU else null
     user
   
   # a user is created from scratch to avoid temporary attributes from being saved
@@ -908,7 +909,8 @@ class window.Comm.StorageController
     @_uploadQ.queueUpload poi, poiNote, callback, attachmentData, deferredModeParams
 
   # called with params only for instant upload when app is online
-  uploadQueue: (qPoi = null, qNewNote = null, afterSyncCB = null) ->
+  #uploadQueue: (qPoi = null, qNewNote = null, afterSyncCB = null) ->
+  uploadQueue: (qPoi = null, qNewNote = null) ->
     console.log 'Storage - uploadQueue: ...'
     uploadQKey = 'comm.uploadQ.poiNotes'
     stored = localStorage.getItem(uploadQKey)
@@ -949,14 +951,12 @@ class window.Comm.StorageController
                    perPoiList[poi.id].fileData[poiNote.id] = { file: file, name: fileName }
                  if perPoiList.numLeft == 0
                    delete perPoiList.numLeft
-                   perPoiListKeys = Object.keys(perPoiList)
-                   for entryKey, idx in perPoiListKeys
-                     # cb is only needed for sync with response - but now we use faye-callback
-                     # origCallback = window.afterUploadPhoto = (poi, newNotes) defined in upload_helper
-                     # .cb is called from Uploads-batchupload when APP.model().syncUploadCachedQPoiData
-                     #cb = { cb: (origCallback) ->
-                     #           Comm.UploadQ.instance().syncResponseCallback location, poi, origCallback }
-                     batchUpload perPoiList[entryKey]#, cb
+                   # perPoiListKeys = Object.keys(perPoiList)
+                   # for entryKey, idx in perPoiListKeys
+                   #   # afterSyncCB is only needed for sync with response - but now we use faye-callback
+                   #   batchUpload perPoiList[entryKey]#, afterSyncCB
+                   # afterSyncCB is only needed for sync with response - but now we use faye-callback
+                   batchUpload perPoiList#, afterSyncCB
         )(location, poi, poiNote, qEntry.fileName, perPoiList) 
         if poiNote.attachment? && (!poiNote.attachment.content_type.match(/^embed:/)?)
           #this._getPoiNoteAttachmentFile poiNote, deferredModeParams
@@ -1174,12 +1174,9 @@ class Comm.UploadQ
         poi.notes = storedPoi.notes
         callback poi, note
 
-  # this method provides the method to handle the backend-response to a syncUpload
- #syncResponseCallback: (location, poi, origCallback) ->
-  # syncResponseCallback: (location, poi) ->
-  #   # this method is called after batch-upload with the actually persisted poi/note-data
-  #   # from the backend. (especially the backend-ids)
-  #   (cbPoi, cbNewPoiNotes) ->
+  # this method is called after batch-upload with the actually persisted poi/note-data
+  # from the backend (especially the backend-ids) but BEFORE commit
+  # AFTER-commit call is in Main - _poisCB 
   syncResponseCallback: (location, poi, cbPoi, cbNewPoiNotes, afterSyncCB = null) ->
     qPoiId = poi.id
     #oldIdMarker = APP.getMarker poi, true
@@ -1243,8 +1240,7 @@ class Comm.UploadQ
 
     UploadQ._removeFromQueue qPoiId
 
-   #origCallback cbPoi, cbNewPoiNotes
-    # add all old notes
+    # add all old notes for display -> @see _syncPoiCB
     for i in [0..poi.notes.length-cbNewPoiNotes.length-1] by 1
       cbPoi.notes.splice i, 0, poi.notes[i]
 

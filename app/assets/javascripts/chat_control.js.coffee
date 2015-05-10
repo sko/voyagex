@@ -10,7 +10,7 @@ class window.VoyageX.ChatControl
         event.preventDefault()
         publishText = $(this).val().replace(/\s*$/,'')
         unless publishText.trim() == ''
-          APP.bcChatMessage(publishText)
+          CHAT._bcChatMessage(publishText)
           VoyageX.View.addChatMessage { text: $('#message').val() }
   
   # called when chat-window is initialized
@@ -18,7 +18,7 @@ class window.VoyageX.ChatControl
     msgInputSelector.on 'keyup', (event) ->
       if (event.which == 13 || event.keyCode == 13)
         event.preventDefault()
-        APP.chat().sendP2PChatMessage $(event.target)#==msgInputSelector
+        CHAT.sendP2PChatMessage $(event.target)#==msgInputSelector
   
   sendP2PChatMessage: (msgInputSelector) ->
     publishText = msgInputSelector.val().replace(/\s*$/,'')
@@ -26,7 +26,7 @@ class window.VoyageX.ChatControl
       peerChatContainer = msgInputSelector.closest('div[id^=peer_popup_]').first()
       peerId = parseInt peerChatContainer.attr('id').match(/[0-9]+$/)[0]
       peer = Comm.StorageController.instance().getUser peerId
-      APP.p2pChatMessage(peer, publishText)
+      CHAT._p2pChatMessage(peer, publishText)
       VoyageX.View.addChatMessage { text: $('#p2p_message_'+peerId).val() }, true, {peer: peer, chatContainer: peerChatContainer, msgInput: msgInputSelector}
 
   initBCChatMessages: () ->
@@ -54,3 +54,22 @@ class window.VoyageX.ChatControl
         from = if userId == peer.id then peer else APP.user()
         messages.push {from: from, text: chat[entryKey][userId]}
     messages
+
+  _bcChatMessage: (messageText) ->
+    APP.storage().addChatMessage messageText, APP.user()
+    APP._comm.send('/talk', {type: 'message',\
+                             userId: APP.userId(),\
+                             text: messageText})
+
+  _p2pChatMessage: (peer, messageText) ->
+    APP.storage().addChatMessage messageText, peer, APP.user()
+    APP._comm.send('/talk', {type: 'p2p-message',\
+                             userId: APP.userId(),\
+                             text: messageText}, peer)
+
+  _talkCB: (message) ->
+    peer = APP.storage().getUser parseInt(message.userId)
+    APP.storage().addChatMessage message.text, peer, if message.type == 'p2p-message' then peer else null
+    delete message.userId
+    message['peer'] = peer
+    APP._view._talkCB message

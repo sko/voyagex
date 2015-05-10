@@ -219,11 +219,12 @@ class window.Storage.Model
         console.log('res.message OK = '+(res.message=='OK'))
         if isMobile()
           hideAjaxLoading()
-        qPoiId = if res.poi.local_time_secs? then -res.poi.local_time_secs else res.poi.id
-        # same poi as in params for syncUploadCachedQPoiData
-        poi = APP.storage().getPoi qPoiId
-        location = APP.storage().getLocation(poi.locationId)
-        Comm.UploadQ.instance().syncResponseCallback(location, poi, res.poi, res.poi.notes, afterSyncCB)
+        for resPoi in res.pois
+          qPoiId = if resPoi.local_time_secs? then -resPoi.local_time_secs else resPoi.id
+          # same poi as in params for syncUploadCachedQPoiData
+          poi = APP.storage().getPoi qPoiId
+          location = APP.storage().getLocation(poi.locationId)
+          Comm.UploadQ.instance().syncResponseCallback(location, poi, resPoi, resPoi.notes, afterSyncCB)
     .fail (jqXHR, textStatus) ->
       # get from localStorage
       console.log('TODO: ?')

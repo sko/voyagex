@@ -6,6 +6,8 @@ class window.VoyageX.PathPrediction
     PathPrediction._SINGLETON = this
     @_mapControl = mapControl
     @_map = mapControl._map
+    @_movePredictionDistMeters = 100
+    @_movePredictionLastLatLng = null
 
   _checkForVerticalSkippedTiles: (tiles, tileXorYFixed, tileXorY) ->
     curTileXorY = tileXorY
@@ -211,3 +213,73 @@ class window.VoyageX.PathPrediction
       if tiles[maxIdx-i].x == x && tiles[maxIdx-i].y == y
         return maxIdx-i
     -1
+
+  _pathPredictionOnPosSelect: () ->
+    #this._setRealPosition {coords: {longitude: lat, latitude: lng}}, true
+    if this._movePredictionLastLatLng == null
+      this._movePredictionLastLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
+    else
+      this.cacheTiles()
+
+  # 
+  cacheTiles: () ->
+    dist = L.latLng(this._movePredictionLastLatLng.lat, this._movePredictionLastLatLng.lng).distanceTo L.latLng(APP._realPosition.lat, APP._realPosition.lng)
+    if dist >= 100
+      predictDistMeters = APP.user().searchRadiusMeters
+      distFactor = predictDistMeters / dist
+
+      headingLat = APP._realPosition.lat - this._movePredictionLastLatLng.lat
+      headingLng = APP._realPosition.lng - this._movePredictionLastLatLng.lng
+
+      curLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
+      #predictedLatLng = L.latLng(APP._realPosition.lat + distFactor*headingLat, APP._realPosition.lng + distFactor*headingLng)
+      predictedLatLng = {lat: APP._realPosition.lat + distFactor*headingLat, lng: APP._realPosition.lng + distFactor*headingLng}
+      
+      if APP._debug
+        unless VoyageX.DEBUG_PREDICTION_PATHS?
+          window.VoyageX.DEBUG_PREDICTION_PATHS = []
+        VoyageX.DEBUG_PREDICTION_PATHS.push {done: L.polyline([L.latLng(this._movePredictionLastLatLng.lat, this._movePredictionLastLatLng.lng), L.latLng(APP._realPosition.lat, APP._realPosition.lng)], {color: 'green'}).addTo(APP.map()),\
+                                             pred: L.polyline([L.latLng(APP._realPosition.lat, APP._realPosition.lng), predictedLatLng], {color: 'yellow'}).addTo(APP.map())}
+        m1 = APP.getUserMarker()
+        curLatLng = {lat: m1._latlng.lat, lng: m1._latlng.lng}
+        marker = APP.markers().forPositionPreview()
+        if marker?
+          marker.m.setLocation L.latLng(predictedLatLng.lat, predictedLatLng.lng)
+          m2 = marker.target()
+        else
+          m2 = APP.markers().add L.latLng(predictedLatLng.lat, predictedLatLng.lng), (event) ->
+              switch event.type
+                when 'click'
+                  `;`
+                else
+                  # drag
+                  m1 = APP.getUserMarker()
+                  m2 = event.target
+                  VoyageX.DEBUG_PREDICTION_PATHS.push {done: null,\
+                                                       pred: L.polyline([m1._latlng, m2._latlng], {color: 'yellow'}).addTo(APP.map())}
+                  this.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, APP.map().getZoom())
+                  #TODO: enable cachetiles with drag and droop - reset _movePredictionLastLatLng and then APP.cacheTiles()
+            , {isUserMarker: false, beam: true}
+      
+      #this.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, APP.map().getZoom())
+      tiles = this.tilesPathBetweenPositions({lat:curLatLng.lat,lng:curLatLng.lng},{lat:predictedLatLng.lat,lng:predictedLatLng.lng}, APP.map().getZoom())
+      for tile in tiles
+        # view = {zoom: APP.map().getZoom(),\
+        #         tile: {row: tile.y, column: tile.x},\
+        #         subdomain: MC._mapOptions['subdomains'][0]}
+        # cachedTileUrl = VoyageX.MapControl.drawTile view, {default: true}
+        this.cacheTile tile, APP.map().getZoom()
+      this._movePredictionLastLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
+
+  cacheTile: (tile, zoom) ->
+    view = {zoom: zoom,\
+            tile: {row: tile.y, column: tile.x},\
+            subdomain: MC._mapOptions['subdomains'][0]}
+    cachedTileUrl = VoyageX.MapControl.drawTile view, {default: true}
+
+  clearPredictionPaths: (lastOneToo = false) ->
+    if VoyageX.DEBUG_PREDICTION_PATHS?
+      for entry, i in VoyageX.DEBUG_PREDICTION_PATHS
+        if entry.done?
+          APP.map().removeLayer entry.done
+        APP.map().removeLayer entry.pred

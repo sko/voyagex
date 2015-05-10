@@ -29,8 +29,6 @@ class window.VoyageX.Main
     @_realPositionWatch = null
     @_moveSensorDistMeters = 25
     @_selectedPosition = {lat: -1.0, lng: -1.0, address: null}
-    @_movePredictionDistMeters = 100
-    @_movePredictionLastLatLng = null
     @_curPOI = null
     #@_initPoisOnMap = []
     Main._STORAGE_MODEL = new Storage.Model()
@@ -258,8 +256,9 @@ class window.VoyageX.Main
           # queue is uploaded after pull -> @see _systemCB
         else
           if APP.storage().hasQueue()
-            APP.storage().uploadQueue (cbPoi, cbNewPoiNotes) ->
+            APP.storage().uploadQueue null, null, (cbPoi, cbNewPoiNotes) ->
                 console.log 'Main - setOnline: done with queue-sync ...'
+                APP._syncPoiCB cbPoi, cbNewPoiNotes
         unless VoyageX.Main._BACKEND._state.pingActive
           setTimeout "VoyageX.Main._BACKEND.pingBackend()", VoyageX.Backend._PING_CHECK_DELAY_MILLIS
     #Comm.StorageController.instance()._tileLoadQueue = {}
@@ -405,18 +404,6 @@ class window.VoyageX.Main
         path = APP.storage().addToPath APP.user().id, @_selectedPosition, path
         VoyageX.Main.mapControl().drawPath APP.user(), path, true
     $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').click()
-
-  bcChatMessage: (messageText) ->
-    APP.storage().addChatMessage messageText, APP.user()
-    @_comm.send('/talk', {type: 'message',\
-                          userId: APP.userId(),\
-                          text: messageText})
-
-  p2pChatMessage: (peer, messageText) ->
-    APP.storage().addChatMessage messageText, peer, APP.user()
-    @_comm.send('/talk', {type: 'p2p-message',\
-                          userId: APP.userId(),\
-                          text: messageText}, peer)
 
   setHomeBase: () ->
     #this.publishPosition false, null, true
@@ -576,15 +563,6 @@ class window.VoyageX.Main
   getSelectedPositionLatLng: () ->
     return [@_selectedPosition.lat, @_selectedPosition.lng]
 
-  _pathPredictionOnPosSelect: (lat, lng) ->
-    #this._setRealPosition {coords: {longitude: lat, latitude: lng}}, true
-    APP._realPosition.lat = trimPosVal(lat)
-    APP._realPosition.lng = trimPosVal(lng)
-    if APP._movePredictionLastLatLng == null
-      APP._movePredictionLastLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
-    else
-      APP.cacheTiles()
-
   _setSelectedPositionLatLng: (marker, lat, lng, address) ->
     location = {lat: trimPosVal(lat), lng: trimPosVal(lng)}
     if marker == null
@@ -597,7 +575,11 @@ class window.VoyageX.Main
 #    if address != null
 #      $('#cur_loc_addr').html(address)
     if @_debug # debugRealePos
-      this._pathPredictionOnPosSelect location.lat, location.lng
+      # path-prediction
+      APP._realPosition.lat = location.lat
+      APP._realPosition.lng = location.lng
+      Main._PATH_PREDICTION._pathPredictionOnPosSelect()
+      # neighbourhood-watch
       peers = APP.storage().getPeers()
       for peer in peers
         peerLL = peer.getLastLocation()
@@ -681,10 +663,13 @@ class window.VoyageX.Main
           VoyageX.Main.mapControl().drawPath APP.user(), path, true
           # don't set location unless user explicitely want's to by activating path (else might disturb work)
           APP.getUserMarker(true).m.setLocation {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
-      if APP._movePredictionLastLatLng == null
-        APP._movePredictionLastLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
-      else
-        APP.cacheTiles()
+      
+      # if APP._movePredictionLastLatLng == null
+      #   APP._movePredictionLastLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
+      # else
+      #   APP.cacheTiles()
+      Main._PATH_PREDICTION._pathPredictionOnPosSelect()
+
       peers = APP.storage().getPeers()
       for peer in peers
         peerLL = peer.getLastLocation()
@@ -768,82 +753,21 @@ class window.VoyageX.Main
             APP._comm.send('/system', {type: 'error', userId: APP.userId(), userName: APP.userName(), userFoto: APP.user().foto, msg: $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': [poll] - unknown error - disable location-query ...'})
     , { enableHighAccuracy: true, maximumAge: VoyageX.Backend._POS_QUERY_INTERVAL_MILLIS, timeout: VoyageX.Backend._POS_QUERY_TIMEOUT_MILLIS })
 
-  # 
-  cacheTiles: () ->
-    dist = L.latLng(APP._movePredictionLastLatLng.lat, APP._movePredictionLastLatLng.lng).distanceTo L.latLng(APP._realPosition.lat, APP._realPosition.lng)
-    if dist >= 100
-      predictDistMeters = APP.user().searchRadiusMeters
-      distFactor = predictDistMeters / dist
-
-      headingLat = APP._realPosition.lat - APP._movePredictionLastLatLng.lat
-      headingLng = APP._realPosition.lng - APP._movePredictionLastLatLng.lng
-
-      curLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
-      #predictedLatLng = L.latLng(APP._realPosition.lat + distFactor*headingLat, APP._realPosition.lng + distFactor*headingLng)
-      predictedLatLng = {lat: APP._realPosition.lat + distFactor*headingLat, lng: APP._realPosition.lng + distFactor*headingLng}
-      
-      if @_debug
-        unless VoyageX.DEBUG_PREDICTION_PATHS?
-          window.VoyageX.DEBUG_PREDICTION_PATHS = []
-        VoyageX.DEBUG_PREDICTION_PATHS.push {done: L.polyline([L.latLng(APP._movePredictionLastLatLng.lat, APP._movePredictionLastLatLng.lng), L.latLng(APP._realPosition.lat, APP._realPosition.lng)], {color: 'green'}).addTo(APP.map()),\
-                                             pred: L.polyline([L.latLng(APP._realPosition.lat, APP._realPosition.lng), predictedLatLng], {color: 'yellow'}).addTo(APP.map())}
-        m1 = APP.getUserMarker()
-        curLatLng = {lat: m1._latlng.lat, lng: m1._latlng.lng}
-        marker = APP.markers().forPositionPreview()
-        if marker?
-          marker.m.setLocation L.latLng(predictedLatLng.lat, predictedLatLng.lng)
-          m2 = marker.target()
-        else
-          m2 = APP.markers().add L.latLng(predictedLatLng.lat, predictedLatLng.lng), (event) ->
-              switch event.type
-                when 'click'
-                  `;`
-                else
-                  # drag
-                  m1 = APP.getUserMarker()
-                  m2 = event.target
-                  VoyageX.DEBUG_PREDICTION_PATHS.push {done: null,\
-                                                       pred: L.polyline([m1._latlng, m2._latlng], {color: 'yellow'}).addTo(APP.map())}
-                  Main._PATH_PREDICTION.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, APP.map().getZoom())
-                  #TODO: enable cachetiles with drag and droop - reset _movePredictionLastLatLng and then APP.cacheTiles()
-            , {isUserMarker: false, beam: true}
-      
-      #Main._PATH_PREDICTION.tilesPathBetweenPositions({lat:m1._latlng.lat,lng:m1._latlng.lng},{lat:m2._latlng.lat,lng:m2._latlng.lng}, APP.map().getZoom())
-      tiles = Main._PATH_PREDICTION.tilesPathBetweenPositions({lat:curLatLng.lat,lng:curLatLng.lng},{lat:predictedLatLng.lat,lng:predictedLatLng.lng}, APP.map().getZoom())
-      for tile in tiles
-        # view = {zoom: APP.map().getZoom(),\
-        #         tile: {row: tile.y, column: tile.x},\
-        #         subdomain: MC._mapOptions['subdomains'][0]}
-        # cachedTileUrl = VoyageX.MapControl.drawTile view, {default: true}
-        APP.cacheTile tile, APP.map().getZoom()
-      APP._movePredictionLastLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
-
-  cacheTile: (tile, zoom) ->
-    view = {zoom: zoom,\
-            tile: {row: tile.y, column: tile.x},\
-            subdomain: MC._mapOptions['subdomains'][0]}
-    cachedTileUrl = VoyageX.MapControl.drawTile view, {default: true}
-
   togglePredictionPathDebug: () ->
     if @_debug
       @_debug = false
       $('#dbg_pred_ctrl').attr('class', $('#dbg_pred_ctrl').attr('class').replace(/\s?menu_ctrl_on/, ''))
     else
       @_debug = true
-      this._pathPredictionOnPosSelect @_selectedPosition.lat, @_selectedPosition.lng
+      APP._realPosition.lat = @_selectedPosition.lat
+      APP._realPosition.lng = @_selectedPosition.lng
+      Main._PATH_PREDICTION._pathPredictionOnPosSelect()
       $('#dbg_pred_ctrl').attr('class', $('#dbg_pred_ctrl').attr('class')+' menu_ctrl_on')
-
-  clearPredictionPaths: (lastOneToo = false) ->
-    if VoyageX.DEBUG_PREDICTION_PATHS?
-      for entry, i in VoyageX.DEBUG_PREDICTION_PATHS
-        if entry.done?
-          this.map().removeLayer entry.done
-        this.map().removeLayer entry.pred
 
   _systemCB: (message) ->
     unless APP._online
       # for debug only - _online might be false if actually true
-      console.log 'disable _systemCB for debugging offline: ' + upload.type
+      console.log 'disable _systemCB for debugging offline: ' + message.type
       return false
     console.log 'got a system - message: ' + message.type
     if message.type == 'ready_notification'
@@ -904,6 +828,8 @@ class window.VoyageX.Main
         #delete message.action
         APP._poisCB message
     else if message.type == 'poi_sync'
+      # this is old workflow: message conatins change-date for a poi - and for each changed poi we receive a message
+      # the new way is: one message after batch-upload - challenge to pull...
       curU = APP.user()
       if message.poi.user.id != curU.id
         # other user committed
@@ -917,6 +843,15 @@ class window.VoyageX.Main
         Main._STORAGE_CONTROLLER.saveUser {id: curU.id, curCommitHash: message.commit_hash}
         APP.view().alert()
         return true
+    else if message.type == 'pull_request'
+      #"data":{"type":"poi_sync","commit_hash":"dd3088f129e4c23b9d2fd0dbf7cdf48580febf90","pois":[{"poi_id":97,"lat":"52.4923317","lng":"13.4258509","mod_user":297}]}
+      curU = APP.user()
+      if message.user.id != curU.id
+        # TODO:
+        # 1) check whether is contact - then pull
+        # 2) check whether pois are bookmarked - then pull
+        # 3) check whether pois are in range - then pull
+        APP.model().pullPois()
     else if message.type == 'poi_delete'
       curU = APP.user()
       Main._STORAGE_CONTROLLER.saveUser {id: curU.id, curCommitHash: message.commit_hash}
@@ -933,11 +868,7 @@ class window.VoyageX.Main
       return false
     if APP.userId() == message.userId
       return null
-    peer = APP.storage().getUser parseInt(message.userId)
-    APP.storage().addChatMessage message.text, peer, if message.type == 'p2p-message' then peer else null
-    delete message.userId
-    message['peer'] = peer
-    APP._view._talkCB message
+    CHAT._talkCB message
 
   _mapEventsCB: (mapEvent) ->
     unless APP._online
@@ -971,29 +902,32 @@ class window.VoyageX.Main
           #APP.storage().saveCurrentUser curU
           Main._STORAGE_CONTROLLER.saveUser {id: curU.id, curCommitHash: upload.commit_hash}
           #qPoiId = if upload.poi.local_time_secs? then -upload.poi.local_time_secs else upload.poi.id
-          storedPoi = APP.storage().getPoi upload.poi.id
-          callback = ((oldNotes) ->
-              (cbPoi, cbNewNotes) ->
-                  #  
-                  # there could also be some new pois from other users! order might be mixed
-                  #
-                  location = APP.storage().getLocation(cbPoi.locationId)
-                  newNotes = oldNotes.slice 0, oldNotes.length-cbNewNotes.length
-                  for note, idx in cbNewNotes
-                    newNotes.push note
-                    if note.user?
-                      note.userId = note.user.id
-                      delete note.user
-                    delete note.local_time_secs
-                  cbPoi.notes = newNotes
-                  #VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
-                  #.view().scrollToPoiNote cbNewNotes[cbNewNotes.length-1].id
-                  APP.view().viewPoiNotes cbPoi, cbNewNotes[cbNewNotes.length-1].id, null, true
-              )(storedPoi.notes)
-          # save attachments from new other user's notes
-          loadStats = { numAdded: upload.poi.notes.length, numLeft: upload.poi.notes.length }
-          for note in upload.poi.notes
-            Storage.Model.instance().syncWithStorage upload, callback, note, loadStats, note.local_time_secs?
+          for uPoi in upload.pois
+            # new pois created by local user have id -uPoi.local_time_secs
+            qPoiId = if uPoi.local_time_secs? then -uPoi.local_time_secs else uPoi.id
+            storedPoi = APP.storage().getPoi qPoiId
+            callback = ((oldNotes) ->
+                (cbPoi, cbNewNotes) ->
+                    #  
+                    # there could also be some new pois from other users! order might be mixed
+                    #
+                    location = APP.storage().getLocation(cbPoi.locationId)
+                    newNotes = oldNotes.slice 0, oldNotes.length-cbNewNotes.length
+                    for note, idx in cbNewNotes
+                      newNotes.push note
+                      if note.user?
+                        note.userId = note.user.id
+                        delete note.user
+                      delete note.local_time_secs
+                    cbPoi.notes = newNotes
+                    #VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
+                    #.view().scrollToPoiNote cbNewNotes[cbNewNotes.length-1].id
+                    APP.view().viewPoiNotes cbPoi, cbNewNotes[cbNewNotes.length-1].id, null, true
+                )(storedPoi.notes)
+            # save attachments from new other user's notes
+            loadStats = { numAdded: uPoi.notes.length, numLeft: uPoi.notes.length }
+            for note in uPoi.notes
+              Storage.Model.instance().syncWithStorage upload, callback, note, loadStats, note.local_time_secs?
         else if upload.action == 'poi_delete'
           console.log 'my poi_delete was published to everbody'
           curU = APP.user()
@@ -1022,8 +956,9 @@ class window.VoyageX.Main
           # @see setOnline
           if APP.storage().hasQueue()
             # sync with commit - backend calls back via /system
-            APP.storage().uploadQueue (cbPoi, cbNewPoiNotes) ->
+            APP.storage().uploadQueue null, null, (cbPoi, cbNewPoiNotes) ->
                 console.log 'done with upload - pulling other changes now'
+                APP._syncPoiCB cbPoi, cbNewPoiNotes
     else if upload.type == 'poi_note_upload'
       unless upload.poi_note.user.id == APP.userId()
         # TODO: unify json-format, until then avoid circular structure

@@ -40,63 +40,70 @@ class PoisController < ApplicationController
   # sync pois that where edited offline
   def sync_poi
     @user = tmp_user
-    if params[:id].present?
-      @commented_poi_note = PoiNote.find(params[:id])
-      @poi = @commented_poi_note.poi
-      # if poi is meanwhile deleted by other user then create new one - tell user to replace old ...
-    else
-      @poi = nearby_poi @user, Location.new(latitude: params[:location][:latitude], longitude: params[:location][:longitude])
-    end
-    @user.locations << @poi.location unless @user.locations.find {|l|l.id==@poi.location.id}
-    is_new_poi = @poi.notes.empty?
+    errors = []
+    poi_jsons = []
+    min_local_time_secs_list = []
+    params[:poi_ids].each do |poi_id|
+      if poi_id.to_i >= 0
+        poi = Poi.find poi_id
+        # if poi is meanwhile deleted by other user then create new one - tell user to replace old ...
+      else
+        poi = nearby_poi @user, Location.new(latitude: params[:location][poi_id.to_s][:latitude], longitude: params[:location][poi_id.to_s][:longitude])
+      end
+      @user.locations << poi.location unless @user.locations.find {|l|l.id==poi.location.id}
+      is_new_poi = poi.notes.empty?
 
-    new_poi_notes = []
-    min_local_time_secs = -1
-    params[:poi_note_ids].each do |poi_note_id|
-      poi_note_local_time_secs = poi_note_id.to_i.abs # (poi_note_id.to_i/1000).round.abs
-      min_local_time_secs = poi_note_local_time_secs if (min_local_time_secs == -1) || (poi_note_local_time_secs < min_local_time_secs)
+      new_poi_notes = []
+      min_local_time_secs = -1
+      params[:poi_note_ids][poi_id.to_s].each do |poi_note_id|
+        poi_note_local_time_secs = poi_note_id.to_i.abs # (poi_note_id.to_i/1000).round.abs
+        min_local_time_secs = poi_note_local_time_secs if (min_local_time_secs == -1) || (poi_note_local_time_secs < min_local_time_secs)
 
-      file = params[:poi_note][poi_note_id][:file]
-      if file.present? || (embed = params[:poi_note][poi_note_id][:embed]).present?
-        upload = Upload.new(attached_to: PoiNote.new(poi: @poi, user: @user, text: params[:poi_note][poi_note_id][:text], local_time_secs: poi_note_local_time_secs))
-        upload.attached_to.attachment = upload
-        if file.present?
-          upload.build_entity file.content_type, file: file
+        file = params[:poi_note][poi_id.to_s][poi_note_id][:file]
+        if file.present? || (embed = params[:poi_note][poi_id.to_s][poi_note_id][:embed]).present?
+          upload = Upload.new(attached_to: PoiNote.new(poi: poi, user: @user, text: params[:poi_note][poi_id.to_s][poi_note_id][:text], local_time_secs: poi_note_local_time_secs))
+          upload.attached_to.attachment = upload
+          if file.present?
+            upload.build_entity file.content_type, file: file
+          else
+            upload.build_entity :embed, text: embed[:content], embed_type: UploadEntity::Embed.get_embed_type(embed[:content])
+          end
+          poi_note = upload.attached_to
         else
-          upload.build_entity :embed, text: embed[:content], embed_type: UploadEntity::Embed.get_embed_type(embed[:content])
+          poi_note = PoiNote.new(poi: poi, user: @user, text: params[:poi_note][poi_id.to_s][poi_note_id][:text], local_time_secs: poi_note_local_time_secs)
         end
-        poi_note = upload.attached_to
-      else
-        poi_note = PoiNote.new(poi: @poi, user: @user, text: params[:poi_note][poi_note_id][:text], local_time_secs: poi_note_local_time_secs)
+        poi.notes << poi_note
+        new_poi_notes << poi_note
       end
-      @poi.notes << poi_note
-      new_poi_notes << poi_note
+      poi.local_time_secs = min_local_time_secs if is_new_poi
+      
+      if poi.save
+        note_json_list = new_poi_notes.collect{|note| poi_note_json(note, false).
+                                                      merge({local_time_secs: note.local_time_secs}) }
+        poi_json = poi_json(poi).
+                   merge(is_new_poi && poi.user==@user ? {local_time_secs: poi.local_time_secs} : {}).
+                   merge(user: { id: @user.id }).
+                   merge(notes: note_json_list)
+        poi_jsons << poi_json
+        min_local_time_secs_list << min_local_time_secs
+      else
+        errors << poi.errors.full_messages
+      end
     end
-    @poi.local_time_secs = min_local_time_secs if is_new_poi
 
-    if @poi.save
-      if ![:development].include?(Rails.env.to_sym)# || true
-        Resque.enqueue(PostCommit, {action: 'sync_poi',
-                                    user_id: @user.id,
-                                    poi_id: @poi.id,
-                                    min_local_time_secs: min_local_time_secs})
-      else
-        PostCommit.new.sync_poi @user.id,
-                                @poi.id,
-                                min_local_time_secs,
-                                false
-      end
-      note_json_list = new_poi_notes.collect{|note| poi_note_json(note, false).
-                                                    merge({local_time_secs: note.local_time_secs}) }
-      poi_json = poi_json(@poi).
-                 merge(is_new_poi && @poi.user==@user ? {local_time_secs: @poi.local_time_secs} : {}).
-                 merge(user: { id: @user.id }).
-                 merge(notes: note_json_list)
-
-      render json: { message: 'OK', poi: poi_json }.to_json
+    if ![:development].include?(Rails.env.to_sym)# || true
+      Resque.enqueue(PostCommit, {action: 'sync_pois',
+                                  user_id: @user.id,
+                                  poi_ids: params[:poi_ids],
+                                  min_local_time_secs_list: min_local_time_secs_list})
     else
-      render json: { errors: @poi.errors.full_messages }, status: 401
+      PostCommit.new.sync_pois @user.id,
+                               params[:poi_ids],
+                               min_local_time_secs_list,
+                               false
     end
+
+    render json: { pois: poi_jsons, errors: errors }.to_json
   end
 
   # creates a poi with initial poi_note or adds poi_note to poi's initial poi_note
