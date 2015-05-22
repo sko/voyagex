@@ -261,6 +261,7 @@ class window.VoyageX.Main
                 APP._syncPoiCB cbPoi, cbNewPoiNotes
         unless VoyageX.Main._BACKEND._state.pingActive
           setTimeout "VoyageX.Main._BACKEND.pingBackend()", VoyageX.Backend._PING_CHECK_DELAY_MILLIS
+    APP.model().syncChatMessages()
     #Comm.StorageController.instance()._tileLoadQueue = {}
     
     Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
@@ -463,7 +464,7 @@ class window.VoyageX.Main
           APP.loadLocation location, false
 
   showPOIs: (location, flags = {withNotes: true, reset: false}) ->
-    APP.model().loadPois location.lat, location.lng, (poi) ->
+    APP.model().loadPois trimPosVal(location.lat), trimPosVal(location.lng), (poi) ->
         location = {id: poi.locationId, lat: poi.lat, lng: poi.lng, address: poi.address, poiId: poi.id}
         markerMeta = APP.getMarker poi, true
         unless markerMeta?
@@ -557,7 +558,6 @@ class window.VoyageX.Main
     VoyageX.TemplateHelper.openPeerPopup peer, markerMeta.target()
 
   updateFollow: (user, grant) ->
-    #USERS.updateFollow user, grant
     APP.closeSystemMessage('popup')
 
   getSelectedPositionLatLng: () ->
@@ -593,7 +593,7 @@ class window.VoyageX.Main
     $('#zoom_level').html('<span style="color:white;">zoom: '+APP.map().getZoom()+'</span>')
 
   _initPositionCB: (position, address = null, isReInit = false) ->
-    location = {lat: position.coords.latitude, lng: position.coords.longitude}
+    location = {lat: trimPosVal(position.coords.latitude), lng: trimPosVal(position.coords.longitude)}
     if isReInit
       marker = Main.markerManager().get()
     else
@@ -855,10 +855,11 @@ class window.VoyageX.Main
     else if message.type == 'poi_delete'
       curU = APP.user()
       Main._STORAGE_CONTROLLER.saveUser {id: curU.id, curCommitHash: message.commit_hash}
-      Storage.Model.instance().deletePoi message.poi_id, (poi) ->
-          APP.markers().removeForPoi poi.id
-          #APP.view().alert()
-        , false
+      if curU.id != message.userId
+        Storage.Model.instance().deletePoi message.poi_id, (poi) ->
+            APP.markers().removeForPoi poi.id
+            #APP.view().alert()
+          , false
     APP._view._systemCB message
 
   _talkCB: (message) ->
@@ -902,11 +903,19 @@ class window.VoyageX.Main
           #APP.storage().saveCurrentUser curU
           Main._STORAGE_CONTROLLER.saveUser {id: curU.id, curCommitHash: upload.commit_hash}
           #qPoiId = if upload.poi.local_time_secs? then -upload.poi.local_time_secs else upload.poi.id
+          #
+          # NOTE_1: actually there shouldn't be any changes from other users since pull is done before sync
+          #
           for uPoi in upload.pois
             # new pois created by local user have id -uPoi.local_time_secs
-            qPoiId = if uPoi.local_time_secs? then -uPoi.local_time_secs else uPoi.id
-            storedPoi = APP.storage().getPoi qPoiId
-            callback = ((oldNotes) ->
+            if uPoi.local_time_secs?
+              storedPoi = APP.storage().getPoi -uPoi.local_time_secs
+              unless storedPoi?
+                # might have been changed already by sync_poi-response - race-condition
+                storedPoi = APP.storage().getPoi uPoi.id
+            else
+              storedPoi = APP.storage().getPoi uPoi.id
+            callback = ((oldNotes, user) ->
                 (cbPoi, cbNewNotes) ->
                     #  
                     # there could also be some new pois from other users! order might be mixed
@@ -914,6 +923,12 @@ class window.VoyageX.Main
                     location = APP.storage().getLocation(cbPoi.locationId)
                     newNotes = oldNotes.slice 0, oldNotes.length-cbNewNotes.length
                     for note, idx in cbNewNotes
+                      if note.user? && note.user.id == user.id
+                        # notes from local user are added in model - @sync_poi-response
+                        continue
+                      #
+                      # we shouldn't get here: @see NOTE_1
+                      #
                       newNotes.push note
                       if note.user?
                         note.userId = note.user.id
@@ -922,8 +937,9 @@ class window.VoyageX.Main
                     cbPoi.notes = newNotes
                     #VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
                     #.view().scrollToPoiNote cbNewNotes[cbNewNotes.length-1].id
-                    APP.view().viewPoiNotes cbPoi, cbNewNotes[cbNewNotes.length-1].id, null, true
-                )(storedPoi.notes)
+                    #APP.view().viewPoiNotes cbPoi, cbNewNotes[cbNewNotes.length-1].id, null, true
+                    APP.view().viewPoiNotes cbPoi, cbPoi.notes[cbPoi.notes.length-1].id, null, true
+                )(storedPoi.notes, curU)
             # save attachments from new other user's notes
             loadStats = { numAdded: uPoi.notes.length, numLeft: uPoi.notes.length }
             for note in uPoi.notes
@@ -1191,7 +1207,7 @@ class window.VoyageX.Main
         unless contentId.match(/^peer_popup_/)?
           tile = Main.mapControl().tileForPosition markerMeta.location().lat, markerMeta.location().lng, APP.map().getZoom()
           #alert('TODO: Main - _checkSaveNote: store Tiles '+APP.map().getZoom()+'/'+tile.x+'/'+tile.y+' for bookmark')
-          APP.cacheTile tile, APP.map().getZoom()
+          Main._PATH_PREDICTION.cacheTile tile, APP.map().getZoom()
         Storage.Model.instance().addNote targetType, targetId, textArea.val()
 
   # 

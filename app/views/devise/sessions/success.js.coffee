@@ -4,7 +4,7 @@ $('#sign_in_cancel').click()
 <% end -%>
 <%
 l_l = current_user.last_location
-geometry = Paperclip::Geometry.from_file(current_user.foto)
+geometry = current_user.foto.present? ? Paperclip::Geometry.from_file(current_user.foto) : nil
 foto_width = geometry.present? ? geometry.width.to_i : -1
 foto_height = geometry.present? ? geometry.height.to_i : -1
 %>

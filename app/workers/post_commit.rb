@@ -122,7 +122,7 @@ class PostCommit
     diff_added = diff['A']
     diff_modified = diff['M']
     diff_deleted = diff['D']
-  binding.pry    
+#  binding.pry    
     @poi_jsons_for_user = []
     @poi_jsons_for_others = []
     min_local_time_secs = -1

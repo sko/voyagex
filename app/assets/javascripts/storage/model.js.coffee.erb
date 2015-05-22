@@ -198,6 +198,51 @@ class window.Storage.Model
       console.log('TODO: ?')
       #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
 
+  chatMessageReceived: (chatMessageId, peer) ->
+    url = '<%= chat_message_received_path(peer_id: ':p_id', chat_message_id: ':c_m_id') %>'.
+          replace(/:p_id/, if peer? then peer.id else -1).
+          replace(/:c_m_id/, chatMessageId)
+    $.ajax
+      type: 'PUT'
+#      beforeSend: (xhr) ->
+#          xhr.setRequestHeader('X-CSRF-Token', $('meta[name=csrf-token]').first().attr('content'))
+      dataType: 'json'
+      url: url
+    .done (res) ->
+        console.log('res.message OK = '+(res.message=='OK'))
+    .fail (jqXHR, textStatus) ->
+      # get from localStorage
+      console.log('TODO: ?')
+      #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
+
+  syncChatMessages: () ->
+    $.ajax
+      type: 'GET'
+#      beforeSend: (xhr) ->
+#          xhr.setRequestHeader('X-CSRF-Token', $('meta[name=csrf-token]').first().attr('content'))
+      dataType: 'json'
+      url: '<%= unread_chat_messages_path %>'
+    .done (res) ->
+        console.log('res.message OK = '+(res.message=='OK'))
+        p2pSenderIds = Object.keys(res['p2p'])
+        for peerId in p2pSenderIds
+          peer = APP.storage().getUser peerId
+          for message in res['p2p'][peerId]
+            APP.storage().addChatMessage message.text, peer, peer
+        for bcPeerMessages in res['bc']
+          bcSenderId = Object.keys(bcPeerMessages)[0]
+          peer = APP.storage().getUser bcSenderId
+          for message in bcPeerMessages[bcSenderId]
+            message.type = 'message'
+            message.peer = peer
+            APP.storage().addChatMessage message.text, peer
+            APP._view._talkCB message
+        Comm.Comm.instance()._sendMessageQueue()
+    .fail (jqXHR, textStatus) ->
+      # get from localStorage
+      console.log('TODO: ?')
+      #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
+
   # called from batch-upload to upload queue
   syncUploadCachedQPoiData: (formData, poi = null, afterSyncCB = null) ->
     if poi?
@@ -216,9 +261,11 @@ class window.Storage.Model
       contentType: false
       processData: false
     .done (res) ->
-        console.log('res.message OK = '+(res.message=='OK'))
+        console.log('res.message OK = '+(res.errors.length==0))
         if isMobile()
           hideAjaxLoading()
+        # changes from local user is handled here - there might hav been other changes
+        # -> @see APP - _systemCB
         for resPoi in res.pois
           qPoiId = if resPoi.local_time_secs? then -resPoi.local_time_secs else resPoi.id
           # same poi as in params for syncUploadCachedQPoiData

@@ -12,22 +12,11 @@
 #administration
   %div{style: 'float :left; padding: 13px 0px 13px 0px;'}
     %span#whoami_img_container
-      -#%span#whoami_img_edit{style: "display: #{user_signed_in? ? 'inline' : 'none'};"}
-      -#  = link_to image_tag(tmp_user().foto.url, class: 'whoami-img', style: 'max-width: 100px !important; max-height: 100px !important;'), '#edit_whoami_img', onclick: 'javascript:toogleUserFotoUpload()'
-      -#%span#whoami_img_nedit{style: "display: #{user_signed_in? ? 'none' : 'inline'};"}
-      -#  = image_tag tmp_user().foto.url, class: 'whoami-img'
-      %span#whoami_img_edit
-      %span#whoami_img_nedit{style: 'display: none'}
+      %span#whoami_img_edit{style: 'display: none'}
+      %span#whoami_img_nedit
     #user_foto_input_container{style: 'display:none;'}
       = render partial: '/users/foto.mobile', locals: {user: tmp_user()}
     %br
-    -#%span#whoami_edit{style: "display: #{user_signed_in? ? 'inline' : 'none'};"}>
-    -#  = link_to change_username_path, data: { remote: "true", format: :js } do
-    -#    %span.whoami>
-    -#      = t('auth.whoami', username: tmp_user().username).html_safe
-    -#%span#whoami_nedit{style: "display: #{user_signed_in? ? 'none' : 'inline'};"}>
-    -#  %span.whoami>
-    -#    = t('auth.whoami', username: tmp_user().username).html_safe
     %span#whoami_form{style: 'display: none'}
       - @_details = [:username]
       = render('/users/edit_details')
@@ -58,5 +47,4 @@
     %div{style: 'margin: 5px 10px 0px 0px;'}
       = link_to image_tag("de.png", style: "border-width:0px;width:30px;height:20px;"), '#', onclick: "javascript:document.location.href=window.clientState.linkForView('#{lcls[0]}', 'de', '#{lcls[1]}');", :style => "color:#00dd;"
   = render partial: '/users/settings.mobile'
--#= render partial: '/shared/uploads.mobile', locals: {resource: Upload.new, resource_name: :upload}
 = render partial: '/main/stats.mobile'

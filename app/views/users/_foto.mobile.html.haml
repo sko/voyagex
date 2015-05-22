@@ -1,17 +1,10 @@
 %fieldset#user_foto_input_type{data: {role: 'controlgroup', type: 'horizontal'}}
-  /%input{type: 'radio', id: 'user_foto_media_input_init_mobile', name: 'media_input', value: t('uploads.start_camera'), onclick: 'userFotoMediaInputInitMobile()'}
-  /= label_tag 'user_foto_media_input_init_mobile', t('uploads.start_camera')
-  /%input{type: 'radio', id: 'user_foto_file_input_init', name: 'media_input', value: t('uploads.select_file'), onclick: 'userFotoFileInputInit()'}
-  /= label_tag 'user_foto_file_input_init', t('uploads.select_file')
   = link_to t('uploads.start_camera'), '#', onclick: 'userFotoMediaInputInitMobile()'
   = link_to t('uploads.select_file'), '#', onclick: 'userFotoFileInputInit()'
 %span.ui-icon.ui-icon-circle-close{style: 'float:right;', onclick: 'javascript:toogleUserFotoUpload();'}
 %br
 = link_to '', '#media_input_panel', id: 'user_foto_media_input_panel_show'
 .user_foto_media_input_container#user_foto_cam_container{style: 'width: 100%;'}
-  -#%span{style: 'float: left;'}
-    %button#user_foto_media_input_init_mobile
-      #{t('uploads.start_camera')}
   #user_foto_upload_form_ui
     #user_foto_media_input_container{style: 'display: none; text-align: center;'}
       %img#user_foto_media_input_current{src: ''}
@@ -19,7 +12,6 @@
         .ui-button-text
           #{t('uploads.upload_photo').html_safe}
 .user_foto_media_input_container#user_foto_file_container{style: 'display: none;'}
-  -#= form_tag set_user_detail_path(detail: :foto), remote: true, format: :script}, multipart: true, id: :user_foto_form, target: 'upload_target' do |f|
   = form_tag set_user_detail_path(detail: :foto), remote: true, format: :script, multipart: true, id: :user_foto_form, target: 'upload_target' do |f|
     #user_foto_upload_file_controls
       %span{style: 'float: left;'}

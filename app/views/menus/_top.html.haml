@@ -4,51 +4,27 @@
       .navbar-header
         %ul.nav.navbar-nav
           %li
-            -#{onclick: "VoyageX.NavBar.menuNavClick('chat')"}
-            -#
-              %span.navbar-brand{id: 'menu_chat'}
-              #{t('menu.meeting').html_safe}
             = link_to t('menu.meeting'), '#conference', id: 'menu_chat', onclick: "javascript:VoyageX.NavBar.menuNavClick('chat')", class: 'navbar-brand'
           %li
-            -#{onclick: "VoyageX.NavBar.menuNavClick('map')"}
-            -#
-              %span.navbar-brand.active{id: 'menu_map'}
-              #{t('menu.map').html_safe}
             = link_to t('menu.map'), '#map', id: 'menu_map', onclick: "javascript:VoyageX.NavBar.menuNavClick('map')", class: 'navbar-brand'
           %li
-            -#{onclick: "VoyageX.NavBar.menuNavClick('home')"}
-            -#
-              %span.navbar-brand{id: 'menu_home'}
-              #{t('menu.home').html_safe}
             = link_to t('menu.home'), '#home', id: 'menu_home', onclick: "javascript:VoyageX.NavBar.menuNavClick('home')", class: 'navbar-brand'
           %li{style: 'padding: 0px 0px 0px 20px;'}
             %span{style: 'float :left; color: #ffffff; padding: 15px 5px 0px 0px;'}
-              -#%span#whoami_edit{style: "display: #{user_signed_in? ? 'inline' : 'none'};"}>
-              -#  = link_to change_username_path, class: 'navbar-inverse navbar-brand', data: { remote: "true", format: :js } do
-              -#    %span.whoami>
-              -#      = t('auth.whoami', username: tmp_user().username)
-              -#%span#whoami_nedit{style: "display: #{user_signed_in? ? 'none' : 'inline'};", class: 'navbar-inverse navbar-brand'}
-              -#  %span.whoami>
-              -#    #{t('auth.whoami', username: tmp_user().username).html_safe}
               %span#whoami_form{style: 'display: none'}
                 - @_details = [:username]
                 = render('/users/edit_details')
               %span#whoami_edit
               %span#whoami_nedit{style: 'display: none'}
             %span.myfoto{style: 'float :left; z-index:1003;'}
-              -#= image_tag tmp_user().foto.url, class: 'whoami-img', style: 'margin: 3px 0px -10px 0px; max-height: 45px;'
             .logout-link{style: "display: #{user_signed_in? ? 'block' : 'none'}; float: right;"}
               = link_to t('auth.sign_out'), destroy_user_session_path, class: 'navbar-inverse navbar-brand', data: { remote: "true", format: :js, method: :delete }
           %li{id: :sign_up_or_in, style: "display: #{user_signed_in? ? 'none' : 'inline'}; padding: 7px 0px 0px 0px;"}
             .local_auth{style: "float: left;"}
               .login-link
                 = link_to t('auth.sign_in'), '#', id: 'show_sign_in', onclick: 'javascript:$("#sign_in_modal").dialog("open")', class: 'sign_opt menu_link'
-                -#%button{onclick: 'javascript:$("#sign_in_modal").dialog("open")'}
-                -#  #{t('auth.sign_in')}
               .reg-link
                 = link_to t('auth.sign_up'), '#', id: 'show_sign_up', onclick: 'javascript:$("#sign_up_modal").dialog("open")', class: 'sign_opt menu_link'
-                -#%button{onclick: 'javascript:$("#sign_up_modal").dialog("open")'}
-                -#  #{t('auth.sign_up')}
             - if Rails.env.to_sym == :development || true
               .omniauth-links{style: "float: right; margin: 5px 10px 0px 10px;"}
                 .button.facebook_login

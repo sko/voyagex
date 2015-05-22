@@ -11,15 +11,25 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150508081733) do
+ActiveRecord::Schema.define(version: 20150522081337) do
 
-  create_table "chat_messages", force: true do |t|
-    t.integer  "user_id",    null: false
-    t.text     "text"
+  create_table "chat_message_deliveries", force: true do |t|
+    t.integer  "subscriber_id",   null: false
+    t.string   "channel"
+    t.integer  "last_message_id"
     t.datetime "created_at"
   end
 
-  add_index "chat_messages", ["user_id"], name: "index_chat_messages_on_user_id", using: :btree
+  add_index "chat_message_deliveries", ["subscriber_id"], name: "index_chat_message_deliveries_on_subscriber_id", using: :btree
+
+  create_table "chat_messages", force: true do |t|
+    t.integer  "sender_id",       null: false
+    t.text     "text"
+    t.datetime "created_at"
+    t.integer  "p2p_receiver_id"
+  end
+
+  add_index "chat_messages", ["sender_id"], name: "index_chat_messages_on_sender_id", using: :btree
 
   create_table "comm_peers", force: true do |t|
     t.integer  "comm_port_id",    null: false

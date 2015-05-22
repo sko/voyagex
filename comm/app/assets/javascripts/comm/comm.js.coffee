@@ -71,13 +71,13 @@ class window.Comm.Comm
         console.log('queueing publish to '+channel)
         # later send: @_storageController.pop('comm.publish')
         message.cacheId = Math.round(Math.random()*1000000)
-        cacheEntry = { channel: channel, message: message, peer: peer }
+        cacheEntry = { channel: channel, message: message, peer: (if peer? then {id: peer.id, peerPort: peer.peerPort} else null) }
         @_storageController.addToList('comm.publish', 'push', cacheEntry)
     else
       alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
 
   _sendMessageQueue: () ->
-    while (qEntry = Comm.instance()._storageController.pop('comm.publish'))
+    while (qEntry = Comm.instance()._storageController.pop('comm.publish'))?
       console.log('sending queued-publish to '+qEntry.channel)
       Comm.instance().send qEntry.channel, qEntry.message, qEntry.peer
 
@@ -197,7 +197,7 @@ class window.Comm.Comm
     if message.type == 'ready_notification'
       Comm.initChannelContexts message, Comm.channelCallBacksJSON
       systemReady = true
-      Comm.instance()._sendMessageQueue()
+      #Comm.instance()._sendMessageQueue()
     # since unsubscribed client will not receive anymore - but server will send this on next subscription
     # before ready_notification
     # if client disconnects by itself, then:

@@ -86,6 +86,12 @@ class User < ActiveRecord::Base
     CommPort.joins(:comm_peers, :user).where(t[:peer_id].eq(id).and(t[:granted_by_user].eq(nil).or(t[:granted_by_user].eq(false))))
   end
 
+  # utility method for instant follow
+  def follow! user
+    comm_peer = request_grant_to_follow user
+    comm_peer.comm_port.user.grant_to_follow self
+  end
+
   def set_base64_file file_json, content_type, file_name
     StringIO.open(Base64.decode64(file_json)) do |data|
       data.class.class_eval { attr_accessor :original_filename, :content_type }

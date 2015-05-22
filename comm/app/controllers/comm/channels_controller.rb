@@ -72,6 +72,8 @@ module Comm
         LOGGER.debug "<<< #{message}."
         publish_data = message['data']
         if publish_data.present?
+          chat_msg = Comm::ChannelsController.add_chat_message message['channel'], publish_data
+          publish_data['chat_message_id'] = chat_msg.id if chat_msg.present?
           publish_data.delete 'fci'
         end
         pass
@@ -85,22 +87,22 @@ module Comm
       monitor :publish do
         # /talk@o74s558g2 - publish ### Client  ### {"type"=>"message", "userId"=>264, "text"=>"wqeqeqw\n"}
         LOGGER.debug "### #{channel} - publish ### Client #{data['fci']} ### #{data.inspect}"
-        channel_enc_key_match = channel.match(/^.+?#{PEER_CHANNEL_PREFIX}([^\/_]+)(_p2p|)/)
-        if channel_enc_key_match.present?
-          is_p2p = channel_enc_key_match[2] == '_p2p'
-          unless is_p2p
-            begin
-              sender = User.find data['userId']
-              if sender.comm_port.current_faye_client_id == data['fci']
-                ChatMessage.create user: sender, text: data['text']
-              else
-                LOGGER.warn "!!! #{channel} - publish: fake user message: sender: #{sender.id} / #{sender.username}"
-              end
-            rescue => e
-              LOGGER.error "!!! #{channel} - publish !!! #{e.message}"
-            end
-          end
-        end
+        # chat_msg = Comm::ChannelsController.add_chat_message channel, data
+        ## channel_enc_key_match = channel.match(/^.+?#{PEER_CHANNEL_PREFIX}([^\/_]+)(_p2p|)/)
+        ## if channel_enc_key_match.present?
+        ##   is_p2p = channel_enc_key_match[2] == '_p2p'
+        ##   p2p_receiver = is_p2p ? User.joins(:comm_port).where(comm_ports: {channel_enc_key: channel_enc_key_match[1]}).first : nil
+        ##   begin
+        ##     sender = User.find data['userId']
+        ##     if sender.comm_port.current_faye_client_id == data['fci']
+        ##       c_m = ChatMessage.create sender: sender, text: data['text'].strip, p2p_receiver: p2p_receiver
+        ##     else
+        ##       LOGGER.warn "!!! #{channel} - publish: fake user message: sender: #{sender.id} / #{sender.username}"
+        ##     end
+        ##   rescue => e
+        ##     LOGGER.error "!!! #{channel} - publish !!! #{e.message}"
+        ##   end
+        ## end
       end
     end
 
@@ -306,6 +308,26 @@ module Comm
         end
       end
       block_msg
+    end
+    
+    def self.add_chat_message channel, data
+      chat_msg = nil
+      channel_enc_key_match = channel.match(/^.+?#{PEER_CHANNEL_PREFIX}([^\/_]+)(_p2p|)/)
+      if channel_enc_key_match.present?
+        is_p2p = channel_enc_key_match[2] == '_p2p'
+        p2p_receiver = is_p2p ? User.joins(:comm_port).where(comm_ports: {channel_enc_key: channel_enc_key_match[1]}).first : nil
+        begin
+          sender = User.find data['userId']
+          if sender.comm_port.current_faye_client_id == data['fci']
+            chat_msg = ChatMessage.create sender: sender, text: data['text'].strip, p2p_receiver: p2p_receiver
+          else
+            LOGGER.warn "!!! #{channel} - publish: fake user message: sender: #{sender.id} / #{sender.username}"
+          end
+        rescue => e
+          LOGGER.error "!!! #{channel} - publish !!! #{e.message}"
+        end
+      end
+      chat_msg
     end
 
     def check_read_permission channel
