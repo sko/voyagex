@@ -27,10 +27,9 @@ class window.Comm.Comm
 # 2) send everything to rails-app and let her handle  publishing
 #    @see fax-rails if railx can reduce listeners - even if possible - it's more complex
 # 3) everything over faye
-  constructor: (userId, channelCallBacksList, sysChannelEncKey, systemCallBack) ->
+  constructor: (channelCallBacksList, sysChannelEncKey, systemCallBack) ->
     MOCK.out 'Comm'
     Comm._SINGLETON = this
-    @_user_id = userId
     @_storageController = window.Comm.StorageController.instance()
 
     client = new  window.Comm.FayeClientMock()
@@ -44,7 +43,7 @@ class window.Comm.Comm
       Comm.channelCallBacksJSON[pair[0].substr(1)] = { callback: pair[1], channel_enc_key: pair[2] }
 
     if (sysChannelEncKey == null)
-      APP.register(@_user_id)
+      APP.register()
     else
       Comm.initSystemContext sysChannelEncKey
     
@@ -91,12 +90,11 @@ class window.Comm.Comm
     # @see Comm.subscribeTo - subscribe-callback
     # Comm.initChannelContexts response, Comm.channelCallBacksJSON
 
-  @resetSystemContext: (userId) ->
-    Comm.instance()._user_id = userId
+  @resetSystemContext: () ->
     Comm.channelCallBacksJSON.system.channel_enc_key = null 
     for channel in Object.keys(Comm.channelCallBacksJSON)
       Comm.channelCallBacksJSON[channel].channel_enc_key = null
-    APP.register userId
+    APP.register()
 
   @initChannelContexts: (initParams, channelCallBacks) ->
     Comm.subscribeTo '/ping', Comm._systemSubscriptionListener

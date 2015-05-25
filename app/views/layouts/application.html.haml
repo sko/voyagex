@@ -5,7 +5,8 @@
 /  manifest="/manifest"
 / [if gt IE 8]><!
 -# manifestDecl = [:production,:development].include?(Rails.env.to_sym) ? {manifest: "/manifest"} : {}
-- manifestDecl = [:production].include?(Rails.env.to_sym) ? {manifest: "/manifest"} : {}
+- cache_dev = false && (request.env['HTTP_HOST'].match(/^m\./).present? && [:development].include?(Rails.env.to_sym))
+- manifestDecl = cache_dev||[:production].include?(Rails.env.to_sym) ? {manifest: "/manifest"} : {}
 %html{manifestDecl}
   / <![endif]
   %head
@@ -14,7 +15,6 @@
     = stylesheet_link_tag "application", media: "all"
     = stylesheet_link_tag params[:controller], media: "all"
     = csrf_meta_tags
-    -#= javascript_include_tag "modernizr"
     = javascript_include_tag "preload"
     - if Rails.env == 'development'
       -# easier to debug ;)

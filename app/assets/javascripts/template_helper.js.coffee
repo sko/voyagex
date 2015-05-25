@@ -343,22 +343,6 @@ class window.VoyageX.TemplateHelper
     replace(/\{user_id\}/g, APP.user().id).
     replace(/\{path_key\}/g, pathKey)
 
-  @initRadarEditorSlider: (popup) ->
-    # init slider:
-    $(popup._contentNode).find('> .radar_editor > fieldset').first().trigger('create');
-    #noteEditor = $('#'+typeId).closest('.radar_editor').first()
-    #noteEditor.closest('.leaflet-popup-content').first().scrollTop(noteEditor.offset().top)
-    #$('#'+typeId).focus()
-    $('#search_radius_ctrl').slider({
-        min: 100,
-        max: 5000,
-        step: 100,
-        value: APP.user().searchRadiusMeters,
-        stop: (event, u) ->
-            APP.setSearchRadius u.value
-            $('#search_radius_meters').html APP.user().searchRadiusMeters
-    })
-
   @openRadarEditor: () ->
     marker = APP.getOpenPopupMarker()
     unless marker?
@@ -376,9 +360,12 @@ class window.VoyageX.TemplateHelper
       popup.setContent popupHtml + editorHtml
       #$('#tmpl_radar_editor > .radar_editor').remove()
     marker.openPopup()
-    TemplateHelper.initRadarEditorSlider popup
+    APP.view().initRadarEditorSlider popup
     APP.view().setRealPositionWatchedIcon if APP.isRealPositionWatched() then 'on' else 'off'
     APP.view().setTraceCtrlIcon APP.user(), marker, if curPath? then 'start' else 'stop'
+    if showSearchRadius
+      $('#search_radius_display_hide').prop('checked', false)
+      $('#search_radius_display_show').prop('checked', true)
 
   @tracePathEditorHtml: (user, pathKey = null) ->
     tracePathsHtml = ''
@@ -406,7 +393,7 @@ class window.VoyageX.TemplateHelper
       #$('#tmpl_radar_editor > .radar_editor').remove()
     marker.openPopup()
     # init slider:
-    TemplateHelper.initRadarEditorSlider popup
+    APP.view().initRadarEditorSlider popup
     APP.view().setRealPositionWatchedIcon if APP.isRealPositionWatched() then 'on' else 'off'
 
   @subscriptionGrantRequestHtml: (user) ->

@@ -20,8 +20,7 @@ class window.VoyageX.Main
     @_debug = false
     @_version = new VoyageX.Version [0, 1]
     @_initState = 0
-    window.forceOffline = false
-    @_online = online && (!forceOffline)
+    @_online = online
     @_navigatorOnline = @_online
     @_view = new VoyageX.View()
     @_comm = null
@@ -50,30 +49,31 @@ class window.VoyageX.Main
     # at first the map need's to be initialized ...
     $(document).ready () ->
         APP._init mapOptions, offlineZooms, window.VoyageX.TILE_HANDLER
-        # test for address-bar removal / fullscreen @see application.mobile as well
-#        if isMobile()
-#          if !window.pageYOffset
-#            hideAddressBar()
 
-  #
-  # TODO - clean initialisation of all components in order to enable modularized usage auf single components
-  #        (when reused in another application)
-  #
+  # +) _init is called when starting the client-app, which can be either loaded from server via url or
+  #    loaded from app-cache when opened in offline-mode
+  # +) _init is called more than once due to asynchronous initialisation of some components, for which
+  #    a ready-callback from browser is awaited before being usable/accessible (f.ex. file-system)
   _init: (mapOptions, offlineZooms, tileHandler = null) ->
     APP._initState += 1
     switch APP._initState
       when 1
-        Main._BACKEND = new VoyageX.Backend()
+        # the app depends on a ready-usable storage-component
         Main._STORAGE_CONTROLLER = new Comm.StorageController(initLocation, (initError) ->
-            console.log 'StorageController initialized FileSystem with message: '+(if initError then 'FAILED' else 'OK')
+            console.log 'StorageController initialized with message: '+(if initError then 'FAILED' else 'OK')
             APP._init mapOptions, offlineZooms, tileHandler
           )
       when 2
+        Main._BACKEND = new VoyageX.Backend (isOnline) ->
+            APP._online = isOnline
+            APP._init mapOptions, offlineZooms, tileHandler
+      when 3
         curU = APP.user()
         if APP.signedIn curU
           channelEncKey = curU.peerPort.channel_enc_key
           sysChannelEncKey = curU.peerPort.sys_channel_enc_key
-          # don't overwrite last location when reloading from app-cache ...
+          # re-init user-state 
+          # don't overwrite last location when reloading offline from app-cache ...
           Main._STORAGE_CONTROLLER.env (env) ->
             unless env.volatileFlags.userInitialized?
               userData = {id: curU.id}
@@ -89,30 +89,27 @@ class window.VoyageX.Main
                 Main._STORAGE_CONTROLLER.saveUser userData
                 #env.volatileFlags.userInitialized = { lastLocation: true, curCommitHash: true }
                 env.volatileFlags.userInitialized = { reset: Math.round(Date.now()/1000)}
-          # reload since env might have hanged
+          # reload since env might have changed
           curU = APP.user()
           mapOptions.center = new L.LatLng(curU.getLastLocation().lat, curU.getLastLocation().lng)
         else
           channelEncKey = null
           sysChannelEncKey = null
           mapOptions.center = new L.LatLng(initLocation.lat, initLocation.lng)
-        # Communication initialisation (Faye-Client)
-        APP._comm = new Comm.Comm(APP.userId(),
-                                  [['/talk', APP._talkCB, channelEncKey],
+        # Communication initialisation (Faye-Client) needs to be done before MapControl since MC already
+        # publishes messages. no problem if MC publishes before comm is ready (register) since messages
+        # are queued ...
+        APP._comm = new Comm.Comm([['/talk', APP._talkCB, channelEncKey],
                                    ['/map_events', APP._mapEventsCB, channelEncKey],
                                    ['/pois', APP._poisCB, channelEncKey],
                                    ['/radar', APP._radarCB, channelEncKey]],
                                    sysChannelEncKey,
                                    APP._systemCB,
                                    Main._BACKEND.commConnStateCB)
-        #unless APP.isOnline()
-        #  d
-        unless forceOffline
-          Main._BACKEND.pingBackend()
         APP._cacheStrategy = new VoyageX.CacheStrategy true
         # Map initialisation (LeafletJS)
         mapReadyCB = (map) ->
-            #  disable thsi if using geolocation on startup (some lines further down)
+            #  disable this if using geolocation on startup (some lines further down)
             Main._MARKER_MANAGER = new VoyageX.MarkerManager map
             curU = APP.user()
             initLoc = (if curU? then curU.getLastLocation() else null)||window.initLocation
@@ -226,6 +223,21 @@ class window.VoyageX.Main
         #   , -1
         Comm.Comm.initSystemContext curU.peerPort.sys_channel_enc_key
 
+  syncPois: () ->
+    Main._BACKEND.curCommit (msg) ->
+        curU = APP.user()
+        if curU? && (curU.curCommitHash != msg.commit_hash)
+          APP.model().pullPois()
+          # queue is uploaded after pull -> @see _poisCB - upload.action == 'pull'
+        else
+          if APP.storage().hasQueue()
+            APP.storage().uploadQueue null, null, (cbPoi, cbNewPoiNotes) ->
+                console.log 'Main - setOnline: done with queue-sync ...'
+                APP._syncPoiCB cbPoi, cbNewPoiNotes
+        unless VoyageX.Main._BACKEND._state.pingActive
+          setTimeout "VoyageX.Main._BACKEND.pingBackend()", VoyageX.Backend._PING_CHECK_DELAY_MILLIS
+    #Comm.StorageController.instance()._tileLoadQueue = {}
+
   isBackendOnline: () ->
     navigator.onLine && VoyageX.Main._BACKEND.isOnline()
 
@@ -249,21 +261,10 @@ class window.VoyageX.Main
 
   setOnline: () ->
     @_online = true
-    Main._BACKEND.curCommit (msg) ->
-        curU = APP.user()
-        if curU? && (curU.curCommitHash != msg.commit_hash)
-          APP.model().pullPois()
-          # queue is uploaded after pull -> @see _systemCB
-        else
-          if APP.storage().hasQueue()
-            APP.storage().uploadQueue null, null, (cbPoi, cbNewPoiNotes) ->
-                console.log 'Main - setOnline: done with queue-sync ...'
-                APP._syncPoiCB cbPoi, cbNewPoiNotes
-        unless VoyageX.Main._BACKEND._state.pingActive
-          setTimeout "VoyageX.Main._BACKEND.pingBackend()", VoyageX.Backend._PING_CHECK_DELAY_MILLIS
+
+    @syncPois()
     APP.model().syncChatMessages()
-    #Comm.StorageController.instance()._tileLoadQueue = {}
-    
+
     Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
     for n in [Main._MAP_CONTROL._minZoom..Main._MAP_CONTROL._maxZoom]
       Main._MAP_CONTROL._zooms.push n
@@ -403,7 +404,11 @@ class window.VoyageX.Main
       path = APP.storage().getPath APP.user()
       if path?
         path = APP.storage().addToPath APP.user().id, @_selectedPosition, path
-        VoyageX.Main.mapControl().drawPath APP.user(), path, true
+        debugSmoothPath = false
+        if debugSmoothPath
+          VoyageX.Main.mapControl().drawSmoothPath APP.user(), path
+        else
+          VoyageX.Main.mapControl().drawPath APP.user(), path, true
     $('#marker_controls').closest('.leaflet-popup').children('.leaflet-popup-close-button').click()
 
   setHomeBase: () ->
@@ -420,17 +425,7 @@ class window.VoyageX.Main
     curU = APP.user()
     curU.searchRadiusMeters = searchRadiusMeters
     APP.storage().saveCurrentUser curU
-    sBs = searchBounds(APP.map().getCenter().lat, APP.map().getCenter().lng, searchRadiusMeters)
-    APP.map().fitBounds L.latLngBounds(L.latLng(sBs.lat_south, sBs.lng_west), L.latLng(sBs.lat_north, sBs.lng_east))
-    VoyageX.Main.markerManager().searchBounds(searchRadiusMeters, APP.map())
-    Storage.Model.instance().setRadarSettings (user) ->
-        `;`
-    # doesn't really make sense here
-    # peers = APP.storage().getPeers()
-    # for peer in peers
-    #   USERS.checkDistance peer, {lat: APP.map().getCenter().lat, lng: APP.map().getCenter().lng}, (peer, inRange) ->
-    #       if inRange
-    #         APP.view().systemMessage VoyageX.TemplateHelper.peerInRangeHtml(peer)
+    APP.view().showSearchRadius searchRadiusMeters
 
   # location: {id:?} will load location from localStorage or backend first
   loadLocation: (location, fetch = true) ->
@@ -603,39 +598,6 @@ class window.VoyageX.Main
     APP.publishPosition()
     APP.showPOIs location
 
-  # check if second-last path is inaccuracyFactor-times than both last and third last
-  # wenn die letzten beiden ungefähr gleich groß waren (fehler zurück)
-  # und die beiden davor ungefähr gleichgroß waren
-  # und der abstand vom letzten punkt zum 3 letzten punkt ungefähr so ist wie der vom 4 letzen zum 3. letzen
-  # dann vorlezzten punt entfernen.
-  # X-X-X-------X ... don't remove 
-  # X-X-------X-X ... remove 
-  # X-X-X-------X-------X ... don't remove 
-  # ?: also check @_moveSensorDistMeters
-  smoothenPath: (user, path) ->
-    if path.length >= 5
-      inaccuracyFactor1 = 1.25
-      inaccuracyFactor2 = 2.0
-      maxIdx = path.length - 1
-      fourthLastDist = L.latLng(path[maxIdx-4].lat, path[maxIdx-4].lng).distanceTo L.latLng(path[maxIdx-3].lat, path[maxIdx-3].lng)
-      thirdLastDist = L.latLng(path[maxIdx-3].lat, path[maxIdx-3].lng).distanceTo L.latLng(path[maxIdx-2].lat, path[maxIdx-2].lng)
-      factor1 = fourthLastDist / thirdLastDist
-      unless Math.max(factor1, 1/factor1) >= inaccuracyFactor1
-        secondLastDist = L.latLng(path[maxIdx-2].lat, path[maxIdx-2].lng).distanceTo L.latLng(path[maxIdx-1].lat, path[maxIdx-1].lng)
-        lastDist = L.latLng(path[maxIdx-1].lat, path[maxIdx-1].lng).distanceTo L.latLng(path[maxIdx].lat, path[maxIdx].lng)
-        factor2 = secondLastDist / lastDist
-        unless Math.max(factor2, 1/factor2) >= inaccuracyFactor1
-          factor3 = (lastDist+secondLastDist) / (thirdLastDist+fourthLastDist)
-          if factor3 >= inaccuracyFactor2
-            shortDist = L.latLng(path[maxIdx-2].lat, path[maxIdx-2].lng).distanceTo L.latLng(path[maxIdx].lat, path[maxIdx].lng)
-            factor4 = (thirdLastDist+fourthLastDist) / 2 / shortDist
-            unless shortDist >= (thirdLastDist+fourthLastDist)/2*inaccuracyFactor1
-              path = APP.storage().deleteFromPath user.id, APP.storage().pathKey(path), maxIdx-1
-              APP.view().hideTracePath APP.storage().pathKey(path)
-              VoyageX.Main.mapControl().drawPath APP.user(), path
-              return true
-    false
-
   isRealPositionWatched: () ->
     APP._realPositionWatch?
 
@@ -658,11 +620,9 @@ class window.VoyageX.Main
       path = APP.storage().getPath APP.user()
       if path?
         path = APP.storage().addToPath APP.user().id, APP._realPosition, path
-        unless APP.smoothenPath APP.user(), path
-          # don't draw gps-location-error
-          VoyageX.Main.mapControl().drawPath APP.user(), path, true
-          # don't set location unless user explicitely want's to by activating path (else might disturb work)
-          APP.getUserMarker(true).m.setLocation {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
+        VoyageX.Main.mapControl().drawSmoothPath APP.user(), path
+        # don't set location unless user explicitely want's to by activating path (else might disturb work)
+        APP.getUserMarker(true).m.setLocation {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
       
       # if APP._movePredictionLastLatLng == null
       #   APP._movePredictionLastLatLng = {lat: APP._realPosition.lat, lng: APP._realPosition.lng}
@@ -753,6 +713,9 @@ class window.VoyageX.Main
             APP._comm.send('/system', {type: 'error', userId: APP.userId(), userName: APP.userName(), userFoto: APP.user().foto, msg: $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': [poll] - unknown error - disable location-query ...'})
     , { enableHighAccuracy: true, maximumAge: VoyageX.Backend._POS_QUERY_INTERVAL_MILLIS, timeout: VoyageX.Backend._POS_QUERY_TIMEOUT_MILLIS })
 
+  clearPredictionPaths: () ->
+    Main._PATH_PREDICTION.clearPredictionPaths()
+
   togglePredictionPathDebug: () ->
     if @_debug
       @_debug = false
@@ -771,53 +734,32 @@ class window.VoyageX.Main
       return false
     console.log 'got a system - message: ' + message.type
     if message.type == 'ready_notification'
-      # curU is guranteed - either known in init from localStorage or initialized in register
       curU = APP.user()
       if APP.signedIn(curU)
-        #$('#settings_form').attr('action', '<%= user_path id: ":id" %>'.replace(/:id/, curU.id))
-        # next 3 lines also done in success on sign_in - but omniauth doesn't get there
-        $('#sign_up_or_in').first().css('display', 'none')
-        $('.logout-link').each () ->
-          $(this).css('display', 'block')
-        #if isMobile()
-        #  $('#sign_in_cancel').click()
+        APP.view().setupForAuthState true
         systemInitCB() # admin-stuff. @see _init_js.html.haml
         for channel in VoyageX.Main.commChannels()
           Comm.Comm.setChannelContext channel, curU.peerPort.channel_enc_key
         USERS.subscribeToAllPeerChannels()
-        #APP.refreshUserPhoto curU, null, (u, flags) ->
-        #    APP.storage().saveUser u, {foto: u.foto}
       else
-        #$('#settings_form').attr('action', '<%= user_path id: ":id" %>'.replace(/:id/, curU.id))
-        # next 3 lines also done in destroy on sign_out - maybe redundant here
-        $('#sign_up_or_in').first().css('display', 'block')
-        $('.logout-link').each () ->
-          $(this).css('display', 'none')
-      
-      # map-center already set in init
-      #APP.loadLocation {id: (if curU.lastLocationId >= 1 then curU.lastLocationId else -curU.id)}
+        APP.view().setupForAuthState false
       APP.view().setupForCurrentUser()
-      # all users are loaded - to enable follow-requests for everybody
+      # all users (not only peers) are loaded - to enable follow-requests for everybody
+      # maybe rather provide some explicit search
       Storage.Model.instance().loadUsers (user, idx, numUsers) ->
           USERS.initUser user
-          # if idx==(numUsers-1)
-          #   if isMobile()
-          #     # required for applying layout and activating checkbox
-          #     $('#comm_peer_data').trigger("create")
-          # pois are loaded in showPoi
-          # if idx==(numUsers-1)
-          #   APP.model().loadPois curU.getLastLocation().lat, curU.getLastLocation().lng, (poi) ->
-          #       console.log 'loaded poi '+poi.id+' ...'
-          #     , {withNotes: true, reset: true}
+          if idx==(numUsers-1)
+            # when all peers are loaded ...
+            APP.model().syncChatMessages()
         , -1
     else if message.type == 'subscription_grant_request'
     else if message.type == 'subscription_granted'
-      message.peer.peerPort = {channel_enc_key: message.peer.channel_enc_key}
+      #message.peer.peerPort = {channel_enc_key: message.peer.peerPort.channel_enc_key}
       #USERS.subscribeToPeerChannels message.peer
       USERS.initPeer message.peer, true
     else if message.type == 'subscription_denied'
     else if message.type == 'subscription_grant_revoked'
-      message.peer.peerPort = {channel_enc_key: message.peer.channel_enc_key}
+      #message.peer.peerPort = {channel_enc_key: message.peer.peerPort.channel_enc_key}
       USERS.removePeer message.peer
     else if message.type == 'quit_subscription'
       true # do nothing

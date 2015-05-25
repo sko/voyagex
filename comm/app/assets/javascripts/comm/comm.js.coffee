@@ -13,36 +13,16 @@ class window.Comm.Comm
   channelCallBacksJSON = null
   systemReady = false
 
-#
-# 1) on starting up the faye-client requests a channel-key from system, f.ex: talk213enfn23r2n3
-#    this is also a check for online state
-# 2) TODO credentials
-#
-#    then everything goes over faye and server pubishes to all users associeated with 32432jnrrf43
-#    *) server generates key and listens to that channel
-#       - when client publishes server publishes to all external listeners
-#       - server can push to client any time
-#    whats that good for
-# 2) send everything to rails-app and let her handle  publishing
-#    @see fax-rails if railx can reduce listeners - even if possible - it's more complex
-# 3) everything over faye
-  constructor: (userId, channelCallBacksList, sysChannelEncKey, systemCallBack, connStateCallBack) ->
+  constructor: (channelCallBacksList, sysChannelEncKey, systemCallBack, connStateCallBack) ->
     Comm._SINGLETON = this
-    # @see devise/sessions/success.js.coffee
-    if sysChannelEncKey == 'resetting'
-      sysChannelEncKey = null
-    @_online = false
-    @_user_id = userId
     @_storageController = window.Comm.StorageController.instance()
 
     client = new Faye.Client(document.location.origin+'/comm')
-    # rather for debugging
+    # for debugging
     client.addExtension({ incoming: Comm._incoming, outgoing: Comm._outgoing })
     client.on 'transport:down', () ->
-        window.Comm.Comm.instance()._online = false
         connStateCallBack false
     client.on 'transport:up', () ->
-        window.Comm.Comm.instance()._online = true
         connStateCallBack true
     
     # map callbacks to channels
@@ -52,14 +32,12 @@ class window.Comm.Comm
       Comm.channelCallBacksJSON[pair[0].substr(1)] = { callback: pair[1], channel_enc_key: pair[2] }
 
     if (sysChannelEncKey == null)
-      #APP.register @_user_id
       APP.register()
     else
       Comm.initSystemContext sysChannelEncKey
   
   isOnline: () ->
     client._state == client.CONNECTED
-    #@_online
   
   isReady: () ->
     this.isOnline() && systemReady
@@ -118,12 +96,10 @@ class window.Comm.Comm
     # @see Comm.subscribeTo - subscribe-callback
     # Comm.initChannelContexts response, Comm.channelCallBacksJSON
 
-  @resetSystemContext: (userId) ->
-    Comm.instance()._user_id = userId
+  @resetSystemContext: () ->
     Comm.channelCallBacksJSON.system.channel_enc_key = null 
     for channel in Object.keys(Comm.channelCallBacksJSON)
       Comm.channelCallBacksJSON[channel].channel_enc_key = null
-    #APP.register userId
     APP.register()
 
   @setChannelContext: (channel, enc_key) ->

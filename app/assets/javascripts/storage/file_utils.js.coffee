@@ -117,6 +117,7 @@ class window.Comm.FileUtils
                       if deferredModeParams.fileStatusCB?
                         deferredModeParams.fileStatusCB deferredModeParams, true
                       deferredModeParams.deferred.resolve fileEntry.toURL(fU._tileImageContentType)
+                      deferredModeParams.deferred = null
                       storeKey = Comm.StorageController.tileKey(xYZ)
                       delete fU._tileLoadQueue[storeKey]
                       sC = APP.storage()
@@ -136,6 +137,7 @@ class window.Comm.FileUtils
                         deferredModeParams.fileStatusCB deferredModeParams, true
                       #deferredModeParams.deferred.resolve deferredModeParams.tileUrl
                       deferredModeParams.deferred.resolve VoyageX.MapControl.notInCacheImage(xYZ[0], xYZ[1], xYZ[2])
+                      deferredModeParams.deferred = null
                       delete fU._tileLoadQueue[Comm.StorageController.tileKey(xYZ)]
                   console.log('saving file: '+path)
                   fileWriter.write(new Blob([data.properties.data], {type: fU._tileImageContentType}))
@@ -224,10 +226,12 @@ class window.Comm.FileUtils
                   if this.result == ''
                     console.log('bad read on '+path)
                   deferredModeParams.deferred.resolve this.result
+                  deferredModeParams.deferred = null
           reader.readAsText(file)
           #reader.readAsDataURL(file, APP.storage()._tileImageContentType)
         else
           deferredModeParams.deferred.resolve fileEntry.toURL(FileUtils.instance()._tileImageContentType)
+          deferredModeParams.deferred = null
         delete FileUtils.instance()._tileLoadQueue[Comm.StorageController.tileKey(xYZ)]
       , (e) ->
         if (e.code == FileError.NOT_FOUND_ERR) 
@@ -304,6 +308,7 @@ class window.Comm.FileUtils
             fileWriter.onwriteend = (e) ->
                 console.log('Write completed.')
                 deferredModeParams.deferred.resolve fileEntry.toURL(deferredModeParams.fileMeta.content_type)
+                deferredModeParams.deferred = null
                 
 
 # TODO
@@ -324,6 +329,7 @@ class window.Comm.FileUtils
                 console.log('Write failed: ' + e.toString())
                 #deferredModeParams.deferred.resolve deferredModeParams.tileUrl
                 deferredModeParams.deferred.resolve Storage.Model.notInCacheImage(deferredModeParams.fileMeta)
+                deferredModeParams.deferred = null
             console.log('saving file: '+dirReader.path+'/'+fileName)
             fileWriter.write(new Blob([data], {type: deferredModeParams.fileMeta.content_type}))
             # text-files
@@ -398,23 +404,6 @@ class window.Comm.FileUtils
   _getFile: (path, fileMeta, fileOwner, deferredModeParams) ->
     @_dirReaders.entry.getFile(path, {}, (fileEntry) ->
         console.log('_getFile - found file: '+path)
-#         # if binary:
-#         #deferredModeParams.deferred.resolve fileEntry.toURL(fileMeta.content_type), fileEntry.file
-#         fileEntry.file (file) ->
-#             deferredModeParams.deferred.resolve fileEntry.toURL(fileMeta.content_type), new Blob([file], { type: fileMeta.content_type })
-# #        # if text (base64):
-# #        fileEntry.file (file) ->
-# #            #@_dirReaders.entries.poiNotes.entries.attachments.reader
-# #            reader = new FileReader()
-# #            reader.onabort = (e) ->
-# #                console.log('aborted '+path+": "+e)
-# #            reader.onerror = (e) ->
-# #                console.log('failed '+path+": "+e)
-# #            reader.onload = (e) ->
-# #                if this.result == ''
-# #                  console.log('bad read on '+path)
-# #                deferredModeParams.deferred.resolve this.result, file
-# #            reader.readAsText(file)
         if @_storedFilesAreBase64
           fileEntry.file (file) ->
               #@_dirReaders.entries[xYZ[2]].entries[xYZ[0].reader
@@ -427,6 +416,7 @@ class window.Comm.FileUtils
                   if this.result == ''
                     console.log('bad read on '+path)
                   deferredModeParams.deferred.resolve this.result
+                  deferredModeParams.deferred = null
           reader.readAsText(file)
           #reader.readAsDataURL(file, APP.storage()._tileImageContentType)
         else
@@ -436,6 +426,7 @@ class window.Comm.FileUtils
           #deferredModeParams.deferred.resolve fileEntry.toURL(fileMeta.content_type), fileEntry.file
           fileEntry.file (file) ->
               deferredModeParams.deferred.resolve fileEntry.toURL(fileMeta.content_type), new Blob([file], { type: fileMeta.content_type })
+              deferredModeParams.deferred = null
       , (e) ->
         if (e.code == FileError.NOT_FOUND_ERR) 
           console.log('_getFile - no such file: '+path)

@@ -29,38 +29,40 @@ class UsersController < ApplicationController
   def unread_chat_messages
     @user = current_user
     chat_messages = {p2p: {}, bc: []}
-    t = ChatMessage.arel_table
-    # p2p
-    c_m_d = ChatMessageDelivery.where(subscriber: @user, channel: "/talk#{PEER_CHANNEL_PREFIX}#{@user.comm_port.channel_enc_key}_p2p")
-    if c_m_d.count >= 1
-      c_m_d = c_m_d.first
-      p2p_messages = ChatMessage.where(t[:p2p_receiver_id].eq(@user.id).and(t[:id].gt(c_m_d.last_message_id)))
-    else
-      c_m_d = nil
-      p2p_messages = ChatMessage.where(p2p_receiver: @user)
-    end
-    if p2p_messages.count >= 1
-      c_ms = nil
-      p2p_messages.each do |c_m|
-        c_ms = chat_messages[:p2p][c_m.sender_id]
-        c_ms = chat_messages[:p2p][c_m.sender_id] = [] unless c_ms.present?
-        c_ms << {id: c_m.id, created_at: c_m.created_at.strftime("%Y-%m-%d %H:%M:%S"), text: c_m.text}
+    if @user.present?
+      t = ChatMessage.arel_table
+      # p2p
+      c_m_d = ChatMessageDelivery.where(subscriber: @user, channel: "/talk#{PEER_CHANNEL_PREFIX}#{@user.comm_port.channel_enc_key}_p2p")
+      if c_m_d.count >= 1
+        c_m_d = c_m_d.first
+        p2p_messages = ChatMessage.where(t[:p2p_receiver_id].eq(@user.id).and(t[:id].gt(c_m_d.last_message_id)))
+      else
+        c_m_d = nil
+        p2p_messages = ChatMessage.where(p2p_receiver: @user)
       end
-      c_m_d = ChatMessageDelivery.create(subscriber: @user, channel: "/talk#{PEER_CHANNEL_PREFIX}#{@user.comm_port.channel_enc_key}_p2p", last_message_id: -1) unless c_m_d.present?
-      c_m_d.update_attribute :last_message_id, c_ms.last[:id]
-    end
-    # bc
-    @user.follows.each do |followee|
-      c_m_d = ChatMessageDelivery.where(subscriber: @user, channel: "/talk#{PEER_CHANNEL_PREFIX}#{followee.comm_port.channel_enc_key}").first
-      c_m_d = ChatMessageDelivery.create(subscriber: @user, channel: "/talk#{PEER_CHANNEL_PREFIX}#{followee.comm_port.channel_enc_key}", last_message_id: -1) unless c_m_d.present?
-      query = ChatMessage.where(t[:sender_id].eq(followee.id).and(t[:id].gt(c_m_d.last_message_id)))
-      if query.count >= 1
-        c_ms = []
-        chat_messages[:bc] << { followee.id => c_ms }
-        query.order(:id).each do |c_m|
+      if p2p_messages.count >= 1
+        c_ms = nil
+        p2p_messages.each do |c_m|
+          c_ms = chat_messages[:p2p][c_m.sender_id]
+          c_ms = chat_messages[:p2p][c_m.sender_id] = [] unless c_ms.present?
           c_ms << {id: c_m.id, created_at: c_m.created_at.strftime("%Y-%m-%d %H:%M:%S"), text: c_m.text}
         end
+        c_m_d = ChatMessageDelivery.create(subscriber: @user, channel: "/talk#{PEER_CHANNEL_PREFIX}#{@user.comm_port.channel_enc_key}_p2p", last_message_id: -1) unless c_m_d.present?
         c_m_d.update_attribute :last_message_id, c_ms.last[:id]
+      end
+      # bc
+      @user.follows.each do |followee|
+        c_m_d = ChatMessageDelivery.where(subscriber: @user, channel: "/talk#{PEER_CHANNEL_PREFIX}#{followee.comm_port.channel_enc_key}").first
+        c_m_d = ChatMessageDelivery.create(subscriber: @user, channel: "/talk#{PEER_CHANNEL_PREFIX}#{followee.comm_port.channel_enc_key}", last_message_id: -1) unless c_m_d.present?
+        query = ChatMessage.where(t[:sender_id].eq(followee.id).and(t[:id].gt(c_m_d.last_message_id)))
+        if query.count >= 1
+          c_ms = []
+          chat_messages[:bc] << { followee.id => c_ms }
+          query.order(:id).each do |c_m|
+            c_ms << {id: c_m.id, created_at: c_m.created_at.strftime("%Y-%m-%d %H:%M:%S"), text: c_m.text}
+          end
+          c_m_d.update_attribute :last_message_id, c_ms.last[:id]
+        end
       end
     end
     render json: chat_messages.to_json
@@ -184,12 +186,6 @@ class UsersController < ApplicationController
     end
     @user.attributes = params[:user].permit! if params[:user].present?
     @user.save
-
-    # respond_to do |format|
-    #   format.js {}
-    #   format.json { render :json => msg.to_json }
-    # end
-    render json: {message: "ok"}.to_json
   end
 
   def peers

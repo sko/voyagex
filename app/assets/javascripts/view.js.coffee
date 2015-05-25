@@ -80,6 +80,22 @@ class window.VoyageX.View
     for listener in View.instance()._commListeners.radar
       listener(radarEvent)
 
+  setupForAuthState: (isSignedIn) ->
+    if isSignedIn
+      #$('#settings_form').attr('action', '<%= user_path id: ":id" %>'.replace(/:id/, curU.id))
+      # next 3 lines also done in success on sign_in - but omniauth doesn't get there
+      $('#sign_up_or_in').first().css('display', 'none')
+      $('.logout-link').each () ->
+        $(this).css('display', 'block')
+      #if isMobile()
+      #  $('#sign_in_cancel').click()
+    else
+      #$('#settings_form').attr('action', '<%= user_path id: ":id" %>'.replace(/:id/, curU.id))
+      # next 3 lines also done in destroy on sign_out - maybe redundant here
+      $('#sign_up_or_in').first().css('display', 'block')
+      $('.logout-link').each () ->
+        $(this).css('display', 'none')
+
   # clearFollows: () ->
   #   $('#i_follow').html('')
   #   $('#i_want_to_follow').html('')
@@ -232,8 +248,7 @@ class window.VoyageX.View
 
     if path? # leave separated from withinSearchBounds although it could go in block
       path = APP.storage().addToPath peer.id, {lat: location.lat, lng: location.lng}, path
-      unless APP.smoothenPath peer, path
-        VoyageX.Main.mapControl().drawPath peer, path, true
+      VoyageX.Main.mapControl().drawSmoothPath peer, path
 
   setTraceCtrlIcon: (user, marker, state) ->
     if state == 'start'
@@ -275,6 +290,27 @@ class window.VoyageX.View
         target.each () ->
           $(this).attr('src', VoyageX.IMAGES_CTXNAVALERT_OFF_PATH)
         @_blinkArrowTO = setTimeout "APP.view()._blinkArrow()", 500
+
+  initRadarEditorSlider: (popup) ->
+    # init slider:
+    $(popup._contentNode).find('> .radar_editor > fieldset').first().trigger('create');
+    #noteEditor = $('#'+typeId).closest('.radar_editor').first()
+    #noteEditor.closest('.leaflet-popup-content').first().scrollTop(noteEditor.offset().top)
+    #$('#'+typeId).focus()
+    $('#search_radius_ctrl').slider({
+        min: 100,
+        max: 5000,
+        step: 100,
+        value: APP.user().searchRadiusMeters,
+        stop: (event, u) ->
+            APP.setSearchRadius u.value
+            $('#search_radius_meters').html APP.user().searchRadiusMeters
+    })
+
+  showSearchRadius: (searchRadiusMeters) ->
+    sBs = searchBounds(APP.map().getCenter().lat, APP.map().getCenter().lng, searchRadiusMeters)
+    APP.map().fitBounds L.latLngBounds(L.latLng(sBs.lat_south, sBs.lng_west), L.latLng(sBs.lat_north, sBs.lng_east))
+    VoyageX.Main.markerManager().searchBounds(searchRadiusMeters, APP.map())
 
   alert: (stop = false) ->
     if stop

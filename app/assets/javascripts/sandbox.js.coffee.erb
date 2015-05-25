@@ -42,8 +42,7 @@ class window.VoyageX.Sandbox
   toggleSearchRadiusDisplay: (selected) ->
     if selected.id == 'search_radius_display_show'
       window.showSearchRadius = true
-      #VoyageX.Main.markerManager()._showSearchRadius = true
-      VoyageX.Main.markerManager().searchBounds(APP.user().searchRadiusMeters, APP.map())
+      APP.view().showSearchRadius APP.user().searchRadiusMeters
     else
       window.showSearchRadius = false
       #VoyageX.Main.markerManager()._showSearchRadius = false

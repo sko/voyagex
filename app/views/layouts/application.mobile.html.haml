@@ -4,7 +4,8 @@
 /[if IE 8] <html class="no-js lt-ie9">
 / [if gt IE 8]><!
 -# manifestDecl = [:production,:development].include?(Rails.env.to_sym) ? {manifest: "/manifest"} : {}
-- manifestDecl = [:production].include?(Rails.env.to_sym) ? {manifest: "/manifest"} : {}
+- cache_dev = false && (request.env['HTTP_HOST'].match(/^m\./).present? && [:development].include?(Rails.env.to_sym))
+- manifestDecl = cache_dev||[:production].include?(Rails.env.to_sym) ? {manifest: "/manifest"} : {}
 %html.ui-mobile{manifestDecl}
   / <![endif]
   %head
@@ -12,13 +13,9 @@
     %meta{name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'}
     %meta{name: 'mobile-web-app-capable', content: 'yes'}
     = render partial: 'layouts/init_js'
-    -#= javascript_tag do
-    -#  window.scrollRef = window.scrollTo;
-    -#  window.scrollTo = function(){return false;};
     = stylesheet_link_tag "application.mobile", media: "all"
     = stylesheet_link_tag "#{params[:controller]}.mobile", media: "all"
     = csrf_meta_tags
-    -#= javascript_include_tag "modernizr"
     = javascript_include_tag "preload.mobile"
     - if Rails.env == 'development'
       -# easier to debug ;)
@@ -37,7 +34,8 @@
       .navbar-header{'data-role' => 'navbar'}
         %ul
           %li
-            -#%a{id: 'system_message_popup_link', style: 'display:none;', href: '#system_message_popup', 'data-rel' => 'popup', 'data-position-to' => 'origin'}
+            -# other mobile popup-links are declared further down - but for this we like position in menu ...
+            = link_to '', '#system_message_popup', id: 'system_message_popup_link', style: 'display: none;', 'data-rel' => 'popup', 'data-position-to' => 'origin'
             %button{class: 'activate_chat', value: 'chat', 'data-icon' => 'comment', 'data-iconpos' => 'top'}
           %li
             %button{class: 'activate_map', value: 'map', 'data-icon' => 'location', 'data-iconpos' => 'top'}
@@ -76,7 +74,8 @@
         = link_to '', '#upload_data_panel', id: 'open_upload_data_btn', style: 'display: none;'
         = link_to '', '#attachment_view_panel', id: 'open_attachment_view_btn', style: 'display: none;'
         = link_to '', '#system_message_panel', id: 'open_system_message_btn', style: 'display: none;'
-        = link_to '', '#system_message_popup', id: 'system_message_popup_link', style: 'display: none;', 'data-rel' => 'popup', 'data-position-to' => 'window'
+        -# next popup-link is already declared in menu, due to positioning ...
+        -#= link_to '', '#system_message_popup', id: 'system_message_popup_link', style: 'display: none;', 'data-rel' => 'popup', 'data-position-to' => 'window'
     / panels nust be beginning or end in data-role: page
     #attachment_view_panel{data: {role: 'panel', animate: 'true', display: 'overlay'}}
     #attachment_view_panel_close_btn{style: 'display: none;'}

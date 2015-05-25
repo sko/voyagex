@@ -184,6 +184,47 @@ class window.VoyageX.MapControl
           $("#map > .leaflet-map-pane > .leaflet-tile-pane .leaflet-tile-container:parent").
           append('<div data-role="tileInfo" style="position: absolute; '+style+' z-index: 9999; opacity: 0.5; text-align: center; vertical-align: middle; border: 1px solid '+color+'; color: '+color+'; font-weight: bold;">'+key+'</div>')
 
+  # check if second-last path is inaccuracyFactor-times than both last and third last
+  # wenn die letzten beiden ungefähr gleich groß waren (fehler zurück)
+  # und die beiden davor ungefähr gleichgroß waren
+  # und der abstand vom letzten punkt zum 3 letzten punkt ungefähr so ist wie der vom 4 letzen zum 3. letzen
+  # dann vorlezten punkt entfernen.
+  # X-X-X-------X ... don't remove 
+  # X-X-------X-X ... remove 
+  # X-X-X-------X-------X ... don't remove 
+  # ?: also check @_moveSensorDistMeters
+  _smoothenPath: (user, path) ->
+    if path.length >= 5
+      inaccuracyFactor1 = 1.25
+      inaccuracyFactor2 = 2.0
+      maxIdx = path.length - 1
+      fourthLastDist = L.latLng(path[maxIdx-4].lat, path[maxIdx-4].lng).distanceTo L.latLng(path[maxIdx-3].lat, path[maxIdx-3].lng)
+      thirdLastDist = L.latLng(path[maxIdx-3].lat, path[maxIdx-3].lng).distanceTo L.latLng(path[maxIdx-2].lat, path[maxIdx-2].lng)
+      factor1 = fourthLastDist / thirdLastDist
+      unless Math.max(factor1, 1/factor1) >= inaccuracyFactor1
+        secondLastDist = L.latLng(path[maxIdx-2].lat, path[maxIdx-2].lng).distanceTo L.latLng(path[maxIdx-1].lat, path[maxIdx-1].lng)
+        lastDist = L.latLng(path[maxIdx-1].lat, path[maxIdx-1].lng).distanceTo L.latLng(path[maxIdx].lat, path[maxIdx].lng)
+        factor2 = secondLastDist / lastDist
+        unless Math.max(factor2, 1/factor2) >= inaccuracyFactor1
+          factor3 = (lastDist+secondLastDist) / (thirdLastDist+fourthLastDist)
+          if factor3 >= inaccuracyFactor2
+            shortDist = L.latLng(path[maxIdx-2].lat, path[maxIdx-2].lng).distanceTo L.latLng(path[maxIdx].lat, path[maxIdx].lng)
+            factor4 = (thirdLastDist+fourthLastDist) / 2 / shortDist
+            unless shortDist >= (thirdLastDist+fourthLastDist)/2*inaccuracyFactor1
+              path = APP.storage().deleteFromPath user.id, APP.storage().pathKey(path), maxIdx-1
+              APP.view().hideTracePath APP.storage().pathKey(path)
+              this.drawPath user, path
+              return true
+    false
+
+  # returns whether path was smoothened
+  drawSmoothPath: (user, path) ->
+    unless this._smoothenPath user, path
+      # don't draw gps-location-error
+      this.drawPath user, path, true
+      return false
+    true
+
   drawPath: (user, path, append = false) ->
     pathKey = APP.storage().pathKey path
     unless @_pathViewIds.pathKey?

@@ -14,11 +14,10 @@ class window.VoyageX.Backend
   @_POS_QUERY_INTERVAL_MILLIS = 20000
   @_POS_QUERY_TIMEOUT_MILLIS = 60000
 
-  constructor: (forceOffline = false) ->
+  constructor: (callback) ->
     Backend._SINGLETON = this
-    @_state = { online: !forceOffline, pingActive: false, pingCount: 0, pingKey: -1, forceOffline: forceOffline }
-    #setTimeout "VoyageX.Backend.instance().pingBackend()", 3000
-    #Backend.instance().pingBackend()
+    @_state = { online: null, pingActive: false, pingCount: 0, pingKey: -1 }
+    this.pingBackend callback
 
   commConnStateCB: (online) ->
     if online
@@ -36,7 +35,7 @@ class window.VoyageX.Backend
       setTimeout "VoyageX.Backend.instance().pingBackend()", Backend._PING_INTERVAL_MILLIS
 
   # backend needs it's own ping because app can be online when backend is down.
-  pingBackend: (successCB = null) ->
+  pingBackend: (callback = null) ->
     @_state.pingActive ||= true
     pingKey = Math.round(Math.random() * 100000)
     $.ajax
@@ -46,20 +45,24 @@ class window.VoyageX.Backend
     .done (msg) ->
         Backend.instance()._state.pingKey = msg.ping_key
         Backend.instance()._state.online = true
-        unless APP._online
-          APP.setOnline()
-        if successCB?
-          successCB()
-        Backend.instance()._state.pingActive &&= (!APP._comm.isOnline())
-        if Backend.instance()._state.pingActive
-          setTimeout "VoyageX.Backend.instance().pingBackend()", Backend._PING_INTERVAL_MILLIS
+        if callback?
+          callback true
+        else
+          unless APP._online
+            APP.setOnline()
+          Backend.instance()._state.pingActive &&= (!APP._comm.isOnline())
+          if Backend.instance()._state.pingActive
+            setTimeout "VoyageX.Backend.instance().pingBackend()", Backend._PING_INTERVAL_MILLIS
     .fail (jqXHR, textStatus) ->
         Backend.instance()._state.online = false
-        if APP._online
-          APP.setOffline()
-        #Backend.instance()._state.pingActive &&= (!APP._comm.isOnline())
-        if Backend.instance()._state.pingActive
-          setTimeout 'VoyageX.Backend.instance()._checkPingResponse('+pingKey+')', Backend._PING_CHECK_DELAY_MILLIS
+        if callback?
+          callback false
+        else
+          if APP._online
+            APP.setOffline()
+          #Backend.instance()._state.pingActive &&= (!APP._comm.isOnline())
+          if Backend.instance()._state.pingActive
+            setTimeout 'VoyageX.Backend.instance()._checkPingResponse('+pingKey+')', Backend._PING_CHECK_DELAY_MILLIS
 
   # faye client takes some time to start up while backend already online
   # first call might still 
@@ -72,8 +75,7 @@ class window.VoyageX.Backend
         # assume backend is down when faye is down.
         online = @_state.online = false
         # also check Comm.Comm - constructor
-        unless @_state.forceOffline
-          this.pingBackend()
+        this.pingBackend()
     online
 
   register: (callback) ->
@@ -83,15 +85,10 @@ class window.VoyageX.Backend
       dataType: 'json'
       url: '<%= comm_register_path %>'
       data: data
-    .done (msg) ->
-        callback msg
-        # curU = APP.user()
-        # curU.peerPort = { channel_enc_key: msg.channel_enc_key,\
-        #                   sys_channel_enc_key: msg.sys_channel_enc_key }
-        # APP.storage().saveCurrentUser curU
-        # Comm.Comm.initSystemContext msg.sys_channel_enc_key
+    .done (user) ->
+        callback user
     .fail (jqXHR, textStatus) ->
-        alert('TODO: handle registration failure...')
+        console.log '!!! error when trying to register - no comm-initialisation ...'
 
   curCommit: (callback) ->
     pingKey = Math.round(Math.random() * 100000)

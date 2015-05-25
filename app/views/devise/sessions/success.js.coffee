@@ -37,4 +37,4 @@ for channel in VoyageX.Main.commChannels()
   unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
     channelPath += VoyageX.PEER_CHANNEL_PREFIX+Comm.Comm.channelCallBacksJSON[channel].channel_enc_key
   Comm.Comm.unsubscribeFrom channelPath, true
-Comm.Comm.resetSystemContext <%= current_user.id %>
+Comm.Comm.resetSystemContext()
