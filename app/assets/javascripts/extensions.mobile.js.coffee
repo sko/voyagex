@@ -1,10 +1,11 @@
 jQuery ->
 
   $(document).on 'click', '.activate_chat', (event) ->
-    VoyageX.NavBar.menuNavClick('chat')
+    VIEW_MODEL.menuNavClick('chat')
     # if $('#system_message_popup-popup').hasClass('ui-popup-active')
     #   $('#system_message_popup-popup').removeClass('ui-popup-active').addClass('ui-popup-hidden')
-    stopSound()
+    if `window.stopSound !== undefined`
+      stopSound()
     APP.closeSystemMessage('popup')
   
   # $("#system_message_popup").on 'popupafterclose', (event, ui) ->

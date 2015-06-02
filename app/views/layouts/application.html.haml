@@ -59,5 +59,5 @@
         showLoginDialog(#{email_arg});
     - if params[:c].present?
       = javascript_tag do
-        VoyageX.NavBar.menuNavClick('#{params[:c]}');
+        VIEW_MODEL.menuNavClick('#{params[:c]}');
         /window.location.href.replace(/\??c=[^&]*/, '')

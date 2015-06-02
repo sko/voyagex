@@ -1,11 +1,8 @@
 <% environment.context_class.instance_eval { include Rails.application.routes.url_helpers } %>
 # Comm::Engine.routes.url_helpers
 
-if window.VoyageX?
-  window.VoyageX.Backend = {}
-else
-  window.VoyageX = { Backend: {} }
-
+unless window.VoyageX?
+  window.VoyageX = {}
 class window.VoyageX.Backend
   
   @_SINGLETON = null

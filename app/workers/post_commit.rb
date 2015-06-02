@@ -14,7 +14,7 @@ class PostCommit
       when 'delete_poi'
         PostCommit.delete_poi args_hash['user_id'], args_hash['poi_id']
       when 'pull_pois'
-        PostCommit.sync args_hash['user_id'], args_hash['commit_hash']
+        PostCommit.pull_pois args_hash['user_id'], args_hash['commit_hash']
     end
   end
 

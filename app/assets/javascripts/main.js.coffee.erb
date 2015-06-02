@@ -152,6 +152,9 @@ class window.VoyageX.Main
         #       initLoc = curU.getLastLocation()||window.initLocation
         #       APP._initPositionCB { coords: { latitude: initLoc.lat, longitude: initLoc.lng } }
         #   , { enableHighAccuracy: true, timeout : 5000 })
+        new VoyageX.ClientState 'map', { create: () ->
+            new VoyageX.Gui()
+          }
         if isMobile()
           # if not set then jquery-mobil will add origin header to request -  causing No 'Access-Control-Allow-Origin' 
           #$.mobile.ajaxEnabled = false
@@ -171,10 +174,9 @@ class window.VoyageX.Main
 #          $( "#panel_control" ).on( "dragcreate", (event, ui) ->
 #                  console.log('dragging ...')
 #            )
-          #window.clientState = new VoyageX.ClientState('map', 'camera', VoyageX.NavBar.showView, VoyageX.NavBar.hideView)
-          VoyageX.NavBar.showActiveState($('#menu_top button.activate_map'))
+          GUI.showActiveState($('#menu_top button.activate_map'))
         else
-          VoyageX.NavBar.showActiveState()
+          GUI.showActiveState()
         $('#zoom_level').html('<span style="color:white;">zoom: '+APP.map().getZoom()+'</span>')
         # next statement removes value from inputs!!
         #$("#network_state").buttonset()
@@ -271,7 +273,7 @@ class window.VoyageX.Main
     
     unless $('#network_state_online').prop('checked')
       $('#network_state_online').prop('checked', true)
-    VoyageX.NavBar.showActiveState()
+    GUI.showActiveState()
     setTimeout "APP.refreshMap()", 1500
 
   setOffline: () ->
@@ -285,7 +287,7 @@ class window.VoyageX.Main
         MC._zooms.push n
       unless $('#network_state_offline').prop('checked')
         $('#network_state_offline').prop('checked', true)
-      VoyageX.NavBar.showActiveState()
+      GUI.showActiveState()
 
   # FIXME move to map_control
   setProvider: (providerParts) ->
@@ -538,12 +540,12 @@ class window.VoyageX.Main
 
   showPeer: (peer, lastLocation = null, type = 'dialog') ->
     APP.closeSystemMessage(type)
-    clientState.setView(window.clientState.getView('map'))
+    VIEW_MODEL.setView(VIEW_MODEL.getView('map'))
 
     unless lastLocation?
       lastLocation = peer.getLastLocation()
     APP.loadLocation lastLocation
-    #clientState.setView(window.clientState.getView('map'))
+    #VIEW_MODEL.setView(VIEW_MODEL.getView('map'))
     if MC?
       MC.reload()
     userMarker = APP.getUserMarker(true).m
@@ -981,7 +983,7 @@ class window.VoyageX.Main
     APP._setSelectedPositionLatLng Main.markerManager().get(), lat, lng, address
     APP.map().panTo([lat, lng])
     #APP.map().setView([lat, lng], 16)
-    #VoyageX.NavBar.menuNavClick('map')
+    #VIEW_MODEL.menuNavClick('map')
 
   # TODO: provide callback
   contextNav: () ->

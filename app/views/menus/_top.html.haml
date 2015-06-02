@@ -4,11 +4,11 @@
       .navbar-header
         %ul.nav.navbar-nav
           %li
-            = link_to t('menu.meeting'), '#conference', id: 'menu_chat', onclick: "javascript:VoyageX.NavBar.menuNavClick('chat')", class: 'navbar-brand'
+            = link_to t('menu.meeting'), '#conference', id: 'menu_chat', onclick: "javascript:VIEW_MODEL.menuNavClick('chat')", class: 'navbar-brand'
           %li
-            = link_to t('menu.map'), '#map', id: 'menu_map', onclick: "javascript:VoyageX.NavBar.menuNavClick('map')", class: 'navbar-brand'
+            = link_to t('menu.map'), '#map', id: 'menu_map', onclick: "javascript:VIEW_MODEL.menuNavClick('map')", class: 'navbar-brand'
           %li
-            = link_to t('menu.home'), '#home', id: 'menu_home', onclick: "javascript:VoyageX.NavBar.menuNavClick('home')", class: 'navbar-brand'
+            = link_to t('menu.home'), '#home', id: 'menu_home', onclick: "javascript:VIEW_MODEL.menuNavClick('home')", class: 'navbar-brand'
           %li{style: 'padding: 0px 0px 0px 20px;'}
             %span{style: 'float :left; color: #ffffff; padding: 15px 5px 0px 0px;'}
               %span#whoami_form{style: 'display: none'}
@@ -33,12 +33,12 @@
           %li{style: 'padding: 5px 0px 0px 20px;'}
             - lcls = lang_change_links request, ['c']
             %span
-              = link_to image_tag("en.png", style: "border-width:0px;width:10px;height:10px;"), '#', onclick: "javascript:document.location.href=window.clientState.linkForView('#{lcls[0]}', 'en', '#{lcls[1]}');", :style => "color:#00dd;"
+              = link_to image_tag("en.png", style: "border-width:0px;width:10px;height:10px;"), '#', onclick: "javascript:document.location.href=VIEW_MODEL.linkForView('#{lcls[0]}', 'en', '#{lcls[1]}');", :style => "color:#00dd;"
             %br
             %span
-              = link_to image_tag("de.png", style: "border-width:0px;width:10px;height:10px;"), '#', onclick: "javascript:document.location.href=window.clientState.linkForView('#{lcls[0]}', 'de', '#{lcls[1]}');", :style => "color:#00dd;"
+              = link_to image_tag("de.png", style: "border-width:0px;width:10px;height:10px;"), '#', onclick: "javascript:document.location.href=VIEW_MODEL.linkForView('#{lcls[0]}', 'de', '#{lcls[1]}');", :style => "color:#00dd;"
           %li{style: 'padding: 0px 0px 0px 0px;'}
-            = link_to image_tag('info.png', style: 'width: 25px;'), '#', onclick: 'javascript:VoyageX.NavBar.menuNavClick("help")'
+            = link_to image_tag('info.png', style: 'width: 25px;'), '#', onclick: 'javascript:VIEW_MODEL.menuNavClick("help")'
       .info{style: 'margin: 7px 0px 0px 10px;'}
         #tile_info{style: 'float: left; font-size: 11px; padding: 0px; color: #ffffff;'}
           %div

@@ -14,8 +14,8 @@
         = link_to '', '#people_of_interest', style: 'width: 35px; height: 35px; margin: 0px; padding: 0px 5px 0px 5px;', data: {role: 'button', icon: 'user'}, id: 'people_of_interest_btn'
       %li{style: 'height: 37px; padding: 0px 0px 0px 50px;'}
         %span{style: 'float: right;'}
-          = image_tag 'fullscreen_on.png', id: 'fullscreen_mode_icon_on', onclick: 'toggleFullScreen(true)', style: 'display: none; max-height: 35px;'
-          = image_tag 'fullscreen_off.png', id: 'fullscreen_mode_icon_off', onclick: 'toggleFullScreen(false)', style: 'max-height: 35px;'
+          = image_tag 'fullscreen_on.png', id: 'fullscreen_mode_icon_on', onclick: 'GUI.toggleFullScreen(true)', style: 'display: none; max-height: 35px;'
+          = image_tag 'fullscreen_off.png', id: 'fullscreen_mode_icon_off', onclick: 'GUI.toggleFullScreen(false)', style: 'max-height: 35px;'
     #pois_preview
       -#= render partial: 'pois_preview'
     #location_bookmarks

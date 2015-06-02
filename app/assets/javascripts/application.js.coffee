@@ -1,26 +1,13 @@
-class window.VoyageX.NavBar
-  @menuNavClick: (clickSrc) ->
-    window.clientState.setView(window.clientState.getView(clickSrc))
-    return false
-
-  @showActiveState: (activeSelector = null) ->
-    if APP.isOnline()
-      color = '1f9600'
-    else
-      color = 'd91b00'
-    $('#network_state_view').css('background-color', '#'+color)
-
-  @showView: (view) ->
-    if !$('#menu_'+view.key).hasClass('active')
-      $('#menu_'+view.key).addClass('active')
-    $('#content_'+view.key).css('display', 'block')
-
-  @hideView: (view) ->
-    if $('#menu_'+view.key).hasClass('active')
-      $('#menu_'+view.key).removeClass('active')
-    $('#content_'+view.key).css('display', 'none')
-
-window.clientState = new VoyageX.ClientState('map', 'camera', VoyageX.NavBar.showView, VoyageX.NavBar.hideView)
+offlineZooms = [4,8,12,16]
+zooms = [1..16]
+mapOptions = {
+               zooms: zooms
+               zoom: 16
+               subdomains: ['a']
+               access_token: 'pk.eyJ1Ijoic3RlcGhhbmtvZWxsZXIiLCJhIjoiZEFHdnhwayJ9.AdtZiG5HGi5JAb64G1K-jA'
+               max_zoom: 30
+             }
+new VoyageX.Main(mapOptions, offlineZooms, true) 
 
 ############################### popup ###
 # signUpDialog
@@ -125,5 +112,3 @@ window.systemMessagePopup = $("#system_message_popup").dialog({
       width: Math.abs($(window).width() * 0.25),
       modal: true
     })
-
-$("#context_nav_panel").tabs()

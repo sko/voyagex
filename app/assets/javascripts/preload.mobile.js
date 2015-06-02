@@ -30,5 +30,6 @@
 //= require users
 //= require main
 //= require view
+//= require gui.mobile
 //= require sandbox
 //= require extensions.mobile
