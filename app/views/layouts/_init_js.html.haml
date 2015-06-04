@@ -1,10 +1,11 @@
 - l_l = tmp_user.last_location
 = javascript_tag do
+  window.IS_MOBILE = #{is_mobile};
   -#window.scrollTo(0,1);
   window.DEBUG = false;
   window.Comm = { StorageController: {}, FileUtils: {} };
   window.Storage = { Model: {} };
-  window.VoyageX = { Gui: {}, StorageStrategy: {}, MapControl: {}, MarkerManager: {}, MediaManager: {}, View: {}, Version: {}, Uploads: {}, Sandbox: {} };
+  window.VoyageX = { Gui: {}, StorageStrategy: {}, MapControl: {}, MarkerManager: {}, MediaManager: {}, View: {}, Version: {}, Uploads: {} };
   -# CONSTANTS
   window.VoyageX['PEER_CHANNEL_PREFIX'] = '#{PEER_CHANNEL_PREFIX}';
   window.VoyageX.TILE_URL_TEMPLATE_INIT = '#{Leaflet.tile_layer}';

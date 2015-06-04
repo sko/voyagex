@@ -4,7 +4,7 @@
       #{t('uploads.start_camera').html_safe}
     %button#user_foto_file_input_init
       #{t('uploads.select_file').html_safe}
-%span.ui-icon.ui-icon-circle-close{style: 'float:right;', onclick: 'javascript:toogleUserFotoUpload();'}
+%span.ui-icon.ui-icon-circle-close{style: 'float:right;', onclick: 'javascript:APP.view().toogleUserFotoUpload();'}
 %br
 .user_foto_media_input_container#user_foto_cam_container{src: '', style: 'width: 675px; height: 250px;'}
   #video_viewer

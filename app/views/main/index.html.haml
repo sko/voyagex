@@ -47,7 +47,7 @@
 #tmpl_auth_whoami_img{style: 'display: none;'}
   %img{tmpl: {src: '{foto_url}'}, class: 'whoami-img', style: 'max-width: 100px !important; max-height: 100px !important;'}
 #tmpl_whoami_img_edit{style: 'display: none;'}
-  %a{href: '#edit_whoami_img', onclick: 'javascript:toogleUserFotoUpload()'}
+  %a{href: '#edit_whoami_img', onclick: 'javascript:APP.view().toogleUserFotoUpload()'}
     {auth_whoami_img}
 #tmpl_myfoto{style: 'display: none;'}
   %img{tmpl: {src: '{foto_url}'}, class: 'whoami-img', style: 'margin: 3px 0px -10px 0px; max-height: 45px;'}
@@ -105,21 +105,21 @@
     %fieldset{data: {role: 'controlgroup'}, tmpl: {id: 'search_radius_display_fs'}}
       -#
         %div{data: {role: 'fieldcontain'}}
-          %select{data: {role: 'flipswitch'}, onchange: 'toggleSearchRadiusDisplay(this)'}
+          %select{data: {role: 'flipswitch'}, onchange: 'APP.toggleSearchRadiusDisplay(this)'}
             %option{value: 'show'} show
             %option{value: 'hide'} hide
       %div
-        = radio_button_tag 'search_radius_display', 'show', false, id: ':tmpl', 'tmpl-id' => 'search_radius_display_show', data: {mini: true}, onclick: 'toggleSearchRadiusDisplay(this)'
+        = radio_button_tag 'search_radius_display', 'show', false, id: ':tmpl', 'tmpl-id' => 'search_radius_display_show', data: {mini: true}, onclick: 'APP.toggleSearchRadiusDisplay(this)'
         = label_tag 'search_radius_display_show', 'show'
       %div
-        = radio_button_tag 'search_radius_display', 'hide', true, id: ':tmpl', 'tmpl-id' => 'search_radius_display_hide', data: {mini: true}, onclick: 'toggleSearchRadiusDisplay(this)'
+        = radio_button_tag 'search_radius_display', 'hide', true, id: ':tmpl', 'tmpl-id' => 'search_radius_display_hide', data: {mini: true}, onclick: 'APP.toggleSearchRadiusDisplay(this)'
         = label_tag 'search_radius_display_hide', 'hide'
     %span{style: 'float: left;'}>
       GPS:&nbsp;
     %span{tmpl: {id: 'toggle_watch_position_off'}}
-      = image_tag 'locate_off.png', onclick: "toggleWatchPosition('on')", style: 'max-width: 30px; max-height: 30px;'
+      = image_tag 'locate_off.png', onclick: "APP.toggleWatchPosition('on')", style: 'max-width: 30px; max-height: 30px;'
     %span{tmpl: {id: 'toggle_watch_position_on', style: 'display: none;'}}
-      = image_tag 'locate_on.png', onclick: "toggleWatchPosition('off')", style: 'max-width: 30px; max-height: 30px;'
+      = image_tag 'locate_on.png', onclick: "APP.toggleWatchPosition('off')", style: 'max-width: 30px; max-height: 30px;'
     %div{style: 'float: right; margin: 0px 25px 0px 5px; padding: 0px;'}
       %span{style: 'float: left;'}>
         #{t('admin.watch_position')}:&nbsp;

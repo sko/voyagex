@@ -195,7 +195,7 @@ class window.VoyageX.MarkerManager
     lat = @_selectedMarker.target().getLatLng().lat
     lng = @_selectedMarker.target().getLatLng().lng
     
-    sBs = searchBounds lat, lng, radiusMeters
+    sBs = UTIL.searchBounds lat, lng, radiusMeters
 
     @_selectedSearchRadius = L.rectangle([[sBs.lat_north, sBs.lng_east],
                                           [sBs.lat_south, sBs.lng_west]], {color: '#ff7800', weight: 1})

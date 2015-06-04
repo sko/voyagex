@@ -36,7 +36,6 @@ module Auth
     
     def destroy
       @user = current_user
-      Rails.logger.error "##################### @user = #{@user}, session[:provider] = #{session[:provider]}"
       sign_out @user if @user.present?
       session.delete :vx_id_provider
 

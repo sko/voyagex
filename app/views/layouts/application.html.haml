@@ -11,7 +11,7 @@
   / <![endif]
   %head
     %title VoyageX
-    = render partial: 'layouts/init_js'
+    = render partial: 'layouts/init_js', locals: {is_mobile: false}
     = stylesheet_link_tag "application", media: "all"
     = stylesheet_link_tag params[:controller], media: "all"
     = csrf_meta_tags
@@ -36,12 +36,11 @@
       $("head").append("<style id='panel_control_style' type='text/css'>#panel_control {position: fixed; top: "+panelCtrlTopOff+"px; height: 20px; z-index: 1000 !important;}</style>");
     /%audio{id: "audio_notify"}
     /  %source{src: "/3rd_man_gugu.amr", type: "audio/amr"}
-
     = render partial: '/menus/top'
+    -# modal-templates 
+    = render partial: '/auth/sign_up', locals: {resource: User.new, resource_name: :user}
+    = render partial: '/auth/sign_in', locals: {resource: User.new, resource_name: :user}
     #content{style: 'position: absolute; top: 50px;'}
-      / modal-templates 
-      = render partial: '/auth/sign_up', locals: {resource: User.new, resource_name: :user}
-      = render partial: '/auth/sign_in', locals: {resource: User.new, resource_name: :user}
       = yield
     #cur_loc_addr
       &nbsp;
@@ -51,12 +50,11 @@
     = render partial: '/main/context_nav_panel'
     = render partial: '/main/system_message_panel'
     = javascript_include_tag "application"
-    -#= javascript_include_tag params[:controller]
     
     - if params[:exec].present? && params[:exec].match(/^show_login_dialog/).present?
       - email_arg = params[:exec].match(/^show_login_dialog_confirm_email/).present? ? "'#{tmp_user.unconfirmed_email}'" : 'null'
-      :javascript
-        showLoginDialog(#{email_arg});
+      = javascript_tag do
+        GUI.showLoginDialog(#{email_arg});
     - if params[:c].present?
       = javascript_tag do
         VIEW_MODEL.menuNavClick('#{params[:c]}');

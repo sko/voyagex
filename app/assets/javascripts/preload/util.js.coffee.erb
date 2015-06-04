@@ -1,169 +1,58 @@
-<% environment.context_class.instance_eval { include Rails.application.routes.url_helpers } %>
+unless window.VoyageX?
+  window.VoyageX = {}
+class window.VoyageX.Util
 
-window.isMobile = () ->
-  navigator.userAgent.match(/Mobile|webOS/) != null
+  constructor: (isMobile) ->
+    window.UTIL = this
+    if isMobile
+      # if not set then jquery-mobil will add origin header to request -  causing No 'Access-Control-Allow-Origin' 
+      # $(document).on "mobileinit",  () ->
+      #     $.mobile.ajaxEnabled = false;
+      $.mobile.ajaxEnabled = false;
 
-if isMobile()
-  # if not set then jquery-mobil will add origin header to request -  causing No 'Access-Control-Allow-Origin' 
-  # $(document).on "mobileinit",  () ->
-  #     $.mobile.ajaxEnabled = false;
-  $.mobile.ajaxEnabled = false;
-  
-window.showLoginDialog = (confirmEmailAddress) ->
-  if confirmEmailAddress != null
-    $("#sign_in_flash").html("check email-account "+confirmEmailAddress+" first for confirmation-mail")
-  $("#sign_in_modal").dialog('open')
+  _meterToLatLng: (lat) ->
+    conv_factor = (2.0 * Math.PI)/360.0;
+    latRad = lat * conv_factor;
 
-sendAuthFormOn13 = (event) ->
-  if (event.which == 13 || event.keyCode == 13)
-    submit = $('#auth_signin_email').val() != '' && $('#auth_signin_password').val() != ''
-    if submit
-      $(event.target).closest('form').submit()
-      if isMobile()
-        $('#sign_in_cancel').click()
-      else
-        signInDialog.dialog("close")
+    m1 = 111132.92
+    m2 = -559.82
+    m3 = 1.175
+    m4 = -0.0023
+    p1 = 111412.84
+    p2 = -93.5
+    p3 = 0.118
+    latlen = m1 + (m2 * Math.cos(2 * latRad)) + (m3 * Math.cos(4 * latRad)) + (m4 * Math.cos(6 * latRad))
+    longlen = (p1 * Math.cos(latRad)) + (p2 * Math.cos(3 * latRad)) + (p3 * Math.cos(5 * latRad))
+    { meterLat: 1.0 / latlen, meterLng: 1.0 / longlen}
 
-$(document).on 'keyup', '#auth_signin_email', (event) ->
-    sendAuthFormOn13 event
+  padTextHtml: (text, minLength) ->
+    count = 0
+    while text.length < minLength
+      count += 1
+      text += if count%5==0 then ' ' else '.'
+    text.replace(/([ .]+)$/, ' <span style="color:white;">$1</span>')
 
-$(document).on 'keyup', '#auth_signin_password', (event) ->
-    sendAuthFormOn13 event
+  trimPosVal: (latOrLng) ->
+    Math.round(latOrLng*10000000)/10000000
 
-$(document).on 'keyup', '.edit_detail', (event) ->
-  if (event.which == 13 || event.keyCode == 13)
-    event.preventDefault()
-    $(this).closest('form').submit()
+  searchBounds: (lat, lng, radiusMeters) ->
+    if radiusMeters <= 0
+      return null
 
-window.padTextHtml = (text, minLength) ->
-  count = 0
-  while text.length < minLength
-    count += 1
-    text += if count%5==0 then ' ' else '.'
-  text.replace(/([ .]+)$/, ' <span style="color:white;">$1</span>')
+    meterLatLng = this._meterToLatLng lat
 
-window.cacheStats = () ->
-  tilesSize = Comm.StorageController.instance().getByteSize('tiles')
-  numTiles = Comm.StorageController.instance().getNumElements('tiles')
-  showCacheStats(numTiles, tilesSize)
+    diameterLat = meterLatLng.meterLat * radiusMeters
+    diameterLng = meterLatLng.meterLng * radiusMeters
+    inner_square_half_side_length_lat = Math.sqrt((2*diameterLat)**2) / 2
+    inner_square_half_side_length_lng = Math.sqrt((2*diameterLng)**2) / 2
+    
+    { lng_west: this.trimPosVal(lng-inner_square_half_side_length_lng),\
+      lng_east: this.trimPosVal(lng+inner_square_half_side_length_lng),\
+      lat_south: this.trimPosVal(lat-inner_square_half_side_length_lat),\
+      lat_north: this.trimPosVal(lat+inner_square_half_side_length_lat) }
 
-window.showCacheStats = (numTiles, tilesSize) ->
-  fileSysLink = ''
-  color = (if isMobile() then 'black' else 'white')
-  if Comm.StorageController.isFileBased()
-    if window.isMobile()
-      fileSysLink = ' / <span style="color:'+color+';">[<a href="javascript:showCacheFileView();" style="color:'+color+';">show</a>]</span>'
-    else
-      fileSysLink = '' #' / <span style="color:'+color+';">[<a href="filesystem:http://'+document.location.host+'/persistent/" style="color:'+color+';">show</a>]</span>'
-  $('#cache_stats').html('<span><span style="color:'+color+';">cache-size: '+Math.round(tilesSize / 1024)+' kB / #'+numTiles+' tiles</span>'+fileSysLink+'</span>')
+  withinSearchBounds: (lat, lng, searchBounds) ->
+    lat >= searchBounds.lat_south && lat <= searchBounds.lat_north &&
+    lng >= searchBounds.lng_west && lng <= searchBounds.lng_east
 
-window.showCacheFileView = () ->
-  $('#cache_view').css('display', 'block')
-  $('#cache_view').attr('src', 'filesystem:http://'+document.location.host+'/persistent/')
-
-
-window.trimPosVal = (latOrLng) ->
-  Math.round(latOrLng*10000000)/10000000
-
-window.meterToLatLng = (lat) ->
-  conv_factor = (2.0 * Math.PI)/360.0;
-  latRad = lat * conv_factor;
-
-  m1 = 111132.92
-  m2 = -559.82
-  m3 = 1.175
-  m4 = -0.0023
-  p1 = 111412.84
-  p2 = -93.5
-  p3 = 0.118
-  latlen = m1 + (m2 * Math.cos(2 * latRad)) + (m3 * Math.cos(4 * latRad)) + (m4 * Math.cos(6 * latRad))
-  longlen = (p1 * Math.cos(latRad)) + (p2 * Math.cos(3 * latRad)) + (p3 * Math.cos(5 * latRad))
-  { meterLat: 1.0 / latlen, meterLng: 1.0 / longlen}
-
-window.searchBounds = (lat, lng, radiusMeters) ->
-  if radiusMeters <= 0
-    return null
-
-  # conv_factor = (2.0 * Math.PI)/360.0;
-  # latRad = lat * conv_factor;
-
-  # m1 = 111132.92
-  # m2 = -559.82
-  # m3 = 1.175
-  # m4 = -0.0023
-  # p1 = 111412.84
-  # p2 = -93.5
-  # p3 = 0.118
-  # latlen = m1 + (m2 * Math.cos(2 * latRad)) + (m3 * Math.cos(4 * latRad)) + (m4 * Math.cos(6 * latRad))
-  # longlen = (p1 * Math.cos(latRad)) + (p2 * Math.cos(3 * latRad)) + (p3 * Math.cos(5 * latRad))
-  # meterLat = 1.0 / latlen
-  # meterLng = 1.0 / longlen
-  meterLatLng = meterToLatLng lat
-
-  diameterLat = meterLatLng.meterLat * radiusMeters
-  diameterLng = meterLatLng.meterLng * radiusMeters
-  inner_square_half_side_length_lat = Math.sqrt((2*diameterLat)**2) / 2
-  inner_square_half_side_length_lng = Math.sqrt((2*diameterLng)**2) / 2
-  
-  { lng_west: trimPosVal(lng-inner_square_half_side_length_lng),\
-    lng_east: trimPosVal(lng+inner_square_half_side_length_lng),\
-    lat_south: trimPosVal(lat-inner_square_half_side_length_lat),\
-    lat_north: trimPosVal(lat+inner_square_half_side_length_lat) }
-
-window.withinSearchBounds = (lat, lng, searchBounds) ->
-  lat >= searchBounds.lat_south && lat <= searchBounds.lat_north &&
-  lng >= searchBounds.lng_west && lng <= searchBounds.lng_east
-
-jQuery ->
-#  $.ajaxSetup({
-#    headers: {
-#      'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
-#    }
-#  })
-
-  $.fn.selectRange = (start, end) ->
-    if !end
-      end = start
-    this.each () ->
-      if this.setSelectionRange
-        this.focus()
-        try
-          this.setSelectionRange(start, end)
-        catch error
-          console.log('error when trying to set selectionRange: ', error)
-      else if this.createTextRange
-        range = this.createTextRange()
-        range.collapse(true)
-        range.moveEnd('character', end)
-        range.moveStart('character', start)
-        range.select()
-  
-  # http://www.henryalgus.com/reading-binary-files-using-jquery-ajax/
-  # use this transport for "binary" data type
-  $.ajaxTransport("+binary", (options, originalOptions, jqXHR) ->
-      # check for conditions and support for blob / arraybuffer response type
-      if (window.FormData && ((options.dataType && (options.dataType == 'binary')) || (options.data && ((window.ArrayBuffer && options.data instanceof ArrayBuffer) || (window.Blob && options.data instanceof Blob)))))
-        return {
-            # create new XMLHttpRequest
-            send: (_, callback) ->
-                # setup all variables
-                xhr = new XMLHttpRequest()
-                url = options.url
-                type = options.type
-                # blob or arraybuffer. Default is blob
-                dataType = options.responseType || "blob"
-                data = options.data || null
-                xhr.addEventListener('load', () ->
-                    data = {}
-                    data[options.dataType] = xhr.response
-                    # make callback and send data
-                    callback(xhr.status, xhr.statusText, data, xhr.getAllResponseHeaders())
-                  )
-                xhr.open(type, url, true);
-                xhr.responseType = dataType;
-                xhr.send(data);
-            ,
-            abort: () ->
-                jqXHR.abort()
-        }
-    )
+new VoyageX.Util IS_MOBILE

@@ -22,9 +22,9 @@
           %li{id: :sign_up_or_in, style: "display: #{user_signed_in? ? 'none' : 'inline'}; padding: 7px 0px 0px 0px;"}
             .local_auth{style: "float: left;"}
               .login-link
-                = link_to t('auth.sign_in'), '#', id: 'show_sign_in', onclick: 'javascript:$("#sign_in_modal").dialog("open")', class: 'sign_opt menu_link'
+                = link_to t('auth.sign_in'), '#', id: 'show_sign_in', onclick: 'javascript:GUI.showLoginDialog()', class: 'sign_opt menu_link'
               .reg-link
-                = link_to t('auth.sign_up'), '#', id: 'show_sign_up', onclick: 'javascript:$("#sign_up_modal").dialog("open")', class: 'sign_opt menu_link'
+                = link_to t('auth.sign_up'), '#', id: 'show_sign_up', onclick: 'javascript:GUI.showSignUpDialog()', class: 'sign_opt menu_link'
             - if Rails.env.to_sym == :development || true
               .omniauth-links{style: "float: right; margin: 5px 10px 0px 10px;"}
                 .button.facebook_login
@@ -65,8 +65,8 @@
             = link_to 'tile-mapnik', '#', onclick: "javascript:APP.setProvider('OpenStreetMap.Mapnik')", class: 'menu_link'
         #network_state_view{style: 'float:right; color: white; margin-top: -10px; padding: 0px;'}
           %div{style: 'height: 15px; font-size: 9px;'}
-            = radio_button_tag 'network_state', 'online', true, onclick: 'toggleNetworkState(this)'
+            = radio_button_tag 'network_state', 'online', true, onclick: 'APP.toggleNetworkState(this)'
             = label_tag 'network_state_online', 'online'
           %div{style: 'height: 15px; font-size: 9px;'}
-            = radio_button_tag 'network_state', 'offline', false, onclick: 'toggleNetworkState(this)'
+            = radio_button_tag 'network_state', 'offline', false, onclick: 'APP.toggleNetworkState(this)'
             = label_tag 'network_state_offline', 'offline'

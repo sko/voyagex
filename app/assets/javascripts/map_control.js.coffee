@@ -506,7 +506,7 @@ class window.VoyageX.MapControl
       base64ImgDataUrl = MC._toBase64 $('#tile_canvas')[0], this # event.target
       unless Comm.StorageController.isFileBased()
         Comm.StorageController.instance().storeImage xYZ, base64ImgDataUrl, deferredModeParams
-        cacheStats()
+        APP.view().cacheStats()
       else
         if Comm.StorageController.instance()._storedFilesAreBase64
           Comm.StorageController.instance().storeImage xYZ, base64ImgDataUrl, deferredModeParams

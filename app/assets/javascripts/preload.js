@@ -31,4 +31,3 @@
 //= require main
 //= require view
 //= require gui
-//= require sandbox

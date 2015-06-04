@@ -6,7 +6,6 @@ module Auth
         def #{network}
           @user = User.find_for_oauth(env["omniauth.auth"], current_user)
 
-          Rails.logger.error "##################### @user = \#{@user}, session[:provider] = \#{session[:provider]}"
           if @user.present? && @user.persisted?
             sign_in_and_redirect @user, event: :authentication
             session.delete :tmp_user_id

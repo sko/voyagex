@@ -9,13 +9,13 @@
         #{t('uploads.comment')}
       = text_area_tag 'upload_comment[text]', '', id: ':remove', 'tmpl-id' => 'upload_comment'
     %div{tmpl: {id: :attachment_form_ui}}
-      %input{type: 'radio', name: 'upload_type', value: 'plain_text', checked: true, onclick: 'toggleUploadType(this)'}
+      %input{type: 'radio', name: 'upload_type', value: 'plain_text', checked: true, onclick: 'APP.transfer().toggleUploadType(this)'}
         #{t('uploads.select_plain_text').html_safe} 
-      %input{type: 'radio', name: 'upload_type', value: 'camera', onclick: 'toggleUploadType(this)'}
+      %input{type: 'radio', name: 'upload_type', value: 'camera', onclick: 'APP.transfer().toggleUploadType(this)'}
         #{t('uploads.select_camera').html_safe} 
-      %input{type: 'radio', name: 'upload_type', value: 'file', onclick: 'toggleUploadType(this)'}
+      %input{type: 'radio', name: 'upload_type', value: 'file', onclick: 'APP.transfer().toggleUploadType(this)'}
         #{t('uploads.select_file').html_safe}
-      %input{type: 'radio', name: 'upload_type', value: 'embed', onclick: 'toggleUploadType(this)'}
+      %input{type: 'radio', name: 'upload_type', value: 'embed', onclick: 'APP.transfer().toggleUploadType(this)'}
         #{t('uploads.select_embed').html_safe}
       %div{tmpl: {id: :upload_plain_text_container}}
         .ui-button.ui-widget.ui-state-default.ui-corner-all.ui-button-text-only{tmpl: {id: 'plain_text_upload_btn'}}

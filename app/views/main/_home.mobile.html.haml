@@ -1,9 +1,9 @@
 %fieldset.upload_source_select{data: {role: 'controlgroup', type: 'horizontal'}}
-  %input{type: 'radio', id: 'home_administration', name: 'home', value: 'administration', checked: true, onclick: 'toggleHomeTab(this)'}
+  %input{type: 'radio', id: 'home_administration', name: 'home', value: 'administration', checked: true, onclick: 'GUI.toggleHomeTab(this)'}
   = label_tag 'home_administration', 'Administration'
-  %input{type: 'radio', id: 'home_stats', name: 'home', value: 'stats', onclick: 'toggleHomeTab(this)'}
+  %input{type: 'radio', id: 'home_stats', name: 'home', value: 'stats', onclick: 'GUI.toggleHomeTab(this)'}
   = label_tag 'home_stats', 'Stats'
-  %input{type: 'radio', id: 'home_help', name: 'home', value: 'help', onclick: 'toggleHomeTab(this)'}
+  %input{type: 'radio', id: 'home_help', name: 'home', value: 'help', onclick: 'GUI.toggleHomeTab(this)'}
   = label_tag 'home_help', 'Help'
 .messages
   #upload_error

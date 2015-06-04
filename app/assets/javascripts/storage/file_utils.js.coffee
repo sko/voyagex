@@ -130,7 +130,7 @@ class window.Comm.FileUtils
                       sC._tileMeta.numTiles = sC._tileMeta.numTiles+1
                       sC._tileMeta.tilesByteSize = sC._tileMeta.tilesByteSize+data.properties.data.size
                       localStorage.setItem 'comm.tiles.tileMeta', JSON.stringify(sC._tileMeta)
-                      showCacheStats(sC._tileMeta.numTiles, sC._tileMeta.tilesByteSize)
+                      APP.view().showCacheStats(sC._tileMeta.numTiles, sC._tileMeta.tilesByteSize)
                   fileWriter.onerror = (e) ->
                       console.log('Write failed: ' + e.toString())
                       if deferredModeParams.fileStatusCB?
@@ -321,7 +321,7 @@ class window.Comm.FileUtils
                 # sC._attachmentMeta.count = sC._attachmentMeta.count+1
                 # sC._attachmentMeta.bytes = sC._attachmentMeta.bytes+data.size
                 # localStorage.setItem 'comm.poiNotes.attachmentMeta', JSON.stringify(sC._attachmentMeta)
-                # #showCacheStats(sC._tileMeta.numTiles, sC._tileMeta.tilesByteSize)
+                # #APP.view().showCacheStats(sC._tileMeta.numTiles, sC._tileMeta.tilesByteSize)
 
 
 

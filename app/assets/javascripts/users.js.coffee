@@ -103,17 +103,11 @@ class window.VoyageX.Users
             APP.view().addFollowsMe u
     else if flags.wants_to_follow_me?
       APP.view().addWantsToFollowMe user
-    # if window.isMobile()
-    #   # required for applying layout
-    #   $('#comm_peer_data').trigger("create")
 
   initUsers: (users) ->
     #APP.view().clearFollows()
     for user in users
       USERS.initUser user
-    # if window.isMobile()
-    #   # required for applying layout
-    #   $('#comm_peer_data').trigger("create")
 
   # saveCB recommended for currentUser
   # USERS.refreshUserPhoto newU, null, (user, flags) ->

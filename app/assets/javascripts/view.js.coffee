@@ -14,6 +14,16 @@ class window.VoyageX.View
     @_alertOn = false
     for channel in VoyageX.Main._COMM_CHANNELS.slice(1)
       @_commListeners[channel] = []
+    $(document).on 'keyup', '#auth_signin_email', (event) ->
+        APP.view().sendAuthFormOn13 event
+    $(document).on 'keyup', '#auth_signin_password', (event) ->
+        APP.view().sendAuthFormOn13 event
+    $(document).on 'keyup', '.edit_detail', (event) ->
+      if (event.which == 13 || event.keyCode == 13)
+        event.preventDefault()
+        $(this).closest('form').submit()
+    $(document).on 'click', '#user_foto_file_input_init', (event) ->
+      APP.view().userFotoFileInputInit()
 
   addListener: (channel, callBack) ->
     @_commListeners[channel].push(callBack)
@@ -87,7 +97,7 @@ class window.VoyageX.View
       $('#sign_up_or_in').first().css('display', 'none')
       $('.logout-link').each () ->
         $(this).css('display', 'block')
-      #if isMobile()
+      #if GUI.isMobile()
       #  $('#sign_in_cancel').click()
     else
       #$('#settings_form').attr('action', '<%= user_path id: ":id" %>'.replace(/:id/, curU.id))
@@ -131,7 +141,7 @@ class window.VoyageX.View
                   replace(/tmpl-src/, 'src').
                   replace(/\{foto_url\}/, peer.foto.url)
     $('#i_follow').append(tr_template)
-    # if window.isMobile()
+    # if GUI.isMobile()
     #   # required for applying layout and activating checkbox
     #   $('#comm_peer_data').trigger("create")
 
@@ -142,7 +152,7 @@ class window.VoyageX.View
                   replace(/tmpl-src/, 'src').
                   replace(/\{foto_url\}/, peer.foto.url)
     $('#i_want_to_follow').append(tr_template)
-    if window.isMobile()
+    if GUI.isMobile()
       # required for applying layout and activating checkbox
       $('#comm_peer_data').trigger("create")
 
@@ -154,7 +164,7 @@ class window.VoyageX.View
                   replace(/tmpl-src/, 'src').
                   replace(/\{foto_url\}/, peer.foto.url)
     $('#i_dont_follow').append(tr_template)
-    if window.isMobile()
+    if GUI.isMobile()
       # required for applying layout and activating checkbox
       $('#comm_peer_data').trigger("create")
 
@@ -165,7 +175,7 @@ class window.VoyageX.View
                   replace(/tmpl-src/, 'src').
                   replace(/\{foto_url\}/, peer.foto.url)
     $('#follow_me').append(tr_template)
-    if window.isMobile()
+    if GUI.isMobile()
       # required for applying layout and activating checkbox
       $('#comm_peer_data').trigger("create")
 
@@ -176,7 +186,7 @@ class window.VoyageX.View
                   replace(/tmpl-src/, 'src').
                   replace(/\{foto_url\}/, peer.foto.url)
     $('#want_to_follow_me').append(tr_template)
-    if window.isMobile()
+    if GUI.isMobile()
       # required for applying layout and activating checkbox
       $('#comm_peer_data').trigger("create")
 
@@ -184,19 +194,19 @@ class window.VoyageX.View
     $('#i_follow_'+peer.id).remove()
     if $('#i_dont_follow > #i_dont_follow_'+peer.id).length == 0
       View._SINGLETON.addIDontFollow peer
-      if window.isMobile()
+      if GUI.isMobile()
         $('#comm_peer_data').trigger("create")
   
   updateFollowsMe: (peer, flags = {granted: true}) ->
     $('#wants_to_follow_me_'+peer.id).remove()
     if flags.granted?
       View._SINGLETON.addFollowsMe peer
-    if window.isMobile()
+    if GUI.isMobile()
       $('#comm_peer_data').trigger("create")
 
   updateIDontFollow: (peer) ->
     View._SINGLETON.addIWantToFollow peer
-    if window.isMobile()
+    if GUI.isMobile()
       $('#comm_peer_data').trigger("create")
 
   updateIWantToFollow: (peer, flags = {granted: true}) ->
@@ -207,17 +217,17 @@ class window.VoyageX.View
     else
       if $('#i_dont_follow > #i_dont_follow_'+peer.id).length == 0
         View._SINGLETON.addIDontFollow peer
-    if window.isMobile()
+    if GUI.isMobile()
       $('#comm_peer_data').trigger("create")
 
   updateWantsToFollowMe: (peer) ->
     View._SINGLETON.addWantsToFollowMe peer
-    if window.isMobile()
+    if GUI.isMobile()
       $('#comm_peer_data').trigger("create")
   
   removeFollowsMe: (peer) ->
     $('#follows_me_'+peer.id).remove()
-    if window.isMobile()
+    if GUI.isMobile()
       $('#comm_peer_data').trigger("create")
 
   setPeerPosition: (peer, location) ->
@@ -226,9 +236,9 @@ class window.VoyageX.View
     path = APP.storage().getPath peer
 
     # moved to APP - always save peer position
-    # sBs = searchBounds lat, lng, APP.user().searchRadiusMeters
+    # sBs = UTIL.searchBounds lat, lng, APP.user().searchRadiusMeters
     # curUserLatLng = APP.getSelectedPositionLatLng()
-    # if withinSearchBounds(curUserLatLng[0], curUserLatLng[1], sBs) || path?
+    # if UTIL.withinSearchBounds(curUserLatLng[0], curUserLatLng[1], sBs) || path?
     #   #markerMeta = VoyageX.Main.markerManager().forPeer peerId
     #   #closestLocation = APP.storage().getLocalLocation curUserLatLng[0], curUserLatLng[1]
     #   peerLocation = APP.storage().getLocalLocation lat, lng
@@ -308,7 +318,7 @@ class window.VoyageX.View
     })
 
   showSearchRadius: (searchRadiusMeters) ->
-    sBs = searchBounds(APP.map().getCenter().lat, APP.map().getCenter().lng, searchRadiusMeters)
+    sBs = UTIL.searchBounds(APP.map().getCenter().lat, APP.map().getCenter().lng, searchRadiusMeters)
     APP.map().fitBounds L.latLngBounds(L.latLng(sBs.lat_south, sBs.lng_west), L.latLng(sBs.lat_north, sBs.lng_east))
     VoyageX.Main.markerManager().searchBounds(searchRadiusMeters, APP.map())
 
@@ -348,7 +358,7 @@ class window.VoyageX.View
         onSlideClick: APP.swiperPhotoClicked
       })
       window['myPoiSwiper'+poi.id].reInit()
-    if window.isMobile()
+    if GUI.isMobile()
       $('#open_context_nav_btn').click()
     else
       $('#context_nav_panel').dialog('open')
@@ -383,7 +393,7 @@ class window.VoyageX.View
     #poiId = $('#poi_notes_container').attr('data-poiId')
     imgUrl = $('#poi_notes_container .upload_comment[data-id='+poiNoteId+'] img').attr('src')
     #height = attachmentViewPanel.height()
-    if window.isMobile()
+    if GUI.isMobile()
       maxWidth = Math.abs($(window).width() * 0.8)-10
       maxHeight = Math.abs($(window).height() * 0.8)-10
       $('#attachment_view_panel').html($('#attachment_view_panel_close_btn').html()+'<div class="attachment_view"><img src="'+imgUrl+'" style="max-width:'+maxWidth+'px;max-height:'+maxHeight+'px;"></div>')
@@ -438,6 +448,25 @@ class window.VoyageX.View
     VoyageX.Main.mapControl().hidePath pathKey
     $('#hide_trace-path_'+pathKey).css 'display', 'none'
 
+  cacheStats: () ->
+    tilesSize = Comm.StorageController.instance().getByteSize('tiles')
+    numTiles = Comm.StorageController.instance().getNumElements('tiles')
+    this.showCacheStats(numTiles, tilesSize)
+
+  showCacheStats: (numTiles, tilesSize) ->
+    fileSysLink = ''
+    color = (if GUI.isMobile() then 'black' else 'white')
+    if Comm.StorageController.isFileBased()
+      if GUI.isMobile()
+        fileSysLink = ' / <span style="color:'+color+';">[<a href="javascript:APP.view().showCacheFileView();" style="color:'+color+';">show</a>]</span>'
+      else
+        fileSysLink = '' #' / <span style="color:'+color+';">[<a href="filesystem:http://'+document.location.host+'/persistent/" style="color:'+color+';">show</a>]</span>'
+    $('#cache_stats').html('<span><span style="color:'+color+';">cache-size: '+Math.round(tilesSize / 1024)+' kB / #'+numTiles+' tiles</span>'+fileSysLink+'</span>')
+
+  showCacheFileView: () ->
+    $('#cache_view').css('display', 'block')
+    $('#cache_view').attr('src', 'filesystem:http://'+document.location.host+'/persistent/')
+
   # started from peer-tool-bar
   openP2PChat: (peer) ->
     VoyageX.TemplateHelper.openP2PChat peer
@@ -454,6 +483,20 @@ class window.VoyageX.View
       unless scrollPane?
         scrollPane = msgDiv.closest('.chat_view').first()
       scrollPane.scrollTop(msgDivOff.top)
+
+  toogleUserFotoUpload: () ->
+    if $('#user_foto_input_container').css('display') == 'none'
+      $('#whoami_img_container').css('display', 'none')
+      $('#user_foto_input_container').css('display', 'block')
+    else
+      $('#whoami_img_container').css('display', 'block')
+      $('#user_foto_input_container').css('display', 'none')
+
+  userFotoFileInputInit: () ->
+    if MEDIA_MANAGER._curPrefix?
+      MEDIA_MANAGER.stopCurrentVideo()
+    $('#user_foto_cam_container').hide()
+    $('#user_foto_file_container').show()
 
   @addChatMessage: (message, mine = true, peerChatMeta = null) ->
     if mine
@@ -482,7 +525,7 @@ class window.VoyageX.View
     #msgInput.val('\n-------------------------\n'+messageText+msgInput.val())
     if mine
       msgInput.val('')
-      if window.isMobile()
+      if GUI.isMobile()
         msgInput.blur()
         $('body').scrollTop 0
       else
@@ -494,6 +537,13 @@ class window.VoyageX.View
     if poiNoteOff?
       scrollPane = poiNoteDiv.closest('.leaflet-popup-content').first()
       scrollPane.scrollTop(poiNoteOff.top)
+
+  sendAuthFormOn13: (event) ->
+    if (event.which == 13 || event.keyCode == 13)
+      submit = $('#auth_signin_email').val() != '' && $('#auth_signin_password').val() != ''
+      if submit
+        $(event.target).closest('form').submit()
+        GUI.closeSignInDialog()
 
   @updatePoiNotes: (poi, newNotes) ->
     console.log 'updatePoiNotes: TODO - rewrite ids, locationadress in popup and contextnav/swiper...'
@@ -553,3 +603,21 @@ class window.VoyageX.View
 
   @instance: () ->
     @_SINGLETON
+
+jQuery ->
+  $.fn.selectRange = (start, end) ->
+    if !end
+      end = start
+    this.each () ->
+      if this.setSelectionRange
+        this.focus()
+        try
+          this.setSelectionRange(start, end)
+        catch error
+          console.log('error when trying to set selectionRange: ', error)
+      else if this.createTextRange
+        range = this.createTextRange()
+        range.collapse(true)
+        range.moveEnd('character', end)
+        range.moveStart('character', start)
+        range.select()

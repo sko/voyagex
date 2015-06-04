@@ -1,3 +1,6 @@
+coffee-class-methods:
+grep -R "\s*[^:]\+:\s*([^>]\+>" app/assets/javascripts/view.js.coffee
+
 APP.storage().clearCache({tiles: false, poiNotes: true, users: true})
 
 pois are loaded when position is set

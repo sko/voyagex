@@ -13,6 +13,7 @@ class window.VoyageX.Main
   @_STORAGE_MODEL = null
   @_UPLOAD_HELPER = null
   @_USER_MANAGER = null
+  @_MEDIA_MANAGER = null
 
   constructor: (mapOptions, offlineZooms, online) ->
     Main._SINGLETON = this
@@ -33,6 +34,10 @@ class window.VoyageX.Main
     Main._STORAGE_MODEL = new Storage.Model()
     Main._UPLOAD_HELPER = new VoyageX.Uploads()
     Main._USER_MANAGER = new VoyageX.Users()
+    new VoyageX.ClientState 'map', { create: () ->
+        new VoyageX.Gui()
+      }
+    Main._MEDIA_MANAGER = new VoyageX.MediaManager()
     @_cacheStrategy = null
     window.addEventListener "offline", (e) ->
         console.log 'Main: went offline ...'
@@ -152,10 +157,10 @@ class window.VoyageX.Main
         #       initLoc = curU.getLastLocation()||window.initLocation
         #       APP._initPositionCB { coords: { latitude: initLoc.lat, longitude: initLoc.lng } }
         #   , { enableHighAccuracy: true, timeout : 5000 })
-        new VoyageX.ClientState 'map', { create: () ->
-            new VoyageX.Gui()
-          }
-        if isMobile()
+        # new VoyageX.ClientState 'map', { create: () ->
+        #     new VoyageX.Gui()
+        #   }
+        if GUI.isMobile()
           # if not set then jquery-mobil will add origin header to request -  causing No 'Access-Control-Allow-Origin' 
           #$.mobile.ajaxEnabled = false
           # $('#system_dialog_panel').html VoyageX.TemplateHelper._updateIds('tmpl_fullscreen_dialog')
@@ -182,7 +187,7 @@ class window.VoyageX.Main
         #$("#network_state").buttonset()
         $('button[value=camera]').focus()
         APP._zoomEnd(null)
-        cacheStats()
+        APP.view().cacheStats()
         $('#user_foto_input_type').buttonset()
         $('#poi_notes_container').scrollpanel({
             prefix: 'pcn-'
@@ -289,6 +294,15 @@ class window.VoyageX.Main
         $('#network_state_offline').prop('checked', true)
       GUI.showActiveState()
 
+  toggleNetworkState: (selected) ->
+    if selected.id == 'network_state_online'
+      APP.setOnline()
+    else
+      APP.setOffline()
+
+  isMobile: () ->
+    GUI.isMobile()
+
   # FIXME move to map_control
   setProvider: (providerParts) ->
     if providerParts? && (providerParts!='')
@@ -308,7 +322,7 @@ class window.VoyageX.Main
     Comm.StorageController.instance().clearCache()
     if @_debug
       Comm.StorageController.instance().clearCache {tiles: false, poiNotes: true, users: true}
-    cacheStats()
+    APP.view().cacheStats()
 
   refreshMap: () ->
     #Comm.StorageController.instance()._tileLoadQueue = {}
@@ -361,6 +375,28 @@ class window.VoyageX.Main
   # user-marker-tools
   radarSettings: () ->
     VoyageX.View.editRadar()
+
+  toggleSearchRadiusDisplay: (selected) ->
+    if selected.id == 'search_radius_display_show'
+      window.showSearchRadius = true
+      APP.view().showSearchRadius APP.user().searchRadiusMeters
+    else
+      window.showSearchRadius = false
+      #VoyageX.Main.markerManager()._showSearchRadius = false
+      VoyageX.Main.markerManager().searchBounds(0, APP.map())
+
+  toggleWatchPosition: (state) ->
+    if state == 'on'
+      if navigator.geolocation 
+        navigator.geolocation.getCurrentPosition((position) ->
+              APP._initPositionCB position, null, true
+          , (error) ->
+              console.log 'error when trying to gps locate position: '+error
+          , { enableHighAccuracy: true, timeout : 5000 })
+      APP.watchRealPosition()
+    else
+      APP.stopRealPositionWatch()
+    APP.view().setRealPositionWatchedIcon state
 
   toggleTrace: (user, pathKey) ->
     path = APP.storage().getPath user, pathKey
@@ -433,18 +469,7 @@ class window.VoyageX.Main
   loadLocation: (location, fetch = true) ->
     if location.lat? || !fetch
       APP._initPositionCB { coords: { latitude: location.lat, longitude: location.lng } }, location.address, true
-      if isMobile()
-        $("#context_nav_panel").panel("close")
-      else
-        contextNavPanel.dialog("close")
-#      # other 2 tabs will not change content - they are loaded from tsart on
-#      selectedTab = $('#context_nav_panel ul[role=tablist] [class~=ui-tabs-active]').attr('aria-controls')
-#      if selectedTab != 'pois_preview'
-#        #$('#pois_preview_btn').click()
-#        APP.contextNav()
-#        $('#'+selectedTab+'_btn').click()
-#      else
-#        APP.contextNav()
+      GUI.closeContextNavPanel()
       if location.poiId
         APP.showPOI location.poiId, -1
       else
@@ -461,7 +486,7 @@ class window.VoyageX.Main
           APP.loadLocation location, false
 
   showPOIs: (location, flags = {withNotes: true, reset: false}) ->
-    APP.model().loadPois trimPosVal(location.lat), trimPosVal(location.lng), (poi) ->
+    APP.model().loadPois UTIL.trimPosVal(location.lat), UTIL.trimPosVal(location.lng), (poi) ->
         location = {id: poi.locationId, lat: poi.lat, lng: poi.lng, address: poi.address, poiId: poi.id}
         markerMeta = APP.getMarker poi, true
         unless markerMeta?
@@ -476,17 +501,14 @@ class window.VoyageX.Main
         #VoyageX.TemplateHelper.openPOINotePopup poi
         #APP.view().scrollToPoiNote poiNoteId
         APP.view().viewPoiNotes poi, poiNoteId
-    if isMobile()
-      $("#context_nav_panel").panel("close")
-    else
-      contextNavPanel.dialog("close")
+    GUI.closeContextNavPanel()
 
   showSystemMessage: (callback, dims = {w: -1, h: -1}, type = 'dialog') ->
     if type == 'popup'
       sMP = $('#system_message_popup')
     else
       sMP = $('#system_message_panel')
-    if window.isMobile()
+    if GUI.isMobile()
       if dims?
         unless dims.w == -1
           # dims: n % 1 === 0  ... float -> percent - else px
@@ -524,19 +546,10 @@ class window.VoyageX.Main
 
   closeSystemMessage: (type = 'dialog') ->
     $('#system_message').html('')
-    if isMobile()
-      if type == 'popup'
-        # data-role-popup
-        if $('#system_message_popup-popup').hasClass('ui-popup-active')
-          $('#system_message_popup-popup').removeClass('ui-popup-active').addClass('ui-popup-hidden')
-      else
-        # data-role-panel
-        $("#system_message_panel").panel("close")
+    if type == 'popup'
+      GUI.closeSystemMessagePopup()
     else
-      if type == 'popup'
-        systemMessagePopup.dialog("close")
-      else
-        systemMessagePanel.dialog("close")
+      GUI.closeSystemMessagePanel()
 
   showPeer: (peer, lastLocation = null, type = 'dialog') ->
     APP.closeSystemMessage(type)
@@ -561,7 +574,7 @@ class window.VoyageX.Main
     return [@_selectedPosition.lat, @_selectedPosition.lng]
 
   _setSelectedPositionLatLng: (marker, lat, lng, address) ->
-    location = {lat: trimPosVal(lat), lng: trimPosVal(lng)}
+    location = {lat: UTIL.trimPosVal(lat), lng: UTIL.trimPosVal(lng)}
     if marker == null
       marker = Main.markerManager().add location, Main._markerEventsCB
     else
@@ -590,7 +603,7 @@ class window.VoyageX.Main
     $('#zoom_level').html('<span style="color:white;">zoom: '+APP.map().getZoom()+'</span>')
 
   _initPositionCB: (position, address = null, isReInit = false) ->
-    location = {lat: trimPosVal(position.coords.latitude), lng: trimPosVal(position.coords.longitude)}
+    location = {lat: UTIL.trimPosVal(position.coords.latitude), lng: UTIL.trimPosVal(position.coords.longitude)}
     if isReInit
       marker = Main.markerManager().get()
     else
@@ -611,10 +624,10 @@ class window.VoyageX.Main
   # APP._setRealPosition({coords: {latitude: pos.lat, longitude: pos.lng+0.001}})
   # pos = L.latLng(APP._realPosition.lat, APP._realPosition.lng)
   _setRealPosition: (position) ->
-    sBs = window.searchBounds APP._realPosition.lat, APP._realPosition.lng, APP._moveSensorDistMeters
-    unless window.withinSearchBounds position.coords.latitude, position.coords.longitude, sBs
-      APP._realPosition.lat = trimPosVal(position.coords.latitude)
-      APP._realPosition.lng = trimPosVal(position.coords.longitude)
+    sBs = UTIL.searchBounds APP._realPosition.lat, APP._realPosition.lng, APP._moveSensorDistMeters
+    unless UTIL.withinSearchBounds position.coords.latitude, position.coords.longitude, sBs
+      APP._realPosition.lat = UTIL.trimPosVal(position.coords.latitude)
+      APP._realPosition.lng = UTIL.trimPosVal(position.coords.longitude)
       APP._comm.send('/radar', {type: 'move',\
                                 userId: APP.userId(),\
                                 lat: APP._realPosition.lat,\
@@ -679,9 +692,9 @@ class window.VoyageX.Main
       #setTimeout 'APP._queryRealPosition()', VoyageX.Backend._POS_QUERY_INTERVAL_MILLIS
   
   _debugRealPositionCB: (position, mode) ->
-    sBs = window.searchBounds APP._realPosition.lat, APP._realPosition.lng, APP._moveSensorDistMeters
-    move = !window.withinSearchBounds position.coords.latitude, position.coords.longitude, sBs
-    debugMsg = $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': ['+mode+'] - move='+move+' - '+trimPosVal(position.coords.latitude)+'/'+trimPosVal(position.coords.longitude)
+    sBs = UTIL.searchBounds APP._realPosition.lat, APP._realPosition.lng, APP._moveSensorDistMeters
+    move = !UTIL.withinSearchBounds position.coords.latitude, position.coords.longitude, sBs
+    debugMsg = $.format.date(new Date(), 'dd.MM.yyyy HH:mm:ss')+': ['+mode+'] - move='+move+' - '+UTIL.trimPosVal(position.coords.latitude)+'/'+UTIL.trimPosVal(position.coords.longitude)
     #debugMsg += '\napp[lat|lng] = '+APP._realPosition.lat+' | '+APP._realPosition.lng
     #debugMsg += '\npos[lat|lng] = '+position.coords.latitude+' | '+position.coords.longitude
     APP._comm.send('/system', {type: 'debug', userId: APP.userId(), userName: APP.userName(), userFoto: APP.user().foto, msg: debugMsg})
@@ -987,7 +1000,7 @@ class window.VoyageX.Main
 
   # TODO: provide callback
   contextNav: () ->
-    sBs = window.searchBounds APP._selectedPosition.lat, APP._selectedPosition.lng, APP.user().searchRadiusMeters
+    sBs = UTIL.searchBounds APP._selectedPosition.lat, APP._selectedPosition.lng, APP.user().searchRadiusMeters
     pois = APP.storage().poisWithinSearchBounds sBs, (poi) ->
         # dummy-poiNote for swiper - replaced when attachments are loaded
         unless poi.notes? && poi.notes.length >= 1
@@ -1045,7 +1058,7 @@ class window.VoyageX.Main
     APP.view().viewUserMarkerMenu()
 
   poiNoteControls: () ->
-    if isMobile()
+    if GUI.isMobile()
       $('#open_upload_data_btn').click()
     else
       $('#upload_data_conrols').dialog('open')

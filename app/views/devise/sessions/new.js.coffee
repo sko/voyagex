@@ -3,8 +3,4 @@ $("#sign_in_flash").html("<ul><%= escape_javascript(resource.errors.full_message
 <% elsif devise_mapping.confirmable? && (!resource.confirmed?) -%>
 $("#sign_in_flash").html("<%= t('auth.email_confirm_required', email: resource.unconfirmed_email).gsub(/"/, '\\"').html_safe -%>")
 <% end -%>
-<% if is_mobile -%>
-$(".login-link > .ui-link").first().click()
-<% else -%>
-$("#sign_in_modal").dialog('open')
-<% end -%>
+GUI.showLoginDialog()

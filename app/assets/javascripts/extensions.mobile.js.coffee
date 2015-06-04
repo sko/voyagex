@@ -2,8 +2,6 @@ jQuery ->
 
   $(document).on 'click', '.activate_chat', (event) ->
     VIEW_MODEL.menuNavClick('chat')
-    # if $('#system_message_popup-popup').hasClass('ui-popup-active')
-    #   $('#system_message_popup-popup').removeClass('ui-popup-active').addClass('ui-popup-hidden')
     if `window.stopSound !== undefined`
       stopSound()
     APP.closeSystemMessage('popup')

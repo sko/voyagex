@@ -48,7 +48,7 @@ class window.VoyageX.TemplateHelper
     replace(/\stmpl-toggle=['"]?[^'" >]+/g, '').
     replace(/\{media_file_tag\}/, TemplateHelper._mediaFileTag(poiNote.attachment, meta)).
     replace(/\{username\}/, username).
-    replace(/\{comment\}/, padTextHtml(poiNote.text, 80))
+    replace(/\{comment\}/, UTIL.padTextHtml(poiNote.text, 80))
 
   @poiNotePopupHtml: (poi, meta) ->
     popupHtml = TemplateHelper._updateIds 'tmpl_poi_notes_container'
@@ -88,7 +88,7 @@ class window.VoyageX.TemplateHelper
     popup = marker.getPopup()
     isNewPopup = !popup?
     if isNewPopup
-      popup = L.popup {minWidth: 200, maxHeight: 300, autoPan: !isMobile(), closeOnClick: false} #autoPan: false, 
+      popup = L.popup {minWidth: 200, maxHeight: 300, autoPan: !GUI.isMobile(), closeOnClick: false} #autoPan: false, 
       marker.bindPopup(popup)
       marker.off('click', marker.togglePopup, marker)
     popup.setContent(popupHtml)
@@ -110,7 +110,7 @@ class window.VoyageX.TemplateHelper
     popup = marker.getPopup()
     isNewPopup = !popup?
     if isNewPopup
-      popup = L.popup(autoPan: !isMobile(), closeOnClick: false)# {autoPan: false, minWidth: 200, maxHeight: 300}
+      popup = L.popup(autoPan: !GUI.isMobile(), closeOnClick: false)# {autoPan: false, minWidth: 200, maxHeight: 300}
       marker.bindPopup(popup)
       marker.off('click', marker.togglePopup, marker)
     popup.setContent(if contentCallback? then contentCallback(popupHtml, peer, marker, messages) else popupHtml)

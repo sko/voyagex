@@ -150,7 +150,7 @@ class window.Storage.Model
           #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
     else
       if (Modernizr.localstorage)
-        pois = APP.storage().poisWithinSearchBounds(searchBounds(lat, lng, APP.user().searchRadiusMeters))
+        pois = APP.storage().poisWithinSearchBounds(UTIL.searchBounds(lat, lng, APP.user().searchRadiusMeters))
         for poi, i in pois
           Model._syncPoi poi, callback
 
@@ -177,7 +177,7 @@ class window.Storage.Model
         if locationId == -1
           peers = APP.storage().getPeers()
         else
-          # TODO peers = APP.storage().peerssWithinSearchBounds(searchBounds(lat, lng, APP.user().searchRadiusMeters))
+          # TODO peers = APP.storage().peerssWithinSearchBounds(UTIL.searchBounds(lat, lng, APP.user().searchRadiusMeters))
           console.log('TODO: implement search redius for peers ...')
           peers = APP.storage().getPeers()
         for peer in peers
@@ -262,8 +262,8 @@ class window.Storage.Model
       processData: false
     .done (res) ->
         console.log('res.message OK = '+(res.errors.length==0))
-        if isMobile()
-          hideAjaxLoading()
+        if GUI.isMobile()
+          GUI.hideAjaxLoading()
         # changes from local user is handled here - there might hav been other changes
         # -> @see APP - _systemCB
         for resPoi in res.pois
@@ -291,8 +291,8 @@ class window.Storage.Model
           if APP.isOnline()
             APP.storage().uploadQueue qPoi, qNewPoiNote
           else
-            if isMobile()
-              hideAjaxLoading()
+            if GUI.isMobile()
+              GUI.hideAjaxLoading()
       if transactionConf?
         this._queuePoiNote poiId, transactionConf.getTransaction(afterSaveCB)
       else
@@ -803,7 +803,7 @@ class window.Storage.Model
         base64ImgDataUrl = APP.model()._toBase64 $('#attachment_canvas')[0], poiNote.attachment, image
         unless Comm.StorageController.isFileBased()
           APP.storage().storePoiNoteAttachment poiNote, base64ImgDataUrl, deferredModeParams
-          cacheStats()
+          APP.view().cacheStats()
         else
           # actually we could store base64 in file as well
           #APP.storage().storePoiNoteAttachment poiNote, base64ImgDataUrl, deferredModeParams
@@ -820,7 +820,7 @@ class window.Storage.Model
         base64ImgDataUrl = APP.model()._toBase64 $('#user_foto_canvas')[0], user.foto, image
         unless Comm.StorageController.isFileBased()
           APP.storage().storeUserPhoto user, base64ImgDataUrl, deferredModeParams
-          cacheStats()
+          APP.view().cacheStats()
         else
           # actually we could store base64 in file as well
           #APP.storage().storePoiNoteAttachment poiNote, base64ImgDataUrl, deferredModeParams

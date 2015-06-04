@@ -74,7 +74,7 @@
 /assets/users.js?body=1
 /assets/main.js?body=1
 /assets/view.js?body=1
-/assets/sandbox.js?body=1
+/assets/gui.mobile.js?body=1
 /assets/extensions.mobile.js?body=1
 /comm/faye-browser.js
 /assets/comm/comm.js?body=1

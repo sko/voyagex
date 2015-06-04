@@ -74,8 +74,8 @@ class window.Comm.StorageController
     storeKey = 'comm.locations'
     locations = JSON.parse(localStorage.getItem(storeKey))
     if locations?
-      tLat = trimPosVal lat
-      tLng = trimPosVal lng
+      tLat = UTIL.trimPosVal lat
+      tLng = UTIL.trimPosVal lng
 #      closestLocation = {location: null, dist: -1}
       locationIds = Object.keys(locations)
       for locationId, idx in locationIds
@@ -121,8 +121,8 @@ class window.Comm.StorageController
     # decimal-scale: 7
     # locations[location.id] = { lat: Math.round(location.lat*10000000)/10000000,\
     #                            lng: Math.round(location.lng*10000000)/10000000,\
-    locations[location.id] = { lat: trimPosVal(location.lat),\
-                               lng: trimPosVal(location.lng),\
+    locations[location.id] = { lat: UTIL.trimPosVal(location.lat),\
+                               lng: UTIL.trimPosVal(location.lng),\
                                address: location.address}
     if flags.homeBase?
       locations.homeBase = location.id
@@ -285,7 +285,7 @@ class window.Comm.StorageController
   
   poisWithinSearchBounds: (searchBounds, callback = null) ->
     this.getPois (poi) ->
-      if withinSearchBounds(poi.lat, poi.lng, searchBounds)
+      if UTIL.withinSearchBounds(poi.lat, poi.lng, searchBounds)
         if callback?
           callback poi
         true
@@ -954,9 +954,9 @@ class window.Comm.StorageController
                    # perPoiListKeys = Object.keys(perPoiList)
                    # for entryKey, idx in perPoiListKeys
                    #   # afterSyncCB is only needed for sync with response - but now we use faye-callback
-                   #   batchUpload perPoiList[entryKey]#, afterSyncCB
+                   #   APP.transfer().batchUpload perPoiList[entryKey]#, afterSyncCB
                    # afterSyncCB is only needed for sync with response - but now we use faye-callback
-                   batchUpload perPoiList#, afterSyncCB
+                   APP.transfer().batchUpload perPoiList#, afterSyncCB
         )(location, poi, poiNote, qEntry.fileName, perPoiList) 
         if poiNote.attachment? && (!poiNote.attachment.content_type.match(/^embed:/)?)
           #this._getPoiNoteAttachmentFile poiNote, deferredModeParams
@@ -1143,7 +1143,7 @@ class Comm.UploadQ
     unless Comm.StorageController.isFileBased()
       # FIXME - not implemented
       Comm.StorageController.instance().storePoiNoteAttachment @_poiNote, base64ImgDataUrl, deferredModeParams
-      cacheStats()
+      APP.view().cacheStats()
     else
       if @_file?
         deferred = $.Deferred()

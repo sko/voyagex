@@ -9,13 +9,13 @@
     %div{style: 'float: right; padding: 0px 0px 0px 10px;'}
       %span.ui-icon.ui-icon-circle-close{onclick: '$("#upload_data_panel").panel("close");'}
     %fieldset.upload_source_select{data: {role: 'controlgroup', type: 'horizontal'}}
-      %input#data_upload_type_plain_text{type: 'radio', name: 'upload_type', value: 'plain_text', checked: true, onclick: 'toggleUploadType(this)'}
+      %input#data_upload_type_plain_text{type: 'radio', name: 'upload_type', value: 'plain_text', checked: true, onclick: 'APP.transfer().toggleUploadType(this)'}
       %label{'for' => 'data_upload_type_plain_text'.html_safe} #{t('uploads.plain_text').html_safe}
-      %input#data_upload_type_camera{type: 'radio', name: 'upload_type', value: 'camera', onclick: 'toggleUploadType(this)'}
+      %input#data_upload_type_camera{type: 'radio', name: 'upload_type', value: 'camera', onclick: 'APP.transfer().toggleUploadType(this)'}
       %label{'for' => 'data_upload_type_camera'.html_safe} #{t('uploads.camera').html_safe}
-      %input#data_upload_type_file{type: 'radio', name: 'upload_type', value: 'file', onclick: 'toggleUploadType(this)'}
+      %input#data_upload_type_file{type: 'radio', name: 'upload_type', value: 'file', onclick: 'APP.transfer().toggleUploadType(this)'}
       %label{'for' => 'data_upload_type_file'.html_safe} #{t('uploads.file').html_safe}
-      %input#data_upload_type_embed{type: 'radio', name: 'upload_type', value: 'embed', onclick: 'toggleUploadType(this)'}
+      %input#data_upload_type_embed{type: 'radio', name: 'upload_type', value: 'embed', onclick: 'APP.transfer().toggleUploadType(this)'}
       %label{'for' => 'data_upload_type_embed'.html_safe} #{t('uploads.embed').html_safe}
     #poi_note_input
 

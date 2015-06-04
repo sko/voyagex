@@ -19,4 +19,4 @@ else if (typeof userPhotoUrl.then == 'function')
           <%= window_prefix -%>APP.storage().saveCurrentUser user
       <%= window_prefix -%>$('.whoami-img').each () ->
           <%= window_prefix -%>$(this).attr('src', url)
-<%= window_prefix -%>VoyageX.Sandbox.instance().toogleUserFotoUpload()
+<%= window_prefix -%>APP.view().toogleUserFotoUpload()

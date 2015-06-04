@@ -1,7 +1,7 @@
 %fieldset#user_foto_input_type{data: {role: 'controlgroup', type: 'horizontal'}}
-  = link_to t('uploads.start_camera'), '#', onclick: 'userFotoMediaInputInitMobile()'
-  = link_to t('uploads.select_file'), '#', onclick: 'userFotoFileInputInit()'
-%span.ui-icon.ui-icon-circle-close{style: 'float:right;', onclick: 'javascript:toogleUserFotoUpload();'}
+  = link_to t('uploads.start_camera'), '#', onclick: 'MEDIA_MANAGER.userFotoMediaInputInitMobile()'
+  = link_to t('uploads.select_file'), '#', onclick: 'APP.view().userFotoFileInputInit()'
+%span.ui-icon.ui-icon-circle-close{style: 'float:right;', onclick: 'javascript:APP.view().toogleUserFotoUpload();'}
 %br
 = link_to '', '#media_input_panel', id: 'user_foto_media_input_panel_show'
 .user_foto_media_input_container#user_foto_cam_container{style: 'width: 100%;'}

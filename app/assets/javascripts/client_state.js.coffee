@@ -5,7 +5,7 @@ class window.VoyageX.ClientState
   constructor: (initialView, guiFactory) ->
     window.VIEW_MODEL = this
     @_gui = guiFactory.create()
-    if isMobile()
+    if @_gui.isMobile()
       homeViews = {
                     admin: { key: 'admin' }
                     stats: { key: 'stats' }
