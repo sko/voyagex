@@ -105,14 +105,14 @@
     %fieldset{data: {role: 'controlgroup'}, tmpl: {id: 'search_radius_display_fs'}}
       -#
         %div{data: {role: 'fieldcontain'}}
-          %select{data: {role: 'flipswitch'}, onchange: 'APP.toggleSearchRadiusDisplay(this)'}
+          %select{data: {role: 'flipswitch'}, onchange: 'VIEW_MODEL.toggleSearchRadiusDisplay(this)'}
             %option{value: 'show'} show
             %option{value: 'hide'} hide
       %div
-        = radio_button_tag 'search_radius_display', 'show', false, id: ':tmpl', 'tmpl-id' => 'search_radius_display_show', data: {mini: true}, onclick: 'APP.toggleSearchRadiusDisplay(this)'
+        = radio_button_tag 'search_radius_display', 'show', false, id: ':tmpl', 'tmpl-id' => 'search_radius_display_show', data: {mini: true}, onclick: 'VIEW_MODEL.toggleSearchRadiusDisplay(this)'
         = label_tag 'search_radius_display_show', 'show'
       %div
-        = radio_button_tag 'search_radius_display', 'hide', true, id: ':tmpl', 'tmpl-id' => 'search_radius_display_hide', data: {mini: true}, onclick: 'APP.toggleSearchRadiusDisplay(this)'
+        = radio_button_tag 'search_radius_display', 'hide', true, id: ':tmpl', 'tmpl-id' => 'search_radius_display_hide', data: {mini: true}, onclick: 'VIEW_MODEL.toggleSearchRadiusDisplay(this)'
         = label_tag 'search_radius_display_hide', 'hide'
     %span{style: 'float: left;'}>
       GPS:&nbsp;

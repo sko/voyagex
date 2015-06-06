@@ -336,14 +336,20 @@ class window.VoyageX.View
       this._blinkArrow()
 
   systemMessage: (message) ->
-    APP.showSystemMessage (systemMessageDiv) ->
-        systemMessageDiv.html message#+'<br>[<a href="#" onclick="APP.closeSystemMessage()">CLOSE</a>]')
+    GUI.showSystemMessage (systemMessageDiv) ->
+        systemMessageDiv.html message#+'<br>[<a href="#" onclick="GUI.closeSystemMessage()">CLOSE</a>]')
         unless stopSound?
           window.stopSound = VoyageX.MediaManager.instance().playSound(VoyageX.SOUNDS_ALERT_PATH, (event) ->
               if event.msg == 'finished'
                 window.stopSound = null
             )
       , {w: 0.5, h: 0.3}, 'popup'
+
+  swiperPhotoClicked: (swiper) ->
+    #$('#current_address').html($(swiper.clickedSlide).attr('data-address'))
+    # test sync with using string instead of integer
+    #APP.showPOI $(swiper.clickedSlide).attr('data-poiId'), $(swiper.clickedSlide).attr('data-poiNoteId')
+    APP.showPOI parseInt($(swiper.clickedSlide).attr('data-poiId')), parseInt($(swiper.clickedSlide).attr('data-poiNoteId'))
 
   previewPois: (pois) ->
     this.alert true
@@ -355,7 +361,7 @@ class window.VoyageX.View
         createPagination: false,
         centeredSlides: true,
         slidesPerView: 'auto',
-        onSlideClick: APP.swiperPhotoClicked
+        onSlideClick: APP.view().swiperPhotoClicked
       })
       window['myPoiSwiper'+poi.id].reInit()
     if GUI.isMobile()
@@ -392,17 +398,7 @@ class window.VoyageX.View
   viewAttachment: (poiNoteId) ->
     #poiId = $('#poi_notes_container').attr('data-poiId')
     imgUrl = $('#poi_notes_container .upload_comment[data-id='+poiNoteId+'] img').attr('src')
-    #height = attachmentViewPanel.height()
-    if GUI.isMobile()
-      maxWidth = Math.abs($(window).width() * 0.8)-10
-      maxHeight = Math.abs($(window).height() * 0.8)-10
-      $('#attachment_view_panel').html($('#attachment_view_panel_close_btn').html()+'<div class="attachment_view"><img src="'+imgUrl+'" style="max-width:'+maxWidth+'px;max-height:'+maxHeight+'px;"></div>')
-      $('#open_attachment_view_btn').click()
-    else
-      maxWidth = Math.abs($(window).width() * 0.5)-10
-      maxHeight = Math.abs($(window).height() * 0.8)-10
-      $('#attachment_view_panel').html('<div class="attachment_view"><img src="'+imgUrl+'" style="max-width:'+maxWidth+'px;max-height:'+maxHeight+'px;"></div>')
-      $('#attachment_view_panel').dialog('open')
+    GUI.viewAttachment imgUrl
   
   # called for either poi- or user-marker
   viewBookmarkNote: (bookmark) ->
@@ -568,7 +564,7 @@ class window.VoyageX.View
         createPagination: false,
         centeredSlides: true,
         slidesPerView: 'auto',
-        onSlideClick: APP.swiperPhotoClicked
+        onSlideClick: APP.view().swiperPhotoClicked
       })
       mySwiper = window['myPoiSwiper'+poi.id]
     mySwiper.reInit()

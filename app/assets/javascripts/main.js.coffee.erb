@@ -165,7 +165,7 @@ class window.VoyageX.Main
           #$.mobile.ajaxEnabled = false
           # $('#system_dialog_panel').html VoyageX.TemplateHelper._updateIds('tmpl_fullscreen_dialog')
           # $('#open_system_dialog_btn').click()
-          APP.showSystemMessage (systemMessageDiv) ->
+          GUI.showSystemMessage (systemMessageDiv) ->
               systemMessageDiv.html VoyageX.TemplateHelper._updateIds('tmpl_fullscreen_dialog')
             #, {w: 100, h: 50}
           #Main._MAP_CONTROL.reload()
@@ -376,15 +376,6 @@ class window.VoyageX.Main
   radarSettings: () ->
     VoyageX.View.editRadar()
 
-  toggleSearchRadiusDisplay: (selected) ->
-    if selected.id == 'search_radius_display_show'
-      window.showSearchRadius = true
-      APP.view().showSearchRadius APP.user().searchRadiusMeters
-    else
-      window.showSearchRadius = false
-      #VoyageX.Main.markerManager()._showSearchRadius = false
-      VoyageX.Main.markerManager().searchBounds(0, APP.map())
-
   toggleWatchPosition: (state) ->
     if state == 'on'
       if navigator.geolocation 
@@ -492,67 +483,15 @@ class window.VoyageX.Main
         unless markerMeta?
           # pois don't change location
           Main.markerManager().add location, Main._markerEventsCB
-        #APP._initPoisOnMap.push poi
       , flags
 
   showPOI: (poiId, poiNoteId) ->
     Storage.Model.instance().loadPoiNotes poiId, poiNoteId, (poi, newPoiNotes) ->
-        #APP.panPosition(poi.lat, poi.lng, poi.address)
-        #VoyageX.TemplateHelper.openPOINotePopup poi
-        #APP.view().scrollToPoiNote poiNoteId
         APP.view().viewPoiNotes poi, poiNoteId
     GUI.closeContextNavPanel()
 
-  showSystemMessage: (callback, dims = {w: -1, h: -1}, type = 'dialog') ->
-    if type == 'popup'
-      sMP = $('#system_message_popup')
-    else
-      sMP = $('#system_message_panel')
-    if GUI.isMobile()
-      if dims?
-        unless dims.w == -1
-          # dims: n % 1 === 0  ... float -> percent - else px
-          # $(window).width(), $(window).height()
-          if (dims.w+'').match(/\./)
-            w = Math.round dims.w*$(window).width()
-            h = Math.round dims.h*$(window).height()
-            styleDef = "{width: "+w+"px; height: "+h+"px;}"
-            styleKey = 'dim_'+w+'x'+h
-          else
-            styleDef = "{width: "+dims.w+"px; height: "+dims.h+"px;}"
-            styleKey = 'dim_'+dims.w+'x'+dims.h
-          style = $('#'+styleKey)
-          unless style.length >= 1
-            $("head").append("<style id="+styleKey+" type='text/css'>."+styleKey+" "+styleDef+"</style>");
-          oldDims = sMP.attr('class').match(/($| )dim_([0-9]+)x([0-9]+)/)
-          if oldDims?
-            sMP.removeClass oldDims[0].trim()
-          unless sMP.hasClass(styleKey)
-            sMP.addClass(styleKey)        
-      if type == 'popup'
-        callback $('#system_message_as_popup')
-        $('#system_message_popup_link').click()
-      else
-        callback $('#system_message')
-        $('#open_system_message_btn').click()
-    else
-      if type == 'popup'
-        callback $('#system_message_as_popup')
-      else
-        callback $('#system_message')
-      sMP.dialog('open')
-      if ! sMP.parent().hasClass('seethrough_panel')
-        sMP.parent().addClass('seethrough_panel')
-
-  closeSystemMessage: (type = 'dialog') ->
-    $('#system_message').html('')
-    if type == 'popup'
-      GUI.closeSystemMessagePopup()
-    else
-      GUI.closeSystemMessagePanel()
-
   showPeer: (peer, lastLocation = null, type = 'dialog') ->
-    APP.closeSystemMessage(type)
+    GUI.closeSystemMessage(type)
     VIEW_MODEL.setView(VIEW_MODEL.getView('map'))
 
     unless lastLocation?
@@ -566,9 +505,6 @@ class window.VoyageX.Main
     #markerMeta = APP.markers().forPeer peer.id
     markerMeta = APP.getPeerMarker peer, lastLocation, true
     VoyageX.TemplateHelper.openPeerPopup peer, markerMeta.target()
-
-  updateFollow: (user, grant) ->
-    APP.closeSystemMessage('popup')
 
   getSelectedPositionLatLng: () ->
     return [@_selectedPosition.lat, @_selectedPosition.lng]
@@ -793,17 +729,16 @@ class window.VoyageX.Main
         delete message.poi.user
         poi = message.poi
         Storage.Model.setupPoiForNote poi
-        msg = { poi: poi }
         loadStats = { numAdded: poi.notes.length, numLeft: poi.notes.length }
         for note in poi.notes
-          Storage.Model.instance().syncWithStorage msg, VoyageX.View.addPoiNotes, note, loadStats
+          Storage.Model.instance().syncWithStorage poi, VoyageX.View.addPoiNotes, note, loadStats
         Main._STORAGE_CONTROLLER.saveUser {id: curU.id, curCommitHash: message.commit_hash}
         APP.view().alert()
         return true
     else if message.type == 'pull_request'
-      #"data":{"type":"poi_sync","commit_hash":"dd3088f129e4c23b9d2fd0dbf7cdf48580febf90","pois":[{"poi_id":97,"lat":"52.4923317","lng":"13.4258509","mod_user":297}]}
+      #"data":{"type":"poi_sync","commit_hash":"dd3088f129e4c23b9d2fd0dbf7cdf48580febf90","pois":[{"poi_id":97,"lat":"52.4923317","lng":"13.4258509","push_user_id":297}]}
       curU = APP.user()
-      if message.user.id != curU.id
+      if message.push_user_id != curU.id
         # TODO:
         # 1) check whether is contact - then pull
         # 2) check whether pois are bookmarked - then pull
@@ -900,7 +835,7 @@ class window.VoyageX.Main
             # save attachments from new other user's notes
             loadStats = { numAdded: uPoi.notes.length, numLeft: uPoi.notes.length }
             for note in uPoi.notes
-              Storage.Model.instance().syncWithStorage upload, callback, note, loadStats, note.local_time_secs?
+              Storage.Model.instance().syncWithStorage uPoi, callback, note, loadStats, note.local_time_secs?
         else if upload.action == 'poi_delete'
           console.log 'my poi_delete was published to everbody'
           curU = APP.user()
@@ -914,7 +849,7 @@ class window.VoyageX.Main
             modPoi = modPoiNotes[0].poi
             loadStats = { numAdded: modPoiNotes.length, numLeft: modPoiNotes.length }
             for newNote in modPoiNotes
-              Storage.Model.instance().syncWithStorage {poi: modPoi}, (poi, newNotes) ->
+              Storage.Model.instance().syncWithStorage modPoi, (poi, newNotes) ->
                   console.log 'added #'+newNotes.length+' notes to poi '+poi.id
                 , newNote
           for modPoiNotes in upload.new_pois
@@ -922,7 +857,7 @@ class window.VoyageX.Main
             Storage.Model.setupPoiForNote modPoi
             loadStats = { numAdded: modPoiNotes.length, numLeft: modPoiNotes.length }
             for newNote in modPoiNotes
-              Storage.Model.instance().syncWithStorage {poi: modPoi}, (poi, newNotes) ->
+              Storage.Model.instance().syncWithStorage modPoi, (poi, newNotes) ->
                   console.log 'added new poi '+poi.id+' with #'+newNotes.length+' notes'
                 , newNote
           # after pull we could sync queue
@@ -937,8 +872,7 @@ class window.VoyageX.Main
         # TODO: unify json-format, until then avoid circular structure
         poi = upload.poi_note.poi
         Storage.Model.setupPoiForNote poi
-        msg = { poi: poi }
-        Storage.Model.instance().syncWithStorage msg, VoyageX.View.addPoiNotes, upload.poi_note
+        Storage.Model.instance().syncWithStorage poi, VoyageX.View.addPoiNotes, upload.poi_note
         APP.view().alert()
     # else if upload.type == 'poi_sync'
     #   # moved to system ... 
@@ -946,10 +880,9 @@ class window.VoyageX.Main
     #     delete upload.poi.user
     #     poi = upload.poi
     #     Storage.Model.setupPoiForNote poi
-    #     msg = { poi: poi }
     #     loadStats = { numAdded: poi.notes.length, numLeft: poi.notes.length }
     #     for note in poi.notes
-    #       Storage.Model.instance().syncWithStorage msg, VoyageX.View.addPoiNotes, note, loadStats
+    #       Storage.Model.instance().syncWithStorage poi, VoyageX.View.addPoiNotes, note, loadStats
     #     APP.view().alert()
     # else if upload.type == 'poi_delete'
     #   if upload.poi.user.id != APP.userId()
@@ -1031,24 +964,6 @@ class window.VoyageX.Main
 #            console.log('TODO: APP.contextNav for people_of_interest ...')
 #      else
 #        alert('unknown contextNav-tab '+selectedTab)
-
-  swiperPhotoClicked: (swiper) ->
-    #$('#current_address').html($(swiper.clickedSlide).attr('data-address'))
-    # test sync with using string instead of integer
-    #APP.showPOI $(swiper.clickedSlide).attr('data-poiId'), $(swiper.clickedSlide).attr('data-poiNoteId')
-    APP.showPOI parseInt($(swiper.clickedSlide).attr('data-poiId')), parseInt($(swiper.clickedSlide).attr('data-poiNoteId'))
-
-  swiperPhotoChanged: (swiper) ->
-    #$('#current_address').html($(swiper.activeSlide()).attr('data-address'))
-    `;` 
-  #  onSlideClick: APP.swiperPhotoClicked,
-#  window.mySwiper = $('#upload_preview_swiper').swiper({
-#    mode:'horizontal',
-#    loop: false,
-#    freeModeFluid: true,
-#    #onSlideClick: APP.swiperPhotoClicked,
-#    onSlideChangeEnd: photoChanged
-#  })
 
   markerControls: () ->
 #     marker = Main.markerManager().get()

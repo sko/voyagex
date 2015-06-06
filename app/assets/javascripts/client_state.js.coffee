@@ -64,3 +64,12 @@ class window.VoyageX.ClientState
     if params != ''
       path += ('&'+params)
     path
+
+  toggleSearchRadiusDisplay: (selected) ->
+    if selected.id == 'search_radius_display_show'
+      window.showSearchRadius = true
+      APP.view().showSearchRadius APP.user().searchRadiusMeters
+    else
+      window.showSearchRadius = false
+      #VoyageX.Main.markerManager()._showSearchRadius = false
+      VoyageX.Main.markerManager().searchBounds(0, APP.map())

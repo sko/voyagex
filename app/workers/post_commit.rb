@@ -222,7 +222,7 @@ class PostCommit
                             pois: @poi_jsons_for_user }
     upload_msg_for_others = { type: 'pull_request',
                               commit_hash: commit.hash_id,
-                              mod_user: @user.id,
+                              push_user_id: @user.id,
                               pois: @poi_jsons_for_others }
 
     msgs_data = [

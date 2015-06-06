@@ -4,7 +4,7 @@ jQuery ->
     VIEW_MODEL.menuNavClick('chat')
     if `window.stopSound !== undefined`
       stopSound()
-    APP.closeSystemMessage('popup')
+    GUI.closeSystemMessage('popup')
   
   # $("#system_message_popup").on 'popupafterclose', (event, ui) ->
   #     stopSound()
@@ -15,7 +15,7 @@ jQuery ->
     if window.document.getElementById('content_chat').style.display == 'none'
       window.stopSound = VoyageX.MediaManager.instance().playSound(VoyageX.SOUNDS_MSG_IN_PATH)
       #$('#system_message_popup_link').click()
-      APP.showSystemMessage (systemMessageDiv) ->
+      GUI.showSystemMessage (systemMessageDiv) ->
           systemMessageDiv.html $('#tmpl_message_received_popup').html()
         , null, 'popup'
   VoyageX.View.instance().addListener 'talk', talkExtCB

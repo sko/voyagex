@@ -36,12 +36,14 @@ class window.Storage.Model
         console.log('TODO: errorhandling')
 
   grantFollow: (user) ->
-    this.setFollow user, true
+    this.setFollow user, true, (user, grant) ->
+        GUI.closeSystemMessage('popup')
   
   denyFollow: (user) ->
-    this.setFollow user, false
+    this.setFollow user, false, (user, grant) ->
+        GUI.closeSystemMessage('popup')
 
-  setFollow: (user, grant) ->
+  setFollow: (user, grant, callback) ->
     data = {_method: 'patch' }
     comm_peers = {}
     comm_peers[user.id] = true
@@ -55,7 +57,7 @@ class window.Storage.Model
       url: '<%= user_path(id: ':id') %>'.replace(/:id/, user.id)
       data: data
     .done (res) ->
-        APP.updateFollow user, grant
+        callback user, grant
     .fail (jqXHR, textStatus) ->
         console.log('TODO: errorhandling')
 
@@ -339,8 +341,7 @@ class window.Storage.Model
       .done (poiNote) ->
           # TODO: unify json-format, until then avoid circular structure
           Model.setupPoiForNote poiNote.poi
-          msg = { poi: poiNote.poi }
-          Model.instance().syncWithStorage msg, callback, poiNote
+          Model.instance().syncWithStorage poiNote.poi, callback, poiNote
       .fail (jqXHR, textStatus) ->
           # get from localStorage
           console.log('TODO: maybe get from local storage')
@@ -369,8 +370,7 @@ class window.Storage.Model
       .done (poiNote) ->
           # TODO: unify json-format, until then avoid circular structure
           Model.setupPoiForNote poiNote.poi
-          msg = { poi: poiNote.poi }
-          Model.instance().syncWithStorage msg, callback, poiNote
+          Model.instance().syncWithStorage poiNote.poi, callback, poiNote
       .fail (jqXHR, textStatus) ->
           #$("#upload_error").html("<ul><-%= escape_javascript(@upload.errors.full_messages.map { |msg| content_tag(:li, msg) }.join.html_safe) %></ul>")
           # get from localStorage
@@ -400,8 +400,7 @@ class window.Storage.Model
       .done (poiNote) ->
           # TODO: unify json-format, until then avoid circular structure
           Model.setupPoiForNote poiNote.poi
-          msg = { poi: poiNote.poi }
-          Model.instance().syncWithStorage msg, callback, poiNote
+          Model.instance().syncWithStorage poiNote.poi, callback, poiNote
       .fail (jqXHR, textStatus) ->
           #$("#upload_error").html("<ul><-%= escape_javascript(@upload.errors.full_messages.map { |msg| content_tag(:li, msg) }.join.html_safe) %></ul>")
           # get from localStorage
@@ -431,8 +430,7 @@ class window.Storage.Model
       .done (poiNote) ->
           # TODO: unify json-format, until then avoid circular structure
           Model.setupPoiForNote poiNote.poi
-          msg = { poi: poiNote.poi }
-          Model.instance().syncWithStorage msg, callback, poiNote
+          Model.instance().syncWithStorage poiNote.poi, callback, poiNote
       .fail (jqXHR, textStatus) ->
           #$("#upload_error").html("<ul><-%= escape_javascript(@upload.errors.full_messages.map { |msg| content_tag(:li, msg) }.join.html_safe) %></ul>")
           # get from localStorage
@@ -531,7 +529,7 @@ class window.Storage.Model
         Model.setupPoiForNote msg.poi
         loadStats = { numAdded: msg.poi.notes.length, numLeft: msg.poi.notes.length }
         for note, i in msg.poi.notes
-          Model.instance().syncWithStorage msg, callback, note, loadStats
+          Model.instance().syncWithStorage msg.poi, callback, note, loadStats
     .fail (jqXHR, textStatus) ->
         # get from localStorage
         console.log('TODO: maybe get from local storage')
@@ -541,7 +539,7 @@ class window.Storage.Model
   # might be called multiple times within one backend-response (->loadStats)
   # stores attachment (!), sets loadStats-numLeft -1 and then calls _syncPoiNotes (with ready attachmentUrl
   # and loadStats)
-  syncWithStorage: (msg, callback, note, loadStats = {numAdded:1,numLeft:1}, attachmentCached = false) ->
+  syncWithStorage: (poi, callback, note, loadStats = {numAdded:1,numLeft:1}, attachmentCached = false) ->
     # store user
     if note.user?
       APP.storage().saveUser note.user
@@ -557,18 +555,18 @@ class window.Storage.Model
       if (typeof attachmentUrl == 'string') 
         console.log 'Model - syncWithStorage: attachmentUrl-string = '+attachmentUrl
         loadStats.numLeft -= 1
-        Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, loadStats, callback
+        Model._syncPoiNotes poi, Comm.StorageController.poiKey(poi), note, loadStats, callback
       else if (typeof attachmentUrl.then == 'function') 
         # Assume we are dealing with a promise.
         attachmentUrl.then (url) ->
             console.log 'Model - syncWithStorage: attachmentUrl-promise resolved to: '+url
             note.attachment.url = url
             loadStats.numLeft -= 1
-            Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, loadStats, callback
+            Model._syncPoiNotes poi, Comm.StorageController.poiKey(poi), note, loadStats, callback
     else
       # embed, plain_text
       loadStats.numLeft -= 1
-      Model._syncPoiNotes msg.poi, Comm.StorageController.poiKey(msg.poi), note, loadStats, callback
+      Model._syncPoiNotes poi, Comm.StorageController.poiKey(poi), note, loadStats, callback
 
   @setupPoiForNote: (poi) ->
     #storeKey = Comm.StorageController.poiKey {id: poi.id}
