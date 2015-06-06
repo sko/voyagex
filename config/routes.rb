@@ -20,26 +20,15 @@ VoyageX::Application.routes.draw do
   get '/peers/:location_id', to: 'users#peers', as: :peers
   get '/unread_chat_messages', to: 'users#unread_chat_messages', as: :unread_chat_messages
   put '/chat_message_received/:peer_id/:chat_message_id', to: 'users#chat_message_received', as: :chat_message_received
- #get '/peers/:lat/:lng', to: 'users#peers', as: :peers, :constraints => { :lat => /([0-9]+\.[0-9]+|:[a-z]+)/,
- #                                                                         :lng => /([0-9]+\.[0-9]+|:[a-z]+)/ }
+  # get '/peers/:lat/:lng', to: 'users#peers', as: :peers, :constraints => { :lat => /([0-9]+\.[0-9]+|:[a-z]+)/,
+  #                                                                          :lng => /([0-9]+\.[0-9]+|:[a-z]+)/ }
 
   get '/location_bookmarks', to: 'main#index'
-#  get '/location/:location_id', to: 'main#location', as: :location
   get '/location_data/:location_id', to: 'main#location_data', as: :location_data
   get '/pois/:lat/:lng', to: 'pois#pois', as: :pois, :constraints => { :lat => /([0-9]+\.[0-9]+|:[a-z]+)/,
-                                                                          :lng => /([0-9]+\.[0-9]+|:[a-z]+)/ }
-  #resources :pois, only: [:index, :create, :update, :destroy] do
-  #end
-  post '/pois_base64', to: 'pois#create_from_base64', as: :pois_base64
-  put '/poi_base64/:id', to: 'pois#update_from_base64', as: :poi_base64
-  post '/pois_embed', to: 'pois#create_from_embed', as: :pois_embed
-  put '/pois_embed/:id', to: 'pois#update_from_embed', as: :poi_embed
-  post '/pois_plain_text', to: 'pois#create_from_plain_text', as: :pois_plain_text
-  put '/pois_plain_text/:id', to: 'pois#update_from_plain_text', as: :poi_plain_text
+                                                                       :lng => /([0-9]+\.[0-9]+|:[a-z]+)/ }
   post '/sync_pois', to: 'pois#sync_poi', as: :sync_pois
   put '/sync_poi/:id', to: 'pois#sync_poi', as: :sync_poi
-  post '/pois', to: 'pois#create', as: :poi_notes
-  put '/pois/:id', to: 'pois#update', as: :poi_note
   delete '/pois/:id', to: 'pois#destroy'
   match '/pull_pois', to: 'pois#pull_pois', as: :pull_pois, via: [:get, :post]
 
@@ -48,14 +37,8 @@ VoyageX::Application.routes.draw do
   delete '/set_user_detail/:detail', to: 'users#delete_details'
   get '/csrf', to: 'pois#csrf', as: :csrf
   get '/poi_comments/:poi_id/:poi_note_id', to: 'pois#comments', as: :poi_comments
-  #put '/poi_comments/:poi_id', to: 'pois#comments', as: :create_poi_comment
-  #put '/poi_file', to: 'pois#create'
-  #post '/poi_file', to: 'pois#update'
-  #put '/poi_file64', to: 'pois#create_from_base64', as: :json_pois
   get '/ping/:key', to: 'comm/comm#ping', as: :comm_ping
   put '/register', to: 'comm/comm#register', as: :comm_register
-  #post '/subscribe/:channel', to: 'comm/comm#subscribe', as: :comm_subscribe
-  #post '/publish/:channel', to: 'comm/comm#publish', as: :comm_publish
 
   get '/test/javascript', to: 'test#javascript', as: :test_javascript
 
