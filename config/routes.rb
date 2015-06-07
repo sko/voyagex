@@ -19,7 +19,7 @@ VoyageX::Application.routes.draw do
   end
   get '/peers/:location_id', to: 'users#peers', as: :peers
   get '/unread_chat_messages', to: 'users#unread_chat_messages', as: :unread_chat_messages
-  put '/chat_message_received/:peer_id/:chat_message_id', to: 'users#chat_message_received', as: :chat_message_received
+  put '/chat_message_received/:id', to: 'users#chat_message_received', as: :chat_message_received
   # get '/peers/:lat/:lng', to: 'users#peers', as: :peers, :constraints => { :lat => /([0-9]+\.[0-9]+|:[a-z]+)/,
   #                                                                          :lng => /([0-9]+\.[0-9]+|:[a-z]+)/ }
 

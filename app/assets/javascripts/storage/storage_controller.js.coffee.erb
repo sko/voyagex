@@ -358,6 +358,8 @@ class window.Comm.StorageController
       userIds = Object.keys(userDB)
       peerIdx = -1
       for userId, idx in userIds
+        if userId == 'peers'
+          continue
         user = userDB[userId]
         user.id = userId
         peer = peers[userId]

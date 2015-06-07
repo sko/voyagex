@@ -13,15 +13,15 @@ class UsersController < ApplicationController
 
   def chat_message_received
     @user = current_user
-    if params[:peer_id].to_i != -1
-      peer = User.find params[:peer_id]
-      c_m_d = ChatMessageDelivery.where(subscriber: @user, channel: "/talk#{PEER_CHANNEL_PREFIX}#{peer.comm_port.channel_enc_key}").first
-      c_m_d = ChatMessageDelivery.create(subscriber: @user, channel: "/talk#{PEER_CHANNEL_PREFIX}#{peer.comm_port.channel_enc_key}", last_message_id: -1) unless c_m_d.present?
-    else
+    c_m = ChatMessage.find params[:id]
+    if c_m.p2p_receiver.present?
       c_m_d = ChatMessageDelivery.where(subscriber: @user, channel: "/talk#{PEER_CHANNEL_PREFIX}#{@user.comm_port.channel_enc_key}_p2p").first
       c_m_d = ChatMessageDelivery.create(subscriber: @user, channel: "/talk#{PEER_CHANNEL_PREFIX}#{@user.comm_port.channel_enc_key}_p2p", last_message_id: -1) unless c_m_d.present?
+    else
+      c_m_d = ChatMessageDelivery.where(subscriber: @user, channel: "/talk#{PEER_CHANNEL_PREFIX}#{c_m.sender.comm_port.channel_enc_key}").first
+      c_m_d = ChatMessageDelivery.create(subscriber: @user, channel: "/talk#{PEER_CHANNEL_PREFIX}#{c_m.sender.comm_port.channel_enc_key}", last_message_id: -1) unless c_m_d.present?
     end
-    c_m_d.update_attribute :last_message_id, params[:chat_message_id] if params[:chat_message_id].to_i > c_m_d.last_message_id
+    c_m_d.update_attribute :last_message_id, c_m.id if c_m.id > c_m_d.last_message_id
     
     render json: {message: "ok"}.to_json
   end
@@ -54,6 +54,7 @@ class UsersController < ApplicationController
       @user.follows.each do |followee|
         c_m_d = ChatMessageDelivery.where(subscriber: @user, channel: "/talk#{PEER_CHANNEL_PREFIX}#{followee.comm_port.channel_enc_key}").first
         c_m_d = ChatMessageDelivery.create(subscriber: @user, channel: "/talk#{PEER_CHANNEL_PREFIX}#{followee.comm_port.channel_enc_key}", last_message_id: -1) unless c_m_d.present?
+#binding.pry
         query = ChatMessage.where(t[:sender_id].eq(followee.id).and(t[:id].gt(c_m_d.last_message_id)))
         if query.count >= 1
           c_ms = []
@@ -61,6 +62,7 @@ class UsersController < ApplicationController
           query.order(:id).each do |c_m|
             c_ms << {id: c_m.id, created_at: c_m.created_at.strftime("%Y-%m-%d %H:%M:%S"), text: c_m.text}
           end
+#binding.pry
           c_m_d.update_attribute :last_message_id, c_ms.last[:id]
         end
       end

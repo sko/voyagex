@@ -766,7 +766,7 @@ class window.VoyageX.Main
 
   _talkCB: (message) ->
     unless APP._online
-      # for debug only - _online might be false if actually true
+      # debug only - _online might be false if actually true
       console.log 'disable _talkCB for debugging offline: ' + message.type
       return false
     if APP.userId() == message.userId

@@ -2,7 +2,8 @@ jQuery ->
 
   $(document).on 'click', '.activate_chat', (event) ->
     VIEW_MODEL.menuNavClick('chat')
-    if `window.stopSound !== undefined`
+    #if `window.stopSound !== undefined`
+    if stopSound?
       stopSound()
     GUI.closeSystemMessage('popup')
   

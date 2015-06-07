@@ -331,7 +331,7 @@ class window.VoyageX.View
       unless stopSound?
         window.stopSound = VoyageX.MediaManager.instance().playSound(VoyageX.SOUNDS_ALERT_PATH, (event) ->
             if event.msg == 'finished'
-              `;`#window.stopSound = null
+              `;` # leave sound so blink-interval doesn't replay #window.stopSound = null
           )
       this._blinkArrow()
 
