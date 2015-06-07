@@ -902,11 +902,8 @@ class window.Comm.StorageController
     uploadQKey = 'comm.uploadQ.poiNotes'
     localStorage.getItem(uploadQKey)?
 
-  @storeUpload: (poi, poiNote, callback, attachmentData, deferredModeParams = null) ->
-    APP.storage().storeUpload poi, poiNote, callback, attachmentData, deferredModeParams
-
-  storeUpload: (poi, poiNote, callback, attachmentData, deferredModeParams = null) ->
-    @_uploadQ.queueUpload poi, poiNote, callback, attachmentData, deferredModeParams
+  queueUpload: (poi, poiNote, callback, attachmentData, deferredModeParams = null) ->
+    @_uploadQ.addUpload poi, poiNote, callback, attachmentData, deferredModeParams
 
   # called with params only for instant upload when app is online
   #uploadQueue: (qPoi = null, qNewNote = null, afterSyncCB = null) ->
@@ -1119,7 +1116,7 @@ class Comm.UploadQ
 
   # here the storing of the uploads will be completed.
   # after everything is stored: callback will be called
-  queueUpload: (poi, poiNote, callback, attachmentData, deferredModeParams = null) ->
+  addUpload: (poi, poiNote, callback, attachmentData, deferredModeParams = null) ->
     @_poi = poi
     @_poiNote = poiNote
     #@_callback = callback
@@ -1155,7 +1152,7 @@ class Comm.UploadQ
         # deferredModeParams.deferred = $.Deferred()
         # deferredModeParams.promise = deferredModeParams.deferred.promise()
         deferredModeParams.promise.then (url) ->
-            console.log 'UploadQ - storeUpload: attachmentUrl-promise resolved to: '+url
+            console.log 'UploadQ - addUpload: attachmentUrl-promise resolved to: '+url
             poi = UploadQ.instance()._poi
             note = UploadQ.instance()._poiNote
             note.attachment.url = url

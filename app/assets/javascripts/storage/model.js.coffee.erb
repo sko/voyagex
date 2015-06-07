@@ -33,7 +33,7 @@ class window.Storage.Model
     .done (user) ->
         callback user
     .fail (jqXHR, textStatus) ->
-        console.log('TODO: errorhandling')
+        callback null, jqXHR
 
   grantFollow: (user) ->
     this.setFollow user, true, (user, grant) ->
@@ -280,10 +280,14 @@ class window.Storage.Model
       #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
 
   # sets up params for _cachePoiNote
-  savePoiNote: (doneCB, transactionConf = null) ->
+  #savePoiNote: (doneCB, transactionConf = null) ->
+  savePoiNote: (saveCB, doneCB) ->
     if (Modernizr.localstorage)
       poiId = parseInt $('#upload_form').attr('data-poiId')
-      afterSaveCB = (qPoi, qNewPoiNote) ->
+      afterQueueCB = (qPoi, qNewPoiNote) ->
+          # this is executed after poi-note is locally saved/queued
+          # if app is online it will be instantly uploaded, else it just stays in queue
+          # until @see APP.setOnline is called
           location = APP.storage().getLocation qPoi.locationId
           qPoi.lat = location.lat
           qPoi.lng = location.lng
@@ -295,10 +299,12 @@ class window.Storage.Model
           else
             if GUI.isMobile()
               GUI.hideAjaxLoading()
-      if transactionConf?
-        this._queuePoiNote poiId, transactionConf.getTransaction(afterSaveCB)
-      else
-        this._cachePoiNote poiId, afterSaveCB
+      storeData = this._preparePoiNote poiId
+      saveCB (data) -> 
+          APP.storage().queueUpload storeData.poi,
+                                    storeData.poiNote,
+                                    afterQueueCB,
+                                    data
     else
       alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
 
@@ -345,29 +351,6 @@ class window.Storage.Model
                 text: $("#upload_comment").val() }
 
     { poi: poi, poiNote: poiNote }
-
-  _queuePoiNote: (poiId, beforeSaveCB) ->
-    console.log('caching poiNote ...')
-    storeData = this._preparePoiNote poiId
-    beforeSaveCB storeData.poi, storeData.poiNote, Comm.StorageController.storeUpload
-
-  # saves locally created data with temp-id's to localStorage
-  # the ids will be synchronized with backend-ids on backend-response/callback
-  _cachePoiNote: (poiId, afterSaveCB) ->
-    storeData = this._preparePoiNote poiId
-
-    switch $('input[name=upload_type]:checked').val()
-      when 'plain_text' 
-        APP.storage().storeUpload storeData.poi, storeData.poiNote, afterSaveCB, {}
-      when 'camera'
-        $('#media_input_display')[0].toBlob((blob) ->
-            APP.storage().storeUpload storeData.poi, storeData.poiNote, afterSaveCB, { blob: blob, fileName: 'foto_'+APP.user().id+'.'+Math.abs(id) }
-          )
-      when 'file' 
-        inputFile = $('#fileupload')[0].files[0]
-        APP.storage().storeUpload storeData.poi, storeData.poiNote, afterSaveCB, { blob: inputFile }
-      when 'embed' 
-        APP.storage().storeUpload storeData.poi, storeData.poiNote, afterSaveCB, { embed: $('#embed').val() }
 
   saveUserFoto64: (data, callback) ->
     # TODO save before sending - if offline send later

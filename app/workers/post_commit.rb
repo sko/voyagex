@@ -262,6 +262,7 @@ class PostCommit
                             poi_id: poi_id }
     upload_msg_for_others = { type: 'poi_delete',
                               commit_hash: cur_commit,
+                              push_user_id: @user.id,
                               poi_id: poi_id }
 
    msgs_data = [

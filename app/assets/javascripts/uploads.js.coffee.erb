@@ -83,16 +83,9 @@ class window.VoyageX.Uploads
     commentsOnIdMatch = $('#upload_form').attr('action').match(/^\/[^\/]+\/(-?[0-9]+)/)
     commentsOnId = (if commentsOnIdMatch? then parseInt(commentsOnIdMatch[1]) else null)
 
-  # uploadStrategy: { saveData: (saveDataCB) -> ..., done: (poi, newNote) -> ...}
-  upload: (uploadStrategy) ->
-    transactionConf = { getTransaction: (afterSaveCB) -> # @see Model - savePoiNote
-                            (poi, poiNote, saveCB) -> # @see Model - _queuePoiNote <=> queue (poi, poiNote, saveCB)
-                                uploadStrategy.saveData (data) -> # saveDataCB
-                                    saveCB poi,
-                                           poiNote,
-                                           afterSaveCB,
-                                           data }
-    APP.model().savePoiNote uploadStrategy.done, transactionConf
+  # uploadDataTypeHandler: { saveData: (saveDataCB) -> ..., done: (poi, newNote) -> ...}
+  upload: (uploadDataTypeHandler) ->
+    APP.model().savePoiNote uploadDataTypeHandler.saveData, uploadDataTypeHandler.done 
 
   afterUpload: (poi, newNotes) ->
     $('#upload_comment').val('')
@@ -101,7 +94,7 @@ class window.VoyageX.Uploads
     VoyageX.View.addPoiNotes poi, newNotes
 
   afterUploadPhoto: (poi, newNotes) ->
-    # @see upload_comments.js.coffee
+    # @see app/views/pois/_uploaded.js.coffee
     $('#media_input_current').attr('src', '')
     this.afterUpload poi, newNotes
 

@@ -15,7 +15,7 @@ class window.VoyageX.TemplateHelper
       if poiNote != null 
         methodDiv = form.find('div').first()
         methodDiv.append('<input type="hidden" name="_method" value="put">')
-        form.attr('action', updateActionPathTmpl.replace(/:comments_on_id/, poiNote.id))
+        #form.attr('action', updateActionPathTmpl.replace(/:comments_on_id/, poiNote.id))
         form.attr('data-commentsonid', poiNote.id)
       else
         form.attr('data-commentsonid', -1)

@@ -452,9 +452,19 @@ class window.VoyageX.Main
       $('#search_radius_display_hide').prop('checked', false)
       $('#search_radius_display_show').prop('checked', true)
     curU = APP.user()
+    oldSRM = curU.searchRadiusMeters
     curU.searchRadiusMeters = searchRadiusMeters
     APP.storage().saveCurrentUser curU
     APP.view().showSearchRadius searchRadiusMeters
+    curUserLocation = APP.getUserMarker().getLatLng()
+    APP.model().setRadarSettings (user, error) ->
+        if oldSRM < curU.searchRadiusMeters
+          APP.showPOIs curUserLocation
+        # else
+        #   sBs = UTIL.searchBounds curUserLocation.lat, curUserLocation.lng, curU.searchRadiusMeters
+        #   APP.markers().getPoiMarkers (marker, poiMarkers, idx) ->
+        #       unless UTIL.withinSearchBounds marker.location().lat, marker.location().lng, sBs
+        #         APP.markers()._removeAt idx
 
   # location: {id:?} will load location from localStorage or backend first
   loadLocation: (location, fetch = true) ->
@@ -747,7 +757,7 @@ class window.VoyageX.Main
     else if message.type == 'poi_delete'
       curU = APP.user()
       Main._STORAGE_CONTROLLER.saveUser {id: curU.id, curCommitHash: message.commit_hash}
-      if curU.id != message.userId
+      if curU.id != message.push_user_id
         Storage.Model.instance().deletePoi message.poi_id, (poi) ->
             APP.markers().removeForPoi poi.id
             #APP.view().alert()

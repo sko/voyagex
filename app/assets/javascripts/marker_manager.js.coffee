@@ -179,6 +179,19 @@ class window.VoyageX.MarkerManager
         return MarkerManager.metaJSON m, {}
     null
 
+  getPoiMarkers: (callback = null) ->
+    pMs = []
+    #for m, idx in @_markers
+    maxIdx = @_markers.length - 1
+    for idxSub in [0..maxIdx]
+      idx = maxIdx-idxSub
+      if @_markers[idx].isPoiMarker()
+        if callback?
+          callback @_markers[idx], pMs, idx
+        else
+          pMs.push @_markers[idx]
+    pMs
+
   nearByPoint: (x, y, minNumPixels) ->
     for m in @_markers
       mPoint = @_map.project m.target().getLatLng()
@@ -239,3 +252,6 @@ class VoyageX.Marker
 
   isPeerMarker: ->
     @_flags.peer?
+
+  isPoiMarker: ->
+    !(this.isUserMarker() || this.isPeerMarker() || @_flags.beam?)

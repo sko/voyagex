@@ -18,6 +18,22 @@ sync data (pois and messages):
 
 4.1) set Online when offline
 
+# different data-types can be uploaded
+uploadDataTypeHandler:
+  done (poi, newNote) -> called after 
+  saveData (saveDataCB) ->
+
+UPLOADS.upload (uploadDataTypeHandler)
+  model.savePoiNote (saveCB, doneCB)
+    # in savePoiNote we define afterQueueCB
+    afterQueueCB = function(qPoi, qNewPoiNote) {
+      doneCB(qPoi, qNewPoiNote);
+      if (APP.isOnline())
+        return APP.storage().uploadQueue(qPoi, qNewPoiNote);
+    model._queuePoiNote (poiId, (beforeSaveCB = transactionConf.getTransaction(afterSaveCB))
+      beforeSaveCB (storeData.poi, storeData.poiNote, (APP.storage().storeUpload = saveCB)
+        uploadDataTypeHandler.saveData
+
 
 ##########################
 map: iPhone 4: mob-resol: 320x500
