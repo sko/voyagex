@@ -10,7 +10,7 @@ class PostCommit
     args_hash = args.first
     case args_hash['action']
       when 'sync_pois'
-        PostCommit.sync_pois args_hash['user_id'], args_hash['poi_ids'], args_hash['min_local_time_secs_list']
+        PostCommit.sync_pois args_hash['commit_id'], args_hash['poi_ids'], args_hash['min_local_time_secs_list']
       when 'delete_poi'
         PostCommit.delete_poi args_hash['user_id'], args_hash['poi_id']
       when 'pull_pois'
@@ -108,12 +108,13 @@ class PostCommit
   # updates the users repository:
   # 1) pulls data meanwhile created by other users 
   # 2) pushes data created by this user (vm)
-  def self.sync_pois user_id, poi_ids, min_local_time_secs_list
-    PostCommit.new.sync_pois user_id, poi_ids, min_local_time_secs_list
+  def self.sync_pois commit_id, poi_ids, min_local_time_secs_list
+    PostCommit.new.sync_pois commit_id, poi_ids, min_local_time_secs_list
   end
 
-  def sync_pois user_id, poi_ids, min_local_time_secs_list, fork_publish = true
-    @user = User.find user_id
+  def sync_pois commit_id, poi_ids, min_local_time_secs_list, fork_publish = true
+    commit = Commit.find commit_id
+    @user = commit.user
 
     vm = VersionManager.new Poi::MASTER, Poi::WORK_DIR_ROOT, @user, false#@user.is_admin?
     prev_commit = vm.cur_commit
@@ -122,7 +123,6 @@ class PostCommit
     diff_added = diff['A']
     diff_modified = diff['M']
     diff_deleted = diff['D']
-#  binding.pry    
     @poi_jsons_for_user = []
     @poi_jsons_for_others = []
     min_local_time_secs = -1
@@ -151,7 +151,8 @@ class PostCommit
     
     vm.merge true, true
     cur_commit = vm.cur_commit
-    commit = @user.commits.create hash_id: cur_commit, timestamp: DateTime.now, local_time_secs: min_local_time_secs
+    #commit = @user.commits.create hash_id: cur_commit, timestamp: DateTime.now, local_time_secs: min_local_time_secs
+    commit.update_attributes hash_id: cur_commit, timestamp: DateTime.now, local_time_secs: min_local_time_secs
     @user.snapshot.update_attribute :cur_commit, commit
 
     poi_ids.each_with_index do |poi_id, idx|

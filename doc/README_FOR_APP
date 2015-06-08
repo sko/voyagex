@@ -30,8 +30,7 @@ UPLOADS.upload (uploadDataTypeHandler)
       doneCB(qPoi, qNewPoiNote);
       if (APP.isOnline())
         return APP.storage().uploadQueue(qPoi, qNewPoiNote);
-    model._queuePoiNote (poiId, (beforeSaveCB = transactionConf.getTransaction(afterSaveCB))
-      beforeSaveCB (storeData.poi, storeData.poiNote, (APP.storage().storeUpload = saveCB)
+    saveCB (storeData.poi, storeData.poiNote, (APP.storage().storeUpload = saveCB)
         uploadDataTypeHandler.saveData
 
 

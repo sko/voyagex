@@ -29,20 +29,6 @@ module PoiHelper
       poi_note_json[:attachment] = { content_type: 'unknown/unknown', id: upload.id, url: nil, width: -1, height: -1 }
     end
   end
-
-  def build_upload_base64 user, poi, attachment_mapping
-    upload = Upload.new(attached_to: PoiNote.new(poi: poi, user: user, text: params[:file_comment]))
-    if attachment_mapping.size >= 2
-      file_name = "#{user.username}.#{attachment_mapping[1]}" 
-    else
-      suffix = ".#{params[:file_content_type].match(/^[^\/]+\/([^\s;,]+)/)[1]}" rescue ''
-      file_name = "#{user.username}#{suffix}" 
-    end
-    upload.build_entity params[:file_content_type]
-    upload.entity.set_base64_file params[:file_data], attachment_mapping[0], file_name
-    upload.attached_to.attachment = upload
-    upload
-  end
   
   def poi_json poi
     poi_json = { id: poi.id,

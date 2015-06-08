@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150522081337) do
+ActiveRecord::Schema.define(version: 20150608191852) do
 
   create_table "chat_message_deliveries", force: true do |t|
     t.integer  "subscriber_id",   null: false
@@ -95,10 +95,11 @@ ActiveRecord::Schema.define(version: 20150522081337) do
     t.text     "address"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.string   "commit_hash"
     t.integer  "local_time_secs"
+    t.integer  "commit_id"
   end
 
+  add_index "locations", ["commit_id"], name: "index_locations_on_commit_id", using: :btree
   add_index "locations", ["latitude", "longitude"], name: "index_locations_on_latitude_and_longitude", using: :btree
 
   create_table "locations_users", force: true do |t|
@@ -120,11 +121,12 @@ ActiveRecord::Schema.define(version: 20150522081337) do
     t.integer  "attachment_id"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.string   "commit_hash"
     t.integer  "local_time_secs"
+    t.integer  "commit_id"
   end
 
   add_index "poi_notes", ["comments_on_id"], name: "index_poi_notes_on_comments_on_id", using: :btree
+  add_index "poi_notes", ["commit_id"], name: "index_poi_notes_on_commit_id", using: :btree
   add_index "poi_notes", ["poi_id"], name: "index_poi_notes_on_poi_id", using: :btree
   add_index "poi_notes", ["user_id"], name: "index_poi_notes_on_user_id", using: :btree
 
@@ -132,9 +134,11 @@ ActiveRecord::Schema.define(version: 20150522081337) do
     t.integer  "location_id"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.string   "commit_hash"
     t.integer  "local_time_secs"
+    t.integer  "commit_id"
   end
+
+  add_index "pois", ["commit_id"], name: "index_pois_on_commit_id", using: :btree
 
   create_table "roles", force: true do |t|
     t.string "name", null: false

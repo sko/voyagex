@@ -63,9 +63,11 @@ class window.VoyageX.ChatControl
 
   _p2pChatMessage: (peer, messageText) ->
     APP.storage().addChatMessage messageText, peer, APP.user()
-    APP._comm.send('/talk', {type: 'p2p-message',\
-                             userId: APP.userId(),\
-                             text: messageText}, peer)
+    APP._comm.send('/talk', {
+                              type: 'p2p-message' 
+                              userId: APP.userId() 
+                              text: messageText
+                            }, peer)
 
   _talkCB: (message) ->
     peer = APP.storage().getUser parseInt(message.userId)
@@ -74,3 +76,13 @@ class window.VoyageX.ChatControl
     delete message.userId
     message['peer'] = peer
     APP._view._talkCB message
+
+  addPoiLink: (chatType, poiId) ->
+    if chatType == 'p2p'
+      peerMarkerMeta = APP.getOpenPopupMarker true
+      popup = $(peerMarkerMeta.target()._popup._container)
+      textInput = $('#p2p_message_'+peerMarkerMeta.peer.id)
+      textInput.insertAtCursor('{{'+poiId+'}}')
+    else
+      textInput = $('#message')
+      textInput.insertAtCursor('{{'+poiId+'}}')

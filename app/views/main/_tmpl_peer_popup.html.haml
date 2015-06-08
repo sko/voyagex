@@ -15,6 +15,8 @@
             = link_to image_tag('stop_trace.png', style: 'height: 25px;', title: 'stop-trace-{peer_name}', alt: 'stop-trace-{peer_name}'), '#', onclick: "javascript:APP.toggleTrace(APP.storage().getUser({peer_id}), {path_key})"
         %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
           = link_to image_tag('add-note.png', style: 'height: 25px;', title: t('peers.add_note'), alt: t('peers.add_note')), '#', onclick: "javascript:APP.view().viewPeerNote(APP.storage().getUser({peer_id}))"
+        %div{style: 'float: left; margin: 0px 0px 0px 5px; padding: 0px;'}
+          = link_to image_tag('add-marker.png', style: 'height: 25px;', title: t('chat.prompt_poi_id'), alt: t('chat.prompt_poi_id')), '#', onclick: "javascript:APP.view().promptPoiLinkInput();"
 
 #tmpl_p2p_chat_container{style: 'display: none;'}
   .p2p_chat_container

@@ -40,6 +40,8 @@ class PoisController < ApplicationController
   # sync pois that where edited offline
   def sync_poi
     @user = tmp_user
+    # required for providing user to poi_notes
+    commit = @user.commits.create id: -@user.id, hash_id: DateTime.now.to_s, timestamp: DateTime.now
     errors = []
     poi_jsons = []
     min_local_time_secs_list = []
@@ -61,7 +63,7 @@ class PoisController < ApplicationController
 
         file = params[:poi_note][poi_id.to_s][poi_note_id][:file]
         if file.present? || (embed = params[:poi_note][poi_id.to_s][poi_note_id][:embed]).present?
-          upload = Upload.new(attached_to: PoiNote.new(poi: poi, user: @user, text: params[:poi_note][poi_id.to_s][poi_note_id][:text], local_time_secs: poi_note_local_time_secs))
+          upload = Upload.new(attached_to: PoiNote.new(poi: poi, commit: commit, text: params[:poi_note][poi_id.to_s][poi_note_id][:text], local_time_secs: poi_note_local_time_secs))
           upload.attached_to.attachment = upload
           if file.present?
             upload.build_entity file.content_type, file: file
@@ -70,7 +72,7 @@ class PoisController < ApplicationController
           end
           poi_note = upload.attached_to
         else
-          poi_note = PoiNote.new(poi: poi, user: @user, text: params[:poi_note][poi_id.to_s][poi_note_id][:text], local_time_secs: poi_note_local_time_secs)
+          poi_note = PoiNote.new(poi: poi, commit: commit, text: params[:poi_note][poi_id.to_s][poi_note_id][:text], local_time_secs: poi_note_local_time_secs)
         end
         poi.notes << poi_note
         new_poi_notes << poi_note
@@ -93,11 +95,11 @@ class PoisController < ApplicationController
 
     if ![:development].include?(Rails.env.to_sym)# || true
       Resque.enqueue(PostCommit, {action: 'sync_pois',
-                                  user_id: @user.id,
+                                  commit_id: commit.id,
                                   poi_ids: params[:poi_ids],
                                   min_local_time_secs_list: min_local_time_secs_list})
     else
-      PostCommit.new.sync_pois @user.id,
+      PostCommit.new.sync_pois commit.id,
                                params[:poi_ids],
                                min_local_time_secs_list,
                                false
@@ -162,22 +164,6 @@ class PoisController < ApplicationController
   # @see skip_before_action
   def current_user_required?
     [:pull_pois, :sync_poi, :destroy, :pois, :comments].include? action_name.to_sym
-  end
-
-  private
-
-  # TODO local_time_secs
-  def new_version user, poi, is_new_poi, poi_note, local_time_secs = nil
-    vm = VersionManager.new Poi::MASTER, Poi::WORK_DIR_ROOT, user, false#@user.is_admin?
-    prev_commit = vm.cur_commit
-    vm.add_poi poi if is_new_poi
-    vm.add_poi_note poi, poi_note
-    vm.merge true, true
-    cur_commit = vm.cur_commit
-    poi.update_attribute :commit_hash, cur_commit unless poi.commit_hash.present?
-    poi_note.update_attribute :commit_hash, cur_commit
-    commit = user.commits.create hash_id: cur_commit, timestamp: DateTime.now#, local_time_secs: params[:local_time_secs]
-    user.snapshot.update_attribute :cur_commit, commit
   end
 
 end

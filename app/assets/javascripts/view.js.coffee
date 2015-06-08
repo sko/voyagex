@@ -501,24 +501,20 @@ class window.VoyageX.View
     else
       meOrOther = 'other'
       leftOrRight = 'right'
-    messageText = message.text.replace(/\n/g, '<br/>')
     if peerChatMeta?
       if mine
-        msgHtml = VoyageX.TemplateHelper.p2PChatMsgHtml APP.user(), messageText
+        msgHtml = VoyageX.TemplateHelper.p2PChatMsgHtml APP.user(), message.text
         peerChatMeta.chatContainer.find('.p2p_chat_view').first().append '<div class="chat_message_sep"></div>'+msgHtml
-        #<div class="chat_message chat_message_'+meOrOther+' triangle-border '+leftOrRight+'">'+messageText+'</div>'
         msgInput = peerChatMeta.msgInput
       else
-        VoyageX.TemplateHelper.openP2PChat peerChatMeta.peer, [{from: peerChatMeta.peer, text: messageText}]
+        VoyageX.TemplateHelper.openP2PChat peerChatMeta.peer, [{from: peerChatMeta.peer, text: message.text}]
       APP.view().scrollToLastChatMessage peerChatMeta.peer, true
     else
-      #$('.chat_view').append '<div class="chat_message_sep"></div><div class="chat_message chat_message_'+meOrOther+' triangle-border '+leftOrRight+'">'+messageText+'</div>'
       user = if mine then APP.user() else (if peerChatMeta? then peerChatMeta.peer else message.peer)
-      msgHtml = VoyageX.TemplateHelper.bcChatMsgHtml user, messageText, meOrOther
+      msgHtml = VoyageX.TemplateHelper.bcChatMsgHtml user, message.text, meOrOther
       $('.chat_view').append '<div class="chat_message_sep"></div>'+msgHtml
       msgInput = $('#message')
       APP.view().scrollToLastChatMessage user
-    #msgInput.val('\n-------------------------\n'+messageText+msgInput.val())
     if mine
       msgInput.val('')
       if GUI.isMobile()
@@ -540,6 +536,11 @@ class window.VoyageX.View
       if submit
         $(event.target).closest('form').submit()
         GUI.closeSignInDialog()
+
+  promptPoiLinkInput: (chatType = 'p2p') ->
+    poiId = window.prompt('PoI-Id eingeben: ', '')
+    if poiId? && poiId != ''
+      CHAT.addPoiLink chatType, poiId
 
   @updatePoiNotes: (poi, newNotes) ->
     console.log 'updatePoiNotes: TODO - rewrite ids, locationadress in popup and contextnav/swiper...'
@@ -617,3 +618,26 @@ jQuery ->
         range.moveEnd('character', end)
         range.moveStart('character', start)
         range.select()
+
+  $.fn.insertAtCursor = (myValue) ->
+    return this.each (i) ->
+        if (document.selection)
+          # For browsers like Internet Explorer
+          this.focus()
+          sel = document.selection.createRange()
+          sel.text = myValue
+          this.focus()
+        else if (this.selectionStart || this.selectionStart == '0') 
+          # For browsers like Firefox and Webkit based
+          startPos = this.selectionStart
+          endPos = this.selectionEnd
+          scrollTop = this.scrollTop
+          this.value = this.value.substring(0, startPos) + myValue + 
+                  this.value.substring(endPos,this.value.length)
+          this.focus()
+          this.selectionStart = startPos + myValue.length
+          this.selectionEnd = startPos + myValue.length
+          this.scrollTop = scrollTop
+        else
+          this.value += myValue
+          this.focus()

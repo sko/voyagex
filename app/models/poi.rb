@@ -8,7 +8,7 @@ class Poi < ActiveRecord::Base
   has_many :notes, class_name: 'PoiNote', inverse_of: :poi, dependent: :destroy
 
   def user
-    notes.first.user
+    commit.user
   end
 
 end

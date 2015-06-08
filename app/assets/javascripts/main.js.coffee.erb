@@ -487,6 +487,8 @@ class window.VoyageX.Main
           APP.loadLocation location, false
 
   showPOIs: (location, flags = {withNotes: true, reset: false}) ->
+    if VIEW_MODEL.currentView().key != 'map'
+      VIEW_MODEL.setView VIEW_MODEL.getView('map')
     APP.model().loadPois UTIL.trimPosVal(location.lat), UTIL.trimPosVal(location.lng), (poi) ->
         location = {id: poi.locationId, lat: poi.lat, lng: poi.lng, address: poi.address, poiId: poi.id}
         markerMeta = APP.getMarker poi, true
@@ -496,6 +498,8 @@ class window.VoyageX.Main
       , flags
 
   showPOI: (poiId, poiNoteId) ->
+    if VIEW_MODEL.currentView().key != 'map'
+      VIEW_MODEL.setView VIEW_MODEL.getView('map')
     Storage.Model.instance().loadPoiNotes poiId, poiNoteId, (poi, newPoiNotes) ->
         APP.view().viewPoiNotes poi, poiNoteId
     GUI.closeContextNavPanel()

@@ -22,6 +22,8 @@ de:
     bookmark: Ort merken
     delete: POI löschen
     delete_note: Lesezeichen löschen
+  chat:
+    prompt_poi_id: PoI verlinken
   peers:
     chat: Chat
     add_note: Notiz hinzufügen

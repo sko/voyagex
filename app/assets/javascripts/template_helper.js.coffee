@@ -200,7 +200,9 @@ class window.VoyageX.TemplateHelper
     replace(/\{toggle\}/, toggle).
     replace(/\stmpl-toggle=['"]?[^'" >]+/g, '').
     replace(/\{foto_url\}/, from.foto.url).
-    replace(/\{message\}/, message)
+    replace(/\{message\}/, message
+                           .replace(/\n/g, '<br/>')
+                           .replace(/\{\{([0-9]+)\}\}/g, '<a href="javascript:APP.showPOI($1)">&gt;$1&lt;</a>'))
 
   @p2PChatHtml: (peer, messages, p2pChatHtml = null) ->
     unless p2pChatHtml?
@@ -211,7 +213,6 @@ class window.VoyageX.TemplateHelper
     #i = $('.leaflet-popup .p2p_chat_msg').length
     newMessagesHtml = ''
     for msg, j in messages
-      #newMessagesHtml += TemplateHelper.p2PChatMsgHtml(peer, msg, messageHtml)
       newMessagesHtml += TemplateHelper.p2PChatMsgHtml(msg.from, msg.text, messageHtml)
     p2pChatHtml.
     replace(/(<\/div>\s*<div[^>]* class=['"]\s*p2p_chat_input\s*['"][^>]*>)/m, newMessagesHtml+'$1')
@@ -261,7 +262,9 @@ class window.VoyageX.TemplateHelper
     replace(/\{meOrOther\}/, meOrOther).
     replace(/\{toggle\}/, toggle).
     replace(/\{foto_url\}/, from.foto.url).
-    replace(/\{message\}/, message)
+    replace(/\{message\}/, message
+                           .replace(/\n/g, '<br/>')
+                           .replace(/\{\{([0-9]+)\}\}/g, '<a href="javascript:APP.showPOI($1)">&gt;$1&lt;</a>'))
 
   @poisPreviewHTML: (pois) ->
     html = ''
