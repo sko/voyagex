@@ -10,5 +10,5 @@ class Poi < ActiveRecord::Base
   def user
     commit.user
   end
-
+  
 end

@@ -821,35 +821,48 @@ class window.VoyageX.Main
                 storedPoi = APP.storage().getPoi uPoi.id
             else
               storedPoi = APP.storage().getPoi uPoi.id
+            # uploaded by local user
+            uLocation = APP.storage().getLocation(storedPoi.locationId)
+            newLocalUserNotes = []
+            #for newNote in uPoi.notes
+            for newNoteIdx in [uPoi.notes.length-1..0] by -1
+              if uPoi.notes[newNoteIdx].local_time_secs?
+                newLocalUserNotes.push (uPoi.notes.splice(newNoteIdx, 1)[0])
+            Comm.UploadQ.instance().syncResponseCallback uLocation, storedPoi, uPoi, newLocalUserNotes
             callback = ((oldNotes, user) ->
                 (cbPoi, cbNewNotes) ->
-                    #  
-                    # there could also be some new pois from other users! order might be mixed
-                    #
-                    location = APP.storage().getLocation(cbPoi.locationId)
-                    newNotes = oldNotes.slice 0, oldNotes.length-cbNewNotes.length
-                    for note, idx in cbNewNotes
-                      if note.user? && note.user.id == user.id
-                        # notes from local user are added in model - @sync_poi-response
-                        continue
-                      #
-                      # we shouldn't get here: @see NOTE_1
-                      #
-                      newNotes.push note
-                      if note.user?
-                        note.userId = note.user.id
-                        delete note.user
-                      delete note.local_time_secs
-                    cbPoi.notes = newNotes
-                    #VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
-                    #.view().scrollToPoiNote cbNewNotes[cbNewNotes.length-1].id
-                    #APP.view().viewPoiNotes cbPoi, cbNewNotes[cbNewNotes.length-1].id, null, true
+                    # #  
+                    # # there could also be some new pois from other users! order might be mixed
+                    # #
+                    # location = APP.storage().getLocation(cbPoi.locationId)
+                    # newNotes = oldNotes.slice 0, oldNotes.length-cbNewNotes.length
+                    # for note, idx in cbNewNotes
+                    #   if note.user? && note.user.id == user.id
+                    #     # @deprecated comment: notes from local user are added in model - @sync_poi-response
+                    #     continue
+                    #   #
+                    #   # we shouldn't get here: @see NOTE_1
+                    #   #
+                    #   newNotes.push note
+                    #   if note.user?
+                    #     note.userId = note.user.id
+                    #     delete note.user
+                    #   delete note.local_time_secs
+                    # cbPoi.notes = newNotes
+                    # #VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
+                    # #.view().scrollToPoiNote cbNewNotes[cbNewNotes.length-1].id
+                    # #APP.view().viewPoiNotes cbPoi, cbNewNotes[cbNewNotes.length-1].id, null, true
                     APP.view().viewPoiNotes cbPoi, cbPoi.notes[cbPoi.notes.length-1].id, null, true
                 )(storedPoi.notes, curU)
-            # save attachments from new other user's notes
-            loadStats = { numAdded: uPoi.notes.length, numLeft: uPoi.notes.length }
-            for note in uPoi.notes
-              Storage.Model.instance().syncWithStorage uPoi, callback, note, loadStats, note.local_time_secs?
+            if uPoi.notes.length >= 1
+              # save attachments from other user's new notes
+              loadStats = { numAdded: uPoi.notes.length, numLeft: uPoi.notes.length }
+              for note in uPoi.notes
+                Storage.Model.instance().syncWithStorage uPoi, callback, note, loadStats, note.local_time_secs?
+            else
+              # re-add removed notes (from local user) first for proper attachment-ref which might be asynchronously changed ...
+              uPoi.notes = uPoi.notes.concat newLocalUserNotes
+              APP.view().viewPoiNotes uPoi, uPoi.notes[uPoi.notes.length-1].id, null, true
         else if upload.action == 'poi_delete'
           console.log 'my poi_delete was published to everbody'
           curU = APP.user()

@@ -41,7 +41,7 @@ class PoisController < ApplicationController
   def sync_poi
     @user = tmp_user
     # required for providing user to poi_notes
-    commit = @user.commits.create id: -@user.id, hash_id: DateTime.now.to_s, timestamp: DateTime.now
+    commit = @user.commits.create hash_id: DateTime.now.to_s, timestamp: DateTime.now#, local_time_secs: 
     errors = []
     poi_jsons = []
     min_local_time_secs_list = []
@@ -51,6 +51,8 @@ class PoisController < ApplicationController
         # if poi is meanwhile deleted by other user then create new one - tell user to replace old ...
       else
         poi = nearby_poi @user, Location.new(latitude: params[:location][poi_id.to_s][:latitude], longitude: params[:location][poi_id.to_s][:longitude])
+        poi.commit = commit unless poi.commit.present?
+        poi.location.commit = commit unless poi.location.commit.present?
       end
       @user.locations << poi.location unless @user.locations.find {|l|l.id==poi.location.id}
       is_new_poi = poi.notes.empty?
@@ -92,6 +94,7 @@ class PoisController < ApplicationController
         errors << poi.errors.full_messages
       end
     end
+    commit.update_attribute :local_time_secs, min_local_time_secs_list.min
 
     if ![:development].include?(Rails.env.to_sym)# || true
       Resque.enqueue(PostCommit, {action: 'sync_pois',

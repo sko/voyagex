@@ -60,7 +60,7 @@ class window.VoyageX.MarkerManager
         marker._icon.title = flags.peer.username+' ('+flags.peer.id+')'
         #marker._icon.title = '<img src="'+flags.peer.foto.url+'" style="max-width: 35px;">'
       else
-        marker._icon.title = location.address
+        marker._icon.title = location.address + (if m.isPoiMarker() then ' ('+APP.storage().getPoiForLocation(location.id).id+')' else '')
    #if meta then {marker: marker, isUserMarker: flags.isUserMarker, poi: APP.storage().getPoiForLocation(location.id), peer: flags.peer} else marker
     if meta then MarkerManager.metaJSON(m, {poi: APP.storage().getPoiForLocation(location.id), peer: flags.peer}) else marker
 

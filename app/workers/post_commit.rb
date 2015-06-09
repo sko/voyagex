@@ -31,10 +31,7 @@ class PostCommit
     vm = VersionManager.new Poi::MASTER, Poi::WORK_DIR_ROOT, @user, false#@user.is_admin?
     prev_commit = vm.cur_commit
 
-    # Commit.latest.hash_id
-
     if prev_commit != commit_hash
-#binding.pry if Rails.env.to_sym == :development
       vm.forward commit_hash
       prev_commit = commit_hash
     end
@@ -49,7 +46,6 @@ class PostCommit
     diff_modified = diff['M']
     diff_deleted = diff['D']
     if diff_added.present?
-#binding.pry if Rails.env.to_sym == :development
       # entries are sorted by poi. every time the (list)poi changes, a new poi is started
       poi_ids = []
       pois = {}
@@ -59,7 +55,6 @@ class PostCommit
         note_match = entry.match(/^note_([0-9]+)/)
         unless note_match.present?
           poi_match = entry.match(/^poi_([0-9]+)/)
-#binding.pry if Rails.env.to_sym == :development
           poi_ids << poi_match[1].to_i
           next
         end
@@ -85,7 +80,6 @@ class PostCommit
       end
     end
     
-    #Commit.latest.hash_id
     vm.fast_forward
     cur_commit = vm.cur_commit
 
@@ -131,41 +125,34 @@ class PostCommit
       if poi_id.to_i >= 0
         poi = Poi.find poi_id
       else
-        poi = Poi.joins(:notes).where(poi_notes: {user_id: @user.id}, local_time_secs: min_local_time_secs_list[idx]).first
+        poi = Poi.joins(:notes).where(poi_notes: {commit_id: commit.id}, local_time_secs: min_local_time_secs_list[idx]).first
       end
-      is_new_poi = poi.commit_hash.nil?
-      is_new_location = poi.location.commit_hash.nil?
 
       added_user_notes = []
 
       vm.add_poi poi
       # add new pois from user
       poi.notes.each do |note|
-        next unless note.user_id == @user.id && note.local_time_secs >= min_local_time_secs_list[idx]
+        next unless note.commit.user_id == @user.id && note.local_time_secs >= min_local_time_secs_list[idx]
         added_user_notes << note
         vm.add_poi_note poi, note
       end
-      sync_infos[poi_id] = { poi: poi, is_new_poi: is_new_poi, is_new_location: is_new_location, added_user_notes: added_user_notes }
+      sync_infos[poi_id] = { poi: poi, added_user_notes: added_user_notes }
       min_local_time_secs = min_local_time_secs_list[idx] if min_local_time_secs_list[idx]<min_local_time_secs || min_local_time_secs==-1
     end
     
     vm.merge true, true
     cur_commit = vm.cur_commit
-    #commit = @user.commits.create hash_id: cur_commit, timestamp: DateTime.now, local_time_secs: min_local_time_secs
     commit.update_attributes hash_id: cur_commit, timestamp: DateTime.now, local_time_secs: min_local_time_secs
     @user.snapshot.update_attribute :cur_commit, commit
 
     poi_ids.each_with_index do |poi_id, idx|
       poi = sync_infos[poi_id][:poi]
-      poi.location.update_attribute(:commit_hash, cur_commit) if sync_infos[poi_id][:is_new_location]
-      poi.update_attribute(:commit_hash, cur_commit) if sync_infos[poi_id][:is_new_poi]
 
       note_json_list_for_user = [] # added to upload-message for user
       note_json_list_for_others = [] # added to upload-message for others
 
-      #added_user_notes.each do |note|
       sync_infos[poi_id][:added_user_notes].each do |note|
-        note.update_attribute :commit_hash, cur_commit
         # show local_time_secs only to @user
         note_json_for_others = poi_note_json note, false
         note_json_list_for_others << note_json_for_others
@@ -178,7 +165,7 @@ class PostCommit
       #        this could be implemented on the client side as well. (lovely bags)
       if diff_added.present?
         diff_added.each do |entry|
-          # this part is done by  pulled befors sync and not handled here
+          # this part is done when pull before sync and not handled here
           # poi_match = entry.match(/^poi_([0-9]+)/)
           # if poi_match.present?
           #   # complete poi (including notes) added by remote users while local user was offline
@@ -208,7 +195,7 @@ class PostCommit
       # old sync per poi: poi_json_for_others = poi_json
       poi_json_for_others = { poi_id: poi.id, lat: poi.location.latitude, lng: poi.location.longitude }
       poi_json_for_user = poi_json.
-                          merge(sync_infos[poi_id][:is_new_poi] ? {local_time_secs: poi.local_time_secs} : {})
+                          merge(poi.commit == commit ? {local_time_secs: poi.local_time_secs} : {})
       # old sync per poi: poi_json_for_others.merge!({notes: note_json_list_for_others})
       poi_json_for_user.merge!({notes: note_json_list_for_user})
 

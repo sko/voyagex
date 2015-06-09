@@ -115,7 +115,6 @@ ActiveRecord::Schema.define(version: 20150608191852) do
 
   create_table "poi_notes", force: true do |t|
     t.integer  "poi_id"
-    t.integer  "user_id"
     t.text     "text"
     t.integer  "comments_on_id"
     t.integer  "attachment_id"
@@ -128,7 +127,6 @@ ActiveRecord::Schema.define(version: 20150608191852) do
   add_index "poi_notes", ["comments_on_id"], name: "index_poi_notes_on_comments_on_id", using: :btree
   add_index "poi_notes", ["commit_id"], name: "index_poi_notes_on_commit_id", using: :btree
   add_index "poi_notes", ["poi_id"], name: "index_poi_notes_on_poi_id", using: :btree
-  add_index "poi_notes", ["user_id"], name: "index_poi_notes_on_user_id", using: :btree
 
   create_table "pois", force: true do |t|
     t.integer  "location_id"

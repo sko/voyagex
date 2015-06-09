@@ -1,13 +1,6 @@
 module ::GeoUtils
   extend ActiveSupport::Concern
 
-  #included do
-  #end
-  
-  # l = User.first.last_location; b = lat_lng_limits l.latitude, l.longitude, 10
-  # "L.rectangle(#{[[b[:lat_north], b[:lng_west]], [b[:lat_south], b[:lng_east]]]}, {color: '#ff7800', weight: 1}).addTo(map);"
-  # map.removeLayer(l)
-  #
   # http://www.csgnetwork.com/degreelenllavcalc.html
   def lat_lng_limits lat, lng, radius_meters
     latRAD = lat/180 * Math::PI
@@ -18,6 +11,7 @@ module ::GeoUtils
     p1 = 111412.84
     p2 = -93.5
     p3 = 0.118
+
     # Calculate the length of a degree of latitude and longitude in meters
     latlen = m1 + (m2 * Math.cos(2 * latRAD)) + (m3 * Math.cos(4 * latRAD)) + (m4 * Math.cos(6 * latRAD))
     longlen = (p1 * Math.cos(latRAD)) + (p2 * Math.cos(3 * latRAD)) + (p3 * Math.cos(5 * latRAD));
@@ -60,8 +54,6 @@ module ::GeoUtils
     nearbys = nearby_pois location, radius_meters, limits_lat_lng
     if nearbys.present?
       # TODO check address, then get closest - not first
-      #poi = nearbys.first
-      #user.locations_users.create(location: poi.location) unless user.locations.where(id: poi.location.id).present?
       user_nearbys = user.locations.where(id: nearbys.collect{|poi|poi.location.id})
       if user_nearbys.present?
         poi = nearbys.find{|poi|poi.location.id==user_nearbys[0].id}
@@ -76,8 +68,6 @@ module ::GeoUtils
       nearbys = Location.where(locations: { latitude: limits_lat_lng[:limits_lat], longitude: limits_lat_lng[:limits_lng] })
       if nearbys.present?
         # TODO check address, then get closest - not first, check not to bookmark home_base
-        #location = nearbys.first
-        #user.locations_users.create(location: location) unless user.locations.where(id: location.id).present?
         user_nearbys = user.locations.where(id: nearbys.collect{|location|location.id})
         if user_nearbys.present?
           user_nearbys[0].touch 

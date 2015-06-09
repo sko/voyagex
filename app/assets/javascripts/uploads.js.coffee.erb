@@ -98,7 +98,8 @@ class window.VoyageX.Uploads
     $('#media_input_current').attr('src', '')
     this.afterUpload poi, newNotes
 
-  batchUpload: (perPoiList, afterSyncCB = null) ->
+  #batchUpload: (perPoiList, afterSyncCB = null) ->
+  batchUpload: (perPoiList) ->
     formData = new FormData()
     perPoiListKeys = Object.keys(perPoiList)
     for entryKey, idx in perPoiListKeys
@@ -124,8 +125,8 @@ class window.VoyageX.Uploads
                 formData.append($(this).attr('name')+'['+entryKey+']', $(this).attr('value'))
           )(formData, skipInputNames)
     APP.model().syncUploadCachedQPoiData formData,
-                                         null,#(if perPoiEntry.poi.id >= 0 then perPoiEntry.poi else null),
-                                         afterSyncCB
+                                         null#,#(if perPoiEntry.poi.id >= 0 then perPoiEntry.poi else null),
+                                         #afterSyncCB
 
   toggleUploadType: (selected) ->
     if selected.value == 'file'

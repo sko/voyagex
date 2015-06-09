@@ -21,15 +21,17 @@ class AddCommitRef < ActiveRecord::Migration
     remove_column :locations, :commit_hash
     remove_column :pois, :commit_hash
     remove_column :poi_notes, :commit_hash
+    remove_column :poi_notes, :user_id
   end
 
   def down
+    add_column :poi_notes, :user_id, :integer, nil: false
     add_column :poi_notes, :commit_hash, :string, nil: false
     add_column :pois, :commit_hash, :string, nil: false
     add_column :locations, :commit_hash, :string, nil: false
 
     PoiNote.all.each do |p_n|
-      p_n.update_attribute :commit_hash, p_n.commit.hash_id if p_n.commit.present?
+      p_n.update_attributes user_id: p_n.commit.user.id, commit_hash: p_n.commit.hash_id if p_n.commit.present?
     end
     Poi.all.each do |p|
       p.update_attribute :commit_hash, p.commit.hash_id if p.commit.present?

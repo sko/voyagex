@@ -14,11 +14,22 @@ class Location < ActiveRecord::Base
 #    end
 #  end
   after_validation :reverse_geocode
+  #after_create :ensure_commit
 
   @@default_location = nil
 
   def self.default
-    # hagen - uni
-    @@default_location ||= (Location.where(latitude: 51.3766024, longitude: 7.4940061).first || Location.create(latitude: 51.3766024, longitude: 7.4940061))
+    # a default location must be seeded
+    @@default_location ||= Location.order(:id).first
   end
+
+  # protected
+
+  # def ensure_commit
+  #   unless commit.present?
+  #     dataJSON = { id: id, latitude: latitude, longitude: longitude, address: address }
+  #     update_attribute :commit, Commit.create(user: User.admin, hash_id: Commit.generate_hash(dataJSON.to_json))
+  #   end
+  # end
+
 end

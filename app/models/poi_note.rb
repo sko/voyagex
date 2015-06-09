@@ -10,5 +10,5 @@ class PoiNote < ActiveRecord::Base
   def user
     commit.user
   end
-  
+
 end

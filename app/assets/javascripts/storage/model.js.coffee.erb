@@ -255,7 +255,8 @@ class window.Storage.Model
       #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
 
   # called from batch-upload to upload queue
-  syncUploadCachedQPoiData: (formData, poi = null, afterSyncCB = null) ->
+  #syncUploadCachedQPoiData: (formData, poi = null, afterSyncCB = null) ->
+  syncUploadCachedQPoiData: (formData, poi = null) ->
     if poi?
       url = '<%= sync_poi_path(id: ':id') %>'.replace(/:id/, poi.notes[0].id)
       formData.append('_method', 'put')
@@ -275,14 +276,15 @@ class window.Storage.Model
         console.log('res.message OK = '+(res.errors.length==0))
         if GUI.isMobile()
           GUI.hideAjaxLoading()
-        # changes from local user is handled here - there might hav been other changes
-        # -> @see APP - _systemCB
-        for resPoi in res.pois
-          qPoiId = if resPoi.local_time_secs? then -resPoi.local_time_secs else resPoi.id
-          # same poi as in params for syncUploadCachedQPoiData
-          poi = APP.storage().getPoi qPoiId
-          location = APP.storage().getLocation(poi.locationId)
-          Comm.UploadQ.instance().syncResponseCallback(location, poi, resPoi, resPoi.notes, afterSyncCB)
+        if false
+          # changes from local user is handled here - there might hav been other changes
+          # -> @see APP - _systemCB
+          for resPoi in res.pois
+            qPoiId = if resPoi.local_time_secs? then -resPoi.local_time_secs else resPoi.id
+            # same poi as in params for syncUploadCachedQPoiData
+            poi = APP.storage().getPoi qPoiId
+            location = APP.storage().getLocation(poi.locationId)
+            Comm.UploadQ.instance().syncResponseCallback(location, poi, resPoi, resPoi.notes)#, afterSyncCB)
     .fail (jqXHR, textStatus) ->
       # get from localStorage
       console.log('TODO: ?')
