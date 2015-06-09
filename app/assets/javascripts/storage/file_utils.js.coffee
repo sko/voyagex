@@ -62,21 +62,24 @@ class window.Comm.FileUtils
     if flags.users? && flags.users
       this._removeDirectory 'users'
 
+  deleteAttachment: (poiNoteId, callback) ->
+    @_dirReaders.entry.getFile '/poiNotes/attachments/'+poiNoteId, {}, (fileEntry) ->
+        fileEntry.remove (e) ->
+              console.log 'clear: deleted file /poiNotes/attachments/'+poiNoteId
+              if callback?
+                callback 'ok: '+poiNoteId
+            , (error) ->
+                console.log 'clear: error when deleting /poiNotes/attachments/'+poiNoteId+': '+error
+                if callback?
+                  callback 'error: '+poiNoteId+' - '+error
+
   clear: (flags = {tilePaths: [], poiNoteIds: [], userIds: []}, callback = null) ->
     if flags.tilePaths?
       for tilePath in tilePaths
         `TODO`
     if flags.poiNoteIds?
       for poiNoteId in flags.poiNoteIds
-        @_dirReaders.entry.getFile '/poiNotes/attachments/'+poiNoteId, {}, (fileEntry) ->
-            fileEntry.remove (e) ->
-                  console.log 'clear: deleted file /poiNotes/attachments/'+poiNoteId
-                  if callback?
-                    callback 'ok: '+poiNoteId
-                , (error) ->
-                    console.log 'clear: error when deleting /poiNotes/attachments/'+poiNoteId+': '+error
-                    if callback?
-                      callback 'error: '+poiNoteId+' - '+error
+        this.deleteAttachment poiNoteId, callback
     if flags.userIds?
       for userId in userIds
         `TODO`

@@ -277,7 +277,6 @@ class window.VoyageX.View
       $('#toggle_watch_position_on').css('display', 'none')
 
   # start with no params
-  # assets-compile: arrow-up-right_on.png -> arrow-up-right_on-ea4366b17dad061ef49336a4ae3e90b4.png
   _blinkArrow: (setOn = true, stop = false) ->
     if setOn
       iconSuffix = '_on'
@@ -397,7 +396,7 @@ class window.VoyageX.View
 
   viewAttachment: (poiNoteId) ->
     #poiId = $('#poi_notes_container').attr('data-poiId')
-    imgUrl = $('#poi_notes_container .upload_comment[data-id='+poiNoteId+'] img').attr('src')
+    imgUrl = $('#poi_notes_container > div[data-id='+poiNoteId+'] div.poi_note img').attr('src')
     GUI.viewAttachment imgUrl
   
   # called for either poi- or user-marker
@@ -541,6 +540,11 @@ class window.VoyageX.View
     poiId = window.prompt('PoI-Id eingeben: ', '')
     if poiId? && poiId != ''
       CHAT.addPoiLink chatType, poiId
+
+  renameAttachment: (poiNote) ->
+    attachment = $('#poi_notes_container > div[data-id='+poiNote.id+'] div.poi_note img')
+    if attachment.length >= 1
+      attachment.attr('src', poiNote.attachment.url)
 
   @updatePoiNotes: (poi, newNotes) ->
     console.log 'updatePoiNotes: TODO - rewrite ids, locationadress in popup and contextnav/swiper...'

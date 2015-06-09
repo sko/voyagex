@@ -21,7 +21,8 @@ en:
     add: add POI
     bookmark: bookmark Location
     delete: delete POI
-    delete_note: delete Bookmark
+    delete_note: delete Comment
+    delete_bookmark: delete Bookmark
   chat:
     prompt_poi_id: Link Poi
   peers:

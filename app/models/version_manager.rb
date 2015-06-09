@@ -57,6 +57,44 @@ class VersionManager
     `git #{@git_args} log --pretty=oneline | grep -o "^[^ ]\\+"`.split
   end
 
+  def status
+    branch = cur_branch
+    diff = {}
+    `git #{@git_args} status`.split("\n").each_with_index do |entry, idx|
+      new_note_match = entry.match(/^\s*poi_([0-9]+)\/note_([0-9]+)/)
+      if new_note_match.present?
+        added = diff['A']
+        unless added.present?
+          added = {}
+          diff['A'] = added
+        end
+        poi_notes = added[new_note_match[1]]
+        unless poi_notes.present?
+          poi_notes = []
+          added[new_note_match[1]] = poi_notes
+        end
+        poi_notes << new_note_match[2] unless poi_notes.include? new_note_match[2]
+      end
+      del_note_match = entry.match(/^\s*deleted:\s*poi_([0-9]+)\/note_([0-9]+)/)
+      if del_note_match.present?
+        deleted = diff['D']
+        unless deleted.present?
+          deleted = {}
+          diff['D'] = deleted
+        end
+        poi_notes = deleted[del_note_match[1]]
+        unless poi_notes.present?
+          poi_notes = []
+          deleted[del_note_match[1]] = poi_notes
+        end
+        poi_notes << del_note_match[2] unless poi_notes.include? del_note_match[2]
+      end
+    end
+    diff
+  end
+
+  # remote diff
+  # {"D"=>{"136"=>["277"]}}
   def changed branch = nil
     branch = cur_branch unless branch.present?
     `git #{@git_args} fetch`
@@ -64,22 +102,27 @@ class VersionManager
     cur_change_type = nil
     `git #{@git_args} diff --name-status #{branch}..origin/#{branch}`.split.each_with_index do |entry, idx|
       if idx%2==0
+        # 'A'|'M'|'D'
         cur_change_type = diff[entry]
         unless cur_change_type.present?
-          cur_change_type = []
+          cur_change_type = {}
           diff[entry] = cur_change_type
         end
       else
-        # TODO:
-        # 1) entity is added if file "data" is added.
-        # 2) entity is deleted if file "data" is deleted.
-        # 3) only "data" can be modified - others are either added or deleted.
-        # Example:
-        # "D"=>["location_4154/data", "poi_104/data", "poi_111/note_488/attachment/data", "poi_111/note_488/data"],
-        # "A"=>["location_4167/data", "poi_117/data", "poi_117/note_497/attachment/data", "poi_117/note_497/data"],
-        # "M"=>["poi_106/note_477/data"]}
-        target = entry.match(/([^\/]+_[0-9]+)\/(?!.+_[0-9])/)
-        cur_change_type << target[1] unless cur_change_type.include?(target[1])
+        # start match from lowest level 
+        match = entry.match(/^poi_([0-9]+)\/(data|note_([0-9]+))/)
+        poi_change_data = cur_change_type[match[1]]
+        unless poi_change_data.present?
+          poi_change_data = []
+          cur_change_type[match[1]] = poi_change_data
+        end
+        if match[2] == 'data'
+          # poi-change
+          poi_change_data << 'self' unless poi_change_data.include?('self')
+        else
+          # poi_note-change
+          poi_change_data << match[3] unless poi_change_data.include?(match[3])
+        end
       end
     end
     diff
@@ -158,24 +201,6 @@ class VersionManager
     merge
   end
 
-#   def add_location location, location_dir = nil
-#     unless location_dir.present?
-#       location_dir = "#{work_dir}/location_#{location.id}"
-#       return false if File.exist? location_dir
-#     end
-#     Dir.mkdir location_dir 
-#     data  = <<data
-# {
-#   lat: #{location.latitude}
-#   lng: #{location.longitude}
-#   address: '#{location.address.gsub(/'/, "\\\'")}'
-# }
-# data
-#     file = File.join(location_dir, 'data')
-#     File.open(file, 'w+') { |f| f.write(data) }
-#     true
-#   end
-
   def add_poi poi, poi_dir = nil
     unless poi_dir.present?
       poi_dir = "#{work_dir}/poi_#{poi.id}" 
@@ -228,10 +253,18 @@ data
     File.open(file, 'w+') { |f| f.write(data) }
   end
 
-  def delete_poi poi_id, poi_dir = nil
+  def delete_poi poi_id
     poi_dir = "#{work_dir}/poi_#{poi_id}" 
     return false unless File.exist? poi_dir
     FileUtils.rm_rf poi_dir
+  end
+
+  def delete_poi_note poi_id, poi_note_id
+    poi_dir = "#{work_dir}/poi_#{poi_id}" 
+    return false unless File.exist? poi_dir
+    poi_note_dir = "#{poi_dir}/note_#{poi_note_id}"
+    return false unless File.exist? poi_note_dir
+    FileUtils.rm_rf poi_note_dir
   end
 
   def self.init_version_control_from_db
@@ -257,9 +290,4 @@ data
     `git #{vm.git_args} push`
   end
 
-  def self.hash_for_poi poi
-  end
-
-  def self.hash_for_chat poi
-  end
 end

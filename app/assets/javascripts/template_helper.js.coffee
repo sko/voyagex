@@ -20,20 +20,13 @@ class window.VoyageX.TemplateHelper
       else
         form.attr('data-commentsonid', -1)
 
-  @poiNotePopupHtmlFromTmpl: (poiNote, i, poi = null, meta = null) ->
+  @poiNotePopupHtmlFromTmpl: (poiNote, i, poi, meta = null) ->
     unless meta?
       meta = {height: 0}
     html = TemplateHelper._updateIds 'tmpl_poi_note'
-    poiNotesHtml = TemplateHelper.poiNotePopupEntryHtml(poiNote, html, i, meta)
-    if poi != null
-      popupHtml = TemplateHelper._updateIds 'tmpl_poi_notes_container'
-      popupHtml = popupHtml.
-                  replace(/\{poi_notes\}/, poiNotesHtml).
-                  replace(/\{poi_id\}/g, poiNote.poi.id)
-    else
-      poiNotesHtml
+    poiNotesHtml = TemplateHelper.poiNotePopupEntryHtml(poi, poiNote, html, i, meta)
 
-  @poiNotePopupEntryHtml: (poiNote, poiNoteTmpl, i, meta) ->
+  @poiNotePopupEntryHtml: (poi, poiNote, poiNoteTmpl, i, meta) ->
     if poiNote.user?
       username = poiNote.user.username
       isCurrentUserNote = poiNote.user.id==APP.user().id
@@ -42,26 +35,33 @@ class window.VoyageX.TemplateHelper
       isCurrentUserNote = poiNote.userId==APP.user().id
     toggle = if isCurrentUserNote then 'left' else 'right'
     poiNoteTmpl.
+    replace(/\{poi_id\}/g, poi.id).
     replace(/\{poi_note_id\}/g, poiNote.id).
     replace(/\{i\}/g, i).
     replace(/\{toggle\}/g, toggle).
     replace(/\stmpl-toggle=['"]?[^'" >]+/g, '').
     replace(/\{media_file_tag\}/, TemplateHelper._mediaFileTag(poiNote.attachment, meta)).
     replace(/\{username\}/, username).
-    replace(/\{comment\}/, UTIL.padTextHtml(poiNote.text, 80))
+    replace(/\{comment\}/, UTIL.padTextHtml(poiNote.text, 80)).
+    replace(/\{displayDelete\}/, (if isCurrentUserNote then 'inline' else 'none'))
 
   @poiNotePopupHtml: (poi, meta) ->
+    if poi.notes[0].user?
+      isCurrentUserNote = poi.notes[0].user.id==APP.user().id
+    else
+      isCurrentUserNote = poi.notes[0].userId==APP.user().id
     popupHtml = TemplateHelper._updateIds 'tmpl_poi_notes_container'
     poiNoteTmpl = TemplateHelper._updateIds 'tmpl_poi_note'
     poiNotesHtml = ''
     for poiNote, i in poi.notes
-      poiNotesHtml += TemplateHelper.poiNotePopupEntryHtml(poiNote, poiNoteTmpl, i, meta)
+      poiNotesHtml += TemplateHelper.poiNotePopupEntryHtml(poi, poiNote, poiNoteTmpl, i, meta)
     bookmark = APP.storage().getBookmark(poi.locationId)
     popupHtml = popupHtml.
                 replace(/\{poi_id\}/g, poi.id).
                 replace(/\{location_id\}/g, poi.locationId).
                 replace(/\{display_view_note_btn\}/g, if bookmark? then 'inline' else 'none').
                 #replace(/\{address\}/g, poi.address).
+                replace(/\{displayDelete\}/, (if isCurrentUserNote then 'inline' else 'none')).
                 replace(/\{poi_notes\}/, poiNotesHtml)
 
   @addPoiNotes: (poi, newNotes, marker) ->
@@ -71,7 +71,7 @@ class window.VoyageX.TemplateHelper
       i = poi.notes.length - newNotes.length
       newPopupHtml = ''
       for note, j in newNotes
-        newPopupHtml += TemplateHelper.poiNotePopupHtmlFromTmpl(note, i+j)
+        newPopupHtml += TemplateHelper.poiNotePopupHtmlFromTmpl(note, i+j, poi)
       popupHtml = popup.getContent().replace(/(<div[^>]* class=["'][^'"]*\s?poi_controls(["']|\s))/, newPopupHtml+'$1')
       popup.setContent(popupHtml)
       unless popup._isOpen

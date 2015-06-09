@@ -2,6 +2,8 @@
 class PostCommit
   include PoiHelper
 
+  LOGGER = Logger.new("#{Rails.root}/log/post_commit.log")
+
   # queue for resque
   @queue = :post_commit
 
@@ -10,7 +12,7 @@ class PostCommit
     args_hash = args.first
     case args_hash['action']
       when 'sync_pois'
-        PostCommit.sync_pois args_hash['commit_id'], args_hash['poi_ids'], args_hash['min_local_time_secs_list']
+        PostCommit.sync_pois args_hash['commit_id'], args_hash['modified_poi_data']
       when 'delete_poi'
         PostCommit.delete_poi args_hash['user_id'], args_hash['poi_id']
       when 'pull_pois'
@@ -26,62 +28,71 @@ class PostCommit
   # read only - for write/commit @see sync_pois
   #
   def pull_pois user_id, commit_hash, fork_publish = true
+    #LOGGER.debug "pull_pois: ENV['USER'] = #{ENV['USER']}"
+    LOGGER.debug "pull_pois: user_id = #{user_id}, commit_hash = #{commit_hash}"
     @user = User.find user_id
 
     vm = VersionManager.new Poi::MASTER, Poi::WORK_DIR_ROOT, @user, false#@user.is_admin?
     prev_commit = vm.cur_commit
+    #LOGGER.debug "pull_pois: vm.cur_commit = #{vm.cur_commit}, vm.status = #{vm.status}"
 
     if prev_commit != commit_hash
+      # scenario:
+      # a user pulls from a different client with an earlier state than user's latest commit
       vm.forward commit_hash
       prev_commit = commit_hash
     end
     
-    @new_pois = []
-    @modified_pois = []
+    @new_pois = {}
+    @modified_pois = {}
     @deleted_pois = []
 
     diff = vm.changed
-    # TODO - for now only add is implemented.
+    # TODO - M (edit)
     diff_added = diff['A']
     diff_modified = diff['M']
     diff_deleted = diff['D']
+
     if diff_added.present?
-      # entries are sorted by poi. every time the (list)poi changes, a new poi is started
-      poi_ids = []
-      pois = {}
-      diff_added.each do |entry|
-        note_match = entry.match(/^location_([0-9]+)/)
-        next if note_match.present?
-        note_match = entry.match(/^note_([0-9]+)/)
-        unless note_match.present?
-          poi_match = entry.match(/^poi_([0-9]+)/)
-          poi_ids << poi_match[1].to_i
-          next
+      diff_added.each do |poi_id, note_ids|
+        is_new_poi = note_ids.delete('self').present?
+        note_ids.each_with_index do |note_id, idx|
+          poi_note = PoiNote.find note_id
+          note_ids[idx] = poi_note_json(poi_note, false)
         end
-        poi_note = PoiNote.where(id: note_match[1].to_i).first
-        if poi_note.present?
-          cur_poi_note_jsons = pois[poi_note.poi.id]
-          same_poi = cur_poi_note_jsons.present?
-          unless same_poi
-            cur_poi_note_jsons = []
-            pois[poi_note.poi.id] = cur_poi_note_jsons
-          end
-          cur_poi_note_jsons << poi_note_json(poi_note, !same_poi)
+        if is_new_poi
+          poi_json = poi_json PoiNote.find(note_ids[0][:id]).poi
+          poi_json.delete :id
+          @new_pois[poi_id.to_i] = { notes: note_ids }.merge!(poi_json)
         else
-          Rails.logger.warn "poi_note[id=#{note_match[1]}] found in diff from user/branch #{@user.id}/#{vm.cur_branch} but not in db"
+          @modified_pois[poi_id.to_i] = { notes: note_ids }
         end
-      end
-      pois.each do |poi_id, poi_notes|
-        if poi_ids.include? poi_id
-          @new_pois << poi_notes
-        else
-          @modified_pois << poi_notes
-        end 
       end
     end
-    
+
+    if diff_deleted.present?
+      diff_deleted.each do |poi_id, note_ids|
+        delete_poi = note_ids.delete('self').present?
+        if delete_poi
+          @deleted_pois << poi_id.to_i
+          next
+        end
+        cur_poi_note_ids = []
+        note_ids.each_with_index do |note_id, idx|
+          cur_poi_note_ids << { id: -note_id.to_i }
+        end
+        poi_data = @modified_pois[poi_id.to_i]
+        unless poi_data.present?
+          @modified_pois[poi_id.to_i] = { notes: [] }
+        end
+        @modified_pois[poi_id.to_i][:notes].concat cur_poi_note_ids
+      end
+    end
+
     vm.fast_forward
     cur_commit = vm.cur_commit
+    commit = Commit.where(hash_id: cur_commit).first
+    @user.snapshot.update_attribute :cur_commit, commit
 
     system_msg_for_user = { type: 'callback',
                             channel: 'pois',
@@ -102,107 +113,79 @@ class PostCommit
   # updates the users repository:
   # 1) pulls data meanwhile created by other users 
   # 2) pushes data created by this user (vm)
-  def self.sync_pois commit_id, poi_ids, min_local_time_secs_list
-    PostCommit.new.sync_pois commit_id, poi_ids, min_local_time_secs_list
+  def self.sync_pois commit_id, modified_poi_data
+    PostCommit.new.sync_pois commit_id, modified_poi_data
   end
 
-  def sync_pois commit_id, poi_ids, min_local_time_secs_list, fork_publish = true
+  # Parameters: {"pois"=>{"-1433919822"=>{"location"=>{"latitude"=>"52.4939386", "longitude"=>"13.4382749"},
+  #                                       "notes"=>{"-1433919822"=>{"text"=>"3", "action"=>"create"}}},
+  #                       "-1433919815"=>{"location"=>{"latitude"=>"52.4941215", "longitude"=>"13.4317088"},
+  #                                       "notes"=>{"-1433919815"=>{"text"=>"1", "action"=>"create"},
+  #                                                 "-1433919818"=>{"text"=>"2", "action"=>"create"}}}}, 
+  def sync_pois commit_id, modified_poi_data, fork_publish = true
+    #LOGGER.debug "sync_pois: ENV['USER'] = #{ENV['USER']}"
+    LOGGER.debug "sync_pois: commit_id = #{commit_id}, modified_poi_data = #{modified_poi_data}"
+    #LOGGER.debug "sync_pois: ENV['USER'] = #{ENV['USER']}"
     commit = Commit.find commit_id
     @user = commit.user
-
+    
     vm = VersionManager.new Poi::MASTER, Poi::WORK_DIR_ROOT, @user, false#@user.is_admin?
-    prev_commit = vm.cur_commit
+    #LOGGER.debug "sync_pois: vm.cur_commit = #{vm.cur_commit}, vm.status = #{vm.status}"
+
     diff = vm.changed
-    # TODO - for now only add is implemented.
+    # TODO - M (edit)
     diff_added = diff['A']
     diff_modified = diff['M']
     diff_deleted = diff['D']
+
+    errors = []
+    poi_jsons = []
+    # for collecting broadcasted system-sync-messages
     @poi_jsons_for_user = []
     @poi_jsons_for_others = []
-    min_local_time_secs = -1
-    sync_infos = {}
-    poi_ids.each_with_index do |poi_id, idx|
-      if poi_id.to_i >= 0
-        poi = Poi.find poi_id
-      else
-        poi = Poi.joins(:notes).where(poi_notes: {commit_id: commit.id}, local_time_secs: min_local_time_secs_list[idx]).first
+
+    modified_poi_data.each do |poi_id, modified_note_data|
+      if modified_note_data['deleted'] == true
+        vm.delete_poi poi_id
+        @poi_jsons_for_user << { id: -poi_id.to_i, user: { id: @user.id } }
+        # others will just be notified that poi changed and the should pull request if lat/lng is in their range
+        @poi_jsons_for_others << { poi_id: poi_id.to_i, lat: modified_note_data['poi_location_latitude'], lng: modified_note_data['poi_location_longitude'] }
+        next
+      end
+      poi = Poi.find poi_id
+      is_new_poi = (poi.commit == commit)
+      # is new by current_user or other - either way it must be added to vm
+      # if poi was deleted meanwhile by other it'll be recreated
+      vm.add_poi(poi) if is_new_poi ||
+                         (diff_added.present? && diff_added[poi.id.to_s].present? && diff_added[poi.id.to_s].include?('self')) ||
+                         (diff_deleted.present? && diff_deleted[poi.id.to_s].present? && diff_deleted[poi.id.to_s].include?('self'))
+      note_json_list_for_user = [] # added to upload-message for user
+      modified_note_data['added_note_ids'].each do |local_time_secs|
+        poi_note = PoiNote.where(local_time_secs: local_time_secs).first
+        vm.add_poi_note poi, poi_note
+        note_json_list_for_user << poi_note_json(poi_note, false).
+                                   merge({local_time_secs: poi_note.local_time_secs})
       end
 
-      added_user_notes = []
-
-      vm.add_poi poi
-      # add new pois from user
-      poi.notes.each do |note|
-        next unless note.commit.user_id == @user.id && note.local_time_secs >= min_local_time_secs_list[idx]
-        added_user_notes << note
-        vm.add_poi_note poi, note
+      modified_note_data['deleted_note_ids'].each do |poi_note_id|
+        vm.delete_poi_note poi.id, poi_note_id
       end
-      sync_infos[poi_id] = { poi: poi, added_user_notes: added_user_notes }
-      min_local_time_secs = min_local_time_secs_list[idx] if min_local_time_secs_list[idx]<min_local_time_secs || min_local_time_secs==-1
+      
+      poi_json = poi_json(poi).merge({user: { id: @user.id }})
+      poi_json_for_user = poi_json.
+                          merge(is_new_poi ? {local_time_secs: poi.local_time_secs} : {})
+      poi_json_for_user.merge!({notes: note_json_list_for_user})
+      @poi_jsons_for_user << poi_json_for_user
+
+      # others will just be notified that poi changed and the should pull request if lat/lng is in their range
+      @poi_jsons_for_others << { poi_id: poi.id, lat: poi.location.latitude.to_f, lng: poi.location.longitude.to_f }
     end
-    
+
     vm.merge true, true
     cur_commit = vm.cur_commit
-    commit.update_attributes hash_id: cur_commit, timestamp: DateTime.now, local_time_secs: min_local_time_secs
+    commit.update_attributes hash_id: cur_commit#, timestamp: DateTime.now
     @user.snapshot.update_attribute :cur_commit, commit
 
-    poi_ids.each_with_index do |poi_id, idx|
-      poi = sync_infos[poi_id][:poi]
-
-      note_json_list_for_user = [] # added to upload-message for user
-      note_json_list_for_others = [] # added to upload-message for others
-
-      sync_infos[poi_id][:added_user_notes].each do |note|
-        # show local_time_secs only to @user
-        note_json_for_others = poi_note_json note, false
-        note_json_list_for_others << note_json_for_others
-        note_json_list_for_user << note_json_for_others.
-                                   merge({local_time_secs: note.local_time_secs})
-      end
-
-      # prepend all entries changed by remote users while local user was offline
-      # TODO - find merge-algorithm for new notes added by others and by user
-      #        this could be implemented on the client side as well. (lovely bags)
-      if diff_added.present?
-        diff_added.each do |entry|
-          # this part is done when pull before sync and not handled here
-          # poi_match = entry.match(/^poi_([0-9]+)/)
-          # if poi_match.present?
-          #   # complete poi (including notes) added by remote users while local user was offline
-          #   new_poi = Poi.find(poi_match[1].to_i)
-          #   new_poi_json = poi_json new_poi
-          #   new_note_json_list
-          #   new_poi.notes.each do |note|
-          #     new_note_json_list << poi_note_json note, false
-          #   end
-          #   @poi_jsons_for_user << new_poi_json.merge!({notes: new_note_json_list})
-          #   next
-          # end
-          note_match = entry.match(/^note_([0-9]+)/)
-          next unless note_match.present?
-          poi_note = PoiNote.where(id: note_match[1].to_i).first
-          if poi_note.present?
-            if poi_note.poi == poi
-              note_json_list_for_user.unshift poi_note_json(poi_note)
-            end
-          else
-            Rails.logger.warn "poi_note[id=#{note_match[1]}] found in diff from user/branch #{@user.id}/#{vm.cur_branch} but not in db"
-          end
-        end
-      end
-
-      poi_json = poi_json(poi).merge({user: { id: @user.id }})
-      # old sync per poi: poi_json_for_others = poi_json
-      poi_json_for_others = { poi_id: poi.id, lat: poi.location.latitude, lng: poi.location.longitude }
-      poi_json_for_user = poi_json.
-                          merge(poi.commit == commit ? {local_time_secs: poi.local_time_secs} : {})
-      # old sync per poi: poi_json_for_others.merge!({notes: note_json_list_for_others})
-      poi_json_for_user.merge!({notes: note_json_list_for_user})
-
-      @poi_jsons_for_user << poi_json_for_user
-      @poi_jsons_for_others << poi_json_for_others
-    end
-    
     system_msg_for_user = { type: 'callback',
                             channel: 'pois',
                             action: 'poi_sync',
@@ -225,14 +208,12 @@ class PostCommit
     Publisher.new.publish msgs_data, fork_publish
   end
 
-  # updates the users repository:
-  # 1) pulls data meanwhile created by other users 
-  # 2) pushes data created by this user (vm)
   def self.delete_poi user_id, poi_id
     PostCommit.new.delete_poi user_id, poi_id
   end
 
   def delete_poi user_id, poi_id, fork_publish = true
+    LOGGER.debug "delete_poi: user_id = #{user_id}, poi_id = #{poi_id}"
     @user = User.find user_id
 
     vm = VersionManager.new Poi::MASTER, Poi::WORK_DIR_ROOT, @user, false#@user.is_admin?

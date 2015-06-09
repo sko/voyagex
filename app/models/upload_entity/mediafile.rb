@@ -2,17 +2,11 @@ class UploadEntity::Mediafile < ActiveRecord::Base
   
   self.table_name = 'upload_entities_mediafiles'
   
-  ACCEPTED_CONTENT_TYPES = ["application/octet-stream",
-                            "audio/mp3",
-                            "audio/ogg",
-                            "image/jpg",
-                            "image/jpeg",
-                            "image/png",
-                            "image/gif",
-                            "image/webp",
-                            "video/mp4"]
+  ACCEPTED_CONTENT_TYPES = ['application/octet-stream',
+                            /audio\/(mp3|ogg)/,
+                            /image\/(jpe?g|png|gif|webp)/,
+                            /video\/mp4/]
 
-  #belongs_to :upload, inverse_of: :entity
   belongs_to :upload, inverse_of: :mediafile
   
   has_attached_file :file,

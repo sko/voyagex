@@ -1,6 +1,6 @@
 CACHE MANIFEST
 
-#CACHE:
+CACHE:
 <%= render file: "/main/cache_entries#{Rails.env.to_sym == :development ? '_development' : ''}#{is_mobile ? '.mobile' : ''}.txt" -%>
 #/csrf
 

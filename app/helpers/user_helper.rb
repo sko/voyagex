@@ -150,7 +150,12 @@ query
       request_options.merge!({ 'Accept-Language' => request.env['HTTP_ACCEPT_LANGUAGE'],
                                'User-Agent' => request.env['HTTP_USER_AGENT'] })
     end
-    open(avatar_image_url, request_options){|t|t.base_uri}
+    begin
+      return open(avatar_image_url, request_options){|t|t.base_uri}
+    rescue
+      Rails.logger.error "error when trying to get avatar from #{target_host}"
+    end
+    nil
   end
 
   #

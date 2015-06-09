@@ -93,6 +93,11 @@ require 'factory_girl'
 FactoryGirl.load('spec/factories.rb')
 Capybara::Screenshot.screenshot_and_save_page
 
+RAILS_ENV=production rake assets:clobber      
+RAILS_ENV=production rake assets:precompile                         
+ruby script/create_manifest.rb
+ruby script/create_manifest.rb -m
+vi app/views/main/cache_entries.txt
 
 
 # faye needs a queue too RAILS_ENV=staging PIDFILE=./tmp/pids/resque-worker.pid BACKGROUND=yes QUEUE=post_commit rake environment resque:work

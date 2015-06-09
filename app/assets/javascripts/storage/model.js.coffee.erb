@@ -255,19 +255,13 @@ class window.Storage.Model
       #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
 
   # called from batch-upload to upload queue
-  #syncUploadCachedQPoiData: (formData, poi = null, afterSyncCB = null) ->
-  syncUploadCachedQPoiData: (formData, poi = null) ->
-    if poi?
-      url = '<%= sync_poi_path(id: ':id') %>'.replace(/:id/, poi.notes[0].id)
-      formData.append('_method', 'put')
-    else
-      url = '<%= sync_pois_path %>'
+  syncUploadCachedQPoiData: (formData) ->
     $.ajax
       type: 'POST'
 #      beforeSend: (xhr) ->
 #          xhr.setRequestHeader('X-CSRF-Token', $('meta[name=csrf-token]').first().attr('content'))
       dataType: 'json'
-      url: url
+      url: '<%= sync_pois_path %>'
       data: formData
       cache: false
       contentType: false
@@ -276,22 +270,11 @@ class window.Storage.Model
         console.log('res.message OK = '+(res.errors.length==0))
         if GUI.isMobile()
           GUI.hideAjaxLoading()
-        if false
-          # changes from local user is handled here - there might hav been other changes
-          # -> @see APP - _systemCB
-          for resPoi in res.pois
-            qPoiId = if resPoi.local_time_secs? then -resPoi.local_time_secs else resPoi.id
-            # same poi as in params for syncUploadCachedQPoiData
-            poi = APP.storage().getPoi qPoiId
-            location = APP.storage().getLocation(poi.locationId)
-            Comm.UploadQ.instance().syncResponseCallback(location, poi, resPoi, resPoi.notes)#, afterSyncCB)
     .fail (jqXHR, textStatus) ->
       # get from localStorage
       console.log('TODO: ?')
       #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
 
-  # sets up params for _cachePoiNote
-  #savePoiNote: (doneCB, transactionConf = null) ->
   savePoiNote: (saveCB, doneCB) ->
     if (Modernizr.localstorage)
       poiId = parseInt $('#upload_form').attr('data-poiId')
@@ -306,7 +289,7 @@ class window.Storage.Model
           qNewPoiNote.user = APP.user()
           doneCB qPoi, qNewPoiNote
           if APP.isOnline()
-            APP.storage().uploadQueue qPoi, qNewPoiNote
+            APP.storage().uploadQueue()
           else
             if GUI.isMobile()
               GUI.hideAjaxLoading()
@@ -319,29 +302,46 @@ class window.Storage.Model
     else
       alert('This Browser Doesn\'t Support Local Storage so This Message will be lost if you quit the Browser')
 
-  deletePoi: (poiId, callback, isCurUserCommit = true) ->
-    if isCurUserCommit
-      url = '<%= poi_note_path(id: ':id') %>'.replace(/:id/, poiId)
-      $.ajax
-          type: 'DELETE'
-          dataType: 'json'
-          url: url
-      .done (msg) ->
-          console.log('TODO: anything to do?')
-          callback APP.storage().deletePoi(poiId)
-      .fail (jqXHR, textStatus) ->
-          # get from localStorage
-          console.log('TODO: maybe get from local storage')
-          #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
+  # deletes from local user - causes sync
+  deletePoiNote: (poi, poiNoteId, doneCB) ->
+    #delete attachment
+    afterQueueDeleteCB = (poi, delPoiNote) ->
+        # this is executed after poi-note is locally deleted
+        # if app is online it will be instantly forwarded, else it just stays in queue
+        # until @see APP.setOnline is called
+        doneCB poi, delPoiNote
+        if APP.isOnline()
+          APP.storage().uploadQueue()
+        else
+          if GUI.isMobile()
+            GUI.hideAjaxLoading()
+    APP.storage().queueDeletePoiNote poi,
+                                     poiNoteId,
+                                     afterQueueDeleteCB
+
+  deletePoi: (poi, fromSyncCB, doneCB) ->
+    if fromSyncCB
+      # remote user deleted poi
+      APP.storage().deletePoi poi.id
+      doneCB poi
     else
-      callback APP.storage().deletePoi(poiId)
+      afterQueueDeleteCB = (poi) ->
+          # this is executed after poi is locally deleted
+          # if app is online it will be instantly forwarded, else it just stays in queue
+          # until @see APP.setOnline is called
+          doneCB poi
+          if APP.isOnline()
+            APP.storage().uploadQueue()
+          else
+            if GUI.isMobile()
+              GUI.hideAjaxLoading()
+      APP.storage().queueDeletePoi poi,
+                                   afterQueueDeleteCB
 
   _preparePoiNote: (poiId) ->
     id = -Math.round(new Date().getTime()/1000)
     if poiId != -1
       storeKey = Comm.StorageController.poiKey {id: poiId}
-      # don't get from cache - since we're setting lat/lng/address later
-     #poi = APP.storage().get storeKey
       poi = JSON.parse localStorage.getItem(storeKey)
       location = APP.storage().getLocation poi.locationId
     else
@@ -378,7 +378,7 @@ class window.Storage.Model
         console.log('TODO: maybe get from local storage')
 
   loadPoiNotes: (poiId, poiNoteId, callback, useCache = true) ->
-    poi = APP.storage().get Comm.StorageController.poiKey {id: poiId}
+    poi = APP.storage().getPoi poiId
     if useCache && poi? && poi.notes && poi.notes.length >= 1
       # TODO now only returns stored poiNotes - but we have to check list for update
       if poiNoteId?
@@ -397,19 +397,18 @@ class window.Storage.Model
       url: '<%= poi_comments_path(poi_id: ':poi_id', poi_note_id: '') %>'.replace(/:poi_id/, poiId)+poiNoteId
     .done (msg) ->
         Model.setupPoiForNote msg.poi
-        loadStats = { numAdded: msg.poi.notes.length, numLeft: msg.poi.notes.length }
+        loadStats = { numAdded: msg.poi.notes.length, numLeft: msg.poi.notes.length, newNotes: [] }
         for note, i in msg.poi.notes
-          Model.instance().syncWithStorage msg.poi, callback, note, loadStats
+          Model.instance().syncWithStorage msg.poi, note, callback, loadStats
     .fail (jqXHR, textStatus) ->
-        # get from localStorage
-        console.log('TODO: maybe get from local storage')
-        #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
+        console.log('ERROR: no backend connection - load notes for poi '+poiId+' from local storage')
+        callback poi, poi.notes
 
   # called for handling upload-response from backend - either currentUser or remoteUser
   # might be called multiple times within one backend-response (->loadStats)
-  # stores attachment (!), sets loadStats-numLeft -1 and then calls _syncPoiNotes (with ready attachmentUrl
+  # stores attachment (!), sets loadStats-numLeft -1 and then calls _syncNewPoiNotes (with ready attachmentUrl
   # and loadStats)
-  syncWithStorage: (poi, callback, note, loadStats = {numAdded:1,numLeft:1}, attachmentCached = false) ->
+  syncWithStorage: (poi, note, callback, loadStats = {numAdded:1,numLeft:1,newNotes:[]}, attachmentCached = false) ->
     # store user
     if note.user?
       APP.storage().saveUser note.user
@@ -425,22 +424,21 @@ class window.Storage.Model
       if (typeof attachmentUrl == 'string') 
         console.log 'Model - syncWithStorage: attachmentUrl-string = '+attachmentUrl
         loadStats.numLeft -= 1
-        Model._syncPoiNotes poi, Comm.StorageController.poiKey(poi), note, loadStats, callback
+        Model._syncNewPoiNotes poi, note, loadStats, callback
       else if (typeof attachmentUrl.then == 'function') 
         # Assume we are dealing with a promise.
         attachmentUrl.then (url) ->
             console.log 'Model - syncWithStorage: attachmentUrl-promise resolved to: '+url
             note.attachment.url = url
             loadStats.numLeft -= 1
-            Model._syncPoiNotes poi, Comm.StorageController.poiKey(poi), note, loadStats, callback
+            Model._syncNewPoiNotes poi, note, loadStats, callback
     else
       # embed, plain_text
       loadStats.numLeft -= 1
-      Model._syncPoiNotes poi, Comm.StorageController.poiKey(poi), note, loadStats, callback
+      Model._syncNewPoiNotes poi, note, loadStats, callback
 
+  # creates (local) poi if doesn't exist yet
   @setupPoiForNote: (poi) ->
-    #storeKey = Comm.StorageController.poiKey {id: poi.id}
-    #storedPoi = APP.storage().get storeKey
     storedPoi = APP.storage().getPoi poi.id
     unless storedPoi
       unless poi.notes?
@@ -448,8 +446,6 @@ class window.Storage.Model
       APP.storage().storePoi poi
 
   @_syncPoi: (poi, callback) ->
-    #storeKey = Comm.StorageController.poiKey poi
-    #localPoiData = APP.storage().get storeKey
     localPoiData = APP.storage().getPoi poi.id
     if localPoiData?
       # TODO attributes / structure will not change. 
@@ -468,28 +464,15 @@ class window.Storage.Model
     callback poi
     poi
 
-  # - might be called multiple times within backend-response/callback for new poinotes (->loadStats)
-  #   stores each note to localStorage (!)
-  # - on the last note passes completed new data to the callback (most likely a view)
-  #   some view-attributes ar added here - maybe this should be done via callback-callback. the
-  #   reason for current way is that we have a list (of poiNotes) that shouldn't be run through more
-  #   often than necessary
-  @_syncPoiNotes: (poi, poiKey, note, loadStats, callback) ->
-    #poiKey = Comm.StorageController.poiKey(poi)
-    #existingPoi = APP.storage().get poiKey
+  # loadStats ... {numAdded:>=1,numLeft:>=0,newNotes:[]}.
+  # on the last note passes completed new data to the callback (most likely a view)
+  @_syncNewPoiNotes: (poi, note, loadStats, callback) ->
     existingPoi = APP.storage().getPoi poi.id
-    if existingPoi? 
-      unless existingPoi.notes? && Model._findPoiNote(note, existingPoi.notes) >= 0
-        # if poiNote is not already in poi's note-list
-        existingPoi = APP.storage().storePoiNote existingPoi, note
-      poi.notes = existingPoi.notes
-    unless loadStats.numLeft >= 1
-      if poi.notes? && poi.notes.length >= 1
-        # extract the last loadStats.numAdded poiNotes
-        newNotes = poi.notes.slice poi.notes.length-loadStats.numAdded
-      else
-        newNotes = [note]
-      callback poi, newNotes
+    unless existingPoi.notes? && Model._findPoiNote(note, existingPoi.notes) >= 0
+      existingPoi = APP.storage().storePoiNote existingPoi, note
+      loadStats.newNotes.push note
+    if loadStats.numLeft == 0
+      callback existingPoi, loadStats.newNotes
   
   @noteSort: () ->
     (a, b) ->

@@ -27,9 +27,8 @@ VoyageX::Application.routes.draw do
   get '/location_data/:location_id', to: 'main#location_data', as: :location_data
   get '/pois/:lat/:lng', to: 'pois#pois', as: :pois, :constraints => { :lat => /([0-9]+\.[0-9]+|:[a-z]+)/,
                                                                        :lng => /([0-9]+\.[0-9]+|:[a-z]+)/ }
-  post '/sync_pois', to: 'pois#sync_poi', as: :sync_pois
-  put '/sync_poi/:id', to: 'pois#sync_poi', as: :sync_poi
-  delete '/pois/:id', to: 'pois#destroy', as: :poi_note
+  post '/sync_pois', to: 'pois#sync_pois', as: :sync_pois
+  #delete '/pois/:id', to: 'pois#destroy', as: :poi_note
   match '/pull_pois', to: 'pois#pull_pois', as: :pull_pois, via: [:get, :post]
   
   get '/manifest', to: 'main#manifest', as: :manifest

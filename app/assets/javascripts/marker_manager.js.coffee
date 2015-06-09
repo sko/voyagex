@@ -117,7 +117,7 @@ class window.VoyageX.MarkerManager
         if m.isPeerMarker()
           meta.peer = m._flags.peer
         else
-          meta.poi = APP.storage().get Comm.StorageController.poiKey({id: m.location().poiId})
+          meta.poi = APP.storage().getPoi m.location().poiId
         return meta
     null
   
@@ -151,7 +151,7 @@ class window.VoyageX.MarkerManager
   forPoi: (poiId) ->
     for m in @_markers
       if m.location().poiId == poiId
-        poi = APP.storage().get Comm.StorageController.poiKey({id: m.location().poiId})
+        poi = APP.storage().getPoi m.location().poiId
         return MarkerManager.metaJSON m, {poi: poi}
     null
 

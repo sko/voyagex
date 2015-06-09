@@ -238,9 +238,7 @@ class window.VoyageX.Main
           # queue is uploaded after pull -> @see _poisCB - upload.action == 'pull'
         else
           if APP.storage().hasQueue()
-            APP.storage().uploadQueue null, null, (cbPoi, cbNewPoiNotes) ->
-                console.log 'Main - setOnline: done with queue-sync ...'
-                APP._syncPoiCB cbPoi, cbNewPoiNotes
+            APP.storage().uploadQueue()
         unless VoyageX.Main._BACKEND._state.pingActive
           setTimeout "VoyageX.Main._BACKEND.pingBackend()", VoyageX.Backend._PING_CHECK_DELAY_MILLIS
     #Comm.StorageController.instance()._tileLoadQueue = {}
@@ -269,7 +267,7 @@ class window.VoyageX.Main
   setOnline: () ->
     @_online = true
 
-    @syncPois()
+    this.syncPois()
     APP.model().syncChatMessages()
 
     Main._MAP_CONTROL._zooms.splice(0, Main._MAP_CONTROL._zooms.length)
@@ -335,7 +333,7 @@ class window.VoyageX.Main
       posLatLng = this.getSelectedPositionLatLng()
       #APP.map().panTo(this.getSelectedPositionLatLng())
     else
-      poi = APP.storage().get Comm.StorageController.poiKey({id: poiId})
+      poi = APP.storage().getPoi poiId
       locationData = APP.storage().getLocation poi.locationId
       posLatLng = [locationData.lat, locationData.lng]
     Storage.Model.instance().addBookmark posLatLng, (bookmark) ->
@@ -367,10 +365,16 @@ class window.VoyageX.Main
     
     markerMeta.target().closePopup()
 
-  deletePoi: (poiId) ->
-    Storage.Model.instance().deletePoi poiId, (poi) ->
+  deletePoi: (poiId, fromSyncCB = false) ->
+    poi = APP.storage().getPoi poiId
+    Storage.Model.instance().deletePoi poi, fromSyncCB, (poi) ->
         if poi?
           APP.markers().removeForPoi poi.id
+
+  deletePoiNote: (poiId, poiNoteId) ->
+    poi = APP.storage().getPoi poiId
+    Storage.Model.instance().deletePoiNote poi, poiNoteId, (poi) ->
+        APP.showPOI poi.id, null, true
 
   # user-marker-tools
   radarSettings: () ->
@@ -497,11 +501,14 @@ class window.VoyageX.Main
           Main.markerManager().add location, Main._markerEventsCB
       , flags
 
-  showPOI: (poiId, poiNoteId) ->
+  showPOI: (poiId, poiNoteId, skipLoad = false) ->
     if VIEW_MODEL.currentView().key != 'map'
       VIEW_MODEL.setView VIEW_MODEL.getView('map')
-    Storage.Model.instance().loadPoiNotes poiId, poiNoteId, (poi, newPoiNotes) ->
-        APP.view().viewPoiNotes poi, poiNoteId
+    if skipLoad
+      APP.view().viewPoiNotes APP.storage().getPoi(poiId), poiNoteId
+    else
+      Storage.Model.instance().loadPoiNotes poiId, poiNoteId, (poi, newPoiNotes) ->
+          APP.view().viewPoiNotes poi, poiNoteId
     GUI.closeContextNavPanel()
 
   showPeer: (peer, lastLocation = null, type = 'dialog') ->
@@ -734,23 +741,7 @@ class window.VoyageX.Main
         #message.type = message.action
         #delete message.action
         APP._poisCB message
-    else if message.type == 'poi_sync'
-      # this is old workflow: message conatins change-date for a poi - and for each changed poi we receive a message
-      # the new way is: one message after batch-upload - challenge to pull...
-      curU = APP.user()
-      if message.poi.user.id != curU.id
-        # other user committed
-        delete message.poi.user
-        poi = message.poi
-        Storage.Model.setupPoiForNote poi
-        loadStats = { numAdded: poi.notes.length, numLeft: poi.notes.length }
-        for note in poi.notes
-          Storage.Model.instance().syncWithStorage poi, VoyageX.View.addPoiNotes, note, loadStats
-        Main._STORAGE_CONTROLLER.saveUser {id: curU.id, curCommitHash: message.commit_hash}
-        APP.view().alert()
-        return true
     else if message.type == 'pull_request'
-      #"data":{"type":"poi_sync","commit_hash":"dd3088f129e4c23b9d2fd0dbf7cdf48580febf90","pois":[{"poi_id":97,"lat":"52.4923317","lng":"13.4258509","push_user_id":297}]}
       curU = APP.user()
       if message.push_user_id != curU.id
         # TODO:
@@ -792,131 +783,87 @@ class window.VoyageX.Main
       mapEvent.user = APP.storage().saveUser user
     APP._view._mapEventsCB mapEvent
   
-  _poisCB: (upload) ->
+  _poisCB: (message) ->
     unless APP._online
       # for debug only - _online might be false if actually true
-      console.log 'disable _poisCB for debugging offline: ' + upload.type
+      console.log 'disable _poisCB for debugging offline: ' + message.type
       return false
-    console.log 'got an uploads - message: ' + upload.type
-    if upload.type == 'callback'
-      # callbacks are async backend response for user who changed/committed something
-      # other users often get type for action
-      if upload.action?
-        if upload.action == 'poi_sync'
-          # assume that sync already performed with backend-response - here we hava after-commit-faye-callback
+    console.log 'got a pois - message: ' + message.type
+    if message.type == 'callback'
+      # callbacks are async backend responses for user who changed/committed something
+      # other users receive pull_request-message
+      if message.action?
+        if message.action == 'poi_sync'
+          # after-commit-faye-callback
           curU = APP.user()
-          #curU.curCommitHash = upload.commit_hash
-          #APP.storage().saveCurrentUser curU
-          Main._STORAGE_CONTROLLER.saveUser {id: curU.id, curCommitHash: upload.commit_hash}
-          #qPoiId = if upload.poi.local_time_secs? then -upload.poi.local_time_secs else upload.poi.id
-          #
-          # NOTE_1: actually there shouldn't be any changes from other users since pull is done before sync
-          #
-          for uPoi in upload.pois
+          Main._STORAGE_CONTROLLER.saveUser {id: curU.id, curCommitHash: message.commit_hash}
+          for uPoi in message.pois
             # new pois created by local user have id -uPoi.local_time_secs
-            if uPoi.local_time_secs?
-              storedPoi = APP.storage().getPoi -uPoi.local_time_secs
-              unless storedPoi?
-                # might have been changed already by sync_poi-response - race-condition
+            if uPoi.id < 0
+              # deleted
+              Comm.UploadQ._removeFromQueue -uPoi.id
+            else
+              if uPoi.local_time_secs?
+                storedPoi = APP.storage().getPoi -uPoi.local_time_secs
+                unless storedPoi?
+                  # might have been changed already by sync_poi-response - race-condition
+                  storedPoi = APP.storage().getPoi uPoi.id
+              else
                 storedPoi = APP.storage().getPoi uPoi.id
-            else
-              storedPoi = APP.storage().getPoi uPoi.id
-            # uploaded by local user
-            uLocation = APP.storage().getLocation(storedPoi.locationId)
-            newLocalUserNotes = []
-            #for newNote in uPoi.notes
-            for newNoteIdx in [uPoi.notes.length-1..0] by -1
-              if uPoi.notes[newNoteIdx].local_time_secs?
-                newLocalUserNotes.push (uPoi.notes.splice(newNoteIdx, 1)[0])
-            Comm.UploadQ.instance().syncResponseCallback uLocation, storedPoi, uPoi, newLocalUserNotes
-            callback = ((oldNotes, user) ->
-                (cbPoi, cbNewNotes) ->
-                    # #  
-                    # # there could also be some new pois from other users! order might be mixed
-                    # #
-                    # location = APP.storage().getLocation(cbPoi.locationId)
-                    # newNotes = oldNotes.slice 0, oldNotes.length-cbNewNotes.length
-                    # for note, idx in cbNewNotes
-                    #   if note.user? && note.user.id == user.id
-                    #     # @deprecated comment: notes from local user are added in model - @sync_poi-response
-                    #     continue
-                    #   #
-                    #   # we shouldn't get here: @see NOTE_1
-                    #   #
-                    #   newNotes.push note
-                    #   if note.user?
-                    #     note.userId = note.user.id
-                    #     delete note.user
-                    #   delete note.local_time_secs
-                    # cbPoi.notes = newNotes
-                    # #VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
-                    # #.view().scrollToPoiNote cbNewNotes[cbNewNotes.length-1].id
-                    # #APP.view().viewPoiNotes cbPoi, cbNewNotes[cbNewNotes.length-1].id, null, true
-                    APP.view().viewPoiNotes cbPoi, cbPoi.notes[cbPoi.notes.length-1].id, null, true
-                )(storedPoi.notes, curU)
-            if uPoi.notes.length >= 1
-              # save attachments from other user's new notes
-              loadStats = { numAdded: uPoi.notes.length, numLeft: uPoi.notes.length }
-              for note in uPoi.notes
-                Storage.Model.instance().syncWithStorage uPoi, callback, note, loadStats, note.local_time_secs?
-            else
-              # re-add removed notes (from local user) first for proper attachment-ref which might be asynchronously changed ...
-              uPoi.notes = uPoi.notes.concat newLocalUserNotes
-              APP.view().viewPoiNotes uPoi, uPoi.notes[uPoi.notes.length-1].id, null, true
-        else if upload.action == 'poi_delete'
-          console.log 'my poi_delete was published to everbody'
+              if uPoi.notes.length >= 1
+                # uploaded by local user
+                uLocation = APP.storage().getLocation(storedPoi.locationId)
+                Comm.UploadQ.syncResponseCallback uLocation, storedPoi, uPoi, uPoi.notes
+              else
+                # notes where deleted only
+                Comm.UploadQ._removeFromQueue uPoi.id
+        else if message.action == 'pull'
           curU = APP.user()
-          Main._STORAGE_CONTROLLER.saveUser {id: curU.id, curCommitHash: upload.commit_hash}
-        else if upload.action == 'pull'
-          console.log 'TODO: deletes on pull ...'
-          curU = APP.user()
+          notifyChange = false
           # save commit_hash
-          Main._STORAGE_CONTROLLER.saveUser {id: curU.id, curCommitHash: upload.commit_hash}
-          for modPoiNotes in upload.modified_pois
-            modPoi = modPoiNotes[0].poi
-            loadStats = { numAdded: modPoiNotes.length, numLeft: modPoiNotes.length }
-            for newNote in modPoiNotes
-              Storage.Model.instance().syncWithStorage modPoi, (poi, newNotes) ->
-                  console.log 'added #'+newNotes.length+' notes to poi '+poi.id
-                , newNote
-          for modPoiNotes in upload.new_pois
-            modPoi = modPoiNotes[0].poi
+          Main._STORAGE_CONTROLLER.saveUser {id: curU.id, curCommitHash: message.commit_hash}
+          # "deleted_pois":[1,4]
+          for deletePoiId in message.deleted_pois
+            APP.deletePoi deletePoiId, true
+          # "modified_pois":{"136":{"notes":[{"id":324,"user":{"id":264,"username":"stephan"},"text":"rttretr"}]}},
+          for poiId in Object.keys(message.modified_pois)
+            poi = APP.storage().getPoi poiId
+            modPoi = message.modified_pois[poiId]
+            modPoi.id = poiId
+            loadStats = { numAdded: modPoi.notes.length, numLeft: modPoi.notes.length, newNotes: [] }
+            for modNote in modPoi.notes
+              if modNote.id < 0
+                APP.storage().deletePoiNote poi, -modNote.id, (poi) ->
+                    # show change if marker-popup is open
+                    oPM = APP.getOpenPopupMarker(true)
+                    if oPM? && oPM.m.isPoiMarker() && (oPM.m._location.poiId == poi.id)
+                      APP.showPOI poi.id, null, true
+                loadStats.numLeft -= 1
+              else
+                notifyChange ||= true
+                Storage.Model.instance().syncWithStorage poi, modNote, (poi, newNotes) ->
+                    console.log 'added #'+newNotes.length+' notes to poi '+poi.id
+                    # show change if marker-popup is open
+                    oPM = APP.getOpenPopupMarker(true)
+                    if oPM? && oPM.m.isPoiMarker() && (oPM.m._location.poiId == poi.id)
+                      APP.showPOI poi.id, null, true
+          # "new_pois":{"136":{"notes":[{"id":324,"user":{"id":264,"username":"stephan"},"text":"rttretr"}]}},
+          for poiId in Object.keys(message.new_pois)
+            modPoi = message.new_pois[poiId]
+            modPoi.id = poiId
             Storage.Model.setupPoiForNote modPoi
-            loadStats = { numAdded: modPoiNotes.length, numLeft: modPoiNotes.length }
-            for newNote in modPoiNotes
-              Storage.Model.instance().syncWithStorage modPoi, (poi, newNotes) ->
+            loadStats = { numAdded: modPoi.notes.length, numLeft: modPoi.notes.length, newNotes: [] }
+            for newNote in modPoi.notes
+              notifyChange ||= true
+              Storage.Model.instance().syncWithStorage modPoi, newNote, (poi, newNotes) ->
                   console.log 'added new poi '+poi.id+' with #'+newNotes.length+' notes'
-                , newNote
-          # after pull we could sync queue
-          # @see setOnline
+          if notifyChange
+            console.log 'TODO: notify change after  pull ...'
+            APP.view().alert()
+          # after pull - if there's a queue: sync it ...
+          # also @see setOnline
           if APP.storage().hasQueue()
-            # sync with commit - backend calls back via /system
-            APP.storage().uploadQueue null, null, (cbPoi, cbNewPoiNotes) ->
-                console.log 'done with upload - pulling other changes now'
-                APP._syncPoiCB cbPoi, cbNewPoiNotes
-    else if upload.type == 'poi_note_upload'
-      unless upload.poi_note.user.id == APP.userId()
-        # TODO: unify json-format, until then avoid circular structure
-        poi = upload.poi_note.poi
-        Storage.Model.setupPoiForNote poi
-        Storage.Model.instance().syncWithStorage poi, VoyageX.View.addPoiNotes, upload.poi_note
-        APP.view().alert()
-    # else if upload.type == 'poi_sync'
-    #   # moved to system ... 
-    #   if upload.poi.user.id != APP.userId()
-    #     delete upload.poi.user
-    #     poi = upload.poi
-    #     Storage.Model.setupPoiForNote poi
-    #     loadStats = { numAdded: poi.notes.length, numLeft: poi.notes.length }
-    #     for note in poi.notes
-    #       Storage.Model.instance().syncWithStorage poi, VoyageX.View.addPoiNotes, note, loadStats
-    #     APP.view().alert()
-    # else if upload.type == 'poi_delete'
-    #   if upload.poi.user.id != APP.userId()
-    #     Storage.Model.instance().deletePoi poiId, (poi) ->
-    #         APP.markers().removeForPoi poi.id
-    #         #APP.view().alert()
-    #       , false
+            APP.storage().uploadQueue()
 
   _radarCB: (radarEvent) ->
     unless APP._online
@@ -932,15 +879,9 @@ class window.VoyageX.Main
     APP._view._radarCB radarEvent
 
   _syncPoiCB: (cbPoi, cbNewNotes) ->
-    # VoyageX.TemplateHelper.openPOINotePopup cbPoi, null, true
-    # APP.view().scrollToPoiNote cbNewNotes[cbNewNotes.length-1].id
-    APP.view().viewPoiNotes cbPoi, cbNewNotes[cbNewNotes.length-1].id, null, true
+    scrollPoiNoteId = if cbNewNotes.length>= 1 then cbNewNotes[cbNewNotes.length-1].id else -1
+    APP.view().viewPoiNotes cbPoi, scrollPoiNoteId, null, true
 
-  # _setPeerPosition: (peer, lat, lng) ->
-  #   peerLocation = APP.storage().getLocalLocation lat, lng
-  #   unless peerLocation?
-  #     peerLocation = APP.storage().saveLocation {id: -peer.id, lat: lat, lng: lng}
-  #   peerLocation
   _setEventLocation: (user, event) ->
     if event.locationId?
       location = APP.storage().getLocation event.locationId
@@ -1143,6 +1084,7 @@ class window.VoyageX.Main
                   # userMarkerMouseOver is set in openPOINotePopup
                   #VoyageX.TemplateHelper.openPOINotePopup poi, event.target
                   APP.view().viewPoiNotes poi, -1, event.target
+                , false
       when 'mouseover'
         markerMeta = Main.markerManager().meta event.target
         if markerMeta.isUserMarker && Main.markerManager().userMarkerMouseOver()

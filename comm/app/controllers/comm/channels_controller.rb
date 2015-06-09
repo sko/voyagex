@@ -177,12 +177,12 @@ module Comm
                   LOGGER.debug "<<< providing reverse-geocoding-service: #{address}"
                   publish_data['address'] = address
                 rescue => e
-                  LOGGER.error "!!!!!! #{e.message}"
+                  LOGGER.error "!!!!!! map_events - filter-out: [click] #{e.message}"
                 end
               end
             end
           rescue => e
-            LOGGER.error "!!!!!! #{e.message}"
+            LOGGER.error "!!!!!! map_events - filter-out: #{e.message}"
           end
         end
         pass
@@ -216,7 +216,7 @@ module Comm
             end
           end
         rescue => e
-          LOGGER.error "!!!!!! #{e.message}"
+          LOGGER.error "!!!!!! map_events - publish: #{e.message}"
         end
       end
     end

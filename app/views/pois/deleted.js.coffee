@@ -1,1 +1,0 @@
-$('#upload_<%= @upload.id -%>').remove()
