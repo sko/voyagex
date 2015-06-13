@@ -11,6 +11,7 @@ end
 class InitWebapp
 
   def initialize env
+    #puts "ENV['USER'] = #{ENV['USER']}, ENV['HOME'] = #{ENV['HOME']}, PATH=#{ENV['PATH']}"
     @env = env
 deploy_cmd = <<EOC
 cd ~/ &&
@@ -73,6 +74,7 @@ EOC
   
 end
 
+#FileUtils.touch 'timestamp'
 env = InitSyncedEnv.new
 iw = InitWebapp.new env
 iw.start_resque_worker

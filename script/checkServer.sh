@@ -2,7 +2,6 @@
 
 SERVICEPORT=3000
 
-ROOT_DIR="/home/vagrant/voyagex-1.0.0"
 SYNC_DIR="/home/vagrant/voyagex-synced"
 CUR_DIR=`pwd`
 
@@ -18,7 +17,7 @@ if [ -f "service-pid.sh" ] ; then
 
 	if [ ! -n "$TPID" ] ; then 
 		echo "$TIMEKEY: $SERVICEPORT-service is down. restarting ..." >> "$LOGFILE"
-		cd "$ROOT_DIR"
+		cd "$SYNC_DIR"
 		RAILS_ENV=staging rails s -d
     cd "$CUR_DIR"
 	else
