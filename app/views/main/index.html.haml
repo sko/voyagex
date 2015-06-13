@@ -20,26 +20,16 @@
 #content_chat{style: 'display: none;'}
   .chat_view
   .bc_controls
-    = link_to image_tag('link-poi.png', style: 'height: 25px;', title: t('chat.prompt_poi_id'), alt: t('chat.prompt_poi_id')), '#', onclick: "javascript:APP.view().promptPoiLinkInput('bc');"
+    = link_to image_tag('link-poi.png', style: 'height: 32px;', title: t('chat.prompt_poi_id'), alt: t('chat.prompt_poi_id')), '#', onclick: "javascript:APP.view().promptPoiLinkInput('bc');"
   .chat_input_container
     = form_tag '#', method: :post, remote: true
     = text_area_tag :message, '', class: :chat_input
 
--#{style: 'display: none;'}
 #content_map
   %canvas{id: 'tile_canvas', style: 'display: none; width: 256px; height: 256px;'}
   %canvas{id: 'attachment_canvas', style: 'display: none;'}
   %canvas{id: 'user_foto_canvas', style: 'display: none;'}
   #map
-  / = javascript_tag do
-  /   var offlineZooms = [4,8,12,16];
-  /   var zooms = [#{(1..16).collect{|n|",#{n}"}.join.sub(/^,/,'')}];
-  /   var mapOptions = { zooms: zooms,
-  /   zoom: 16,
-  /   subdomains: ['a'],
-  /   access_token: 'pk.eyJ1Ijoic3RlcGhhbmtvZWxsZXIiLCJhIjoiZEFHdnhwayJ9.AdtZiG5HGi5JAb64G1K-jA',
-  /   max_zoom: 30 }
-  /   new VoyageX.Main(mapOptions, offlineZooms, true) 
 
 #tmpl_auth_whoami{style: 'display: none;'}
   = t('auth.whoami', username: ':username').html_safe

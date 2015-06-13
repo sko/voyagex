@@ -1,4 +1,3 @@
-# role: View-Model
 unless window.VoyageX?
   window.VoyageX = {}
 class window.VoyageX.Gui

@@ -89,7 +89,3 @@
       - email_arg = params[:exec].match(/^show_login_dialog_confirm_email/).present? ? "'#{tmp_user.unconfirmed_email}'" : 'null'
       = javascript_tag do
         GUI.showLoginDialog(#{email_arg});
-    - if params[:c].present?
-      = javascript_tag do
-        VIEW_MODEL.menuNavClick('#{params[:c]}');
-        /window.location.href.replace(/\??c=[^&]*/, '')
