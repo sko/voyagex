@@ -12,6 +12,22 @@ class InitWebapp
 
   def initialize env
     @env = env
+deploy_cmd = <<EOC
+cd ~/ &&
+rm -fR tmp/* &&
+ln -s ~/voyagex-synced tmp/voyagex &&
+tar cfz tmp/voyagex.tgz voyagex/ &&
+cd tmp/ &&
+tar --keep-directory-symlink -x -z -f voyagex.tgz && 
+cd ~/
+EOC
+    synced_readme = "#{ENV['HOME']}/voyagex-synced/README.md"
+    #puts "synced_readme = #{synced_readme}"
+    unless File.exist? synced_readme
+      puts "deploying webapp to synced directory ..."
+      system deploy_cmd
+    end
+    Dir.chdir "#{ENV['HOME']}/voyagex-synced"
   end
 
   def start_resque_worker
