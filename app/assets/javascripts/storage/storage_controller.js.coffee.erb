@@ -1218,6 +1218,7 @@ class Comm.UploadQ
         APP.markers().replace {id: poi.locationId}, location
       poiKey = Comm.StorageController.poiKey {id: poi.id}
       localStorage.removeItem poiKey
+      console.log 'Storage - syncResponseCallback: changing poi-id from = '+poi.id+' to '+cbPoi.id
       poi.id = cbPoi.id
       poi.locationId = location.id
     # 1) find first locally-added/unsynched poiNote
@@ -1328,6 +1329,7 @@ class Comm.UploadQ
 #    qEntries
 
   @_removeFromQueue: (qPoiId, qEntries = null) ->
+    console.log 'Storage - _removeFromQueue: qPoiId = '+qPoiId
     uploadQKey = 'comm.uploadQ.poiNotes'
     unless qEntries?
       qEntries = JSON.parse(localStorage.getItem(uploadQKey))

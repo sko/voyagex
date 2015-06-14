@@ -2,11 +2,11 @@
 /[if lt IE 7] <html class="no-js lt-ie9 lt-ie8 lt-ie7">
 /[if IE 7] <html class="no-js lt-ie9 lt-ie8">
 /[if IE 8] <html class="no-js lt-ie9">
-/  manifest="/manifest"
 / [if gt IE 8]><!
 -# manifestDecl = [:production,:development].include?(Rails.env.to_sym) ? {manifest: "/manifest"} : {}
-- cache_dev = false && (request.env['HTTP_HOST'].match(/^m\./).present? && [:development].include?(Rails.env.to_sym))
-- manifestDecl = cache_dev||[:production].include?(Rails.env.to_sym) ? {manifest: "/manifest"} : {}
+-# cache_dev = false && (request.env['HTTP_HOST'].match(/^m\./).present? && [:development].include?(Rails.env.to_sym))
+-# manifestDecl = cache_dev||[:production].include?(Rails.env.to_sym) ? {manifest: "/manifest"} : {}
+- manifestDecl = {manifest: "/manifest"}
 %html{manifestDecl}
   / <![endif]
   %head
