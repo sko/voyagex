@@ -20,7 +20,6 @@
 /assets/jquery-ui/base.css?body=1
 /assets/jquery-ui/all.css?body=1
 /assets/jquery-ui.css?body=1
-/assets/jquery.mobile.css?body=1
 /assets/leaflet.css?body=1
 /assets/swiper.css?body=1
 /assets/application.css?body=1
@@ -150,6 +149,7 @@
 /assets/jquery-ui/ui-icons_cd0a0a_256x240.png
 /assets/layers-2x.png
 /assets/layers.png
+/assets/link-poi.png
 /assets/loading_200x100.png
 /assets/locate.png
 /assets/locate_off.png

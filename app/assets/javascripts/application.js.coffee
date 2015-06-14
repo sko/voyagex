@@ -10,4 +10,6 @@ mapOptions = {
 new VoyageX.Main(mapOptions, offlineZooms, true) 
 
 if document.location.hash?
-  VIEW_MODEL.menuNavClick(document.location.hash.match(/[^#]+/)[0])
+  context = document.location.hash.match(/[^#]+/)
+  if context? && context.length >= 1
+    VIEW_MODEL.menuNavClick(document.location.hash.match(/[^#]+/)[0])

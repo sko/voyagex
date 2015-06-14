@@ -1,4 +1,25 @@
 # voyagex assets
+/assets/jquery-ui/theme.css?body=1
+/assets/jquery-ui/core.css?body=1
+/assets/jquery-ui/accordion.css?body=1
+/assets/jquery-ui/menu.css?body=1
+/assets/jquery-ui/autocomplete.css?body=1
+/assets/jquery-ui/button.css?body=1
+/assets/jquery-ui/datepicker.css?body=1
+/assets/jquery-ui/draggable.css?body=1
+/assets/jquery-ui/resizable.css?body=1
+/assets/jquery-ui/dialog.css?body=1
+/assets/jquery-ui/progressbar.css?body=1
+/assets/jquery-ui/selectable.css?body=1
+/assets/jquery-ui/selectmenu.css?body=1
+/assets/jquery-ui/sortable.css?body=1
+/assets/jquery-ui/slider.css?body=1
+/assets/jquery-ui/spinner.css?body=1
+/assets/jquery-ui/tabs.css?body=1
+/assets/jquery-ui/tooltip.css?body=1
+/assets/jquery-ui/base.css?body=1
+/assets/jquery-ui/all.css?body=1
+/assets/jquery-ui.css?body=1
 /assets/jquery.mobile.css?body=1
 /assets/leaflet.css?body=1
 /assets/swiper.css?body=1
@@ -78,7 +99,7 @@
 /assets/extensions.mobile.js?body=1
 /comm/faye-browser.js
 /assets/comm/comm.js?body=1
-/assets/application.mobile.js?body=1
+/assets/application.js?body=1
 # all media assets
 /assets/3rd_man_gugu.mp3
 /assets/add-bookmark.png
@@ -219,6 +240,7 @@
 /assets/jquery-ui/ui-icons_cd0a0a_256x240.png
 /assets/layers-2x.png
 /assets/layers.png
+/assets/link-poi.png
 /assets/loading_200x100.png
 /assets/locate.png
 /assets/locate_off.png
