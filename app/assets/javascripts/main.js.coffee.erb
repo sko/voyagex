@@ -8,7 +8,6 @@ class window.VoyageX.Main
   @_MAP_CONTROL = null
   @_MARKER_MANAGER = null
   @_PATH_PREDICTION = null
-  @_CHAT_CONTROL = null
   @_COMM_CHANNELS = ['system', 'talk', 'map_events', 'pois', 'radar']
   @_STORAGE_MODEL = null
   @_UPLOAD_HELPER = null
@@ -25,12 +24,12 @@ class window.VoyageX.Main
     @_navigatorOnline = @_online
     @_view = new VoyageX.View()
     @_comm = null
+    @_pathPrediction = false
     @_realPosition = {lat: -1.0, lng: -1.0}
     @_realPositionWatch = null
     @_moveSensorDistMeters = 25
     @_selectedPosition = {lat: -1.0, lng: -1.0, address: null}
     @_curPOI = null
-    #@_initPoisOnMap = []
     Main._STORAGE_MODEL = new Storage.Model()
     Main._UPLOAD_HELPER = new VoyageX.Uploads()
     Main._USER_MANAGER = new VoyageX.Users()
@@ -49,8 +48,6 @@ class window.VoyageX.Main
         console.log 'Main: went online ...'
         APP.setOnline()
       , false
-    #window.applicationCache.addEventListener "error", (e) ->
-    #    alert("Error fetching manifest: a good chance we are offline")
     # at first the map need's to be initialized ...
     $(document).ready () ->
         APP._init mapOptions, offlineZooms, window.VoyageX.TILE_HANDLER
@@ -92,7 +89,6 @@ class window.VoyageX.Main
                 console.log 'APP - _init: resetting user ...'
                 delete userData.dirty
                 Main._STORAGE_CONTROLLER.saveUser userData
-                #env.volatileFlags.userInitialized = { lastLocation: true, curCommitHash: true }
                 env.volatileFlags.userInitialized = { reset: Math.round(Date.now()/1000)}
           # reload since env might have changed
           curU = APP.user()
@@ -111,7 +107,8 @@ class window.VoyageX.Main
                                    sysChannelEncKey,
                                    APP._systemCB,
                                    Main._BACKEND.commConnStateCB)
-        APP._cacheStrategy = new VoyageX.CacheStrategy true
+        APP._chatControl = new VoyageX.ChatControl()
+        APP._cacheStrategy = new VoyageX.CacheStrategy APP._pathPrediction
         # Map initialisation (LeafletJS)
         mapReadyCB = (map) ->
             #  disable this if using geolocation on startup (some lines further down)
@@ -122,8 +119,6 @@ class window.VoyageX.Main
             #
             # maybe store current-environment-tiles even with _pathPrediction
             #
-            #APP._cacheStrategy._pathPrediction = true
-            #Main._MARKER_MANAGER = new VoyageX.MarkerManager APP.map()
             if false && APP.isOnline()
               if Comm.StorageController.isFileBased()
                 x = parseInt(MC._map.project(MC._map.getCenter()).x/256)
@@ -146,9 +141,7 @@ class window.VoyageX.Main
                 #     srcUrl = 'filesystem:http://ctrl.privatedns.org:3005/persistent/'+MC._map.getZoom()+'/'+x+'/'+y+''
                 #     $(this).attr('src', srcUrl)
         Main._MAP_CONTROL = new VoyageX.MapControl mapOptions, offlineZooms, APP._cacheStrategy, mapReadyCB, tileHandler
-        #Main._MARKER_MANAGER = new VoyageX.MarkerManager APP.map()
         Main._PATH_PREDICTION = new VoyageX.PathPrediction Main._MAP_CONTROL
-        Main._CHAT_CONTROL = new VoyageX.ChatControl()
         #  if enable geolocation then disable mapReadyCB-location-setting (some lines further up)
         # if navigator.geolocation 
         #   navigator.geolocation.getCurrentPosition(APP._initPositionCB, (error) ->
@@ -194,6 +187,13 @@ class window.VoyageX.Main
           })
         $('#clear_cache').click () ->
           APP.clearCache()
+        if document.location.hash?
+          context = document.location.hash.match(/[^#]+/)
+          if context? && context.length >= 1
+            viewKey = document.location.hash.match(/[^#]+/)[0]
+            if viewKey == 'conference'
+              viewKey = 'chat'
+            VIEW_MODEL.menuNavClick viewKey
 
   user: () ->
     APP.storage().getCurrentUser()
@@ -1121,9 +1121,6 @@ class window.VoyageX.Main
 
   markers: () ->
     Main._MARKER_MANAGER||VoyageX.MarkerManager.instance()
-
-  chat: () ->
-    Main._CHAT_CONTROL
 
   model: () ->
     Main._STORAGE_MODEL

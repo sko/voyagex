@@ -133,9 +133,7 @@ class PostCommit
     #LOGGER.debug "sync_pois: vm.cur_commit = #{vm.cur_commit}, vm.status = #{vm.status}"
 
     diff = vm.changed
-    # TODO - M (edit)
     diff_added = diff['A']
-    diff_modified = diff['M']
     diff_deleted = diff['D']
 
     errors = []
