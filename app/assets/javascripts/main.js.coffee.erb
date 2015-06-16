@@ -66,8 +66,10 @@ class window.VoyageX.Main
             APP._init mapOptions, offlineZooms, tileHandler
           )
       when 2
-        Main._BACKEND = new VoyageX.Backend (isOnline) ->
+        Main._BACKEND = new VoyageX.Backend (isOnline, pingResponse) ->
             APP._online = isOnline
+            # save initial settings since they're required for some following operations
+            APP.storage().saveCurrentUser pingResponse.user, APP.storage().getCurrentUser()
             APP._init mapOptions, offlineZooms, tileHandler
       when 3
         curU = APP.user()
@@ -218,16 +220,9 @@ class window.VoyageX.Main
           APP.storage().saveLocation curU.lastLocation, {poi: {id: poiId}}
         else
           APP.storage().saveLocation curU.lastLocation
-        isSignedIn = APP.storage().getCurrentUser()? && APP.signedIn(curU)
         curU.lastLocationId = curU.lastLocation.id
         delete curU.lastLocation
         APP.storage().saveCurrentUser curU
-        # APP.refreshUserPhoto curU, null, (user, flags) ->
-        #     APP.view().setupForCurrentUser()
-        # # only if signedIn?
-        # Storage.Model.instance().loadUsers (peer, idx, numPeers) ->
-        #     APP.initUser peer
-        #   , -1
         Comm.Comm.initSystemContext curU.peerPort.sys_channel_enc_key
 
   syncPois: () ->
@@ -715,7 +710,10 @@ class window.VoyageX.Main
         USERS.subscribeToAllPeerChannels()
       else
         APP.view().setupForAuthState false
-      APP.view().setupForCurrentUser()
+      #APP.view().setupForCurrentUser()
+      USERS.refreshUserPhoto curU, null, (user, flags) ->
+          APP.storage().saveCurrentUser curU
+          APP.view().setupForCurrentUser()
       # all users (not only peers) are loaded - to enable follow-requests for everybody
       # maybe rather provide some explicit search
       Storage.Model.instance().loadUsers (user, idx, numUsers) ->

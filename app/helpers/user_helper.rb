@@ -3,8 +3,12 @@ require 'net/http'
 module UserHelper
   include ::GeoUtils
 
-  def user_json user
+  def last_location user
     last_loc = user.snapshot.location||nearby_location(Location.new(latitude: user.snapshot.lat, longitude: user.snapshot.lng), 10)
+  end
+
+  def user_json user
+    last_loc = last_location user
     last_loc_poi = last_loc.persisted? ? Poi.where(location: last_loc).first : nearby_pois(last_loc, 10).first
     geometry = Paperclip::Geometry.from_file(user.foto) if user.foto.present?
     foto_width = geometry.present? ? geometry.width.to_i : -1

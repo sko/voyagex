@@ -411,7 +411,8 @@ class window.Storage.Model
   syncWithStorage: (poi, note, callback, loadStats = {numAdded:1,numLeft:1,newNotes:[]}, attachmentCached = false) ->
     # store user
     if note.user?
-      APP.storage().saveUser note.user
+      unless APP.storage().get('comm.currentUser') || APP.storage().get('comm.users', note.user.id)
+        APP.storage().saveUser note.user
       note.userId = note.user.id
       delete note.user
     if note.attachment? && (!note.attachment.content_type.match(/^embed:/))
@@ -428,7 +429,7 @@ class window.Storage.Model
       else if (typeof attachmentUrl.then == 'function') 
         # Assume we are dealing with a promise.
         attachmentUrl.then (url) ->
-            console.log 'Model - syncWithStorage: attachmentUrl-promise resolved to: '+url
+            console.log 'Model - syncWithStorage: attachmentUrl-promise resolved to: '+url.substring(0, 80)
             note.attachment.url = url
             loadStats.numLeft -= 1
             Model._syncNewPoiNotes poi, note, loadStats, callback
@@ -493,30 +494,6 @@ class window.Storage.Model
       if n.id == note.id
         return idx
     -1
-
-#  @poiNotes: (newPoiNotes, storedPoiNotes) ->
-#    # poinotes must always be sorted by id, also indicating their age-relation
-#    merged = []
-#    sIdx = 0
-#    for nIdx in [0..newPoiNotes.length-1] by 1
-#      for i in [sIdx..storedPoiNotes.length-1] by 1
-#        sIdx = i+1
-#        if newPoiNotes[nIdx].id < storedPoiNotes[i].id
-#          merged.push newPoiNotes[nIdx]
-#          for j in [nIdx..newPoiNotes.length-1] by 1
-#            if newPoiNotes[j].id < storedPoiNotes[i].id
-#              merged.push newPoiNotes[nIdx]
-#            break
-#        else
-#          merged.push storedPoiNotes[i]
-#      if i >= storedPoiNotes.length
-#        break
-#    # TODO add remaining poiNotes - only one of the following will continue
-#    for i in [nIdx..newPoiNotes.length-1] by 1
-#      merged.push newPoiNotes[i]
-#    for i in [sIdx..storedPoiNotes.length-1] by 1
-#      merged.push storedPoiNotes[i]
-#    merged
 
   @_viewPoiNoteAttachment: (poiNote) ->
     storeKey = Comm.StorageController.poiNoteAttachmentKey poiNote
@@ -606,6 +583,7 @@ class window.Storage.Model
       readyImage = APP.storage().getUserPhoto user, deferredModeParams
       unless readyImage?
         readyImage = APP.model()._loadReadyUserPhoto user, deferredModeParams
+      readyImage
 
   cacheAttachment: (poiNote, deferredModeParams = null) ->
     if Comm.StorageController.isFileBased()

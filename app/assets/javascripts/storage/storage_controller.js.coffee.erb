@@ -743,7 +743,6 @@ class window.Comm.StorageController
     ['poiNotes', 'attachments', ''+poiNote.id]
 
   @isFileBased: () ->
-    #StorageController._FS?
     Comm.FileUtils._FS?
     #false
 
@@ -1028,9 +1027,11 @@ class window.Comm.StorageController
       storedJSON
 
   get: (storeKey, listKey = null) ->
-    # FIXME @_jsonObjects is an internal cache-object and should not be exposed to concurrent access
-    #       readonly but 'live' copy -> wrapper object! with methods getItem() for [] and real object 
-    @_jsonObjects[storeKey] || JSON.parse(localStorage.getItem(storeKey))
+    # WARN don't change objects returned from here - all subsequent returned objects will be affected
+    stored = @_jsonObjects[storeKey] || JSON.parse(localStorage.getItem(storeKey))
+    if stored? && listKey?
+      return stored[listKey]
+    stored
 
   getNumElements: (storeKey, listKey = null) ->
 #    # TODO listKey != null, id might not be available
