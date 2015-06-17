@@ -190,10 +190,8 @@ class UsersController < ApplicationController
     @user.save
   end
 
-  def peers
-    peers_json = peers_json params[:location_id].to_i
-
-    render json: peers_json.to_json
+  def users
+    render json: users_json.to_json
   end
 
   def delete_details

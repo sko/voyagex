@@ -156,12 +156,12 @@ class window.Storage.Model
         for poi, i in pois
           Model._syncPoi poi, callback
 
-  loadUsers: (callback, locationId = -1) ->
+  loadUsers: (callback) ->
     if APP.isOnline()
       $.ajax
         type: 'GET'
         dataType: 'json'
-        url: '<%= peers_path(location_id: ':location_id') %>'.replace(/:location_id/, locationId)
+        url: '<%= users_path %>'
       .done (msg) ->
           numUsers = msg.length
           for user, i in msg
@@ -176,22 +176,21 @@ class window.Storage.Model
           #existingPoiNotes = Comm.StorageController.get Comm.StorageController.poiKey({id: poiId})
     else
       if (Modernizr.localstorage)
-        if locationId == -1
-          peers = APP.storage().getPeers()
-        else
-          # TODO peers = APP.storage().peerssWithinSearchBounds(UTIL.searchBounds(lat, lng, APP.user().searchRadiusMeters))
-          console.log('TODO: implement search redius for peers ...')
-          peers = APP.storage().getPeers()
+        peers = APP.storage().getPeers()
         for peer in peers
           callback peer
 
   pullPois: () ->
+    lastLoc = APP.user().getLastLocation()
     $.ajax
       type: 'POST'
 #      beforeSend: (xhr) ->
 #          xhr.setRequestHeader('X-CSRF-Token', $('meta[name=csrf-token]').first().attr('content'))
       dataType: 'json'
-      url: '<%= pull_pois_path %>'
+      url: '<%= pull_pois_path(lat: ':lat', lng: ':lng', radius: ':r') %>'.
+           replace(/:lat/, lastLoc.lat).
+           replace(/:lng/, lastLoc.lng).
+           replace(/:r/, APP.user().searchRadiusMeters)
       data: { commit_hash: APP.user().curCommitHash }
     .done (res) ->
         console.log('res.message OK = '+(res.message=='OK'))
