@@ -494,21 +494,22 @@ class window.Storage.Model
         return idx
     -1
 
+  @deferredModePoiNoteAttachmentParams: (poiNote) ->
+    deferred = $.Deferred()
+    deferredModeParams = { fileUrl: Model.attachmentUrl,\
+                           fileMeta: UTIL.clone(poiNote.attachment, {type: 'poiNoteAttachment'}),\
+                           fileOwner: poiNote,\
+                           #save: true,\
+                           update: true,\
+                           deferred: deferred,\
+                           promise: deferred.promise() }
+
   @_viewPoiNoteAttachment: (poiNote) ->
     storeKey = Comm.StorageController.poiNoteAttachmentKey poiNote
     if Comm.StorageController.isFileBased()
       # use File-API
       console.log '_viewPoiNoteAttachment - ........................................'+storeKey
-      # TODO ? maybe just query offline-zoom-files - see MapControl.tileUrl else of if view.zoom in mC._offlineZooms
-      # NO - because other zoom-levels may trigger some extra-action (liek prefetch ...)
-      deferred = $.Deferred()
-      deferredModeParams = { fileUrl: Model.attachmentUrl,\
-                             fileMeta: poiNote.attachment,\
-                             fileOwner: poiNote,\
-                             save: true,\
-                             update: true,\
-                             deferred: deferred,\
-                             promise: deferred.promise() }
+      deferredModeParams = Model.deferredModePoiNoteAttachmentParams poiNote
       APP.storage().getPoiNoteAttachment poiNote, deferredModeParams
       deferredModeParams.promise
     else
@@ -529,21 +530,28 @@ class window.Storage.Model
         APP.storage().resolveOfflineNotInCache readyImage, deferredModeParams
       readyImage
 
+  @notInCacheImage: (fileMeta) ->
+    if fileMeta.type == 'poiNoteAttachment'
+      APP.model()._notInCacheImage $('#attachment_canvas')[0], fileMeta
+    else
+      APP.model()._notInCacheImage $('#user_foto_canvas')[0], fileMeta
+
+  @deferredModeUserPhotoParams: (user) ->
+    deferred = $.Deferred()
+    deferredModeParams = { fileUrl: Model.userPhotoUrl,\
+                           fileMeta: UTIL.clone(user.foto, {type: 'userFoto'})
+                           fileOwner: user,\
+                           #save: true,\
+                           update: true,\
+                           deferred: deferred,\
+                           promise: deferred.promise() }
+
   @_viewUserFoto: (user) ->
     storeKey = Comm.StorageController.userPhotoKey user
     if Comm.StorageController.isFileBased()
       # use File-API
       console.log '_viewUserFoto - ........................................'+storeKey
-      # TODO ? maybe just query offline-zoom-files - see MapControl.tileUrl else of if view.zoom in mC._offlineZooms
-      # NO - because other zoom-levels may trigger some extra-action (liek prefetch ...)
-      deferred = $.Deferred()
-      deferredModeParams = { fileUrl: Model.userPhotoUrl,\
-                             fileMeta: user.foto,\
-                             fileOwner: user,\
-                             save: true,\
-                             update: true,\
-                             deferred: deferred,\
-                             promise: deferred.promise() }
+      deferredModeParams = Model.deferredModeUserPhotoParams user
       APP.storage().getUserPhoto user, deferredModeParams
       deferredModeParams.promise
     else
@@ -555,7 +563,6 @@ class window.Storage.Model
         console.log 'using cached userPoto: '+storeKey
         stored
 
-  # 
   @userPhotoUrl: (user, deferredModeParams = null) ->
     if APP.isOnline()
       Model.storedUserPhoto user, deferredModeParams
@@ -568,14 +575,7 @@ class window.Storage.Model
   @storedUserPhoto: (user, deferredModeParams = null) ->
     if Comm.StorageController.isFileBased()
       unless deferredModeParams?
-        deferred = $.Deferred()
-        deferredModeParams = { fileUrl: Model.userPhotoUrl,\
-                               fileMeta: user.foto,\
-                               fileOwner: user,\
-                               save: true,\
-                               update: true,\
-                               deferred: deferred,\
-                               promise: deferred.promise() }
+        deferredModeParams = Model.deferredModeUserPhotoParams user
       APP.model()._loadReadyUserPhoto user, deferredModeParams
       deferredModeParams.promise
     else

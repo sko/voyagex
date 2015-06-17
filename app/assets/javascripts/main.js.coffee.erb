@@ -24,7 +24,7 @@ class window.VoyageX.Main
     @_navigatorOnline = @_online
     @_view = new VoyageX.View()
     @_comm = null
-    @_pathPrediction = false
+    @_pathPrediction = true
     @_realPosition = {lat: -1.0, lng: -1.0}
     @_realPositionWatch = null
     @_moveSensorDistMeters = 25
@@ -824,9 +824,9 @@ class window.VoyageX.Main
             APP.deletePoi deletePoiId, true
           # "modified_pois":{"136":{"notes":[{"id":324,"user":{"id":264,"username":"stephan"},"text":"rttretr"}]}},
           for poiId in Object.keys(message.modified_pois)
-            poi = APP.storage().getPoi poiId
+            poi = APP.storage().getPoi parseInt(poiId)
             modPoi = message.modified_pois[poiId]
-            modPoi.id = poiId
+            modPoi.id = parseInt poiId
             loadStats = { numAdded: modPoi.notes.length, numLeft: modPoi.notes.length, newNotes: [] }
             for modNote in modPoi.notes
               if modNote.id < 0
@@ -847,7 +847,7 @@ class window.VoyageX.Main
           # "new_pois":{"136":{"notes":[{"id":324,"user":{"id":264,"username":"stephan"},"text":"rttretr"}]}},
           for poiId in Object.keys(message.new_pois)
             modPoi = message.new_pois[poiId]
-            modPoi.id = poiId
+            modPoi.id = parseInt poiId
             Storage.Model.setupPoiForNote modPoi
             loadStats = { numAdded: modPoi.notes.length, numLeft: modPoi.notes.length, newNotes: [] }
             for newNote in modPoi.notes

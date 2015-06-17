@@ -56,6 +56,15 @@ class window.VoyageX.Util
     lat >= searchBounds.lat_south && lat <= searchBounds.lat_north &&
     lng >= searchBounds.lng_west && lng <= searchBounds.lng_east
 
+  clone: (object, addAttributes = null) ->
+    if addAttributes?
+      cloned = addAttributes
+    else
+      cloned = {}
+    for key in Object.keys(object)
+      cloned[key] = object[key]
+    cloned
+
   $.fn.selectRange = (start, end) ->
     if !end
       end = start

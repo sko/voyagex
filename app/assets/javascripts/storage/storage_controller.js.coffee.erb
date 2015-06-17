@@ -902,9 +902,9 @@ class window.Comm.StorageController
     uploadQKey = 'comm.uploadQ.poiNotes'
     localStorage.getItem(uploadQKey)?
 
-  queueUpload: (poi, poiNote, callback, attachmentData, deferredModeParams = null) ->
+  queueUpload: (poi, poiNote, callback, attachmentData) ->
     @_uploadQ = new Comm.UploadQ()
-    @_uploadQ.addUpload poi, poiNote, callback, attachmentData, deferredModeParams
+    @_uploadQ.addUpload poi, poiNote, callback, attachmentData
 
   queueDeletePoi: (poi, callback) ->
     Comm.UploadQ.deletePoi poi, callback
@@ -1125,7 +1125,7 @@ class Comm.UploadQ
 
   # here the storing of the uploads will be completed.
   # after everything is stored: callback will be called
-  addUpload: (poi, poiNote, callback, attachmentData, deferredModeParams = null) ->
+  addUpload: (poi, poiNote, callback, attachmentData) ->
     @_poi = poi
     @_poiNote = poiNote
     #@_callback = callback
@@ -1148,18 +1148,11 @@ class Comm.UploadQ
 
     unless Comm.StorageController.isFileBased()
       # FIXME - not implemented
-      Comm.StorageController.instance().storePoiNoteAttachment @_poiNote, base64ImgDataUrl, deferredModeParams
+      Comm.StorageController.instance().storePoiNoteAttachment @_poiNote, base64ImgDataUrl
       APP.view().cacheStats()
     else
       if @_file?
-        deferred = $.Deferred()
-        deferredModeParams = { fileUrl: Storage.Model.attachmentUrl,\
-                               fileMeta: poiNote.attachment,\
-                               fileOwner: poiNote,\
-                               deferred: deferred,\
-                               promise: deferred.promise() }
-        # deferredModeParams.deferred = $.Deferred()
-        # deferredModeParams.promise = deferredModeParams.deferred.promise()
+        deferredModeParams = Storage.Model.deferredModePoiNoteAttachmentParams poiNote
         ((uploadQ) ->
             deferredModeParams.promise.then (url) ->
                 console.log 'UploadQ - addUpload: attachmentUrl-promise resolved to: '+url

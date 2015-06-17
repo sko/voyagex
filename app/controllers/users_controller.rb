@@ -229,9 +229,6 @@ class UsersController < ApplicationController
           current_user.update_attribute :home_base, location
           user_json[:home_base] = {id: location.id, lat: location.latitude, lng:location.longitude, address:shorten_address(location)}
         when 'locations'
-          #location = Location.new(latitude: params[:lat], longitude: params[:lng])
-          #poi = nearby_poi(current_user, location, 10)
-          #location = poi.location
           location = nearby_location Location.new(latitude: params[:lat], longitude: params[:lng]), 5
           location = current_user.locations_users.create(location: location, note: params[:text]).location unless current_user.locations_users.find{|l_u|l_u.location==location}.present?
           user_json[:last_location] = {id: location.id, lat: location.latitude, lng:location.longitude, address:shorten_address(location, true)}
