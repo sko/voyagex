@@ -487,7 +487,8 @@ class window.VoyageX.Main
 
   showPOIs: (location, flags = {withNotes: true, reset: false}) ->
     if VIEW_MODEL.currentView().key != 'map'
-      VIEW_MODEL.setView VIEW_MODEL.getView('map')
+      #VIEW_MODEL.setView VIEW_MODEL.getView('map')
+      VIEW_MODEL.menuNavClick('map')
     APP.model().loadPois UTIL.trimPosVal(location.lat), UTIL.trimPosVal(location.lng), (poi) ->
         location = {id: poi.locationId, lat: poi.lat, lng: poi.lng, address: poi.address, poiId: poi.id}
         markerMeta = APP.getMarker poi, true
@@ -498,7 +499,8 @@ class window.VoyageX.Main
 
   showPOI: (poiId, poiNoteId, skipLoad = false) ->
     if VIEW_MODEL.currentView().key != 'map'
-      VIEW_MODEL.setView VIEW_MODEL.getView('map')
+      #VIEW_MODEL.setView VIEW_MODEL.getView('map')
+      VIEW_MODEL.menuNavClick('map')
     if skipLoad
       APP.view().viewPoiNotes APP.storage().getPoi(poiId), poiNoteId
     else
@@ -508,7 +510,9 @@ class window.VoyageX.Main
 
   showPeer: (peer, lastLocation = null, type = 'dialog') ->
     GUI.closeSystemMessage(type)
-    VIEW_MODEL.setView(VIEW_MODEL.getView('map'))
+    if VIEW_MODEL.currentView().key != 'map'
+      #VIEW_MODEL.setView VIEW_MODEL.getView('map')
+      VIEW_MODEL.menuNavClick('map')
 
     unless lastLocation?
       lastLocation = peer.getLastLocation()
