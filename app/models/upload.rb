@@ -12,7 +12,7 @@ class Upload < ActiveRecord::Base
   end
   
   def binary?
-    self.entity_type == 'UploadEntity::Mediafile'
+    ['UploadEntity::Mediafile'].include? entity_type
   end
 
   def build_entity content_type, build_params = {}
