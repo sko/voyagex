@@ -175,7 +175,8 @@ class window.VoyageX.Main
 #          $( "#panel_control" ).on( "dragcreate", (event, ui) ->
 #                  console.log('dragging ...')
 #            )
-          GUI.showActiveState($('#menu_top button.activate_map'))
+          #GUI.showActiveState($('#menu_top button.activate_map'))
+          GUI.showActiveState()
         else
           GUI.showActiveState()
         $('#zoom_level').html('<span style="color:white;">zoom: '+APP.map().getZoom()+'</span>')
@@ -753,6 +754,8 @@ class window.VoyageX.Main
     else if message.type == 'subscription_denied'
     else if message.type == 'subscription_grant_revoked'
       #message.peer.peerPort = {channel_enc_key: message.peer.peerPort.channel_enc_key}
+      message.peer['peerPort'] = {channel_enc_key: message.peer.channel_enc_key}
+      delete message.peer.channel_enc_key
       USERS.removePeer message.peer
     else if message.type == 'quit_subscription'
       true # do nothing
@@ -878,6 +881,7 @@ class window.VoyageX.Main
               notifyChange ||= true
               Storage.Model.instance().syncWithStorage modPoi, newNote, (poi, newNotes) ->
                   console.log 'added new poi '+poi.id+' with #'+newNotes.length+' notes'
+                  Main.markerManager().add poi.getLocation(), Main._markerEventsCB
           if notifyChange
             console.log 'TODO: notify change after  pull ...'
             APP.view().alert()
