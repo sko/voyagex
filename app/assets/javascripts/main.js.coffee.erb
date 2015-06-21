@@ -572,6 +572,7 @@ class window.VoyageX.Main
         USERS.checkDistance peer, {lat: peerLL.lat, lng: peerLL.lng}, (peer, inRange) ->
             if inRange
               APP.view().systemMessage VoyageX.TemplateHelper.peerInRangeHtml(peer)
+            false
     if showSearchRadius
       Main.markerManager().searchBounds APP.user().searchRadiusMeters, APP.map()
 
@@ -627,6 +628,7 @@ class window.VoyageX.Main
         USERS.checkDistance peer, {lat: peerLL.lat, lng: peerLL.lng}, (peer, inRange) ->
             if inRange
               APP.view().systemMessage VoyageX.TemplateHelper.peerInRangeHtml(peer)
+            false
     APP.watchRealPosition()
 
   stopRealPositionWatch: () ->
