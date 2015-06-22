@@ -14,9 +14,11 @@ module ::GeoUtils
       unless location.persisted?
         if lookup
           geo = Geocoder.search([location.latitude, location.longitude])
-          address = geo[0].address
-          parts = address.split(',')
-          return parts.drop([parts.size - 2, 2].min).join(',').strip if parts.size >= 3
+          if geo.present? && geo[0].present?
+            address = geo[0].address
+            parts = address.split(',')
+            return parts.drop([parts.size - 2, 2].min).join(',').strip if parts.size >= 3
+          end
         end
       end
       "#{location.latitude}-#{location.longitude}"
