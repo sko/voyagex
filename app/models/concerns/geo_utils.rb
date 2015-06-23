@@ -17,7 +17,13 @@ module ::GeoUtils
           if geo.present? && geo[0].present?
             address = geo[0].address
             parts = address.split(',')
-            return parts.drop([parts.size - 2, 2].min).join(',').strip if parts.size >= 3
+            if parts.size >= 3
+              if [:google].include? Geocoder.config[:lookup]
+                return parts.reverse.drop([parts.size - 2, 2].min).join(',').strip
+              else
+                return parts.drop([parts.size - 2, 2].min).join(',').strip
+              end
+            end
           end
         end
       end
