@@ -209,7 +209,7 @@ class window.Storage.Model
       dataType: 'json'
       url: url
     .done (res) ->
-        console.log('res.message OK = '+(res.message=='OK'))
+        console.log('res.message OK = '+(res.message.toLowerCase()=='ok'))
     .fail (jqXHR, textStatus) ->
       # get from localStorage
       console.log('TODO: ?')

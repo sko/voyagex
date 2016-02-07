@@ -1,5 +1,6 @@
 module Auth
   class SessionsController < Devise::SessionsController  
+    include ApplicationHelper
     include UserHelper
 
     before_filter :ensure_params_exist, only: [:create]
@@ -25,8 +26,19 @@ module Auth
       @user = User.find_for_database_authentication(email: params[:user][:email])
       return invalid_login_attempt unless @user
       if @user.valid_password?(params[:user][:password])
+        if (@user.sign_in_count == 0)
+          channel = 'system'
+          enc_key = nil
+          msg = { type: :new_user, user: user_json(@user) }
+        else
+          # channel = 'talk'
+          # enc_key = @user.comm_port.channel_enc_key
+          # msg = { type: :new_session, userId: @user.id, fci: @user.comm_port.current_faye_client_id, user: user_json(@user) }
+          msg = nil
+        end
         sign_in(@user)
         session.delete :tmp_user_id
+        comm_adapter.publish(channel, enc_key, msg, @user) if msg.present?
         render "devise/sessions/success", layout: false, formats: [:js], locals: {resource: @user, resource_name: :user}
       else
         @user.errors.add ' ', t('devise.failure.invalid', authentication_keys: 'email')

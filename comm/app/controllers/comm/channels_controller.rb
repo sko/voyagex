@@ -42,7 +42,7 @@ module Comm
               Comm::ChannelsController.publish(channel, msg)
             end
           rescue => e
-            LOGGER.error "!!! #{channel} - subscribe !!! #{e.message}"
+            LOGGER.error "!!! #{channel} - subscribe !!! #{e.message}\\n#{e.backtrace.slice(0,5).join('\n')}"
           end
         end
       end
@@ -57,7 +57,7 @@ module Comm
             LOGGER.debug "--- #{channel} - unsubscribe ### Found User #{comm_port.user.id} for Client #{client_id}."
             comm_port.update_attribute(:unsubscribe_ts, DateTime.now)
           rescue => e
-            LOGGER.error "!!! #{channel} - unsubscribe !!! #{e.message}"
+            LOGGER.error "!!! #{channel} - unsubscribe !!! #{e.message}\\n#{e.backtrace.slice(0,5).join('\n')}"
           end
         end
       end
@@ -117,6 +117,7 @@ module Comm
                   location = nearby_location location, 10
                   if location.persisted?
                     address = shorten_address location
+                    publish_data['address'] = address
                     publish_data['locationId'] = location.id
                   else
                     geo = Geocoder.search([publish_data['lat'], publish_data['lng']])
@@ -137,12 +138,12 @@ module Comm
                     end
                   end
                 rescue => e
-                  LOGGER.error "!!!!!! map_events - filter-out: [click] #{e.message}"
+                  LOGGER.error "!!!!!! map_events - filter-out: [click] #{e.message}\\n#{e.backtrace.slice(0,5).join('\n')}"
                 end
               end
             end
           rescue => e
-            LOGGER.error "!!!!!! map_events - filter-out: #{e.message}"
+            LOGGER.error "!!!!!! map_events - filter-out: #{e.message}\\n#{e.backtrace.slice(0,5).join('\n')}"
           end
         end
         pass
@@ -176,7 +177,7 @@ module Comm
             end
           end
         rescue => e
-          LOGGER.error "!!!!!! map_events - publish: #{e.message}"
+          LOGGER.error "!!!!!! map_events - publish: #{e.message}\\n#{e.backtrace.slice(0,5).join('\n')}"
         end
       end
     end
@@ -243,7 +244,7 @@ module Comm
             block_msg = 'only subscribable for signed in users...'
           end
         rescue => e
-          LOGGER.error "!!!!!! #{e.message}"
+          LOGGER.error "!!!!!! #{e.message}\\n#{e.backtrace.slice(0,5).join('\n')}"
         end
       end
       block_msg
@@ -258,12 +259,12 @@ module Comm
         begin
           sender = User.find data['userId']
           if sender.comm_port.current_faye_client_id == data['fci']
-            chat_msg = ChatMessage.create sender: sender, text: data['text'].strip, p2p_receiver: p2p_receiver
+            chat_msg = ChatMessage.create sender: sender, text: (data['text']||'').strip, p2p_receiver: p2p_receiver
           else
             LOGGER.warn "!!! #{channel} - publish: fake user message: sender: #{sender.id} / #{sender.username}"
           end
         rescue => e
-          LOGGER.error "!!! #{channel} - publish !!! #{e.message}"
+          LOGGER.error "!!! #{channel} - publish !!! #{e.message}\\n#{e.backtrace.slice(0,5).join('\n')}"
         end
       end
       chat_msg

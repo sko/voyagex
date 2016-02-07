@@ -72,7 +72,7 @@ class UsersController < ApplicationController
   def update
     @user = current_user
     prio = params[:prio].present? ? params[:prio].to_sym : :normal
-    Rails.logger.error "##################### @user = #{@user}, prio = #{prio}, session[:provider] = #{session[:provider]}"
+    Rails.logger.error "##################### @user = #{@user.try(:id)}, prio = #{prio}, session[:provider] = #{session[:provider]}"
     # unless @user.present?
     #   @user = User.find(params[:id])
     #   #unless @user.identities

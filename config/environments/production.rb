@@ -96,7 +96,8 @@ Rails.application.configure do
   Faye.logger = lambda { |m| Rails.logger.info m }
   FAYE_URL = 'http://voyagex.info.tm/comm'
   FAYE_URL_LOCAL = 'http://localhost:3000/comm'
-  GIT_REMOTE_URL = 'git@github.com:/sko/voyagex_data'
+  #GIT_REMOTE_URL = 'git@github.com:/sko/voyagex_data'
+  GIT_REMOTE_URL = 'gitolite:voyagex-data.git'
   GIT_MASTER = 'master'
   COMM_ADAPTER_CLASS = 'Comm::Adapter'
 end

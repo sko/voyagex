@@ -75,9 +75,8 @@
           = link_to image_tag('start_trace.png', style: 'height: 23px;', title: 'start-trace-me', alt: 'start-trace-me'), '#', onclick: "javascript:APP.toggleTrace(APP.user(), {path_key})"
         %span{id: 'trace-ctrl-stop-{user_id}', style: 'display: none;'}
           = link_to image_tag('stop_trace.png', style: 'height: 23px;', title: 'stop-trace-me', alt: 'stop-trace-me'), '#', onclick: "javascript:APP.toggleTrace(APP.user(), {path_key})"
-    -#
-      %div{style: 'margin: 0px 0px 0px 5px; padding: 0px;'}
-        = link_to image_tag('arrow-up-right_off.png', style: 'height: 23px;', title: 'navigator', alt: 'navigator', class: 'context_nav_open_icon'), '#', onclick: "javascript:APP.contextNav()"
+    -# %div{style: 'margin: 0px 0px 0px 5px; padding: 0px;'}
+      = link_to image_tag('arrow-up-right_off.png', style: 'height: 23px;', title: 'navigator', alt: 'navigator', class: 'context_nav_open_icon'), '#', onclick: "javascript:APP.contextNav()"
 
 #tmpl_note_editor{style: 'display: none;'}
   .note_editor

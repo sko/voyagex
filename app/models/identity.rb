@@ -2,8 +2,8 @@ class Identity < ActiveRecord::Base
 
   include UserHelper
 
-  TEMP_EMAIL_PREFIX = 'verify@voyagex'
-  TEMP_EMAIL_REGEX = /\Averify@voyagex/
+  TEMP_EMAIL_PREFIX = 'verify@whatsbetter'
+  TEMP_EMAIL_REGEX = /\Averify@whatsbetter/
 
   belongs_to :user
 

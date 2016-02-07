@@ -9,9 +9,9 @@ Gem::Specification.new do |s|
   s.version     = Comm::VERSION
   s.authors     = ["stephan koeller"]
   s.email       = ["skoeller@gmx.de"]
-  s.homepage    = "TODO"
-  s.summary     = "TODO: Summary of Comm."
-  s.description = "TODO: Description of Comm."
+  s.homepage    = "http://voyagex.info.tm/"
+  s.summary     = "VoyageX Communincation Module"
+  s.description = "Faye-Implementation for User/Data-Exchange"
 
   s.files = Dir["{app,config,db,lib}/**/*"] + ["MIT-LICENSE", "Rakefile", "README.rdoc"]
   s.test_files = Dir["test/**/*"]
@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
   # s.add_dependency "jquery-rails"
   s.add_dependency "thin"
   #s.add_dependency "resque-scheduler"
-  s.add_dependency "faye-rails", "2.0.0"
+  s.add_dependency "faye-rails"#, "2.0.0"
   s.add_dependency "faye-redis"
   s.add_dependency "haml"
   s.add_dependency "haml-rails"

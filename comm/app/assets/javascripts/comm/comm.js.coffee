@@ -158,6 +158,15 @@ class window.Comm.Comm
       # http://faye.jcoglan.com/architecture.html #Client
       # FayeClient - channel.unbind
       if channelPath.match(/^\/?system/)
+        if Comm.channelCallBacksJSON.talk.channel_enc_key?
+          channelPath = '/talk'
+          message = {type: 'end_session',\
+                     userId: APP.userId(),\
+                     user: APP.user(),\
+                     fci: client._clientId}
+          unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
+            channelPath += VoyageX.PEER_CHANNEL_PREFIX + Comm.channelCallBacksJSON.talk.channel_enc_key
+          client.publish(channelPath, message)
         client.unsubscribe channelPath, Comm._systemSubscriptionListener
       else
         i = channelPath.indexOf(VoyageX.PEER_CHANNEL_PREFIX)

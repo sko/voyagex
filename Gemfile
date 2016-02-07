@@ -1,8 +1,10 @@
 source 'https://rubygems.org'
 
-ruby '2.1.5'
+#ruby '2.1.5'
+ruby '2.2.3'
 
-gem 'rails', '4.1.6'
+#gem 'rails', '4.1.6'
+gem 'rails', '4.2.5'
 
 gem 'devise'
 #gem "devise-async"
@@ -10,11 +12,11 @@ gem "geocoder"
 gem 'haml'                                 
 gem 'haml-rails'                                       
 gem 'leaflet-rails'
-gem 'mysql2'
+gem 'mysql2'#, '~> 0.3.18'
 gem 'omniauth-facebook'
 gem 'open_uri_redirections'
-gem "paperclip", "~> 4.2"
-gem 'rails-i18n', github: 'svenfuchs/rails-i18n'
+gem "paperclip"#, "~> 4.2"
+gem 'rails-i18n'#, github: 'svenfuchs/rails-i18n'
 gem 'resque-scheduler' 
 
 #assets
@@ -28,14 +30,14 @@ gem 'modernizr-rails'
 # in production environments by default.
 #group :assets do
   gem 'sass-rails'
-  gem 'bootstrap-sass'
+  gem 'bootstrap-sass'#, '~> 3.3.1'
   gem 'autoprefixer-rails'
   #gem 'coffee-rails'
   gem 'uglifier'
 #end
 gem 'coffee-rails'
 # TODO: https://github.com/jashkenas/coffeescript/issues/3829
-gem "coffee-script-source", "~> 1.8.0"
+gem "coffee-script-source"#, "~> 1.8.0"
 
 #group :staging do
 group :staging, :production do

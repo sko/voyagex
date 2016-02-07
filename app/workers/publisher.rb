@@ -3,6 +3,7 @@ class Publisher
   include PoiHelper
   
   FAYE_CLIENT = Faye::Client.new(::FAYE_URL_LOCAL)
+  LOGGER = Logger.new("#{Rails.root}/log/publisher.log")
 
   # queue for resque
   @queue = :publish
@@ -26,13 +27,15 @@ class Publisher
     if fork
       EM.run {
         messages.each do |msg_data|
+          LOGGER.info "msg_data = #{msg_data.inspect} ..."
           publication = Publisher::FAYE_CLIENT.publish("#{msg_data[:channel]}", msg_data[:msg])
-          publication.callback { Rails.logger.debug("sender #{msg_data[:user_id]} to #{msg_data[:channel]}"); EM.stop if (jobs_done_count += 1) == num_jobs }
-          publication.errback {|error| Rails.logger.error("#{msg_data[:channel]} - error: #{error.message}"); EM.stop if (jobs_done_count += 1) == num_jobs }
+          publication.callback { LOGGER.info("sender #{msg_data[:user_id]} to #{msg_data[:channel]}"); EM.stop if (jobs_done_count += 1) == num_jobs }
+          publication.errback {|error| LOGGER.error("#{msg_data[:channel]} - error: #{error.message}"); EM.stop if (jobs_done_count += 1) == num_jobs }
         end
       }
     else
       messages.each do |msg_data|
+        LOGGER.info "msg_data = #{msg_data.inspect} ..."
         #Comm::ChannelsController.publish("#{msg_data[:channel]}", msg_data[:msg])
         Publisher::FAYE_CLIENT.publish("#{msg_data[:channel]}", msg_data[:msg])
       end

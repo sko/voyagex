@@ -1,6 +1,6 @@
 class ApplicationController < ActionController::Base
 
-  @@comm_adapter = nil
+  @@_comm_adapter = nil
 
   before_filter :set_locale, :store_location
   
@@ -15,9 +15,9 @@ class ApplicationController < ActionController::Base
   layout :mobile_by_useragent
  
   def self.comm_adapter
-    Rails.logger.debug "ApplicationController - self.comm_adapter: @@comm_adapter = #{@@comm_adapter}"
+    Rails.logger.info "ApplicationController - self._comm_adapter: @@_comm_adapter = #{@@_comm_adapter}"
     #@comm_adapter ||= Object.const_get(COMM_ADAPTER_CLASS).new
-    @@comm_adapter ||= (@@comm_adapter = Object.const_get(COMM_ADAPTER_CLASS).new)
+    @@_comm_adapter ||= (@@_comm_adapter = Object.const_get(COMM_ADAPTER_CLASS).new)
   end
 
   #

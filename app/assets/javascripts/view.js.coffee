@@ -71,6 +71,9 @@ class window.VoyageX.View
       View._SINGLETON.removeFollowsMe message.peer
     else if message.type == 'cancel_subscription_grant_request'
       APP.view().updateFollowsMe message.peer, {denied: true}
+    else if message.type == 'new_user'
+      APP.view().addIDontFollow message.user
+      # TODO - some sort of notification View._SINGLETON.systemMessage 'new user'
 
   _talkCB: (message) ->
     console.log 'got a talk - message: ' + message.type

@@ -2,7 +2,11 @@ module Comm
   class Adapter
 
     def publish channel, enc_key, msg, user, prio = :normal
-      channel = "/#{channel}#{PEER_CHANNEL_PREFIX}#{enc_key}" unless USE_GLOBAL_SUBSCRIBE
+      if enc_key.present? && (!USE_GLOBAL_SUBSCRIBE)
+        channel = "/#{channel}#{PEER_CHANNEL_PREFIX}#{enc_key}"
+      else
+        channel = "/#{channel}"
+      end
       if (prio != :high) && (![:development].include?(Rails.env.to_sym))
         Resque.enqueue Publisher, { action: 'publish',
                                     channel: channel,

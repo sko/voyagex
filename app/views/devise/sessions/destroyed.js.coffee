@@ -1,3 +1,10 @@
+# unsubscribe from all own channels ...
+for channel in VoyageX.Main.commChannels()
+  channelPath = '/'+channel
+  unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
+    channelPath += VoyageX.PEER_CHANNEL_PREFIX+Comm.Comm.channelCallBacksJSON[channel].channel_enc_key
+  Comm.Comm.unsubscribeFrom channelPath, true
+Comm.Comm.resetSystemContext()
 $('#settings_form').attr('action', '<%= user_path id: tmp_user.id -%>')
 # you are always someone
 <%
@@ -42,10 +49,3 @@ $('#comm_peer_data').html("<%= j render(partial: 'shared/peers', locals: {user: 
 # temporary for context-nav - will be changed to template like pois_preview
 $('#location_bookmarks').html("<%= j render(partial: 'main/location_bookmarks', locals: {user: tmp_user}) -%>")
 $('#people_of_interest').html("<%= j render(partial: 'main/people_of_interest', locals: {user: tmp_user}) -%>")
-# unsubscribe from all own channels ...
-for channel in VoyageX.Main.commChannels()
-  channelPath = '/'+channel
-  unless window.VoyageX.USE_GLOBAL_SUBSCRIBE
-    channelPath += VoyageX.PEER_CHANNEL_PREFIX+Comm.Comm.channelCallBacksJSON[channel].channel_enc_key
-  Comm.Comm.unsubscribeFrom channelPath, true
-Comm.Comm.resetSystemContext()
